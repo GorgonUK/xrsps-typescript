@@ -33,6 +33,21 @@ export interface RangedProjectileParams {
     timing?: { startDelay: number; travelTime: number };
 }
 
+export interface NpcToPlayerProjectileParams {
+    npc: NpcState;
+    player: PlayerState;
+    projectile: {
+        projectileId?: number;
+        startHeight?: number;
+        endHeight?: number;
+        slope?: number;
+        steepness?: number;
+        startDelay?: number;
+        sourceHeightOffset?: number;
+    };
+    timing?: { startDelay: number; travelTime: number };
+}
+
 export interface SpellProjectileParams {
     player: PlayerState;
     targetNpc?: NpcState;
@@ -105,6 +120,59 @@ export class ProjectileSystem {
     /**
      * Build a projectile launch for a ranged attack (player vs NPC).
      */
+    /**
+     * NPC-sourced projectile to a player (e.g. Scurrius magic/ranged).
+     * Mirrors player→NPC geometry with reversed endpoints.
+     */
+    buildNpcToPlayerProjectileLaunch(opts: NpcToPlayerProjectileParams): ProjectileLaunch | undefined {
+        const projectileId = opts.projectile.projectileId;
+        if (projectileId === undefined || projectileId <= 0) {
+            return undefined;
+        }
+
+        const framesPerTick = this.getFramesPerTick();
+        const projectileDefaults: ProjectileParams = {
+            startHeight: opts.projectile.startHeight ?? 40,
+            endHeight: opts.projectile.endHeight ?? 36,
+            slope: opts.projectile.slope ?? 0,
+            steepness: opts.projectile.steepness ?? 0,
+            startDelay: opts.projectile.startDelay ?? 0,
+            sourceHeightOffset: opts.projectile.sourceHeightOffset,
+        };
+
+        const targetEndHeight = this.computeProjectileEndHeight({
+            projectileDefaults,
+            targetPlayer: opts.player,
+        });
+
+        const cheb = Math.max(
+            Math.abs(opts.npc.tileX - opts.player.tileX),
+            Math.abs(opts.npc.tileY - opts.player.tileY),
+        );
+        const defaultTravelTime = Math.max(1, -5 + 10 * Math.max(1, cheb)) / framesPerTick;
+
+        const verticalStartByte = projectileDefaults.startHeight ?? 40;
+        const verticalEndByte = targetEndHeight ?? projectileDefaults.endHeight ?? 36;
+        const sourceHeight = projectileDefaults.sourceHeightOffset ?? verticalStartByte * 4;
+        const endHeight = verticalEndByte * 4;
+        const startPos = opts.projectile.steepness ?? projectileDefaults.steepness ?? 64;
+        const startDelay = opts.timing?.startDelay ?? projectileDefaults.startDelay ?? 0;
+        const travelTime = opts.timing?.travelTime ?? defaultTravelTime;
+        const cycleOffsets = this.buildCycleOffsets(startDelay, travelTime, framesPerTick);
+
+        return {
+            projectileId,
+            source: this.createNpcEndpoint(opts.npc),
+            target: this.createPlayerEndpoint(opts.player),
+            sourceHeight,
+            endHeight,
+            slope: projectileDefaults.slope ?? 0,
+            startPos,
+            startCycleOffset: cycleOffsets.startCycleOffset,
+            endCycleOffset: cycleOffsets.endCycleOffset,
+        };
+    }
+
     buildRangedProjectileLaunch(opts: RangedProjectileParams): ProjectileLaunch | undefined {
         const projectileId = opts.projectile.projectileId;
         if (projectileId === undefined || projectileId <= 0) {

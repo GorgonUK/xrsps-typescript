@@ -15,6 +15,17 @@ import type { ProjectileLaunch } from "../../../../../src/shared/projectiles/Pro
 import { getPoweredStaffSpellData } from "../../../data/spells";
 import type { PoweredStaffSpellData, SpellDataEntry } from "../../../data/spells";
 import type { PathService } from "../../../pathfinding/PathService";
+import {
+    SCURRIUS_MINION_TYPE_ID,
+    SCURRIUS_SEQ_STOMP,
+    SCURRIUS_SEQ_SUMMON_1,
+    SCURRIUS_SEQ_SUMMON_2,
+    SCURRIUS_SPOT_FALLING_DEBRIS,
+    getScurriusStyleMaxHit,
+    isScurriusBossTypeId,
+    nextScurriusSpecialSwing,
+    planScurriusAutoAttack,
+} from "../../content/scurrius";
 import type { AttackType } from "../../combat/AttackType";
 import {
     canNpcAttackPlayerFromCurrentPosition,
@@ -288,6 +299,8 @@ export interface CombatActionServices {
     queueCombatState(player: PlayerState): void;
     /** Queue skill snapshot. */
     queueSkillSnapshot(playerId: number, sync: SkillSync): void;
+    /** Re-check league tasks tied to skill XP / levels / total level after combat XP. */
+    syncSkillProgressLeagueTasks(playerId: number): void;
     /** Dispatch action effects. */
     dispatchActionEffects(effects: ActionEffect[]): void;
     /** Broadcast encoded message. */
@@ -344,6 +357,31 @@ export interface CombatActionServices {
     ): void;
     /** Roll retaliate damage using NPC's actual stats. */
     rollRetaliateDamage(npc: NpcState, player: PlayerState): number;
+    /** Roll retaliate damage for a specific NPC attack style (optional per-swing max hit). */
+    rollRetaliateDamageWithAttackType(
+        npc: NpcState,
+        player: PlayerState,
+        attackType: AttackType,
+        maxHitOverride?: number,
+    ): number;
+    /** Build NPC→player projectile (spotanim projectiles). */
+    buildNpcToPlayerProjectileLaunch(params: {
+        npc: NpcState;
+        player: PlayerState;
+        projectile: ProjectileParams;
+        timing?: { startDelay: number; travelTime: number };
+    }): ProjectileLaunch | undefined;
+    /** Queue a projectile for viewers (same path as spell/ranged). */
+    queueProjectileForViewers(launch: ProjectileLaunch): void;
+    /** Spawn a transient NPC (Scurrius giant rats, etc.). */
+    spawnTransientWorldNpc?(spawn: {
+        typeId: number;
+        x: number;
+        y: number;
+        level: number;
+        name?: string;
+        wanderRadius?: number;
+    }): void;
     /** Get drop eligibility for NPC. */
     getDropEligibility(npc: NpcState): DropEligibility | undefined;
     /** Roll server-authoritative NPC drops for the current death. */
@@ -862,6 +900,10 @@ export class CombatActionHandler {
 
             const hitData = {
                 npcId: npc.id,
+                npcTypeId: npc.typeId,
+                npcSpawnX: npc.spawnX,
+                npcSpawnY: npc.spawnY,
+                npcSpawnLevel: npc.spawnLevel,
                 damage,
                 maxHit,
                 style,
@@ -1286,7 +1328,15 @@ export class CombatActionHandler {
         const xpGrantedOnAttack =
             data.xpGrantedOnAttack === true || data.hit?.xpGrantedOnAttack === true;
         if (damage > 0 && hitLanded && !xpGrantedOnAttack) {
-            this.services.awardCombatXp(player, damage, data.hit ?? data, effects);
+            const inner = data.hit && typeof data.hit === "object" ? data.hit : {};
+            this.services.awardCombatXp(player, damage, {
+                ...(inner as object),
+                npcId: npc.id,
+                npcTypeId: npc.typeId,
+                npcSpawnX: npc.spawnX,
+                npcSpawnY: npc.spawnY,
+                npcSpawnLevel: npc.spawnLevel,
+            }, effects);
         }
 
         // Apply special attack effects
@@ -1421,12 +1471,10 @@ export class CombatActionHandler {
             npc,
             this.services.normalizeAttackType(rawAttackType) ?? undefined,
         );
-        const mitigatedDamage = this.services.applyProtectionPrayers(
-            player,
-            damage,
-            attackType,
-            "npc",
-        );
+        const bypassPrayer = data.bypassProtectionPrayer === true;
+        const mitigatedDamage = bypassPrayer
+            ? damage
+            : this.services.applyProtectionPrayers(player, damage, attackType, "npc");
         const type2 = Number.isFinite(rawType2) ? rawType2 : undefined;
         const damage2 = Number.isFinite(rawDamage2) ? rawDamage2 : undefined;
 
@@ -1451,6 +1499,19 @@ export class CombatActionHandler {
             const blockSeqCandidate = this.services.pickBlockSequence(player);
             const blockSeq = blockSeqCandidate >= 0 ? blockSeqCandidate : DEFAULT_BLOCK_SEQ;
             player.queueOneShotSeq(blockSeq, 0);
+        }
+
+        const impactSpot = Number.isFinite(data.playerImpactSpotId)
+            ? (data.playerImpactSpotId as number)
+            : undefined;
+        if (impactSpot !== undefined && impactSpot >= 0) {
+            this.services.enqueueSpotAnimation({
+                tick,
+                playerId: player.id,
+                spotId: impactSpot,
+                delay: 0,
+                height: 100,
+            });
         }
 
         // Handle auto-retaliate
@@ -1830,6 +1891,7 @@ export class CombatActionHandler {
             if (sync) {
                 this.services.queueSkillSnapshot(player.id, sync);
             }
+            this.services.syncSkillProgressLeagueTasks(player.id);
         }
     }
 
@@ -2355,6 +2417,212 @@ export class CombatActionHandler {
         effects: ActionEffect[],
     ): ActionExecutionResult {
         const pathService = this.services.getPathService();
+        player.refreshActiveCombatTimer();
+
+        const {
+            damage: rawDamage = 0,
+            maxHit: rawMaxHit = 0,
+            isAggression = false,
+            style = HITMARK_DAMAGE,
+            type2: rawType2,
+            damage2: rawDamage2,
+            hitDelay: rawHitDelay = 1,
+        } = data;
+        const type2 = Number.isFinite(rawType2) ? rawType2 : undefined;
+        const damage2 = Number.isFinite(rawDamage2) ? rawDamage2 : undefined;
+
+        const scheduleHit = (params: {
+            attackType: AttackType;
+            damage: number;
+            maxHit: number;
+            hitDelay: number;
+            bypassProtectionPrayer?: boolean;
+            playerImpactSpotId?: number;
+        }): void => {
+            const enqueueResult = this.services.scheduleAction(
+                player.id,
+                {
+                    kind: "combat.npcRetaliate",
+                    data: {
+                        npcId: npc.id,
+                        damage: params.damage,
+                        maxHit: params.maxHit,
+                        style,
+                        type2,
+                        damage2,
+                        attackType: params.attackType,
+                        phase: "hit",
+                        bypassProtectionPrayer: params.bypassProtectionPrayer,
+                        playerImpactSpotId: params.playerImpactSpotId,
+                    },
+                    groups: ["combat.retaliate"],
+                    cooldownTicks: 0,
+                    delayTicks: Math.max(1, params.hitDelay),
+                },
+                tick,
+            );
+            if (!enqueueResult.ok) {
+                this.services.log(
+                    "warn",
+                    `[combat] failed to schedule npc retaliation hit (player=${player.id}, npc=${
+                        npc.id
+                    }): ${enqueueResult.reason ?? "unknown"}`,
+                );
+            }
+        };
+
+        // --- Scurrius (7221/7222): tribrid projectiles, stomp rockfall, summon minions ---
+        if (pathService && isScurriusBossTypeId(npc.typeId)) {
+            const special = nextScurriusSpecialSwing(npc.id);
+            if (special === "summon") {
+                const seq = (tick & 1) === 0 ? SCURRIUS_SEQ_SUMMON_1 : SCURRIUS_SEQ_SUMMON_2;
+                npc.queueOneShotSeq(seq, 0);
+                this.services.broadcastNpcSequence(npc, seq);
+                npc.popPendingSeq();
+                const spawn = this.services.spawnTransientWorldNpc;
+                if (spawn) {
+                    const offsets: ReadonlyArray<readonly [number, number]> = [
+                        [2, 0],
+                        [0, 2],
+                        [-2, 0],
+                        [0, -2],
+                        [2, 2],
+                        [-2, -2],
+                    ];
+                    for (let i = 0; i < offsets.length; i++) {
+                        const [ox, oy] = offsets[i]!;
+                        spawn({
+                            typeId: SCURRIUS_MINION_TYPE_ID,
+                            x: npc.tileX + ox,
+                            y: npc.tileY + oy,
+                            level: npc.level,
+                            name: "Giant rat",
+                            wanderRadius: 3,
+                        });
+                    }
+                }
+                if (!this.services.isActiveFrame() && effects.length > 0) {
+                    this.services.dispatchActionEffects(effects);
+                }
+                return { ok: true, cooldownTicks: 0, groups: [], effects };
+            }
+
+            if (special === "rockfall") {
+                const rockRange = this.services.resolveNpcAttackRange(npc, "magic");
+                if (
+                    canNpcAttackPlayerFromCurrentPosition(npc, player, rockRange, "magic", {
+                        pathService,
+                    })
+                ) {
+                    npc.queueOneShotSeq(SCURRIUS_SEQ_STOMP, 0);
+                    this.services.broadcastNpcSequence(npc, SCURRIUS_SEQ_STOMP);
+                    npc.popPendingSeq();
+
+                    this.services.enqueueSpotAnimation({
+                        tick,
+                        spotId: SCURRIUS_SPOT_FALLING_DEBRIS,
+                        height: 100,
+                        delay: 0,
+                        tile: { x: player.tileX, y: player.tileY, level: player.level },
+                    });
+
+                    const rockMax = getScurriusStyleMaxHit(npc.typeId, "rockfall");
+                    let rockDamage = Math.max(0, rawDamage);
+                    if (rockDamage === 0 && isAggression) {
+                        rockDamage = this.services.rollRetaliateDamageWithAttackType(
+                            npc,
+                            player,
+                            "melee",
+                            rockMax,
+                        );
+                    }
+
+                    scheduleHit({
+                        attackType: "melee",
+                        damage: rockDamage,
+                        maxHit: rockMax,
+                        hitDelay: 2,
+                        bypassProtectionPrayer: true,
+                        playerImpactSpotId: SCURRIUS_SPOT_FALLING_DEBRIS,
+                    });
+
+                    if (!this.services.isActiveFrame() && effects.length > 0) {
+                        this.services.dispatchActionEffects(effects);
+                    }
+                    return { ok: true, cooldownTicks: 0, groups: [], effects };
+                }
+            }
+
+            const plan = planScurriusAutoAttack(npc, player, tick, pathService);
+            if (!plan) {
+                return { ok: false, reason: "not_in_range" };
+            }
+            const atkRange = this.services.resolveNpcAttackRange(npc, plan.attackType);
+            if (
+                !canNpcAttackPlayerFromCurrentPosition(npc, player, atkRange, plan.attackType, {
+                    pathService,
+                })
+            ) {
+                return { ok: false, reason: "not_in_range" };
+            }
+
+            npc.queueOneShotSeq(plan.attackSeq, 0);
+            this.services.broadcastNpcSequence(npc, plan.attackSeq);
+            npc.popPendingSeq();
+
+            if (plan.npcCastSpotId !== undefined && plan.npcCastSpotId >= 0) {
+                this.services.enqueueSpotAnimation({
+                    tick,
+                    npcId: npc.id,
+                    spotId: plan.npcCastSpotId,
+                    delay: 0,
+                    height: 120,
+                });
+            }
+
+            if (plan.projectileId !== undefined && plan.projectileId > 0) {
+                const launch = this.services.buildNpcToPlayerProjectileLaunch({
+                    npc,
+                    player,
+                    projectile: {
+                        projectileId: plan.projectileId,
+                        startHeight: 43,
+                        endHeight: 31,
+                        slope: 16,
+                        steepness: 64,
+                    },
+                });
+                if (launch) {
+                    this.services.queueProjectileForViewers(launch);
+                }
+            }
+
+            const maxHit = plan.maxHit;
+            let damage = Math.max(0, rawDamage);
+            if (damage === 0 && isAggression) {
+                damage = this.services.rollRetaliateDamageWithAttackType(
+                    npc,
+                    player,
+                    plan.attackType,
+                    maxHit,
+                );
+            }
+
+            scheduleHit({
+                attackType: plan.attackType,
+                damage,
+                maxHit,
+                hitDelay: plan.hitDelayTicks,
+                playerImpactSpotId: plan.playerImpactSpotId,
+            });
+
+            if (!this.services.isActiveFrame() && effects.length > 0) {
+                this.services.dispatchActionEffects(effects);
+            }
+            return { ok: true, cooldownTicks: 0, groups: [], effects };
+        }
+
+        // --- Default NPC swing ---
         const attackType = this.services.resolveNpcAttackType(
             npc,
             this.services.normalizeAttackType(data.attackType) ?? undefined,
@@ -2367,9 +2635,7 @@ export class CombatActionHandler {
         ) {
             return { ok: false, reason: "not_in_range" };
         }
-        player.refreshActiveCombatTimer();
 
-        // Play attack animation
         const npcCombatSeq = this.services.getNpcCombatSequences(npc.typeId);
         if (npcCombatSeq?.attack !== undefined) {
             npc.queueOneShotSeq(npcCombatSeq.attack, 0);
@@ -2377,56 +2643,13 @@ export class CombatActionHandler {
             npc.popPendingSeq();
         }
 
-        // Schedule hit.
-        // Melee retaliation hits resolve 1 tick after swing; ranged/magic keep their travel delay.
-
-        // Compute damage if not provided (e.g., for aggression-initiated attacks)
-        const {
-            damage: rawDamage = 0,
-            maxHit: rawMaxHit = 0,
-            isAggression = false,
-            style = HITMARK_DAMAGE,
-            type2: rawType2,
-            damage2: rawDamage2,
-            hitDelay: rawHitDelay = 1,
-        } = data;
         let damage = Math.max(0, rawDamage);
         const maxHit = Math.max(0, rawMaxHit);
         if (damage === 0 && isAggression) {
-            // Roll NPC damage for aggression attack using actual NPC stats
             damage = this.services.rollRetaliateDamage(npc, player);
         }
-        const type2 = Number.isFinite(rawType2) ? rawType2 : undefined;
-        const damage2 = Number.isFinite(rawDamage2) ? rawDamage2 : undefined;
         const hitDelay = Math.max(1, rawHitDelay);
-        const enqueueResult = this.services.scheduleAction(
-            player.id,
-            {
-                kind: "combat.npcRetaliate",
-                data: {
-                    npcId: npc.id,
-                    damage,
-                    maxHit,
-                    style,
-                    type2,
-                    damage2,
-                    attackType,
-                    phase: "hit",
-                },
-                groups: ["combat.retaliate"],
-                cooldownTicks: 0,
-                delayTicks: hitDelay,
-            },
-            tick,
-        );
-        if (!enqueueResult.ok) {
-            this.services.log(
-                "warn",
-                `[combat] failed to schedule npc retaliation hit (player=${player.id}, npc=${
-                    npc.id
-                }): ${enqueueResult.reason ?? "unknown"}`,
-            );
-        }
+        scheduleHit({ attackType, damage, maxHit, hitDelay });
 
         if (!this.services.isActiveFrame() && effects.length > 0) {
             this.services.dispatchActionEffects(effects);

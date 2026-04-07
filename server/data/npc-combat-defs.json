@@ -1838,6 +1838,31 @@
         "attack": 386,
         "block": 1156
       }
+    },
+    "7221": {
+      "name": "Scurrius",
+      "anims": {
+        "attack": 10692,
+        "death": 10705
+      }
+    },
+    "7222": {
+      "name": "Scurrius",
+      "anims": {
+        "attack": 10692,
+        "death": 10705
+      }
+    },
+    "7223": {
+      "name": "Giant rat (Scurrius)",
+      "anims": {
+        "attack": 2705,
+        "block": 2706,
+        "death": 2707
+      },
+      "sounds": {
+        "death": 711
+      }
     }
   },
   "refs": {

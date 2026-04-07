@@ -169884,5 +169884,14 @@
         "id": 14957,
         "direction": 4,
         "wanderRadius": 0
+    },
+    {
+        "level": 338,
+        "name": "Scurrius",
+        "x": 3291,
+        "y": 9868,
+        "id": 7221,
+        "direction": 0,
+        "wanderRadius": 0
     }
 ]

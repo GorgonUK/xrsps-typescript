@@ -179,6 +179,10 @@ export interface CombatNpcRetaliateActionData {
     attackType?: AttackType | string;
     hitDelay?: number;
     isAggression?: boolean;
+    /** When true, protection prayers do not reduce this hit (e.g. Scurrius rockfall). */
+    bypassProtectionPrayer?: boolean;
+    /** Impact spotanim on the player when the hit resolves. */
+    playerImpactSpotId?: number;
 }
 
 export interface CombatCompanionHitActionData {

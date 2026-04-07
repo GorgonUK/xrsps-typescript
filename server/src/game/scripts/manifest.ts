@@ -182,6 +182,11 @@ export const SCRIPT_MANIFEST: ScriptManifestEntry[] = [
         watch: [path.resolve(MODULE_DIR, "modules/pohPools.ts")],
     },
     {
+        id: "content.scurrius-bars",
+        load: loadModule("modules/scurriusBars", "scurriusBarsModule"),
+        watch: [path.resolve(MODULE_DIR, "modules/scurriusBars.ts")],
+    },
+    {
         id: "skills.prayer",
         load: loadModule("modules/skills/prayer", "prayerModule"),
         watch: [path.resolve(MODULE_DIR, "modules/skills/prayer.ts")],

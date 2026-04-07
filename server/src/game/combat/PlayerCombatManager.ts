@@ -1045,6 +1045,40 @@ export class PlayerCombatManager {
     }
 
     /**
+     * NPC retaliation roll for a specific attack style (tribrid bosses).
+     * When maxHitOverride is set, it replaces the profile max hit for this swing only.
+     */
+    rollRetaliateDamageWithAttackType(
+        npc: NpcState,
+        player: PlayerState,
+        attackType: AttackType,
+        maxHitOverride?: number,
+    ): number {
+        const profile = npc.combat;
+        const profileForRoll =
+            maxHitOverride !== undefined && Number.isFinite(maxHitOverride)
+                ? { ...profile, maxHit: Math.max(0, maxHitOverride) }
+                : profile;
+
+        const defenceLevel = this.engine.getBoostedLevel(player, SkillId.Defence);
+        const magicLevel = this.engine.getBoostedLevel(player, SkillId.Magic);
+        const defenceBonus = this.engine.getPlayerDefenceBonus(player, attackType);
+
+        const result = CombatFormulas.calculateNpcVsPlayer(
+            profileForRoll,
+            { defenceLevel, magicLevel, defenceBonus },
+            attackType,
+        );
+
+        const roll = Math.random();
+        if (roll >= result.hitChance) {
+            return 0;
+        }
+
+        return CombatFormulas.rollDamage(result.maxHit, Math.random());
+    }
+
+    /**
      * Pick block sequence (defense animation) for a player.
      */
     pickBlockSequence(

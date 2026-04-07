@@ -2619,6 +2619,101 @@
         "fiery"
       ],
       "dragonfire": true
+    },
+    "7221": {
+      "name": "Scurrius",
+      "combatLevel": 250,
+      "hitpoints": 1500,
+      "attackLevel": 300,
+      "strengthLevel": 100,
+      "defenceLevel": 100,
+      "magicLevel": 100,
+      "rangedLevel": 100,
+      "attackSpeed": 4,
+      "attackType": "melee",
+      "attackStyle": "slash",
+      "maxHit": 13,
+      "aggressive": true,
+      "aggressiveRadius": 16,
+      "size": 3,
+      "isBoss": true,
+      "attackBonus": 150,
+      "strengthBonus": 10,
+      "magicBonus": 150,
+      "rangedBonus": 150,
+      "defenceBonuses": {
+        "stab": 20,
+        "slash": 20,
+        "crush": 20,
+        "magic": 10,
+        "ranged": 20
+      },
+      "species": [
+        "rat"
+      ]
+    },
+    "7222": {
+      "name": "Scurrius",
+      "combatLevel": 200,
+      "hitpoints": 500,
+      "attackLevel": 300,
+      "strengthLevel": 100,
+      "defenceLevel": 60,
+      "magicLevel": 50,
+      "rangedLevel": 50,
+      "attackSpeed": 4,
+      "attackType": "melee",
+      "attackStyle": "slash",
+      "maxHit": 13,
+      "aggressive": true,
+      "aggressiveRadius": 16,
+      "size": 3,
+      "isBoss": true,
+      "attackBonus": 150,
+      "strengthBonus": 10,
+      "magicBonus": 150,
+      "rangedBonus": 150,
+      "defenceBonuses": {
+        "stab": 20,
+        "slash": 20,
+        "crush": 20,
+        "magic": 10,
+        "ranged": 20
+      },
+      "species": [
+        "rat"
+      ]
+    },
+    "7223": {
+      "name": "Giant rat",
+      "combatLevel": 46,
+      "hitpoints": 15,
+      "attackLevel": 100,
+      "strengthLevel": 25,
+      "defenceLevel": 10,
+      "magicLevel": 1,
+      "rangedLevel": 1,
+      "attackSpeed": 4,
+      "attackType": "melee",
+      "attackStyle": "slash",
+      "maxHit": 4,
+      "aggressive": true,
+      "aggressiveRadius": 8,
+      "size": 2,
+      "attackBonus": 68,
+      "strengthBonus": 5,
+      "magicBonus": 0,
+      "rangedBonus": 0,
+      "defenceBonuses": {
+        "stab": 0,
+        "slash": 0,
+        "crush": 0,
+        "magic": 0,
+        "ranged": 0
+      },
+      "species": [
+        "rat"
+      ]
     }
   },
   "defaults": {

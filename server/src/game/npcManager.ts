@@ -8,6 +8,7 @@ import { DIRECTION_TO_ORIENTATION } from "../../../src/shared/Direction";
 import { getNpcCombatStats } from "../data/npcCombatStats";
 import { PathService } from "../pathfinding/PathService";
 import { CollisionFlag } from "../pathfinding/legacy/pathfinder/flag/CollisionFlag";
+import { resolveScurriusMaxHitpoints } from "./content/scurrius";
 import { logger } from "../utils/logger";
 import { MapCollisionService } from "../world/MapCollisionService";
 import { BossScript, createBossScript } from "./combat/BossCombatScript";
@@ -267,7 +268,14 @@ export class NpcManager {
         this.maxNpcSize = Math.max(this.maxNpcSize, size);
 
         const id = this.allocateNpcId();
-        const maxHitpoints = this.deriveMaxHitpoints(npcType);
+        let maxHitpoints = this.deriveMaxHitpoints(npcType);
+        maxHitpoints = resolveScurriusMaxHitpoints(
+            npcType.id,
+            spawn.x,
+            spawn.y,
+            spawn.level,
+            maxHitpoints,
+        );
         const combatLevel = npcType.combatLevel ?? -1;
         // OSRS parity: Attack speed is stored in cache param 14
         const attackSpeed = this.deriveAttackSpeed(npcType);

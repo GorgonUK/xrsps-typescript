@@ -321,6 +321,11 @@ import { LeagueTaskService } from "../game/leagues/LeagueTaskService";
 import { syncLeagueGeneralVarp } from "../game/leagues/leagueGeneral";
 import { getLeaguePackedVarpsForPlayer } from "../game/leagues/leaguePackedVarps";
 import { getLeagueSkillXpMultiplier as getActiveLeagueSkillXpMultiplier } from "../game/leagues/leagueXp";
+import {
+    clearScurriusSwingState,
+    getScurriusCombatXpMultiplier,
+    resolveScurriusRespawnDelayTicks,
+} from "../game/content/scurrius";
 import { LockState } from "../game/model/LockState";
 import { ACTIVE_COMBAT_TIMER, STUN_TIMER } from "../game/model/timer/Timers";
 import { createLootPickupNotification } from "../game/notifications/LootPickupNotification";
@@ -518,6 +523,7 @@ import {
     type PlayerTickFrameData,
 } from "./encoding";
 import { encodeAppearanceBinary } from "./encoding/AppearanceEncoder";
+import { wornDisplaySlotsFromEquipmentSnapshot } from "../game/equipmentWornSlots";
 import { LeagueSummaryTracker } from "./leagueSummary";
 import {
     LEVELUP_COMBAT_COMPONENT,
@@ -4176,6 +4182,10 @@ export class WSServer {
                 this.sendInventorySnapshotImmediate(ws, player);
             }
         }
+        const equipSnap = player.takeEquipmentSnapshot();
+        if (equipSnap !== undefined) {
+            this.sendEquipmentSnapshotImmediate(ws, player, equipSnap);
+        }
         if (player.hasBankUpdate()) {
             const snapshot = player.takeBankSnapshot();
             if (snapshot) this.bankingManager.queueBankSnapshot(player);
@@ -4203,9 +4213,28 @@ export class WSServer {
                 ws,
                 encodeMessage({
                     type: "inventory",
-                    payload: { kind: "snapshot", slots },
+                    payload: { kind: "snapshot", slots, containerId: 93 },
                 } as any),
                 "inventory_snapshot_immediate",
+            ),
+        );
+    }
+
+    /** Authoritative worn inventory (client inv 94) for equipment tab + CS2 INV_GETOBJ(94, slot). */
+    private sendEquipmentSnapshotImmediate(
+        ws: WebSocket,
+        _p: PlayerState,
+        equipEntries: import("../game/player").EquipmentSnapshotEntry[],
+    ): void {
+        const slots = wornDisplaySlotsFromEquipmentSnapshot(equipEntries);
+        this.withDirectSendBypass("equipment_snapshot_immediate", () =>
+            this.sendWithGuard(
+                ws,
+                encodeMessage({
+                    type: "inventory",
+                    payload: { kind: "snapshot", slots, containerId: 94 },
+                } as any),
+                "equipment_snapshot_immediate",
             ),
         );
     }
@@ -4679,7 +4708,7 @@ export class WSServer {
                         sock,
                         encodeMessage({
                             type: "inventory",
-                            payload: { kind: "snapshot", slots },
+                            payload: { kind: "snapshot", slots, containerId: 93 },
                         } as any),
                         "inventory_snapshot",
                     );
@@ -4786,11 +4815,15 @@ export class WSServer {
                                 sock,
                                 encodeMessage({
                                     type: "inventory",
-                                    payload: { kind: "snapshot", slots },
+                                    payload: { kind: "snapshot", slots, containerId: 93 },
                                 } as any),
                                 "inventory_snapshot",
                             );
                         }
+                    }
+                    const equipSnap = player.takeEquipmentSnapshot();
+                    if (equipSnap !== undefined) {
+                        this.sendEquipmentSnapshotImmediate(sock, player, equipSnap);
                     }
                     if (player.hasBankUpdate()) {
                         const snapshot = player.takeBankSnapshot();
@@ -7459,9 +7492,39 @@ export class WSServer {
                 this.playerCombatManager?.extendAggroHold(playerId, minimumTicks),
             rollRetaliateDamage: (npc, player) =>
                 this.playerCombatManager?.rollRetaliateDamage(npc, player) ?? 0,
+            rollRetaliateDamageWithAttackType: (npc, player, attackType, maxHitOverride) =>
+                this.playerCombatManager?.rollRetaliateDamageWithAttackType(
+                    npc,
+                    player,
+                    attackType,
+                    maxHitOverride,
+                ) ?? 0,
+            buildNpcToPlayerProjectileLaunch: (params) => {
+                if (!this.projectileSystem) return undefined;
+                return this.projectileSystem.buildNpcToPlayerProjectileLaunch({
+                    npc: params.npc,
+                    player: params.player,
+                    projectile: params.projectile,
+                    timing: params.timing,
+                });
+            },
+            queueProjectileForViewers: (launch) => this.queueProjectileForViewers(launch),
+            spawnTransientWorldNpc: (spawn) => {
+                this.npcManager?.spawnTransientNpc({
+                    id: spawn.typeId,
+                    name: spawn.name,
+                    x: spawn.x,
+                    y: spawn.y,
+                    level: spawn.level,
+                    wanderRadius: spawn.wanderRadius ?? 0,
+                });
+            },
             getDropEligibility: (npc) => this.playerCombatManager?.getDropEligibility?.(npc),
             rollNpcDrops: (npc, eligibility) => this.rollNpcDrops(npc, eligibility),
-            cleanupNpc: (npc) => this.playerCombatManager?.cleanupNpc?.(npc),
+            cleanupNpc: (npc) => {
+                clearScurriusSwingState(npc.id);
+                this.playerCombatManager?.cleanupNpc?.(npc);
+            },
 
             // --- Ground Items ---
             spawnGroundItem: (itemId, quantity, location, tick, options) =>
@@ -7567,6 +7630,8 @@ export class WSServer {
             onNpcKill: (playerId, npcId, combatLevel?) => {
                 this.leagueTaskManager?.onNpcKill(playerId, npcId, combatLevel);
             },
+            syncSkillProgressLeagueTasks: (playerId) =>
+                this.leagueTaskManager?.syncSkillProgressTasks(playerId),
         };
         return new CombatActionHandler(services);
     }
@@ -8574,6 +8639,7 @@ export class WSServer {
             handleBankDepositItem: (ws, payload) => this.handleBankDepositItem(ws, payload as any),
             moveBankSlot: (player, from, to, opts) =>
                 this.bankingManager.moveBankSlot(player, from, to, opts),
+            openBank: (player, opts) => this.bankingManager.openBank(player, opts),
 
             // Movement
             setPendingWalkCommand: (ws, command) => this.pendingWalkCommands.set(ws, command),
@@ -8581,6 +8647,31 @@ export class WSServer {
             clearActionsInGroup: (playerId, group) =>
                 this.actionScheduler.clearActionsInGroup(playerId, group),
             canUseAdminTeleport: (player) => this.isAdminPlayer(player),
+            spawnNpcAtPlayer: (player, npcTypeId) => {
+                if (!this.npcManager) {
+                    return { ok: false as const, message: "NPC manager unavailable." };
+                }
+                if (!Number.isFinite(npcTypeId) || npcTypeId <= 0) {
+                    return { ok: false as const, message: "Invalid NPC type id." };
+                }
+                const npcType = this.npcManager.loadNpcTypeById(npcTypeId);
+                if (!npcType) {
+                    return {
+                        ok: false as const,
+                        message: `Unknown NPC type ${npcTypeId} (not in cache / failed to load).`,
+                    };
+                }
+                const npc = this.npcManager.spawnTransientNpc({
+                    id: npcTypeId,
+                    x: player.tileX | 0,
+                    y: player.tileY | 0,
+                    level: player.level | 0,
+                });
+                if (!npc) {
+                    return { ok: false as const, message: "Failed to spawn NPC." };
+                }
+                return { ok: true as const, npcId: npc.id, typeId: npcTypeId };
+            },
             teleportPlayer: (player, x, y, level, forceRebuild = false) =>
                 this.teleportPlayer(player, x, y, level, forceRebuild),
             requestTeleportAction: (player, request) => this.requestTeleportAction(player, request),
@@ -8654,6 +8745,8 @@ export class WSServer {
             getSideJournalLeaguesContentGroupId: (leagueType) =>
                 getSideJournalLeaguesContentGroupId(leagueType),
             syncLeagueGeneralVarp: (player) => syncLeagueGeneralVarp(player),
+            syncSkillProgressLeagueTasks: (playerId) =>
+                this.leagueTaskManager?.syncSkillProgressTasks(playerId),
 
             // Chat
             queueChatMessage: (msg) => this.queueChatMessage(msg),
@@ -8661,6 +8754,7 @@ export class WSServer {
             enqueueLevelUpPopup: (player, data) => this.enqueueLevelUpPopup(player, data),
             handleVoteCommand: (player, args) => this.handleVoteCommand(player, args),
             handleItemSpawnerCommand: (player, args) => this.handleItemSpawnerCommand(player, args),
+            getMusicRegionService: () => this.musicRegionService,
 
             // Debug
             broadcast: (message, context) => this.broadcast(message, context),
@@ -9349,7 +9443,14 @@ export class WSServer {
         const RESPAWN_DELAY_TICKS = 17;
         const deathDelayTicks = this.estimateNpcDespawnDelayTicksFromSeq(deathSeq);
         const despawnTick = tick + Math.max(1, deathDelayTicks);
-        const respawnTick = Math.max(tick + RESPAWN_DELAY_TICKS, despawnTick + 1);
+        const scurriusRespawn =
+            resolveScurriusRespawnDelayTicks(
+                npc.typeId,
+                npc.spawnX,
+                npc.spawnY,
+                npc.spawnLevel,
+            ) ?? RESPAWN_DELAY_TICKS;
+        const respawnTick = Math.max(tick + scurriusRespawn, despawnTick + 1);
         try {
             npc.markDeadUntil(despawnTick, tick);
         } catch {}
@@ -10788,6 +10889,7 @@ export class WSServer {
             quantity: entry.quantity,
         }));
         this.pendingInventorySnapshots.push({ playerId: p.id, slots });
+        this.sendEquipmentSnapshotImmediate(ws, p, p.exportEquipmentSnapshot());
     }
 
     /**
@@ -11202,6 +11304,8 @@ export class WSServer {
             if (update) {
                 this.queueSkillSnapshot(player.id, update);
             }
+            // Skill/total/XP league milestones — any positive XP can update thresholds
+            this.leagueTaskManager?.syncSkillProgressTasks(player.id);
         } catch {}
     }
 
@@ -12625,6 +12729,12 @@ export class WSServer {
                             logger.warn("[follower] failed to restore player follower", err);
                         }
 
+                        try {
+                            this.leagueTaskManager?.syncSkillProgressTasks(p.id);
+                        } catch (err) {
+                            logger.warn("[leagues] failed to sync skill progress tasks on login", err);
+                        }
+
                         // Unlock all achievement diaries
                         // Structure: [varbitId, value] pairs
                         const DIARY_VARBITS: Array<[number, number]> = [
@@ -12856,6 +12966,7 @@ export class WSServer {
                         );
                         this.sendAnimUpdate(ws, p);
                         this.sendInventorySnapshotImmediate(ws, p);
+                        this.sendEquipmentSnapshotImmediate(ws, p, p.exportEquipmentSnapshot());
                         // OSRS parity: ensure login sends a full skill snapshot (packet 134 burst).
                         // Without this, reconnect paths can end up sending only deltas (or nothing),
                         // leading to briefly incorrect levels until the next XP/HP change.
@@ -14589,12 +14700,19 @@ export class WSServer {
         let xpChanged = false;
         const oldCombatLevel = player.combatLevel;
         const multiplier = this.getLeagueSkillXpMultiplier(player);
+        const scurriusXp = getScurriusCombatXpMultiplier(
+            hitData?.npcTypeId as number | undefined,
+            hitData?.npcSpawnX as number | undefined,
+            hitData?.npcSpawnY as number | undefined,
+            hitData?.npcSpawnLevel as number | undefined,
+        );
+        const combinedXpMultiplier = multiplier * scurriusXp;
         for (const award of awards) {
             const skill = player.getSkill(award.skillId);
             const currentXp = skill?.xp ?? 0;
             // OSRS max XP is 200,000,000
             const MAX_XP = 200_000_000;
-            const scaledXp = award.xp * multiplier;
+            const scaledXp = award.xp * combinedXpMultiplier;
             const newXp = Math.min(MAX_XP, currentXp + scaledXp);
 
             if (newXp > currentXp) {
@@ -14632,6 +14750,8 @@ export class WSServer {
             if (sync) {
                 this.queueSkillSnapshot(player.id, sync);
             }
+            // League tasks: level milestones + XP thresholds (same path as awardSkillXp)
+            this.leagueTaskManager?.syncSkillProgressTasks(player.id);
         }
     }
 
