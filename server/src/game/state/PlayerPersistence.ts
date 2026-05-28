@@ -487,6 +487,27 @@ function mergeStates(
         result.collectionLog = sanitizedCollectionLog;
     }
 
+    // Friendly Forager (Leagues V tier-2 relic) pouch contents.
+    const foragerPouchSource = pick("foragerPouch");
+    if (Array.isArray(foragerPouchSource)) {
+        const sanitizedPouch: Array<{ itemId: number; quantity: number }> = [];
+        for (const entry of foragerPouchSource) {
+            if (!entry) continue;
+            const itemId = Number(entry.itemId);
+            const quantity = Number(entry.quantity);
+            if (!Number.isFinite(itemId) || itemId <= 0) continue;
+            if (!Number.isFinite(quantity) || quantity <= 0) continue;
+            sanitizedPouch.push({
+                itemId: Math.floor(itemId),
+                quantity: Math.max(1, Math.floor(quantity)),
+            });
+        }
+        if (sanitizedPouch.length > 0) {
+            sanitizedPouch.sort((a, b) => a.itemId - b.itemId);
+            result.foragerPouch = sanitizedPouch;
+        }
+    }
+
     // Degradation charges (crystal bow, etc.)
     const degradationSource = pick("degradationCharges");
     if (Array.isArray(degradationSource)) {

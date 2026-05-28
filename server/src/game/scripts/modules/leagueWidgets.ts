@@ -2354,6 +2354,25 @@ export const leagueWidgetModule: ScriptModule = {
                 console.log(
                     `[league] Relic unlocked! tier=${pending.tierIndex} key=${pending.relicKey} varbit=${tierVarbitId}`,
                 );
+
+                // Player-facing feedback for relic selection (tier-2 effect
+                // hooks pick up the varbit on the next interaction).
+                try {
+                    const structLoaderForName =
+                        services?.getStructTypeLoader?.() ?? services?.structTypeLoader;
+                    const relicNameStruct = structLoaderForName?.load?.(
+                        pending.relicStructId,
+                    );
+                    const relicName =
+                        (relicNameStruct?.params?.get?.(879) as string | undefined) ??
+                        `Tier ${pending.tierIndex + 1} relic`;
+                    services.sendGameMessage(
+                        player,
+                        `You have unlocked the ${relicName} relic!`,
+                    );
+                } catch {
+                    // Best-effort message; not critical for the unlock to succeed.
+                }
             } catch (err) {
                 console.error(`[league] Relic confirm ERROR:`, err);
                 return;

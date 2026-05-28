@@ -827,6 +827,57 @@ export class PlayerRenderer {
         };
     }
 
+    /**
+     * Apply SeqType.leftHandItem / SeqType.rightHandItem overrides to a copy of the
+     * player's equip array, returning the patched array (or undefined if no override applied).
+     *
+     * OSRS parity (PlayerComposition.getModel in references):
+     *   - cache value -1  : no override; keep player's equipped item
+     *   - cache value 0   : clear the slot (no model rendered for this hand)
+     *   - cache value 256-511 : kit id (not used for hand slots; treat as no-op)
+     *   - cache value 512+    : item id = value - 512
+     *
+     * Our PlayerAppearance.equip stores raw item IDs (-1 = empty, 0+ = item id),
+     * which differs from the OSRS encoding above, so we translate here.
+     */
+    private applyHandItemOverridesFromSeq(
+        app: PlayerAppearance,
+        seqType: { leftHandItem: number; rightHandItem: number } | undefined | null,
+    ): PlayerAppearance | undefined {
+        if (!seqType) return undefined;
+        const leftRaw = seqType.leftHandItem | 0;
+        const rightRaw = seqType.rightHandItem | 0;
+        if (leftRaw < 0 && rightRaw < 0) return undefined;
+
+        const decodeHandItem = (raw: number): number | undefined => {
+            if (raw < 0) return undefined;
+            if (raw === 0) return -1;
+            if (raw >= 512) return raw - 512;
+            return undefined;
+        };
+
+        const newEquip = app.equip.slice();
+        let mutated = false;
+        const left = decodeHandItem(leftRaw);
+        if (left !== undefined) {
+            newEquip[EquipmentSlot.SHIELD] = left;
+            mutated = true;
+        }
+        const right = decodeHandItem(rightRaw);
+        if (right !== undefined) {
+            newEquip[EquipmentSlot.WEAPON] = right;
+            mutated = true;
+        }
+        if (!mutated) return undefined;
+        return new PlayerAppearance(
+            app.gender,
+            app.colors,
+            app.kits,
+            newEquip,
+            app.headIcons,
+        );
+    }
+
     private applySingleSequenceToModel(
         model: Model,
         seqType: any,
@@ -1814,25 +1865,8 @@ export class PlayerRenderer {
             if (useActionSequence) {
                 try {
                     const seqType = this.renderer.osrsClient.seqTypeLoader.load(actionSeqId | 0);
-                    if (seqType && (seqType.leftHandItem >= 0 || seqType.rightHandItem >= 0)) {
-                        const newEquip = app.equip.slice();
-                        // OSRS cache SeqType stores item IDs with 512 offset (0x200) for equipment overrides.
-                        // We must strip this offset to get the actual Item ID for our loader.
-                        let shield = seqType.leftHandItem;
-                        let weapon = seqType.rightHandItem;
-                        if (shield >= 512) shield -= 512;
-                        if (weapon >= 512) weapon -= 512;
-
-                        if (shield >= 0) newEquip[EquipmentSlot.SHIELD] = shield;
-                        if (weapon >= 0) newEquip[EquipmentSlot.WEAPON] = weapon;
-                        effectiveApp = new PlayerAppearance(
-                            app.gender,
-                            app.colors,
-                            app.kits,
-                            newEquip,
-                            app.headIcons,
-                        );
-                    }
+                    const overridden = this.applyHandItemOverridesFromSeq(app, seqType);
+                    if (overridden) effectiveApp = overridden;
                 } catch {}
             }
 
@@ -2021,25 +2055,8 @@ export class PlayerRenderer {
                         const seqType = this.renderer.osrsClient.seqTypeLoader.load(
                             actionSeqId | 0,
                         );
-                        if (seqType && (seqType.leftHandItem >= 0 || seqType.rightHandItem >= 0)) {
-                            const newEquip = app.equip.slice();
-                            // OSRS cache SeqType stores item IDs with 512 offset (0x200) for equipment overrides.
-                            // We must strip this offset to get the actual Item ID for our loader.
-                            let shield = seqType.leftHandItem;
-                            let weapon = seqType.rightHandItem;
-                            if (shield >= 512) shield -= 512;
-                            if (weapon >= 512) weapon -= 512;
-
-                            if (shield >= 0) newEquip[EquipmentSlot.SHIELD] = shield;
-                            if (weapon >= 0) newEquip[EquipmentSlot.WEAPON] = weapon;
-                            effectiveApp = new PlayerAppearance(
-                                app.gender,
-                                app.colors,
-                                app.kits,
-                                newEquip,
-                                app.headIcons,
-                            );
-                        }
+                        const overridden = this.applyHandItemOverridesFromSeq(app, seqType);
+                        if (overridden) effectiveApp = overridden;
                     } catch {}
                 }
 

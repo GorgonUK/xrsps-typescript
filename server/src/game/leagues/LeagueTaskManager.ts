@@ -16,6 +16,8 @@ import { logger } from "../../utils/logger";
 import { LeagueTaskIndex, type ParsedChallenge, type ParsedTask } from "./LeagueTaskIndex";
 import { type LeagueTaskPlayer, LeagueTaskService } from "./LeagueTaskService";
 import { syncLeaguePackedVarps } from "./leaguePackedVarps";
+import { playerMatchesSkillProgressTrigger } from "./leagueSkillProgress";
+import type { PlayerState } from "../player";
 
 export interface TaskManagerServices {
     getPlayer: (playerId: number) => LeagueTaskPlayer | undefined;
@@ -69,7 +71,7 @@ export class LeagueTaskManager {
             `[LeagueTaskManager] Index built: ${stats.parsed}/${stats.total} tasks parsed (${stats.coverage}), ${stats.challenges} challenges`,
         );
         logger.info(
-            `[LeagueTaskManager] Task index sizes: npcKill=${stats.indexSizes.npcKill}, itemEquip=${stats.indexSizes.itemEquip}, itemObtain=${stats.indexSizes.itemObtain}, itemCraft=${stats.indexSizes.itemCraft}`,
+            `[LeagueTaskManager] Task index sizes: npcKill=${stats.indexSizes.npcKill}, itemEquip=${stats.indexSizes.itemEquip}, itemObtain=${stats.indexSizes.itemObtain}, itemCraft=${stats.indexSizes.itemCraft}, skillProgress=${stats.indexSizes.skillProgress}`,
         );
         if (stats.challenges > 0) {
             logger.info(
@@ -269,6 +271,23 @@ export class LeagueTaskManager {
         const challenges = this.index.getChallengesForItemCraft(itemId);
         for (const challenge of challenges) {
             this.tryCompleteChallenge(player, playerId, challenge);
+        }
+    }
+
+    /**
+     * Re-evaluate skill / total level / XP milestone tasks (e.g. after ::master, on login, or after gaining XP).
+     */
+    syncSkillProgressTasks(playerId: number): void {
+        if (!this.initialized) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const ps = player as PlayerState;
+        const tasks = this.index.getSkillProgressTasks();
+        for (const task of tasks) {
+            if (!playerMatchesSkillProgressTrigger(ps, task.trigger)) continue;
+            this.tryCompleteTask(player, playerId, task, 1);
         }
     }
 

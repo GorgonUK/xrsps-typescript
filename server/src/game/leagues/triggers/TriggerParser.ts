@@ -2,7 +2,55 @@
  * Parses task names to extract trigger criteria.
  * Uses pattern matching to identify trigger type and target.
  */
+import { SkillId } from "../../../../../src/rs/skill/skills";
 import type { TaskTrigger } from "./TriggerTypes";
+
+/** OSRS skill names (lowercase) → SkillId — used for "Reach Level 99 Attack" style tasks */
+const SKILL_NAME_TO_ID: Record<string, SkillId> = {
+    attack: SkillId.Attack,
+    strength: SkillId.Strength,
+    defence: SkillId.Defence,
+    defense: SkillId.Defence,
+    ranged: SkillId.Ranged,
+    prayer: SkillId.Prayer,
+    magic: SkillId.Magic,
+    runecraft: SkillId.Runecraft,
+    construction: SkillId.Construction,
+    hitpoints: SkillId.Hitpoints,
+    agility: SkillId.Agility,
+    herblore: SkillId.Herblore,
+    thieving: SkillId.Thieving,
+    crafting: SkillId.Crafting,
+    fletching: SkillId.Fletching,
+    slayer: SkillId.Slayer,
+    hunter: SkillId.Hunter,
+    mining: SkillId.Mining,
+    smithing: SkillId.Smithing,
+    fishing: SkillId.Fishing,
+    cooking: SkillId.Cooking,
+    firemaking: SkillId.Firemaking,
+    woodcutting: SkillId.Woodcutting,
+    farming: SkillId.Farming,
+    sailing: SkillId.Sailing,
+};
+
+function parseSkillNameToSkillId(raw: string): SkillId | undefined {
+    return SKILL_NAME_TO_ID[raw.trim().toLowerCase()];
+}
+
+function parseExcludedSkillsFromDescription(description: string): SkillId[] {
+    const m = description.match(/not including\s+([^.]+)/i);
+    if (!m) return [];
+    const part = m[1];
+    const normalized = part.replace(/\s+and\s+/gi, ",").replace(/\s*,\s*/g, ",");
+    const tokens = normalized.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const out: SkillId[] = [];
+    for (const t of tokens) {
+        const id = SKILL_NAME_TO_ID[t];
+        if (id !== undefined) out.push(id);
+    }
+    return out;
+}
 
 export type NameToIdsLookup = (name: string) => number[];
 
@@ -21,7 +69,62 @@ export function parseTaskTrigger(
     loaders: TriggerParserLoaders,
 ): TaskTrigger | undefined {
     const nameLower = name.toLowerCase();
-    const descLower = description.toLowerCase();
+
+    // === Skill milestones, total level, XP thresholds (Leagues) ===
+    const totalMatch = name.match(/^Reach Total Level (\d+)$/i);
+    if (totalMatch) {
+        const minTotal = parseInt(totalMatch[1], 10);
+        if (minTotal > 0) {
+            return { type: "total_level_reach", minTotalLevel: minTotal };
+        }
+    }
+
+    const baseAllMatch = name.match(/^Reach Base Level (\d+)$/i);
+    if (baseAllMatch) {
+        const level = parseInt(baseAllMatch[1], 10);
+        if (level > 0) {
+            return { type: "level_reach", level, allSkills: true };
+        }
+    }
+
+    if (nameLower === "achieve your first level up") {
+        return { type: "level_reach", level: 1, firstLevelUp: true };
+    }
+
+    const firstMileMatch = name.match(/^Achieve Your First Level (\d+)$/i);
+    if (firstMileMatch) {
+        const level = parseInt(firstMileMatch[1], 10);
+        if (level > 0) {
+            return {
+                type: "level_reach",
+                level,
+                anySkill: true,
+                excludedSkillIds: parseExcludedSkillsFromDescription(description),
+            };
+        }
+    }
+
+    const reachSpecMatch = name.match(/^Reach Level (\d+)\s+(.+)$/i);
+    if (reachSpecMatch) {
+        const level = parseInt(reachSpecMatch[1], 10);
+        const skillId = parseSkillNameToSkillId(reachSpecMatch[2].trim());
+        if (skillId !== undefined && level > 0) {
+            return { type: "level_reach", level, skillId };
+        }
+    }
+
+    const xpMileMatch = name.match(/^Obtain (\d+) Million (.+?) XP$/i);
+    if (xpMileMatch) {
+        const millions = parseInt(xpMileMatch[1], 10);
+        const skillId = parseSkillNameToSkillId(xpMileMatch[2].trim());
+        if (skillId !== undefined && millions > 0) {
+            return {
+                type: "xp_reach",
+                skillId,
+                minXp: millions * 1_000_000,
+            };
+        }
+    }
 
     // === NPC Kill patterns ===
     // "Defeat a Moss Giant", "Kill 10 Goblins", "Slay a Black Dragon"

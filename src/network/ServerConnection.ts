@@ -32,9 +32,10 @@ const RUN_ENERGY_MAX_UNITS = 10000;
 const DEFAULT_SERVER_TICK_MS = 600;
 
 export type InventorySlotMessage = { slot: number; itemId: number; quantity: number };
+/** containerId 93 = backpack, 94 = worn (OSRS inv ids) */
 export type InventoryServerUpdate =
-    | { kind: "snapshot"; slots: InventorySlotMessage[] }
-    | { kind: "slot"; slot: InventorySlotMessage };
+    | { kind: "snapshot"; slots: InventorySlotMessage[]; containerId?: number }
+    | { kind: "slot"; slot: InventorySlotMessage; containerId?: number };
 
 /** Collection log inventory update (ID 620 - collection_transmit) */
 export type CollectionLogSlotMessage = { slot: number; itemId: number; quantity: number };
@@ -1189,21 +1190,30 @@ function handleTradePayload(payload: TradeServerPayload | undefined): void {
 }
 
 function emitInventory(update: InventoryServerUpdate): void {
+    const cid = update.containerId ?? 93;
     if (update.kind === "snapshot") {
-        lastInventorySnapshot = update.slots.map((slot) => ({ ...slot }));
+        if (cid === 93) {
+            lastInventorySnapshot = update.slots.map((slot) => ({ ...slot }));
+        }
     } else if (update.kind === "slot") {
-        if (!lastInventorySnapshot) lastInventorySnapshot = [];
-        const idx = lastInventorySnapshot.findIndex((s) => (s.slot | 0) === (update.slot.slot | 0));
-        if (idx >= 0) lastInventorySnapshot[idx] = { ...update.slot };
-        else lastInventorySnapshot.push({ ...update.slot });
+        if (cid === 93) {
+            if (!lastInventorySnapshot) lastInventorySnapshot = [];
+            const idx = lastInventorySnapshot.findIndex((s) => (s.slot | 0) === (update.slot.slot | 0));
+            if (idx >= 0) lastInventorySnapshot[idx] = { ...update.slot };
+            else lastInventorySnapshot.push({ ...update.slot });
+        }
     }
 
     for (const listener of inventoryListeners) {
         try {
             if (update.kind === "snapshot") {
-                listener({ kind: "snapshot", slots: update.slots.map((slot) => ({ ...slot })) });
+                listener({
+                    kind: "snapshot",
+                    slots: update.slots.map((slot) => ({ ...slot })),
+                    containerId: update.containerId,
+                });
             } else if (update.kind === "slot") {
-                listener({ kind: "slot", slot: { ...update.slot } });
+                listener({ kind: "slot", slot: { ...update.slot }, containerId: update.containerId });
             }
         } catch (err) {
             console.warn("inventory listener error", err);
@@ -1857,16 +1867,22 @@ function processServerMessage(msg: any): void {
     } else if (msg.type === "inventory") {
         const payload: any = msg.payload;
         if (!payload) return;
+        // Preserve containerId so equipment (94) snapshots aren't misrouted to the
+        // backpack (93). Dropping it here causes the equipment payload to overwrite
+        // the inventory state on login.
+        const containerId =
+            typeof payload.containerId === "number" ? payload.containerId | 0 : undefined;
         if (payload.kind === "snapshot") {
             const slots = Array.isArray(payload.slots)
                 ? payload.slots.map((slot: any) => sanitizeInventorySlotMessage(slot))
                 : [];
-            emitInventory({ kind: "snapshot", slots });
+            emitInventory({ kind: "snapshot", slots, containerId });
         } else if (payload.kind === "slot") {
             if (payload.slot) {
                 emitInventory({
                     kind: "slot",
                     slot: sanitizeInventorySlotMessage(payload.slot),
+                    containerId,
                 });
             }
         }

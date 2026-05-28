@@ -106,9 +106,49 @@ export interface TickScriptEvent extends ScriptExecutionContext {}
 
 export type TickHandler = (event: TickScriptEvent) => void | Promise<void>;
 
+/**
+ * Event passed to chat command handlers registered via
+ * IScriptRegistry.registerChatCommand. `args` is the whitespace-split tail
+ * of the command (i.e. everything after `::<name>`), with the command name
+ * itself excluded. `raw` is the full original message minus the `::`.
+ */
+export interface ChatCommandEvent {
+    player: PlayerState;
+    name: string;
+    args: string[];
+    raw: string;
+}
+
+export type ChatCommandHandler = (event: ChatCommandEvent) => string | void;
+
+export interface ChatCommandOptions {
+    /** If true, only admin players may invoke this command. Default: false. */
+    requireAdmin?: boolean;
+    /** Optional human-readable description, surfaced by ::help if implemented. */
+    description?: string;
+}
+
+export interface ChatCommandEntry {
+    handler: ChatCommandHandler;
+    options: ChatCommandOptions;
+}
+
+/**
+ * Optional cleanup callback a script module may return from `register` to
+ * release per-load state (timers, world locs, follower state, ...). Called by
+ * the script runtime before re-loading the module on hot reload, and during
+ * `runtime.reset()` shutdown. Module-registered handlers (loc/npc/item/etc.)
+ * are torn down automatically via the registry disposers; modules only need
+ * to return a cleanup if they own state outside the registry.
+ */
+export type ScriptModuleCleanup = () => void;
+
 export interface ScriptModule {
     id: string;
-    register(registry: IScriptRegistry, services: ScriptServices): void;
+    register(
+        registry: IScriptRegistry,
+        services: ScriptServices,
+    ): void | ScriptModuleCleanup;
 }
 
 export interface ScriptDialogOptionRequest {
@@ -238,6 +278,22 @@ export interface IScriptRegistry {
     registerNpcAction(option: string, handler: NpcInteractionHandler): ScriptRegistrationResult;
     registerRegionHandler(regionId: number, handler: RegionEventHandler): ScriptRegistrationResult;
     registerTickHandler(handler: TickHandler): ScriptRegistrationResult;
+    /**
+     * Register a chat command handler invoked when a player types
+     * `::<name> ...`. Names are matched case-insensitively. Returning a
+     * string sends it back to the issuing player as a system message. If the
+     * handler returns undefined / void, no chat response is sent.
+     *
+     * Chat commands registered here are hot-reloadable along with the rest
+     * of the script module — unlike commands hardcoded in the engine's
+     * MessageHandlers.ts, which require a server restart.
+     */
+    registerChatCommand(
+        name: string,
+        handler: ChatCommandHandler,
+        options?: ChatCommandOptions,
+    ): ScriptRegistrationResult;
+    findChatCommand(name: string): ChatCommandEntry | undefined;
     findNpcInteraction(npcId: number, option?: string): NpcInteractionHandler | undefined;
     /** Lookup only npc-specific handlers (instance or type), skipping generic action fallbacks. */
     findNpcInteractionDirect(npcId: number, option?: string): NpcInteractionHandler | undefined;
@@ -661,4 +717,66 @@ export interface ScriptServices {
         player: PlayerState,
     ) => { ok: true; npcId: number } | { ok: false; reason: string };
     despawnFollowerForPlayer?: (playerId: number, clearPersistentState?: boolean) => boolean;
+    /**
+     * Look up a live PlayerState by player id. Used by content systems (e.g.
+     * Hunter trap debug echo) that need to message the trap owner from a
+     * tick handler where only the player id is retained. Returns undefined
+     * if the player is offline or unknown.
+     */
+    getPlayerById?: (playerId: number) => PlayerState | undefined;
+    /**
+     * Lightweight nearby-NPC scan used by content systems (e.g. Hunter trap
+     * polling) that need to look for specific NPC type ids around a tile.
+     * Returns a small DTO snapshot to avoid leaking the NpcState class.
+     */
+    getNearbyNpcs?: (
+        tile: { x: number; y: number },
+        level: number,
+        radius: number,
+    ) => Array<{ id: number; typeId: number; x: number; y: number; size: number }>;
+    /**
+     * Steer an NPC toward a tile. Returns true if a path was queued (false if
+     * the NPC already has one, doesn't exist, or no walkable step exists).
+     * Used by content systems (Hunter trap luring, scripted events).
+     */
+    requestNpcPathToward?: (
+        npcId: number,
+        target: { x: number; y: number },
+        options?: { maxPathCalcSteps?: number; maxQueuedSteps?: number },
+    ) => boolean;
+    /**
+     * Inspect a live NPC by id. Returns a small DTO snapshot to avoid leaking
+     * the NpcState class to scripts. Used by content systems (e.g. Hunter trap
+     * AI) to validate a reserved NPC each tick. Returns undefined if no NPC
+     * with this id is currently alive.
+     */
+    getNpcSnapshot?: (
+        npcId: number,
+    ) =>
+        | {
+              id: number;
+              typeId: number;
+              x: number;
+              y: number;
+              level: number;
+              size: number;
+              hasPath: boolean;
+              isDead: boolean;
+              isInCombat: boolean;
+          }
+        | undefined;
+    /**
+     * Remove an NPC from the world and queue it to respawn after the given
+     * tick delay. Used for the "caught" half of Hunter traps. Returns true if
+     * the NPC was removed.
+     */
+    despawnNpcWithRespawn?: (npcId: number, respawnInTicks: number) => boolean;
+    /** Clear an NPC's current queued path; natural roaming resumes after its roam timer. */
+    clearNpcPath?: (npcId: number) => boolean;
+    /**
+     * Returns true if the supplied player is flagged as an administrator. Used
+     * by chat commands registered via IScriptRegistry.registerChatCommand to
+     * gate sensitive operations without each module re-implementing the check.
+     */
+    isAdminPlayer?: (player: PlayerState) => boolean;
 }

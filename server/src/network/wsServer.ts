@@ -321,6 +321,7 @@ import { LeagueTaskService } from "../game/leagues/LeagueTaskService";
 import { syncLeagueGeneralVarp } from "../game/leagues/leagueGeneral";
 import { getLeaguePackedVarpsForPlayer } from "../game/leagues/leaguePackedVarps";
 import { getLeagueSkillXpMultiplier as getActiveLeagueSkillXpMultiplier } from "../game/leagues/leagueXp";
+import { getRelicRunEnergyDrainMultiplier } from "../game/leagues/relicHooks";
 import {
     clearScurriusSwingState,
     getScurriusCombatXpMultiplier,
@@ -1320,6 +1321,7 @@ export class WSServer {
     private readonly scriptScheduler = new ScriptScheduler();
     private readonly scriptRegistry = new ScriptRegistry();
     private readonly scriptRuntime: ScriptRuntime;
+    private scriptBootstrapHandle?: import("../game/scripts/bootstrap").ScriptBootstrapHandle;
     private readonly playerPersistence = new PlayerPersistence();
     private movementSystem?: MovementSystem;
     private followerManager?: FollowerManager;
@@ -1905,6 +1907,50 @@ export class WSServer {
                         ) ?? false
                     );
                 },
+                getNearbyNpcs: (tile, level, radius) => {
+                    const nearby =
+                        this.npcManager?.getNearby(tile.x, tile.y, level, Math.max(1, radius | 0)) ??
+                        [];
+                    return nearby.map((npc) => ({
+                        id: npc.id,
+                        typeId: npc.typeId,
+                        x: npc.tileX,
+                        y: npc.tileY,
+                        size: Math.max(1, npc.size),
+                    }));
+                },
+                requestNpcPathToward: (npcId, target, options) =>
+                    this.npcManager?.requestPathToward(npcId, target, options) ?? false,
+                getNpcSnapshot: (npcId) => {
+                    const npc = this.npcManager?.getById(npcId);
+                    if (!npc) return undefined;
+                    const nowTick = this.options.ticker.currentTick();
+                    return {
+                        id: npc.id,
+                        typeId: npc.typeId,
+                        x: npc.tileX,
+                        y: npc.tileY,
+                        level: npc.level,
+                        size: Math.max(1, npc.size),
+                        hasPath: npc.hasPath(),
+                        isDead: npc.isDead(nowTick),
+                        isInCombat: npc.isInCombat(nowTick),
+                    };
+                },
+                despawnNpcWithRespawn: (npcId, respawnInTicks) => {
+                    if (!this.npcManager) return false;
+                    const nowTick = this.options.ticker.currentTick();
+                    const respawnTick = nowTick + Math.max(1, respawnInTicks | 0);
+                    return this.npcManager.queueRespawn(npcId, respawnTick);
+                },
+                clearNpcPath: (npcId) => {
+                    const npc = this.npcManager?.getById(npcId);
+                    if (!npc) return false;
+                    npc.clearPath();
+                    return true;
+                },
+                getPlayerById: (playerId) => this.players?.getById(playerId),
+                isAdminPlayer: (player) => this.isAdminPlayer(player),
                 openDialog: (player, request) =>
                     this.widgetDialogHandler.openDialog(player, request as any),
                 openDialogOptions: (player, options) =>
@@ -2243,7 +2289,7 @@ export class WSServer {
             "[scripts] loaded",
             JSON.stringify({ modules: [] }),
         );
-        bootstrapScripts(this.scriptRuntime);
+        this.scriptBootstrapHandle = bootstrapScripts(this.scriptRuntime);
         if (opts.pathService) {
             this.players = new PlayerManager(
                 opts.pathService,
@@ -8538,6 +8584,32 @@ export class WSServer {
         return this.cs2ModalManager.openItemSpawnerModal(player, query);
     }
 
+    /**
+     * Reloads every script module via the script bootstrap handle. Same code
+     * path as the file-watcher's hot reload — clears the require cache for all
+     * content roots and re-registers every module. Returns a single-line
+     * status string suitable for echoing to chat.
+     */
+    private handleReloadScriptsCommand(player: PlayerState): string {
+        if (!this.scriptBootstrapHandle) {
+            return "Script runtime not initialized.";
+        }
+        const start = Date.now();
+        try {
+            const result = this.scriptBootstrapHandle.reload(`::reload by ${player.name}`);
+            const elapsedMs = Date.now() - start;
+            logger.info(
+                `[cmd] ::reload - Player ${player.id} reloaded ${result.reloadedModules} module(s) (cleared ${result.clearedFiles} cached files) in ${elapsedMs}ms`,
+            );
+            return `Reloaded ${result.reloadedModules} script module(s) in ${elapsedMs}ms.`;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`[cmd] ::reload failed for player ${player.id}: ${message}`);
+            return `Reload failed: ${message}`;
+        }
+    }
+
+
     private spawnInventoryItem(
         player: PlayerState,
         itemId: number,
@@ -8754,6 +8826,10 @@ export class WSServer {
             enqueueLevelUpPopup: (player, data) => this.enqueueLevelUpPopup(player, data),
             handleVoteCommand: (player, args) => this.handleVoteCommand(player, args),
             handleItemSpawnerCommand: (player, args) => this.handleItemSpawnerCommand(player, args),
+            handleReloadScriptsCommand: (player) => this.handleReloadScriptsCommand(player),
+            dispatchScriptChatCommand: (player, name, args, raw) =>
+                this.scriptRuntime.dispatchChatCommand(player, name, args, raw),
+            isAdminPlayer: (player) => this.isAdminPlayer(player),
             getMusicRegionService: () => this.musicRegionService,
 
             // Debug
@@ -9192,7 +9268,11 @@ export class WSServer {
         if (activity.ran) {
             const weight = this.computePlayerWeightKg(player);
             const baseDrain = this.computeRunEnergyDrainUnits(weight, agilityLevel);
-            const multiplier = player.getRunEnergyDrainMultiplier(currentTick);
+            const staminaMultiplier = player.getRunEnergyDrainMultiplier(currentTick);
+            // Corner Cutter (Leagues V tier-2 relic) stacks multiplicatively with
+            // any active stamina effect. Lower multiplier = drains slower.
+            const relicMultiplier = getRelicRunEnergyDrainMultiplier(player);
+            const multiplier = staminaMultiplier * relicMultiplier;
             const stepCount = Math.max(1, activity.runSteps);
             const drain = Math.max(0, baseDrain * stepCount * multiplier);
             const nextUnits = player.adjustRunEnergyUnits(-drain);
@@ -12045,14 +12125,6 @@ export class WSServer {
             if (!hasItemInInventory) return;
             // OSRS parity: Dropping items closes interruptible interfaces
             this.closeInterruptibleInterfaces(p);
-            if (itemDef && !itemDef.dropable) {
-                this.queueChatMessage({
-                    messageType: "game",
-                    text: "You can't drop that.",
-                    targetPlayerIds: [p.id],
-                });
-                return;
-            }
 
             const doDrop = () => {
                 const currentInv = this.getInventory(p);
@@ -12091,6 +12163,59 @@ export class WSServer {
                     );
                 } catch {}
             };
+
+            // OSRS parity: Non-droppable items prompt the destroy confirmation
+            // (interface 584). Confirming permanently deletes the item rather
+            // than spawning it on the ground.
+            if (itemDef && !itemDef.dropable) {
+                const doDestroy = () => {
+                    const currentInv = this.getInventory(p);
+                    const currentSlot = currentInv[slotIndex];
+                    if (
+                        !currentSlot ||
+                        currentSlot.quantity <= 0 ||
+                        currentSlot.itemId !== payload.itemId
+                    ) {
+                        return;
+                    }
+                    const destroyedQty = currentSlot.quantity;
+                    this.setInventorySlot(p, slotIndex, -1, 0);
+                    this.checkAndSendSnapshots(p);
+                    try {
+                        logger.debug(
+                            `[inventory] destroyed item player=%d slot=%d item=%d qty=%d`,
+                            p.id,
+                            slotIndex,
+                            payload.itemId,
+                            destroyedQty,
+                        );
+                    } catch {}
+                };
+
+                this.widgetDialogHandler.openDialog(p, {
+                    kind: "sprite",
+                    id: "confirm_destroy_warning",
+                    itemId: payload.itemId,
+                    itemQuantity: slotEntry.quantity,
+                    lines: [
+                        "Are you sure you want to drop this item?",
+                        "You will <col=7f0000>permanently lose</col> it if you do.",
+                    ],
+                    clickToContinue: true,
+                    closeOnContinue: false,
+                    onContinue: () => {
+                        this.widgetDialogHandler.openDialogOptions(p, {
+                            id: "confirm_destroy",
+                            title: `Destroy ${itemDef?.name ?? "item"}?`,
+                            options: ["Yes", "No"],
+                            onSelect: (choice) => {
+                                if (choice === 0) doDestroy();
+                            },
+                        });
+                    },
+                });
+                return;
+            }
 
             // OSRS parity: Total value = per-item value * quantity (for stackable items like coins)
             // Special case: Coins (995) have value=0 in item definitions, but each coin is worth 1 GP

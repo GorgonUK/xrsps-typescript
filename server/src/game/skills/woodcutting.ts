@@ -373,3 +373,41 @@ export function buildWoodcuttingTileKey(tile: Vec2, level: number): string {
 }
 
 export type { WoodcuttingTreeDefinition as WoodcuttingTree };
+
+/**
+ * Lumberjack (tier-1 Leagues V relic) auto-fletch mapping.
+ *
+ * When the player has the relic, has the auto-fletch toggle enabled, and successfully
+ * chops a log listed here, the log is converted into arrow shafts (sent to bank) and the
+ * player is granted Fletching XP (regardless of Fletching level).
+ *
+ * OSRS parity values match the standard log -> arrow shaft fletching recipe:
+ *  - Regular logs (1511)  -> 15 shafts @ 5  XP
+ *  - Oak logs (1521)      -> 30 shafts @ 10 XP
+ *  - Willow logs (1519)   -> 45 shafts @ 15 XP
+ *  - Maple logs (1517)    -> 60 shafts @ 20 XP
+ *  - Yew logs (1515)      -> 75 shafts @ 25 XP
+ *  - Magic logs (1513)    -> 90 shafts @ 30 XP
+ */
+export interface LumberjackAutoFletchMapping {
+    arrowShaftQuantity: number;
+    fletchingXp: number;
+}
+
+export const ARROW_SHAFT_ITEM_ID = 52;
+
+export const LUMBERJACK_AUTO_FLETCH_BY_LOG: Record<number, LumberjackAutoFletchMapping> =
+    Object.freeze({
+        1511: { arrowShaftQuantity: 15, fletchingXp: 5 },
+        1521: { arrowShaftQuantity: 30, fletchingXp: 10 },
+        1519: { arrowShaftQuantity: 45, fletchingXp: 15 },
+        1517: { arrowShaftQuantity: 60, fletchingXp: 20 },
+        1515: { arrowShaftQuantity: 75, fletchingXp: 25 },
+        1513: { arrowShaftQuantity: 90, fletchingXp: 30 },
+    });
+
+export function getLumberjackAutoFletchMapping(
+    logItemId: number,
+): LumberjackAutoFletchMapping | undefined {
+    return LUMBERJACK_AUTO_FLETCH_BY_LOG[logItemId];
+}

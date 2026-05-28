@@ -1,0 +1,273 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+78,Mind Mithril Ore,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+88,Wield Mining gloves,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+132,String a Shortbow.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+133,String a Longbow.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+136,"String 1,000 Bows.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+146,Light a Fire.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+219,Bake a Cake.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+220,Bake a Pie.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+222,Add Toppings to a Pizza.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+254,Check the Health of a Tree.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+259,Cure a Diseased Plant.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+261,Use Super Compost.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+262,Use Ultra Compost.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+263,Set a Box Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+264,Set a Net Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+274,Successfully Catch a Creature with a Box Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+275,Successfully Catch a Creature with a Net Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+288,Successfully Reset a Failed Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+298,Complete 5 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+299,Complete 25 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+300,Complete 50 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+301,Complete 100 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+302,Complete 250 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+303,Complete 500 Slayer Tasks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+323,Learn a Slayer Unlock.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+324,Learn 5 Slayer Unlocks.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+327,Receive a Task from a Mid-Level Slayer Master.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+328,Receive a Task from a High-Level Slayer Master.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+329,Receive a Task from the Highest Slayer Master.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+330,Reach a 10 Task Streak.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+331,Reach a 50 Task Streak.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+332,Reach a 100 Task Streak.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+333,Reach a 250 Task Streak.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+334,Use a Slayer Ring.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+338,Loot a Rare Drop from a Slayer Creature.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+348,Cut a Sapphire.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+349,Cut an Emerald.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+350,Cut a Ruby.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+351,Cut a Diamond.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+352,Cut a Dragonstone.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+353,Cut an Onyx.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+359,Blow Molten Glass into Vials.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+360,Blow Glass Orbs.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+361,Blow Glass Lantern Lenses.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+362,Blow Glass Bowls.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+363,Spin Flax into Bow Strings.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+364,"Spin 1,000 Bow Strings.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+366,Fire Pottery in a Kiln.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+373,Cut 25 Gems.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+374,Cut 100 Gems.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+375,Cut 500 Gems.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+379,Tan Leather.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+380,Tan 100 Hides.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+403,Unfinished a Potion.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+404,Add a Secondary Ingredient to a Potion.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+417,Combine Potions into Four-Dose Potions.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+435,Cast a Wind Strike Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+436,Cast a Water Strike Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+437,Cast an Earth Strike Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+438,Cast a Fire Strike Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+439,Cast a Wind Bolt Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+440,Cast a Water Bolt Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+441,Cast an Earth Bolt Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+442,Cast a Fire Bolt Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+443,Cast a Wind Blast Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+444,Cast a Water Blast Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+445,Cast an Earth Blast Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+446,Cast a Fire Blast Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+447,Cast a Wind Wave Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+448,Cast a Water Wave Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+449,Cast an Earth Wave Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+450,Cast a Fire Wave Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+451,Cast a Surge Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+452,Cast a Barrage Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+453,Cast a Teleport Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+454,Cast 10 Teleport Spells.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+455,Cast 100 Teleport Spells.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+456,"Cast 1,000 Teleport Spells.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+457,Cast Low Level Alchemy.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+458,Cast High Level Alchemy.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+459,Alchemize 100 Items.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+460,"Alchemize 1,000 Items.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+461,Enchant Jewelry.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+462,Enchant 100 Jewelry Items.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+463,Cast a Curse Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+464,Cast a Bind Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+465,Cast a Snare Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+466,Cast an Entangle Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+467,Cast a Combat Spell Against a Monster.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+471,Cast a Multi-Target Spell.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+472,Cast an Ancient Magick spell,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+473,Cast a Lunar Magic spell,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+474,Charge an Orb.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+476,"Cast 1,000 Spells.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+477,"Cast 10,000 Spells.",need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+482,Fire Bronze Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+483,Fire Iron Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+484,Fire Steel Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+485,Fire Mithril Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+486,Fire Adamant Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+487,Fire Rune Arrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+498,Use a Special Attack with a Ranged Weapon.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+512,Hit a 10 Damage Melee Attack.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+513,Hit a 20 Damage Melee Attack.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+514,Hit a 30 Damage Melee Attack.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+515,Hit a 40 Damage Melee Attack.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+516,Hit a 50 Damage Melee Attack.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+517,Use a Special Attack Weapon.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+518,Use a Two-Handed Weapon.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+535,Complete a Skilling Outfit Set.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+650,Complete the Fortis Colosseum.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+651,Cross the River Lum.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+652,Climb the Lumbridge Castle Staircase.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+665,Reach the Bottom of the Stronghold of Security.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+676,Teleport to Varrock.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+677,Teleport to Lumbridge.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+678,Smelt a Bronze Bar in Lumbridge.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+686,Train at the Varrock Rooftop Course.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+687,Train at the Draynor Rooftop Course.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+691,Charge an Air Orb near Edgeville Dungeon.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+698,Open the Lumbridge Castle Basement Chest.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+703,Use a Canoe on the River Lum.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+704,Travel to Edgeville by Canoe.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+708,Fill a Bucket at the Lumbridge Kitchen Sink.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+709,Spin Flax in Lumbridge Castle.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+710,Bake a Cake in Lumbridge Castle.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+732,Trade with Gabooty in Tai Bwo Wannai.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+733,Repair a Fence in Tai Bwo Wannai.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+734,Cut Jungle in Tai Bwo Wannai.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+738,Fill Crates with Bananas.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+742,Explore the Kharazi Jungle.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+745,Travel to Port Sarim from Karamja.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+746,Visit the Shrimp and Parrot.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+748,Pray at the Altar in Tai Bwo Wannai.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+762,Cut a Teak Log in the Hardwood Grove.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+763,Cut a Mahogany Log in the Hardwood Grove.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+767,Visit the Shipyard.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+771,Cross a Rope Bridge in Karamja.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+772,Use an Agility Shortcut on Karamja.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+776,Set a Box Trap on Karamja.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+777,Fill an Inventory with Teak Logs.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+778,Fill an Inventory with Mahogany Logs.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+789,Cross the Falador North Wall Shortcut.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+790,Train at the Falador Rooftop Course.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+795,Smelt a Steel Bar in Falador.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+820,Fill a Sack with Potatoes in Rimmington.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+826,Pray at the Altar in Falador.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+828,Buy a Cape from the Falador Shield Shop.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+829,Buy a Pickaxe from Nurmof.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+834,Crack a Wall Safe in the Rogues’ Den.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+835,Complete a Rogues’ Den Maze Run.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+838,Teleport to Falador.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+839,Teleport to Taverley.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+841,Train on Crabs near Rimmington.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+846,Fill an Inventory with Coal in the Mining Guild.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+847,Fill an Inventory with Lobsters in Port Sarim.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+848,Fill an Inventory with Willow Logs near Port Sarim.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+855,Visit the Falador Hairdresser.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+857,Climb the Falador Castle Wall.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+870,Fill an Inventory with Coal in Fremennik.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+886,Use a Fairy Ring in Fremennik.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+888,Cross the Fremennik Log Balance.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+889,Teleport to Lunar Isle.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+890,Teleport to Waterbirth Island.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+892,Tan Hides in Fremennik.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+906,Fill a Bucket with Wax in Fremennik.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+909,Buy Fish from the Rellekka Market.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+914,Ride the Boat to Waterbirth Island.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+915,Ride the Boat to Miscellania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+919,Fill an Inventory with Arctic Pine Logs in Fremennik.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+923,Use an Enchanted Lyre Teleport.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+925,Fill an Inventory with Lobsters in Fremennik.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+936,Train at the Seers’ Village Rooftop Course.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+940,Fill an Inventory with Coal in Kandarin.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+948,Fill an Inventory with Maple Logs in Kandarin.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+958,Cross the Log Balance in Kandarin.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+959,Teleport to Camelot.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+960,Teleport to Ardougne.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+971,Spin Flax in Kandarin.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+990,Ride the Fishing Trawler Boat.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+997,Fill an Inventory with Flax in Kandarin.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+998,Fill an Inventory with Chinchompas in Kandarin.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1001,Use a Fairy Ring in Kandarin.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1014,Climb the Agility Pyramid.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1021,Fill an Inventory with Granite in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1022,Fill an Inventory with Sandstone in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1041,Teleport to Pollnivneach.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1042,Teleport to Nardah.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1044,Cast Ice Burst in the Desert.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1045,Cast Ice Barrage in the Desert.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1065,Use a Carpet Ride in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1066,Travel Between Desert Cities by Carpet.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1067,Fill Waterskins in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1068,Survive Desert Heat Without Taking Damage.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1070,Fill an Inventory with Granite in Pollnivneach.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1071,Fill an Inventory with Sandstone in Pollnivneach.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1072,Fill an Inventory with Red Salamanders in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1074,Use a Fairy Ring in the Desert.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1091,Complete a Floor of the Hallowed Sepulchre.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1093,Cross the Broken Bridge in Mort Myre.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1106,Teleport to Barrows.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1107,Cast Ice Burst in Morytania.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1108,Cast Ice Barrage in Morytania.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1136,Worship the Ectofuntus.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1137,Fill an Inventory with Buckets of Slime in Morytania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1138,Use a Ghostspeak Amulet in Morytania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1140,Loot the Barrows Chest.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1141,Complete a Barrows Run.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1146,Open a Shade Chest in Morytania.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1148,Use a Fairy Ring in Morytania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1149,Fill an Inventory with Slimy Eels in Morytania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1151,Fill an Inventory with Hollow Bark in Morytania.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1158,Travel Through Mort Myre Swamp.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1171,Cross a Tirannwn Tripwire Trap.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1174,Fill an Inventory with Soft Clay in Tirannwn.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1185,Set a Box Trap in Tirannwn.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1189,Teleport to Prifddinas.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1190,Cast Ice Barrage in Tirannwn.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1212,Use a Crystal Teleport Seed in Tirannwn.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1213,Charge a Crystal Teleport Seed.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1219,Fill an Inventory with Teak Logs in Tirannwn.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1221,Use a Fairy Ring in Tirannwn.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1223,Cross the Leaf Trap in Tirannwn.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1229,Fill an Inventory with Bass in Tirannwn.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1246,Cross the Wilderness Agility Pipe.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1258,Cast Ice Burst in the Wilderness.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1259,Cast Ice Barrage in the Wilderness.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1260,Teleport from Level 30 Wilderness.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1262,Open the Rogues’ Castle Chest.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1295,Charge a Glory at the Fountain of Rune.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1297,Restore Stats at Ferox Enclave.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1298,Use a Looting Bag in the Wilderness.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1299,Fill a Looting Bag in the Wilderness.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1300,Use a Burning Amulet to Teleport to the Wilderness.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1307,Use a Fairy Ring in the Wilderness.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1337,Fill an Inventory with Redwood Logs in Kourend.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1345,Set a Box Trap in Kourend.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1349,Teleport to Kourend Castle.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1350,Cast Resurrect Greater Ghost in Kourend.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1351,Cast Ward of Arceuus in Kourend.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1378,Use a Fairy Ring in Kourend.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1380,Fill an Inventory with Red Salamanders in Kourend.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1381,Fill an Inventory with Dense Essence Blocks in Kourend.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1383,Fill an Inventory with Teak Logs in Kourend.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1404,Use an Agility Shortcut in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1405,Cross the Broken Bridge in Varlamore.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1408,Fill an Inventory with Calcified Deposits in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1411,Fill an Inventory with Lobsters in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1415,Fill an Inventory with Mahogany Logs in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1422,Set a Box Trap in Varlamore.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1425,Cast Superior Demonbane in Varlamore.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1426,Teleport to Civitas illa Fortis.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1449,Use a Quetzal Transport in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1450,Ride a Quetzal in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1451,Use a Fairy Ring in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1453,Fill an Inventory with Mahogany Logs in Varlamore.,duplicate,world interaction,(unwired) world interaction,duplicate of task 1415,Remove or differentiate from task 1415
+1459,Fill an Inventory with Barronite in Varlamore.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1464,Cross Rooftops in Civitas illa Fortis.,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1466,Fill an Inventory with Calcified Deposits in Cam Torum.,need_hook,world interaction,(unwired) world interaction,interaction not wired to league tasks,Implement object/NPC interaction hook or script_manual
+1467,Achieve Level 10 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1468,Achieve Level 20 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1469,Achieve Level 30 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1470,Achieve Level 40 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1471,Achieve Level 50 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1472,Achieve Level 60 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1473,Achieve Level 70 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1474,Achieve Level 80 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1475,Achieve Level 90 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1476,Achieve Level 100 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1477,Achieve Level 110 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1478,Achieve Level 120 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger
+1479,Achieve Level 126 Combat,need_hook,,,unclassified mechanic,Assign completion_type and explicit trigger

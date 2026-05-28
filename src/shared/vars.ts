@@ -252,6 +252,23 @@ export const VARBIT_LEAGUE_MAGIC_MASTERY = 11582;
 export const VARBIT_LEAGUE_MASTERY_POINTS_TO_SPEND = 11583;
 export const VARBIT_LEAGUE_MASTERY_POINTS_EARNED = 11584;
 
+/**
+ * Trailblazer / Leagues V Echo tool toggle varbits (cache-verified r235).
+ * Each varbit is 2 bits wide and stores a packed pair of on/off flags:
+ *  - bit 0 = first toggle effect enabled
+ *  - bit 1 = second toggle effect enabled
+ *
+ * Power Miner (mining):
+ *  - bit 0 = auto-smelt ores, bit 1 = auto-cut gems
+ * Lumberjack (woodcutting):
+ *  - bit 0 = auto-burn logs, bit 1 = auto-fletch arrowshafts
+ * Animal Wrangler (fishing):
+ *  - bit 0 = auto-cook fish (second bit unused in OSRS)
+ */
+export const VARBIT_LEAGUE_TOOL_TOGGLE_WOODCUTTING = 18101;
+export const VARBIT_LEAGUE_TOOL_TOGGLE_FISHING = 18102;
+export const VARBIT_LEAGUE_TOOL_TOGGLE_MINING = 18103;
+
 // ========== LEAGUE MODE VARPS ==========
 
 /** Core league state/type - non-zero enables league mode */
@@ -262,6 +279,12 @@ export const VARP_LEAGUE_RELICS = 2632;
 
 /** Secondary league state */
 export const VARP_LEAGUE_GENERAL_2 = 2805;
+
+/**
+ * Trailblazer / Leagues V general varp (2804).
+ * Base varp for the Echo tool toggle varbits (18101-18103).
+ */
+export const VARP_LEAGUE_TRAILBLAZER_GENERAL = 2804;
 
 /** League points (currency) */
 export const VARP_LEAGUE_POINTS_CURRENCY = 2613;

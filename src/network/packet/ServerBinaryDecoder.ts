@@ -399,6 +399,7 @@ export function decodeServerPacket(data: Uint8Array | ArrayBuffer): DecodedServe
         }
 
         case ServerPacketId.INVENTORY_SNAPSHOT: {
+            const containerId = reader.readShort();
             const count = reader.readShort();
             const slots: any[] = [];
             for (let i = 0; i < count; i++) {
@@ -412,7 +413,11 @@ export function decodeServerPacket(data: Uint8Array | ArrayBuffer): DecodedServe
             }
             return {
                 type: "inventory",
-                payload: { kind: "snapshot", slots },
+                payload: {
+                    kind: "snapshot",
+                    slots,
+                    containerId,
+                },
             };
         }
 

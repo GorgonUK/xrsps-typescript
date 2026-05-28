@@ -8,7 +8,8 @@
       },
       {
         "closed": 881,
-        "opened": 882
+        "opened": 882,
+        "openDir": "none"
       },
       {
         "closed": 1518,
@@ -336,7 +337,8 @@
       },
       {
         "closed": 27443,
-        "opened": 27444
+        "opened": 27444,
+        "openDir": "none"
       },
       {
         "closed": 27485,

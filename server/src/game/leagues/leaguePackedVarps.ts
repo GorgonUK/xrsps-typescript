@@ -13,7 +13,11 @@ import {
     VARBIT_LEAGUE_RELIC_6,
     VARBIT_LEAGUE_RELIC_7,
     VARBIT_LEAGUE_RELIC_8,
+    VARBIT_LEAGUE_TOOL_TOGGLE_FISHING,
+    VARBIT_LEAGUE_TOOL_TOGGLE_MINING,
+    VARBIT_LEAGUE_TOOL_TOGGLE_WOODCUTTING,
     VARP_LEAGUE_RELICS,
+    VARP_LEAGUE_TRAILBLAZER_GENERAL,
 } from "../../../../src/shared/vars";
 
 type LeaguePackedVarpField = {
@@ -81,6 +85,16 @@ const LEAGUE_PACKED_VARPS: readonly LeaguePackedVarpDef[] = [
             { varbitId: VARBIT_MASTERY_POINT_UNLOCK_BASE + 7, startBit: 8, endBit: 11 },
             { varbitId: VARBIT_MASTERY_POINT_UNLOCK_BASE + 8, startBit: 12, endBit: 15 },
             { varbitId: VARBIT_MASTERY_POINT_UNLOCK_BASE + 9, startBit: 16, endBit: 19 },
+        ],
+    },
+    {
+        // Cache-verified (r235): each toggle varbit occupies a 2-bit field in varp 2804.
+        // Bit 0 of the field = first toggle effect, bit 1 = second toggle effect.
+        varpId: VARP_LEAGUE_TRAILBLAZER_GENERAL,
+        fields: [
+            { varbitId: VARBIT_LEAGUE_TOOL_TOGGLE_WOODCUTTING, startBit: 13, endBit: 14 },
+            { varbitId: VARBIT_LEAGUE_TOOL_TOGGLE_FISHING, startBit: 15, endBit: 16 },
+            { varbitId: VARBIT_LEAGUE_TOOL_TOGGLE_MINING, startBit: 17, endBit: 18 },
         ],
     },
 ] as const;

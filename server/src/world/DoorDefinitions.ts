@@ -7,13 +7,15 @@
  * Which way a single door rotates when it opens.
  * - "cw"  (clockwise):         rotation + 1 — default for most OSRS doors
  * - "ccw" (counter-clockwise): rotation - 1 — used for doors that swing the other way
+ * - "none" (no movement):      does not move tile or rotate (for manholes, etc)
  *
  *   CW  rotation 0 (W wall) → shifts West  | CCW → shifts South
  *   CW  rotation 1 (N wall) → shifts North | CCW → shifts West
  *   CW  rotation 2 (E wall) → shifts East  | CCW → shifts North
  *   CW  rotation 3 (S wall) → shifts South | CCW → shifts East
+ *   NONE: no tile or rotation change
  */
-export type DoorOpenDir = "cw" | "ccw";
+export type DoorOpenDir = "cw" | "ccw" | "none";
 
 /**
  * Single door definition - maps closed loc ID to opened loc ID

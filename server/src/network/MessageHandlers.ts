@@ -6,7 +6,7 @@
  */
 import type { WebSocket } from "ws";
 
-import { MAX_REAL_LEVEL, SkillId, getXpForLevel } from "../../../src/rs/skill/skills";
+import { MAX_REAL_LEVEL, SkillId, getXpForLevel, SKILL_IDS } from "../../../src/rs/skill/skills";
 import {
     MODIFIER_FLAG_CTRL,
     MODIFIER_FLAG_CTRL_SHIFT,
@@ -15,8 +15,10 @@ import { VARBIT_ACTIVE_SPELLBOOK } from "../../../src/shared/vars";
 import { getItemDefinition } from "../data/items";
 import { ALL_RUNE_ITEM_IDS, RUNE_IDS } from "../data/runes";
 import { getSpellData } from "../data/spells";
+import { MusicRegionService } from "../audio/MusicRegionService";
 import { getCollectionLogItems } from "../game/collectionlog";
 import { clearAutocastState } from "../game/combat/AutocastState";
+import { DEFAULT_RESPAWN_LOCATIONS } from "../game/death/types";
 import type { NpcState } from "../game/npc";
 import type { PlayerState } from "../game/player";
 import { logger } from "../utils/logger";
@@ -123,6 +125,7 @@ export interface MessageHandlerServices {
         to: number,
         opts: { insert: boolean; tab?: number },
     ) => void;
+    openBank: (player: PlayerState, opts?: { mode?: "bank" | "collect" }) => void;
 
     // Movement
     setPendingWalkCommand: (
@@ -132,6 +135,13 @@ export interface MessageHandlerServices {
     clearPendingWalkCommand: (ws: WebSocket) => void;
     clearActionsInGroup: (playerId: number, group: string) => number;
     canUseAdminTeleport: (player: PlayerState) => boolean;
+    /** Admin/debug: spawn an NPC of the given cache type id on the player's tile. */
+    spawnNpcAtPlayer: (
+        player: PlayerState,
+        npcTypeId: number,
+    ) =>
+        | { ok: true; npcId: number; typeId: number }
+        | { ok: false; message: string };
     teleportPlayer: (
         player: PlayerState,
         x: number,
@@ -208,6 +218,8 @@ export interface MessageHandlerServices {
     completeLeagueTask: (player: PlayerState, taskId: number) => any;
     getSideJournalLeaguesContentGroupId: (leagueType: number) => number;
     syncLeagueGeneralVarp: (player: PlayerState) => void;
+    /** Re-check league tasks tied to skill levels / total level / XP (e.g. after ::master) */
+    syncSkillProgressLeagueTasks: (playerId: number) => void;
 
     // Chat
     queueChatMessage: (msg: {
@@ -227,6 +239,25 @@ export interface MessageHandlerServices {
     enqueueLevelUpPopup: (player: PlayerState, data: any) => void;
     handleVoteCommand: (player: PlayerState, args: string[]) => string | undefined;
     handleItemSpawnerCommand: (player: PlayerState, args: string[]) => string | undefined;
+    handleReloadScriptsCommand: (player: PlayerState) => string;
+    /**
+     * Dispatch a `::<name> [args...]` chat command to a script-registered
+     * handler (registered via IScriptRegistry.registerChatCommand). Returns
+     * the dispatch outcome so this handler can fall through to legacy
+     * hardcoded commands when no script claims the name.
+     */
+    dispatchScriptChatCommand: (
+        player: PlayerState,
+        name: string,
+        args: string[],
+        raw: string,
+    ) =>
+        | { kind: "not_found" }
+        | { kind: "forbidden"; commandName: string }
+        | { kind: "handled"; commandName: string; response?: string };
+    isAdminPlayer: (player: PlayerState) => boolean;
+    /** Map square / music region lookup (optional until server audio init). */
+    getMusicRegionService: () => MusicRegionService | undefined;
 
     // Debug
     broadcast: (message: string | Uint8Array, context: string) => void;
@@ -1136,6 +1167,213 @@ const QUEST_DATA: Array<{
     },
 ];
 
+/**
+ * Help-table entry for an in-game `::` chat command.
+ *
+ * `usage` is the full syntax string we echo to the player (e.g. `"::tele <x> <y> [z]"`);
+ * keep it stable so players can copy-paste it. `adminOnly` is filtered against
+ * `services.canUseAdminTeleport` before rendering — non-admins never see admin commands.
+ *
+ * Categories are rendered in the order they first appear in the table.
+ */
+interface CommandHelpEntry {
+    readonly usage: string;
+    readonly description: string;
+    readonly category: "General" | "Items & Gear" | "Skills & Quests" | "Admin";
+    readonly adminOnly: boolean;
+}
+
+const COMMAND_HELP_ENTRIES: readonly CommandHelpEntry[] = [
+    // General
+    {
+        usage: "::commands",
+        description: "Show this list (alias: ::help).",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::position",
+        description: "Print your (x, y, z), region ID, and music region name. Alias: ::pos.",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::home",
+        description: "Teleport to the Lumbridge respawn point.",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::clear",
+        description: "Empty your inventory.",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::kill",
+        description: "Set your HP to 0.",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::levelup",
+        description: "Award a random skill +1 level (with the level-up popup).",
+        category: "General",
+        adminOnly: false,
+    },
+    {
+        usage: "::vote",
+        description: "Open the vote modal.",
+        category: "General",
+        adminOnly: false,
+    },
+    // Items & Gear
+    {
+        usage: "::item <itemId> [quantity]",
+        description: "Spawn an item by ID.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::itemspawner [query]",
+        description: "Open the item spawner modal, optionally pre-filtered by name.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::whip",
+        description: "Get an Abyssal whip.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::bond",
+        description: "Get a $5 Bond.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::allrunes [quantity]",
+        description: "Replace your inventory with every rune type (default 10,000 each).",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::randomitem",
+        description: "Add a random unowned collection log item to your inventory.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    {
+        usage: "::rubytest",
+        description: "Spawn a ruby-enchant test pack; raises Magic to 49 if lower.",
+        category: "Items & Gear",
+        adminOnly: false,
+    },
+    // Skills & Quests
+    {
+        usage: "::smithing <1-99>",
+        description: "Set your Smithing level.",
+        category: "Skills & Quests",
+        adminOnly: false,
+    },
+    {
+        usage: "::quest list",
+        description: "List quests that can be completed via this command.",
+        category: "Skills & Quests",
+        adminOnly: false,
+    },
+    {
+        usage: "::quest <name>",
+        description: "Mark a quest as completed (sets the relevant varp/varbits).",
+        category: "Skills & Quests",
+        adminOnly: false,
+    },
+    {
+        usage: "::scroll",
+        description: "Open a debug menu_indexed test menu.",
+        category: "Skills & Quests",
+        adminOnly: false,
+    },
+    // Admin
+    {
+        usage: "::tele <x> <y> [z]",
+        description: "Teleport to coordinates.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::npc <npcTypeId>",
+        description: "Spawn an NPC of the given type at your tile.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::openbank",
+        description: "Open your bank (`::bank` is intercepted by the client).",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::master",
+        description: "Set every skill to 99.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::maxmelee",
+        description: "Spawn a max melee loadout.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::maxranged",
+        description: "Spawn a max ranged loadout + 10,000 dragon arrows.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
+        usage: "::maxmagic",
+        description: "Spawn a max magic loadout.",
+        category: "Admin",
+        adminOnly: true,
+    },
+];
+
+function handleCommandsCommand(
+    sender: PlayerState,
+    isAdmin: boolean,
+    services: Pick<MessageHandlerServices, "queueChatMessage">,
+): void {
+    const reply = (text: string) =>
+        services.queueChatMessage({
+            messageType: "game",
+            text,
+            targetPlayerIds: [sender.id],
+        });
+
+    const visible = COMMAND_HELP_ENTRIES.filter((entry) => isAdmin || !entry.adminOnly);
+
+    // Group by category, preserving first-seen category order.
+    const order: string[] = [];
+    const byCategory = new Map<string, CommandHelpEntry[]>();
+    for (const entry of visible) {
+        if (!byCategory.has(entry.category)) {
+            order.push(entry.category);
+            byCategory.set(entry.category, []);
+        }
+        byCategory.get(entry.category)!.push(entry);
+    }
+
+    reply(`Available commands (${visible.length}${isAdmin ? ", admin" : ""}):`);
+    for (const category of order) {
+        reply(`<col=ffff00>--- ${category} ---</col>`);
+        for (const entry of byCategory.get(category)!) {
+            reply(`<col=ffffff>${entry.usage}</col> - ${entry.description}`);
+        }
+    }
+}
+
 function handleQuestCommand(
     sender: PlayerState,
     args: string[],
@@ -1210,6 +1448,12 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                 const parts = cmd.split(/\s+/).filter((part) => part.length > 0);
                 const root = parts[0] ?? "";
 
+                if (root === "commands" || root === "help") {
+                    handleCommandsCommand(sender, services.canUseAdminTeleport(sender), services);
+                    logger.info(`[cmd] ::${root} - Player ${sender.id} requested command list`);
+                    return;
+                }
+
                 if (root === "vote") {
                     const voteArgs = parts.slice(1);
                     const response = services.handleVoteCommand(sender, voteArgs);
@@ -1220,6 +1464,192 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                             targetPlayerIds: [sender.id],
                         });
                     }
+                    return;
+                }
+
+                // ::reload — hot-reload every script module without a server restart.
+                // Admin-only: live world state survives, but a broken module can
+                // break content for every connected player, so it's gated.
+                if (root === "reload" || root === "reloadscripts") {
+                    if (!services.isAdminPlayer(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You don't have permission to use ::reload.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    const response = services.handleReloadScriptsCommand(sender);
+                    if (response.trim()) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: response.trim(),
+                            targetPlayerIds: [sender.id],
+                        });
+                    }
+                    return;
+                }
+
+                // Script-registered commands take precedence over the
+                // hardcoded set below, but only AFTER ::reload — because
+                // ::reload's whole job is to swap script modules under us
+                // and must always reach the engine-level handler.
+                const scriptArgs = parts.slice(1);
+                const dispatch = services.dispatchScriptChatCommand(
+                    sender,
+                    root,
+                    scriptArgs,
+                    cmd,
+                );
+                if (dispatch.kind === "handled") {
+                    if (dispatch.response && dispatch.response.trim()) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: dispatch.response.trim(),
+                            targetPlayerIds: [sender.id],
+                        });
+                    }
+                    return;
+                }
+                if (dispatch.kind === "forbidden") {
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: `You don't have permission to use ::${dispatch.commandName}.`,
+                        targetPlayerIds: [sender.id],
+                    });
+                    return;
+                }
+
+                if (root === "position" || root === "pos") {
+                    const x = sender.tileX | 0;
+                    const y = sender.tileY | 0;
+                    const z = sender.level | 0;
+                    const regionId = MusicRegionService.getRegionId(x, y);
+                    const music = services.getMusicRegionService()?.getMusicForTile(x, y);
+                    const regionName = music?.trackName?.trim() || "Unknown area";
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: `${x}, ${y}, ${z} - Region ${regionId} - ${regionName}`,
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(`[cmd] ::position - Player ${sender.id} at ${x}, ${y}, ${z} region ${regionId}`);
+                    return;
+                }
+
+                if (root === "home") {
+                    const home = DEFAULT_RESPAWN_LOCATIONS.lumbridge;
+                    const result = services.requestTeleportAction(sender, {
+                        x: home.x,
+                        y: home.y,
+                        level: home.level,
+                        delayTicks: 0,
+                        cooldownTicks: 1,
+                        rejectIfPending: true,
+                        replacePending: false,
+                    });
+                    if (!result.ok) {
+                        if (result.reason === "cooldown") {
+                            services.queueChatMessage({
+                                messageType: "game",
+                                text: "You're already teleporting.",
+                                targetPlayerIds: [sender.id],
+                            });
+                        } else if (result.reason === "cannot_teleport") {
+                            services.queueChatMessage({
+                                messageType: "game",
+                                text: "You can't teleport right now.",
+                                targetPlayerIds: [sender.id],
+                            });
+                        }
+                        return;
+                    }
+                    logger.info(
+                        `[cmd] ::home - Player ${sender.id} teleporting to home (${home.x}, ${home.y}, ${home.level})`,
+                    );
+                    return;
+                }
+
+                if (root === "tele") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+
+                    const xArg = parts[1];
+                    const yArg = parts[2];
+                    const zArg = parts[3];
+                    const xParsed = xArg !== undefined ? Number.parseInt(xArg, 10) : NaN;
+                    const yParsed = yArg !== undefined ? Number.parseInt(yArg, 10) : NaN;
+                    const zParsed = zArg !== undefined ? Number.parseInt(zArg, 10) : sender.level;
+
+                    if (
+                        !Number.isFinite(xParsed) ||
+                        !Number.isFinite(yParsed) ||
+                        !Number.isFinite(zParsed)
+                    ) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Usage: ::tele <x> <y> [z]",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+
+                    const targetX = xParsed | 0;
+                    const targetY = yParsed | 0;
+                    const targetZ = zParsed | 0;
+
+                    if (targetX < 0 || targetX > 16383 || targetY < 0 || targetY > 16383) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Coordinates out of range (0-16383).",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    if (targetZ < 0 || targetZ > 3) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Plane out of range (0-3).",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+
+                    const result = services.requestTeleportAction(sender, {
+                        x: targetX,
+                        y: targetY,
+                        level: targetZ,
+                        delayTicks: 0,
+                        cooldownTicks: 1,
+                        requireCanTeleport: false,
+                        rejectIfPending: true,
+                        replacePending: false,
+                    });
+                    if (!result.ok) {
+                        if (result.reason === "cooldown") {
+                            services.queueChatMessage({
+                                messageType: "game",
+                                text: "You're already teleporting.",
+                                targetPlayerIds: [sender.id],
+                            });
+                        } else if (result.reason === "cannot_teleport") {
+                            services.queueChatMessage({
+                                messageType: "game",
+                                text: "You can't teleport right now.",
+                                targetPlayerIds: [sender.id],
+                            });
+                        }
+                        return;
+                    }
+
+                    logger.info(
+                        `[cmd] ::tele - Player ${sender.id} teleporting to (${targetX}, ${targetY}, ${targetZ})`,
+                    );
                     return;
                 }
 
@@ -1469,16 +1899,19 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                             `[cmd] ::levelup - Player ${sender.id} leveled up skill ${randomSkill} to ${newLevel}`,
                         );
                     }
+                    return;
                 } else if (cmd === "whip") {
                     const tx = sender.addItem(4151, 1, { assureFullInsertion: true });
                     if (tx.completed === 1) {
                         logger.info(`[cmd] ::whip - Gave player ${sender.id} an Abyssal whip`);
                     }
+                    return;
                 } else if (cmd === "bond") {
                     const tx = sender.addItem(50000, 1, { assureFullInsertion: true });
                     if (tx.completed === 1) {
                         logger.info(`[cmd] ::bond - Gave player ${sender.id} a $5 Bond`);
                     }
+                    return;
                 } else if (cmd.startsWith("item ")) {
                     const parts = cmd.split(" ").filter((p) => p.length > 0);
                     const itemId = parseInt(parts[1], 10);
@@ -1493,66 +1926,176 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                             );
                         }
                     }
+                    return;
                 } else if (cmd === "kill") {
                     logger.info(`[cmd] ::kill - Player ${sender.id} killed themselves`);
                     sender.setHitpointsCurrent(0);
-                } else if (
-                    root === "standard" ||
-                    root === "ancient" ||
-                    root === "lunar" ||
-                    root === "arceuus"
-                ) {
-                    // Varbit 4070 controls the active spellbook in CS2 scripts
-                    // 0 = standard, 1 = ancient, 2 = lunar, 3 = arceuus
-                    // Note: "::normal" is intercepted client-side by the OSRS CS2 chatbox
-                    // script (it toggles display mode), so we use "::standard" instead.
-                    const SPELLBOOK_VALUES: Record<string, number> = {
-                        standard: 0,
-                        ancient: 1,
-                        lunar: 2,
-                        arceuus: 3,
-                    };
-                    const value = SPELLBOOK_VALUES[root]!;
-                    // Update server-side state
-                    sender.setVarbitValue(VARBIT_ACTIVE_SPELLBOOK, value);
-                    // Transmit varbit to client
-                    services.queueVarbit(sender.id, VARBIT_ACTIVE_SPELLBOOK, value);
-
-                    // OSRS parity: Clear autocast when switching to a spellbook
-                    // that doesn't contain the current autocast spell.
-                    if (sender.autocastEnabled && sender.combatSpellId > 0) {
-                        const autocastSpellData = getSpellData(sender.combatSpellId);
-                        if (!autocastSpellData || autocastSpellData.spellbook !== root) {
-                            clearAutocastState(sender, {
-                                sendVarbit: (player, varbitId, varbitValue) =>
-                                    services.queueVarbit(player.id, varbitId, varbitValue),
-                            });
-                        }
+                    return;
+                }
+                else if (root === "maxmelee" || root === "maxranged" || root === "maxmagic") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
                     }
-                    // Run CS2 script 2610 to redraw the spellbook interface,
-                    // passing the varbit inline so the script sees it immediately
-                    const SCRIPT_MAGIC_SPELLBOOK_REDRAW = 2610;
-                    const SPELLBOOK_REDRAW_ARGS: (number | string)[] = [
-                        14286851, 14287045, 14287054, 14286849, 14287051,
-                        14287052, 14287053, 14286850, 14287047, 14287050,
-                        0, "Info", "Filters",
-                    ];
-                    services.queueWidgetEvent(sender.id, {
-                        action: "run_script",
-                        scriptId: SCRIPT_MAGIC_SPELLBOOK_REDRAW,
-                        args: SPELLBOOK_REDRAW_ARGS,
-                        varbits: { [VARBIT_ACTIVE_SPELLBOOK]: value },
-                    });
+
+                    type MaxGearSpawn = { itemId: number; quantity: number };
+                    let label: string;
+                    let gear: MaxGearSpawn[];
+                    if (root === "maxmelee") {
+                        label = "melee";
+                        gear = [
+                            { itemId: 26382, quantity: 1 }, // Torva full helm
+                            { itemId: 21295, quantity: 1 }, // Infernal cape
+                            { itemId: 19553, quantity: 1 }, // Amulet of torture
+                            { itemId: 26219, quantity: 1 }, // Osmumten's fang
+                            { itemId: 22322, quantity: 1 }, // Avernic defender
+                            { itemId: 26384, quantity: 1 }, // Torva platebody
+                            { itemId: 26386, quantity: 1 }, // Torva platelegs
+                            { itemId: 22981, quantity: 1 }, // Ferocious gloves
+                            { itemId: 13239, quantity: 1 }, // Primordial boots
+                            { itemId: 11773, quantity: 1 }, // Berserker ring (i)
+                        ];
+                    } else if (root === "maxranged") {
+                        label = "ranged";
+                        gear = [
+                            { itemId: 26217, quantity: 1 }, // Masori headdress
+                            { itemId: 22109, quantity: 1 }, // Ava's assembler
+                            { itemId: 19547, quantity: 1 }, // Necklace of anguish
+                            { itemId: 20997, quantity: 1 }, // Twisted bow
+                            { itemId: 25969, quantity: 1 }, // Masori chestplate
+                            { itemId: 25971, quantity: 1 }, // Masori chainskirt
+                            { itemId: 26235, quantity: 1 }, // Zaryte vambraces
+                            { itemId: 13237, quantity: 1 }, // Pegasian boots
+                            { itemId: 11771, quantity: 1 }, // Archers ring (i)
+                            { itemId: 11212, quantity: 10000 }, // Dragon arrow
+                        ];
+                    } else {
+                        label = "magic";
+                        gear = [
+                            { itemId: 21018, quantity: 1 }, // Ancestral hat
+                            { itemId: 21791, quantity: 1 }, // Imbued saradomin cape
+                            { itemId: 12002, quantity: 1 }, // Occult necklace
+                            { itemId: 27275, quantity: 1 }, // Tumeken's shadow
+                            { itemId: 21021, quantity: 1 }, // Ancestral robe top
+                            { itemId: 21024, quantity: 1 }, // Ancestral robe bottom
+                            { itemId: 19544, quantity: 1 }, // Tormented bracelet
+                            { itemId: 13235, quantity: 1 }, // Eternal boots
+                            { itemId: 11770, quantity: 1 }, // Seers ring (i)
+                            { itemId: 25985, quantity: 1 }, // Elidinis' ward
+                        ];
+                    }
+
+                    // Idempotent: skip items the player already has (equipped or in inventory).
+                    // This prevents duplicates when the command is re-run after equipping the gear.
+                    const equip = services.ensureEquipArray(sender);
+                    const inventory = sender.getInventoryEntries();
+                    let added = 0;
+                    let skipped = 0;
+                    for (const { itemId, quantity } of gear) {
+                        const alreadyEquipped = equip.some((id) => id === itemId);
+                        const alreadyInInventory = inventory.some(
+                            (entry) => entry.itemId === itemId && entry.quantity > 0,
+                        );
+                        if (alreadyEquipped || alreadyInInventory) {
+                            skipped++;
+                            continue;
+                        }
+                        const result = sender.addItem(itemId, quantity, {
+                            assureFullInsertion: false,
+                        });
+                        if (result.completed > 0) added++;
+                    }
+
+                    const summary = skipped > 0
+                        ? `Max ${label} gear topped up (${added} added, ${skipped} already present).`
+                        : added > 0
+                            ? `Max ${label} gear added to your inventory.`
+                            : `You already have max ${label} gear.`;
                     services.queueChatMessage({
                         messageType: "game",
-                        text: `Switched to the ${root} spellbook.`,
+                        text: summary,
                         targetPlayerIds: [sender.id],
                     });
                     logger.info(
-                        `[cmd] ::${root} - Player ${sender.id} switched to ${root} spellbook`,
+                        `[cmd] ::${root} - Player ${sender.id} spawned max ${label} gear (added=${added}, skipped=${skipped})`,
                     );
+                    return;
                 }
-                return;
+                else if (root === "master") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    for (const skillId of SKILL_IDS) {
+                        sender.setSkillXp(skillId, getXpForLevel(MAX_REAL_LEVEL));
+                    }
+                    services.syncSkillProgressLeagueTasks(sender.id);
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: "All skills set to 99.",
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(`[cmd] ::master - Player ${sender.id} set all skills to 99`);
+                    return;
+                }
+                else if (root === "openbank") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    services.openBank(sender, { mode: "bank" });
+                    logger.info(`[cmd] ::openbank - Player ${sender.id} opened their bank`);
+                    return;
+                } else if (root === "npc") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    const idRaw = parts[1];
+                    const npcTypeId = idRaw !== undefined ? parseInt(idRaw, 10) : NaN;
+                    if (!Number.isFinite(npcTypeId) || npcTypeId <= 0) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Usage: ::npc <npcTypeId>",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    const result = services.spawnNpcAtPlayer(sender, npcTypeId);
+                    if (!result.ok) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: result.message,
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: `Spawned NPC type ${result.typeId} (world index ${result.npcId}).`,
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(
+                        `[cmd] ::npc - Player ${sender.id} spawned npc type ${result.typeId} index ${result.npcId}`,
+                    );
+                    return;
+                }
             }
 
             // Regular chat message

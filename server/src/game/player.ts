@@ -229,6 +229,11 @@ const DEFAULT_SKILL_XP: Partial<Record<SkillId, number>> = {
     [SkillId.Prayer]: getXpForLevel(99),
 };
 
+/** Default XP for a new player skill — used for league "first level up" checks */
+export function getDefaultSkillXpForPlayer(skillId: SkillId): number {
+    return DEFAULT_SKILL_XP[skillId] ?? 0;
+}
+
 const SKILL_XP_PRECISION = 10;
 const ZERO_PERSISTENT_VARPS = new Set<number>([
     VARP_MUSIC_VOLUME,
@@ -427,6 +432,11 @@ export interface PlayerPersistentVars {
     };
     follower?: PlayerFollowerPersistentEntry;
     playTimeSeconds?: number;
+    /**
+     * Friendly Forager (Leagues V tier-2 relic) Forager's Pouch contents.
+     * Persists across sessions; loaded into `player.foragerPouch`.
+     */
+    foragerPouch?: Array<{ itemId: number; quantity: number }>;
 }
 
 export class PlayerState extends Actor {
@@ -434,6 +444,13 @@ export class PlayerState extends Actor {
 
     __leagueRelicPendingSelection?: unknown;
     __leagueMasteryPendingSelection?: unknown;
+
+    /**
+     * Friendly Forager (Leagues V tier-2 relic) Forager's Pouch state. Lazily
+     * allocated on first use via `getOrCreateForagerPouch(player)` so players
+     * who never select the relic pay zero memory. Persisted via PlayerPersistentVars.
+     */
+    foragerPouch?: import("./leagues/foragerPouch").ForagerPouchStore;
 
     override readonly isPlayer = true;
     widgets: PlayerWidgetManager;
@@ -2759,6 +2776,12 @@ export class PlayerState extends Actor {
                 npcTypeId: this.followerState.npcTypeId,
             };
         }
+        if (this.foragerPouch && !this.foragerPouch.isEmpty()) {
+            snapshot.foragerPouch = this.foragerPouch.entries().map((e) => ({
+                itemId: e.itemId,
+                quantity: e.quantity,
+            }));
+        }
         snapshot.accountCreationTimeMs = Math.max(
             0,
             Number.isFinite(this.accountCreationTimeMs)
@@ -2949,6 +2972,15 @@ export class PlayerState extends Actor {
         this.loadCollectionLogSnapshot(state.collectionLog);
         this.setFollowerState(state.follower);
         this.setActiveFollowerNpcId(undefined);
+        // Friendly Forager pouch contents (lazy-allocated only when there's
+        // saved data; players without the relic stay at undefined).
+        if (Array.isArray(state.foragerPouch) && state.foragerPouch.length > 0) {
+            const { getOrCreateForagerPouch } =
+                require("./leagues/foragerPouch") as typeof import("./leagues/foragerPouch");
+            getOrCreateForagerPouch(this).replaceFromSnapshot(state.foragerPouch);
+        } else {
+            this.foragerPouch = undefined;
+        }
     }
 
     getFollowerState(): PlayerFollowerPersistentEntry | undefined {

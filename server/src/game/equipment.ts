@@ -4,6 +4,7 @@ import {
     deriveAdditionalEquipSlotsFromParams,
     deriveEquipSlotFromParams,
 } from "../../../src/rs/config/player/Equipment";
+import type { EquipmentType } from "../data/items";
 import { getItemDefinition } from "../data/items";
 import type { InventoryAddResult, PlayerAppearance } from "./player";
 
@@ -51,12 +52,52 @@ export function ensureEquipQtyArrayOn(
     return equipQty;
 }
 
+function equipSlotFromItemEquipmentType(t: EquipmentType | undefined): EquipmentSlot | undefined {
+    if (!t || t === "NONE") return undefined;
+    switch (t) {
+        case "AMULET":
+            return EquipmentSlot.AMULET;
+        case "ARROWS":
+            return EquipmentSlot.AMMO;
+        case "BODY":
+        case "PLATEBODY":
+            return EquipmentSlot.BODY;
+        case "BOOTS":
+            return EquipmentSlot.BOOTS;
+        case "CAPE":
+        case "HOODED_CAPE":
+            return EquipmentSlot.CAPE;
+        case "COIF":
+        case "FULL_HELMET":
+        case "HAT":
+        case "MASK":
+        case "MED_HELMET":
+            return EquipmentSlot.HEAD;
+        case "GLOVES":
+            return EquipmentSlot.GLOVES;
+        case "LEGS":
+            return EquipmentSlot.LEGS;
+        case "RING":
+            return EquipmentSlot.RING;
+        case "SHIELD":
+            return EquipmentSlot.SHIELD;
+        case "WEAPON":
+            return EquipmentSlot.WEAPON;
+        default:
+            return undefined;
+    }
+}
+
 export function inferEquipSlot(
     itemId: number,
     getObjType: (id: number) => ObjType | undefined,
 ): number | undefined {
     const obj = getObjType(itemId);
-    return deriveEquipSlotFromParams(obj);
+    const fromParams = deriveEquipSlotFromParams(obj);
+    if (fromParams !== undefined) {
+        return fromParams;
+    }
+    return equipSlotFromItemEquipmentType(getItemDefinition(itemId)?.equipmentType);
 }
 
 export function isTwoHanded(itemId: number): boolean {

@@ -51,6 +51,9 @@ export class LeagueTaskIndex {
     // Combat-level challenges - checked on every NPC kill (small list)
     private npcKillCombatLevelChallenges: ParsedChallenge[] = [];
 
+    /** Tasks checked when skills / total level / XP change or on login */
+    private skillProgressTasks: ParsedTask[] = [];
+
     // Stats for debugging
     private parsedCount = 0;
     private unparsedCount = 0;
@@ -137,7 +140,12 @@ export class LeagueTaskIndex {
                 }
                 break;
 
-            // Tier 2+ triggers - not indexed yet
+            case "level_reach":
+            case "total_level_reach":
+            case "xp_reach":
+                this.skillProgressTasks.push(parsed);
+                break;
+
             default:
                 break;
         }
@@ -200,6 +208,12 @@ export class LeagueTaskIndex {
                 for (const itemId of trigger.itemIds) {
                     this.addToIndex(this.itemCraftToTasks, itemId, parsed);
                 }
+                break;
+
+            case "level_reach":
+            case "total_level_reach":
+            case "xp_reach":
+                this.skillProgressTasks.push(parsed);
                 break;
 
             default:
@@ -312,6 +326,13 @@ export class LeagueTaskIndex {
         return this.itemCraftToTasks.get(itemId) ?? [];
     }
 
+    /**
+     * Tasks that depend on skill levels, total level, or XP (checked on login / XP gain).
+     */
+    getSkillProgressTasks(): ParsedTask[] {
+        return this.skillProgressTasks;
+    }
+
     // === Challenge Lookup methods ===
 
     /**
@@ -366,6 +387,7 @@ export class LeagueTaskIndex {
             itemEquip: number;
             itemObtain: number;
             itemCraft: number;
+            skillProgress: number;
         };
         challengeIndexSizes: {
             npcKill: number;
@@ -387,6 +409,7 @@ export class LeagueTaskIndex {
                 itemEquip: this.itemEquipToTasks.size,
                 itemObtain: this.itemObtainToTasks.size,
                 itemCraft: this.itemCraftToTasks.size,
+                skillProgress: this.skillProgressTasks.length,
             },
             challengeIndexSizes: {
                 npcKill: this.npcIdToChallenges.size,

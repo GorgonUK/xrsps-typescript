@@ -243,6 +243,11 @@ export const SCRIPT_MANIFEST: ScriptManifestEntry[] = [
         watch: [path.resolve(MODULE_DIR, "modules/thieving.ts")],
     },
     {
+        id: "skills.hunter",
+        load: loadModule("modules/skills/hunter", "hunterModule"),
+        watch: [path.resolve(MODULE_DIR, "modules/skills/hunter.ts")],
+    },
+    {
         id: "consumables",
         load: loadModule("modules/items/consumables", "consumablesModule"),
         watch: [path.resolve(MODULE_DIR, "modules/items/consumables.ts")],
@@ -256,6 +261,16 @@ export const SCRIPT_MANIFEST: ScriptManifestEntry[] = [
         id: "packs",
         load: loadModule("modules/items/packs", "packsModule"),
         watch: [path.resolve(MODULE_DIR, "modules/items/packs.ts")],
+    },
+    {
+        id: "items.echo-tool-toggles",
+        load: loadModule("modules/items/echoToolToggles", "echoToolTogglesModule"),
+        watch: [path.resolve(MODULE_DIR, "modules/items/echoToolToggles.ts")],
+    },
+    {
+        id: "leagues.tier2-relics",
+        load: loadModule("modules/relics/tier2Relics", "tier2RelicsModule"),
+        watch: [path.resolve(MODULE_DIR, "modules/relics/tier2Relics.ts")],
     },
     {
         id: "demo.interactions",

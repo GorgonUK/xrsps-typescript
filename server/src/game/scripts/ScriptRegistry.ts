@@ -1,4 +1,7 @@
 import {
+    type ChatCommandEntry,
+    type ChatCommandHandler,
+    type ChatCommandOptions,
     type EquipmentActionHandler,
     type IScriptRegistry,
     type ItemOnItemHandler,
@@ -68,6 +71,8 @@ export class ScriptRegistry implements IScriptRegistry {
     private readonly widgetHandlers = new Map<RegistryKey, WidgetActionHandler[]>();
     /** RSMod-style button handlers keyed by (interfaceId << 16) | componentId */
     private readonly buttonHandlers = new Map<number, WidgetActionHandler>();
+    /** Chat command handlers keyed by lowercased command name. */
+    private readonly chatCommands = new Map<string, ChatCommandEntry>();
 
     registerNpcInteraction(
         npcId: number,
@@ -273,6 +278,34 @@ export class ScriptRegistry implements IScriptRegistry {
         };
     }
 
+    registerChatCommand(
+        name: string,
+        handler: ChatCommandHandler,
+        options?: ChatCommandOptions,
+    ): ScriptRegistrationResult {
+        const key = name.trim().toLowerCase();
+        if (!key) {
+            return { unregister: () => {} };
+        }
+        const entry: ChatCommandEntry = { handler, options: options ?? {} };
+        this.chatCommands.set(key, entry);
+        return {
+            unregister: () => {
+                // Defensive: only remove if THIS registration is still active.
+                // Prevents a stale disposer (from a previous hot-reload pass)
+                // from clobbering a freshly-re-registered handler.
+                const current = this.chatCommands.get(key);
+                if (current === entry) {
+                    this.chatCommands.delete(key);
+                }
+            },
+        };
+    }
+
+    findChatCommand(name: string): ChatCommandEntry | undefined {
+        return this.chatCommands.get(name.trim().toLowerCase());
+    }
+
     findNpcInteraction(npcId: number, option?: string): NpcInteractionHandler | undefined {
         const key = makeNpcKey(npcId, option);
         const direct = this.npcHandlers.get(key);
@@ -293,6 +326,9 @@ export class ScriptRegistry implements IScriptRegistry {
         const key = makeLocKey(locId, action);
         const handler = this.locHandlers.get(key);
         if (handler) return handler;
+        // Loc-only default: register with action omitted (key `${locId}#`) for cache/client mismatches.
+        const locDefault = this.locHandlers.get(makeLocKey(locId, undefined));
+        if (locDefault) return locDefault;
         const actionHandler = this.locActionHandlers.get(normalizeOption(action));
         return actionHandler;
     }
@@ -397,5 +433,6 @@ export class ScriptRegistry implements IScriptRegistry {
         this.tickHandlers.clear();
         this.widgetHandlers.clear();
         this.buttonHandlers.clear();
+        this.chatCommands.clear();
     }
 }

@@ -609,7 +609,7 @@ export class DoorStateManager {
      */
     private handleSingleDoorExplicit(
         params: ResolvedDoorToggleParams,
-        singleDef: { closed: number; opened: number; openDir?: "cw" | "ccw" },
+        singleDef: { closed: number; opened: number; openDir?: "cw" | "ccw" | "none" },
         key: string,
     ): DoorToggleResult {
         const { x, y, level, currentId, rotation, locType, currentTick } = params;
@@ -621,16 +621,23 @@ export class DoorStateManager {
             : undefined;
 
         // OSRS parity: doors can swing clockwise (default) or counter-clockwise.
-        const openCw = singleDef.openDir !== "ccw";
-        const newRotation = isClosed
-            ? openCw ? (rotation + 1) & 3 : (rotation - 1 + 4) & 3
-            : openCw ? (rotation - 1 + 4) & 3 : (rotation + 1) & 3;
+        // Support openDir: 'none' for doors that do not move tile when opened (e.g., manholes)
+        const openDir = singleDef.openDir;
+        const openCw = openDir !== "ccw" && openDir !== "none";
+        const noMove = openDir === "none";
+        const newRotation = noMove
+            ? rotation
+            : isClosed
+                ? openCw ? (rotation + 1) & 3 : (rotation - 1 + 4) & 3
+                : openCw ? (rotation - 1 + 4) & 3 : (rotation + 1) & 3;
 
-        const newTile = isClosed
-            ? this.getOpenedTilePosition(x, y, rotation, openCw)
-            : trackedOpen
-            ? { x: trackedOpen.entry.closedX, y: trackedOpen.entry.closedY }
-            : this.getClosedTilePositionFromOpened(x, y, rotation, openCw);
+        const newTile = noMove
+            ? { x, y }
+            : isClosed
+                ? this.getOpenedTilePosition(x, y, rotation, openCw)
+                : trackedOpen
+                    ? { x: trackedOpen.entry.closedX, y: trackedOpen.entry.closedY }
+                    : this.getClosedTilePositionFromOpened(x, y, rotation, openCw);
         const newKey = this.makeKey(newTile.x, newTile.y, level);
         const oldLoc: LocInfo = { x, y, level, locId: currentId, rotation, locType };
         const newLoc: LocInfo = {

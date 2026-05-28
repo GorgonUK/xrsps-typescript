@@ -72,6 +72,7 @@ class AppearanceWriter {
  *
  * Wire slot → EquipmentSlot (server equip array index) for items.
  * Slots 6(arms), 8(hair), 11(jaw) never carry items.
+ * Ring/ammo are not represented on all revisions’ 12-slot composition; inv 94 sync carries them.
  */
 const wireToEquipSlot: Record<number, number> = {
     0: EquipmentSlot.HEAD,

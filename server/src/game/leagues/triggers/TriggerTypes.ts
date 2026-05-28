@@ -2,6 +2,7 @@
  * League task trigger type definitions.
  * These define what event completes a task.
  */
+import type { SkillId } from "../../../../../src/rs/skill/skills";
 
 // Tier 1 - Direct ID lookup triggers
 export type NpcKillTrigger = {
@@ -38,11 +39,30 @@ export type QuestCompleteTrigger = {
     questId: number;
 };
 
-// Tier 2 - Stateful triggers (future)
+// Tier 2 - Skill / account progress (indexed; evaluated against live player skills)
 export type LevelReachTrigger = {
     type: "level_reach";
-    skillId?: number; // undefined = any skill
     level: number;
+    /** Specific skill must be at least `level` */
+    skillId?: SkillId;
+    /** Any non-excluded skill must be at least `level` */
+    anySkill?: boolean;
+    excludedSkillIds?: SkillId[];
+    /** Every skill must be at least `level` */
+    allSkills?: boolean;
+    /** "Achieve Your First Level Up" — any skill above default starting level */
+    firstLevelUp?: boolean;
+};
+
+export type TotalLevelReachTrigger = {
+    type: "total_level_reach";
+    minTotalLevel: number;
+};
+
+export type XpReachTrigger = {
+    type: "xp_reach";
+    skillId: SkillId;
+    minXp: number;
 };
 
 export type XpGainTrigger = {
@@ -71,6 +91,8 @@ export type TaskTrigger =
     | ItemCraftTrigger
     | QuestCompleteTrigger
     | LevelReachTrigger
+    | TotalLevelReachTrigger
+    | XpReachTrigger
     | XpGainTrigger
     | AreaEnterTrigger
     | CustomTrigger;

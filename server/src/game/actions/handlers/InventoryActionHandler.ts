@@ -459,7 +459,7 @@ export class InventoryActionHandler {
             data.equipSlot !== undefined
                 ? Math.max(0, Math.min(EQUIP_SLOT_COUNT - 1, data.equipSlot))
                 : this.services.resolveEquipSlot(desiredItemId);
-        if (equipSlot === undefined) {
+        if (equipSlot === undefined || equipSlot < 0) {
             return { ok: false, reason: "item_not_equippable" };
         }
         const inv = this.services.getInventory(player);

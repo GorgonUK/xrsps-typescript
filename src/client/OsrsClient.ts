@@ -81,7 +81,7 @@ import { LocTypeLoader } from "../rs/config/loctype/LocTypeLoader";
 import { NpcTypeLoader } from "../rs/config/npctype/NpcTypeLoader";
 import { ObjModelLoader } from "../rs/config/objtype/ObjModelLoader";
 import { ObjTypeLoader } from "../rs/config/objtype/ObjTypeLoader";
-import { EquipToDisplaySlot, EquipmentSlot } from "../rs/config/player/Equipment";
+import { DisplayToEquipSlot, EquipToDisplaySlot, EquipmentSlot } from "../rs/config/player/Equipment";
 import { PlayerAppearance } from "../rs/config/player/PlayerAppearance";
 import { PLAYER_BODY_RECOLOR_TO_1 } from "../rs/config/player/PlayerDesignColors";
 import type { SeqSoundEffect, SeqType } from "../rs/config/seqtype/SeqType";
@@ -4102,6 +4102,9 @@ export class OsrsClient {
                 "fill",
                 "craft",
                 "check",
+                // Hunter trap items (bird snare, box trap, etc.) use "Lay" as
+                // their primary left-click; same single-item action plumbing.
+                "lay",
             ];
             if (isInventoryItem && inventoryItemActions.includes(optionLower)) {
                 const targetSlot = event.slot ?? event.widget.childIndex ?? childId;
@@ -7917,7 +7920,7 @@ export class OsrsClient {
                     objTypeLoader: this.objTypeLoader,
                     modelLoader: this.modelLoader,
                     textureLoader: this.textureLoader,
-                    npcTypeLoader: undefined,
+                    npcTypeLoader: this.npcTypeLoader,
                     seqTypeLoader: this.seqTypeLoader,
                     seqFrameLoader: this.seqFrameLoader,
                     skeletalSeqLoader: this.loaderFactory.getSkeletalSeqLoader?.(),
@@ -7973,6 +7976,94 @@ export class OsrsClient {
             this.syncEquipmentInventory(equip, equipQty);
         }
         return new PlayerAppearance(gender, colors, kits, equip, headIcons);
+    }
+
+    /**
+     * Authoritative worn equipment snapshot (inv 94) drives the local player's
+     * PlayerAppearance.equip + base model. This guarantees the rendered model
+     * reflects equipped items even if the player_sync appearance block is delayed,
+     * dropped, or otherwise fails to update the cached model the same tick.
+     */
+    private applyWornSnapshotToLocalAppearance(
+        slots: ReadonlyArray<{ slot: number; itemId: number; quantity: number }>,
+    ): void {
+        const ecsIndex = this.playerEcs.getIndexForServerId(this.controlledPlayerServerId);
+        if (ecsIndex === undefined) return;
+        const current = this.playerEcs.getAppearance(ecsIndex);
+        if (!current) return;
+
+        const newEquip = new Array<number>(14).fill(-1);
+        const newEquipQty = new Array<number>(14).fill(0);
+        for (const entry of slots) {
+            const eq = DisplayToEquipSlot[entry.slot | 0];
+            if (eq === undefined) continue;
+            const itemId = entry.itemId | 0;
+            if (itemId <= 0) continue;
+            newEquip[eq] = itemId;
+            newEquipQty[eq] = eq === EquipmentSlot.AMMO ? Math.max(1, entry.quantity | 0) : 1;
+        }
+        this.replaceLocalAppearanceEquip(ecsIndex, current, newEquip, newEquipQty);
+    }
+
+    private applyWornSlotToLocalAppearance(displaySlot: number, itemId: number): void {
+        const ecsIndex = this.playerEcs.getIndexForServerId(this.controlledPlayerServerId);
+        if (ecsIndex === undefined) return;
+        const current = this.playerEcs.getAppearance(ecsIndex);
+        if (!current) return;
+        const eq = DisplayToEquipSlot[displaySlot | 0];
+        if (eq === undefined) return;
+
+        const newEquip = (current.equip ?? []).slice();
+        while (newEquip.length < 14) newEquip.push(-1);
+        newEquip[eq] = (itemId | 0) > 0 ? itemId | 0 : -1;
+        this.replaceLocalAppearanceEquip(ecsIndex, current, newEquip);
+    }
+
+    private replaceLocalAppearanceEquip(
+        ecsIndex: number,
+        current: PlayerAppearance,
+        equip: number[],
+        equipQty?: number[],
+    ): void {
+        let changed = false;
+        const prev = current.equip ?? [];
+        const len = Math.max(prev.length, equip.length, 14);
+        for (let i = 0; i < len; i++) {
+            const a = (prev[i] ?? -1) | 0;
+            const b = (equip[i] ?? -1) | 0;
+            if (a !== b) {
+                changed = true;
+                break;
+            }
+        }
+        if (!changed) return;
+
+        const next = new PlayerAppearance(
+            current.gender,
+            Array.isArray(current.colors) ? current.colors.slice() : [],
+            Array.isArray(current.kits) ? current.kits.slice() : [],
+            equip,
+            current.headIcons ? { ...current.headIcons } : { prayer: -1 },
+        );
+        if (equipQty) (next as any).equipQty = equipQty;
+        this.playerEcs.setAppearance(ecsIndex, next);
+
+        try {
+            this.playerEcs.ensureBaseForIndex(ecsIndex, {
+                idkTypeLoader: this.idkTypeLoader,
+                objTypeLoader: this.objTypeLoader,
+                modelLoader: this.modelLoader,
+                textureLoader: this.textureLoader,
+                npcTypeLoader: this.npcTypeLoader,
+                seqTypeLoader: this.seqTypeLoader,
+                seqFrameLoader: this.seqFrameLoader,
+                skeletalSeqLoader: this.loaderFactory.getSkeletalSeqLoader?.(),
+                varManager: this.varManager,
+                basTypeLoader: this.basTypeLoader,
+            });
+        } catch (err) {
+            console.warn("[OsrsClient] worn-equip base rebuild failed", err);
+        }
     }
 
     /** Sync the equipment inventory from appearance equip array for CS2 INV_GETOBJ(94, slot) */
@@ -9870,6 +9961,32 @@ export class OsrsClient {
 
     private handleInventoryServerUpdate(update: InventoryServerUpdate): void {
         if (!update) return;
+        const containerId = update.containerId ?? 93;
+
+        if (containerId === 94) {
+            if (update.kind === "snapshot") {
+                const slots = Array.isArray(update.slots)
+                    ? update.slots.map((slot) => ({
+                          slot: Math.max(0, Math.min(13, slot.slot | 0)),
+                          itemId: slot.itemId | 0,
+                          quantity: typeof slot.quantity === "number" ? slot.quantity | 0 : 0,
+                      }))
+                    : [];
+                this.equipment.setSnapshot(slots, { selectedSlot: null });
+                this.applyWornSnapshotToLocalAppearance(slots);
+                markInvTransmit(94);
+            } else if (update.kind === "slot" && update.slot) {
+                const idx = Math.max(0, Math.min(13, update.slot.slot | 0));
+                const itemId = update.slot.itemId | 0;
+                const qty =
+                    typeof update.slot.quantity === "number" ? update.slot.quantity | 0 : 0;
+                this.equipment.setSlot(idx, itemId, qty);
+                this.applyWornSlotToLocalAppearance(idx, itemId);
+                markInvTransmit(94);
+            }
+            return;
+        }
+
         this.inventorySeededFromServer = true;
 
         try {

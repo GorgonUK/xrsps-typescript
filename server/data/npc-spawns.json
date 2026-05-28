@@ -169886,12 +169886,83 @@
         "wanderRadius": 0
     },
     {
-        "level": 338,
-        "name": "Scurrius",
-        "x": 3291,
-        "y": 9868,
-        "id": 7221,
-        "direction": 0,
-        "wanderRadius": 0
+        "level": 0,
+        "name": "Crimson swift",
+        "x": 2549,
+        "y": 2922,
+        "id": 5549,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Crimson swift",
+        "x": 2552,
+        "y": 2925,
+        "id": 5549,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Crimson swift",
+        "x": 2546,
+        "y": 2927,
+        "id": 5549,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Golden warbler",
+        "x": 3424,
+        "y": 3144,
+        "id": 5551,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Golden warbler",
+        "x": 3427,
+        "y": 3147,
+        "id": 5551,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Ferret",
+        "x": 2364,
+        "y": 3597,
+        "id": 1505,
+        "wanderRadius": 4
+    },
+    {
+        "level": 0,
+        "name": "Ferret",
+        "x": 2367,
+        "y": 3600,
+        "id": 1505,
+        "wanderRadius": 4
+    },
+    {
+        "level": 0,
+        "name": "Chinchompa",
+        "x": 2553,
+        "y": 2974,
+        "id": 2910,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Chinchompa",
+        "x": 2556,
+        "y": 2977,
+        "id": 2910,
+        "wanderRadius": 5
+    },
+    {
+        "level": 0,
+        "name": "Carnivorous chinchompa",
+        "x": 2559,
+        "y": 2972,
+        "id": 2911,
+        "wanderRadius": 5
     }
 ]

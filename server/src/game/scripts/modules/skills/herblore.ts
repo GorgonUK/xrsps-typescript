@@ -1,5 +1,9 @@
 import { SkillId } from "../../../../../../src/rs/skill/skills";
 import type { PlayerState } from "../../../player";
+import {
+    onPotionCraftSecondary,
+    shouldGrantForagerBonusPotion,
+} from "../../../leagues/relicHooks";
 import { logger } from "../../../../utils/logger";
 import { type ScriptModule } from "../../types";
 
@@ -179,7 +183,50 @@ export const herbloreModule: ScriptModule = {
                 const unfSlot = srcIsUnf ? source.slot : target.slot;
                 const secSlot = srcIsUnf ? target.slot : source.slot;
                 if (!consumeItem(player, unfSlot)) return;
-                setInventorySlot(player, secSlot, f.product3, 1);
+
+                // Friendly Forager (Leagues V tier-2 relic):
+                //   1. Pull a saved secondary out of the pouch first if available.
+                //   2. Otherwise roll the relic's secondarySaveChance to skip
+                //      consuming the inventory secondary entirely.
+                //   3. Otherwise consume normally.
+                const consumeOutcome = onPotionCraftSecondary(player, f.secondary);
+                if (consumeOutcome === "consumed_inventory") {
+                    setInventorySlot(player, secSlot, f.product3, 1);
+                } else {
+                    // Pouch / relic save: produce the potion without occupying
+                    // the secondary slot. Add the potion via addItemToInventory
+                    // so the secondary stack stays untouched.
+                    services.addItemToInventory(player, f.product3, 1);
+                }
+
+                if (consumeOutcome === "saved_pouch") {
+                    services.sendGameMessage(
+                        player,
+                        "Your Forager's Pouch supplies the secondary ingredient.",
+                    );
+                } else if (consumeOutcome === "saved_relic") {
+                    services.sendGameMessage(
+                        player,
+                        "Your Friendly Forager relic preserves the secondary ingredient.",
+                    );
+                }
+
+                // Friendly Forager: chance to roll a bonus potion (extra dose
+                // / extra product). The bonus potion is awarded to the
+                // inventory and grants normal XP.
+                if (shouldGrantForagerBonusPotion(player)) {
+                    const bonus = services.addItemToInventory(player, f.product3, 1);
+                    if (bonus.added > 0) {
+                        services.sendGameMessage(
+                            player,
+                            "You manage to brew up an extra potion!",
+                        );
+                        if (addSkillXp && f.xp > 0) {
+                            addSkillXp(player, SkillId.Herblore, f.xp);
+                        }
+                    }
+                }
+
                 if (addSkillXp && f.xp > 0) {
                     addSkillXp(player, SkillId.Herblore, f.xp);
                 }

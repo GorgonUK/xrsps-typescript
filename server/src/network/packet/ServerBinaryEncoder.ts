@@ -320,10 +320,15 @@ export class ServerBinaryEncoder {
     // INVENTORY
     // ========================================
 
+    /**
+     * @param containerId OSRS inventory id (93 = backpack, 94 = worn equipment)
+     */
     encodeInventorySnapshot(
         slots: Array<{ slot: number; itemId: number; quantity: number }>,
+        containerId: number = 93,
     ): Uint8Array {
         this.buffer.reset();
+        this.buffer.writeShort(containerId & 0xffff);
         this.buffer.writeShort(slots.length);
         for (const s of slots) {
             this.buffer.writeShort(s.slot);

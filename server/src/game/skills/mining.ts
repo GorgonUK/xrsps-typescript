@@ -50,6 +50,38 @@ export interface MiningRockDefinition {
     swingTicks: number;
 }
 
+/**
+ * Power Miner (tier-1 Leagues V relic) auto-smelt mapping.
+ *
+ * When the player has the relic, has the auto-smelt toggle enabled, and successfully
+ * mines an ore listed here, the ore is converted to the corresponding bar (sent to bank)
+ * and the player is granted Smithing XP (regardless of Smithing level).
+ *
+ * OSRS parity:
+ *  - Copper/Tin ore both produce Bronze bars (6 XP) - the partner ore is not consumed.
+ *  - Coal is intentionally absent (it's a secondary ore in OSRS smelting recipes).
+ *  - Iron/Mithril/Adamant/Runite skip the coal requirement under the Echo pickaxe.
+ */
+export interface AutoSmeltMapping {
+    barItemId: number;
+    smithingXp: number;
+}
+
+export const POWER_MINER_AUTO_SMELT_BY_ORE: Record<number, AutoSmeltMapping> = Object.freeze({
+    436: { barItemId: 2349, smithingXp: 6 }, // copper -> bronze bar
+    438: { barItemId: 2349, smithingXp: 6 }, // tin -> bronze bar
+    440: { barItemId: 2351, smithingXp: 12.5 }, // iron -> iron bar
+    442: { barItemId: 2355, smithingXp: 13.7 }, // silver -> silver bar
+    444: { barItemId: 2357, smithingXp: 22.5 }, // gold -> gold bar
+    447: { barItemId: 2359, smithingXp: 30 }, // mithril -> mithril bar
+    449: { barItemId: 2361, smithingXp: 37.5 }, // adamantite -> adamantite bar
+    451: { barItemId: 2363, smithingXp: 50 }, // runite -> runite bar
+});
+
+export function getPowerMinerAutoSmeltMapping(oreItemId: number): AutoSmeltMapping | undefined {
+    return POWER_MINER_AUTO_SMELT_BY_ORE[oreItemId];
+}
+
 const ROCK_DEFINITIONS: MiningRockDefinition[] = [
     {
         id: "clay",

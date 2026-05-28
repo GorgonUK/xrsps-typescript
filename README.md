@@ -86,6 +86,56 @@ yarn export-map-images
 yarn mcp
 ```
 
+## In-Game Commands
+
+All commands are typed in the chat box prefixed with `::`. Admin-only commands require your username (case-insensitive) to be listed in the `ADMIN_USERNAMES` env var in `server/.env` (defaults to `lol,bot`).
+
+> Note: `::bank`, `::wiki`, and `::toggleroof` are intercepted by the official OSRS CS2 script `chatdefault_onkey` (script 73) before they leave the client, so they can never reach the server. Avoid these names for new commands.
+
+### General
+
+| Command | Description |
+| --- | --- |
+| `::position` (`::pos`) | Print your `(x, y, z)`, region ID, and music region name |
+| `::home` | Teleport to the Lumbridge respawn point |
+| `::clear` | Empty your inventory |
+| `::kill` | Set your HP to 0 |
+| `::levelup` | Award a random skill +1 level (with the level-up popup) |
+| `::vote` | Open the vote modal |
+
+### Items & Gear
+
+| Command | Description |
+| --- | --- |
+| `::item <itemId> [quantity]` | Spawn an item by ID |
+| `::itemspawner [query]` | Open the item spawner modal, optionally pre-filtered |
+| `::whip` | Get an Abyssal whip (4151) |
+| `::bond` | Get a $5 Bond (50000) |
+| `::allrunes [quantity]` | Replace inventory with every rune type (default 10,000 each) |
+| `::randomitem` | Add a random unowned collection log item to your inventory |
+| `::rubytest` | Spawn a ruby-enchant test pack (bolts + runes) and raise Magic to 49 if lower |
+
+### Skills & Quests
+
+| Command | Description |
+| --- | --- |
+| `::smithing <1-99>` | Set your Smithing level |
+| `::quest list` | List available quests |
+| `::quest <name>` | Mark a quest as completed (sets the relevant varp/varbits) |
+| `::scroll` | Open a debug `menu_indexed` test menu |
+
+### Admin Only
+
+| Command | Description |
+| --- | --- |
+| `::tele <x> <y> [z]` | Teleport to coordinates |
+| `::npc <npcTypeId>` | Spawn an NPC of that type at your tile |
+| `::openbank` | Open your bank (renamed from `::bank` since the client intercepts it) |
+| `::master` | Set every skill to 99 |
+| `::maxmelee` | Spawn a max melee loadout (Torva, Fang, Avernic, Ferocious, Primordial, Berserker (i)) |
+| `::maxranged` | Spawn a max ranged loadout (Masori, Tbow, Zaryte vambs, Pegasian, Archers (i)) + 10,000 dragon arrows |
+| `::maxmagic` | Spawn a max magic loadout (Ancestral, Shadow, Occult, Tormented, Eternal, Seers (i), Elidinis' ward) |
+
 ## Design Goals
 
 - OSRS parity first

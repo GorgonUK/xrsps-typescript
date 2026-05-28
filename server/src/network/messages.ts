@@ -28,9 +28,10 @@ export type PlayerAnimPayload = {
 
 export type InventorySlotMessage = { slot: number; itemId: number; quantity: number };
 
+/** `containerId`: 93 = backpack (default), 94 = worn equipment (matches OSRS inv ids) */
 export type InventoryServerUpdate =
-    | { kind: "snapshot"; slots: InventorySlotMessage[] }
-    | { kind: "slot"; slot: InventorySlotMessage };
+    | { kind: "snapshot"; slots: InventorySlotMessage[]; containerId?: number }
+    | { kind: "slot"; slot: InventorySlotMessage; containerId?: number };
 
 export type BankSlotMessage = {
     slot: number;
@@ -745,7 +746,10 @@ function encodeMessageToBinaryDirect(msg: ServerToClient): Uint8Array {
 
         case "inventory":
             if (payload.kind === "snapshot") {
-                return serverEncoder.encodeInventorySnapshot(payload.slots ?? []);
+                return serverEncoder.encodeInventorySnapshot(
+                    payload.slots ?? [],
+                    payload.containerId ?? 93,
+                );
             } else if (payload.kind === "slot" && payload.slot) {
                 return serverEncoder.encodeInventorySlot(
                     payload.slot.slot,

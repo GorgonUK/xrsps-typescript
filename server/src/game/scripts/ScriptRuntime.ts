@@ -1,4 +1,5 @@
 import { logger as defaultLogger } from "../../utils/logger";
+import type { PlayerState } from "../player";
 import { ScriptScheduler } from "../systems/ScriptScheduler";
 import { ScriptRegistry } from "./ScriptRegistry";
 import {
@@ -45,6 +46,7 @@ export class ScriptRuntime {
     private readonly services: ScriptServices;
     private readonly loadedModuleIds = new Set<string>();
     private readonly moduleDisposers = new Map<string, ScriptRegistrationResult[]>();
+    private readonly moduleCleanups = new Map<string, () => void>();
     private readonly hotReloadEnabled: boolean;
 
     constructor(options: ScriptRuntimeOptions) {
@@ -72,8 +74,11 @@ export class ScriptRuntime {
         }
         const disposers: ScriptRegistrationResult[] = [];
         const trackingRegistry = this.createTrackingRegistry(disposers);
-        module.register(trackingRegistry, this.services);
+        const cleanup = module.register(trackingRegistry, this.services);
         this.moduleDisposers.set(module.id, disposers);
+        if (typeof cleanup === "function") {
+            this.moduleCleanups.set(module.id, cleanup);
+        }
         this.loadedModuleIds.add(module.id);
         this.logger.info(`[script] loaded module: ${module.id}`);
     }
@@ -383,7 +388,62 @@ export class ScriptRuntime {
         }
     }
 
+    /**
+     * Dispatch a `::<name> [args...]` chat command to a script-registered
+     * handler. Returns a structured result so the caller (MessageHandlers)
+     * knows whether to fall through to legacy hardcoded commands or surface
+     * an "insufficient permission" message.
+     *
+     * Synchronous because chat commands typically need to ack within the
+     * same tick the player typed them — long-running work should be queued
+     * via the existing tick handler / action systems.
+     */
+    dispatchChatCommand(
+        player: PlayerState,
+        name: string,
+        args: string[],
+        raw: string,
+    ):
+        | { kind: "not_found" }
+        | { kind: "forbidden"; commandName: string }
+        | { kind: "handled"; commandName: string; response?: string } {
+        const entry = this.registry.findChatCommand(name);
+        if (!entry) return { kind: "not_found" };
+        const commandName = name.trim().toLowerCase();
+        if (entry.options.requireAdmin) {
+            const isAdmin = this.services.isAdminPlayer?.(player) ?? false;
+            if (!isAdmin) {
+                return { kind: "forbidden", commandName };
+            }
+        }
+        try {
+            const response = entry.handler({ player, name: commandName, args, raw });
+            return {
+                kind: "handled",
+                commandName,
+                response: typeof response === "string" ? response : undefined,
+            };
+        } catch (err) {
+            this.logger.warn(`[script] chat command '${commandName}' threw`, {
+                error: err instanceof Error ? err.stack ?? err.message : err,
+            });
+            return {
+                kind: "handled",
+                commandName,
+                response: `::${commandName} failed: ${err instanceof Error ? err.message : String(err)}`,
+            };
+        }
+    }
+
     reset(): void {
+        for (const [moduleId, cleanup] of this.moduleCleanups.entries()) {
+            try {
+                cleanup();
+            } catch (err) {
+                this.logger.warn(`[script] cleanup for module ${moduleId} threw`, err);
+            }
+        }
+        this.moduleCleanups.clear();
         for (const [moduleId, disposers] of this.moduleDisposers.entries()) {
             for (const disposer of disposers.reverse()) {
                 try {
@@ -400,6 +460,15 @@ export class ScriptRuntime {
     }
 
     private unloadModule(moduleId: string): void {
+        const cleanup = this.moduleCleanups.get(moduleId);
+        if (cleanup) {
+            try {
+                cleanup();
+            } catch (err) {
+                this.logger.warn(`[script] cleanup for module ${moduleId} threw`, err);
+            }
+            this.moduleCleanups.delete(moduleId);
+        }
         const disposers = this.moduleDisposers.get(moduleId);
         if (!disposers) return;
         for (const disposer of disposers.reverse()) {
@@ -485,6 +554,9 @@ export class ScriptRuntime {
                 track(this.registry.registerRegionHandler(regionId, handler)),
             registerTickHandler: (handler: TickHandler) =>
                 track(this.registry.registerTickHandler(handler)),
+            registerChatCommand: (name, handler, options) =>
+                track(this.registry.registerChatCommand(name, handler, options)),
+            findChatCommand: (name) => this.registry.findChatCommand(name),
             findNpcInteraction: (npcId, option) => this.registry.findNpcInteraction(npcId, option),
             findLocInteraction: (locId, action) => this.registry.findLocInteraction(locId, action),
             findItemOnItem: (sourceItemId, targetItemId, option) =>

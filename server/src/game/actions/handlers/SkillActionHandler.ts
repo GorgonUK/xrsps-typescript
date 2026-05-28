@@ -7,8 +7,23 @@
  *
  * Uses dependency injection via services interface to avoid tight coupling.
  */
+import {
+    hasAnimalWranglerRelic,
+    isAnimalWranglerAutoCookEnabled,
+    isLumberjackAutoBurnEnabled,
+    isLumberjackAutoFletchEnabled,
+    isPowerMinerAutoSmeltEnabled,
+} from "../../../../../src/shared/leagues/leagueRelicEffects";
+import {
+    applyThievingSpeedMultiplier,
+    onGatherItemForRelics,
+    shouldAutoStorePickpocketCoins,
+    shouldPickpocketAlwaysSucceed,
+    shouldRollPickpocketExtraLoot,
+} from "../../leagues/relicHooks";
 import type { NpcState } from "../../npc";
 import type { InventoryAddResult, PlayerState } from "../../player";
+import { getFiremakingLogDefinition } from "../../skills/firemaking";
 import type {
     FishingCatchDefinition,
     FishingMethodDefinition,
@@ -16,8 +31,13 @@ import type {
     FishingToolDefinition,
     FishingToolId,
 } from "../../skills/fishing";
-import type { MiningRockDefinition, PickaxeDefinition } from "../../skills/mining";
-import type { HatchetDefinition, WoodcuttingTreeDefinition } from "../../skills/woodcutting";
+import { getPowerMinerAutoSmeltMapping, type MiningRockDefinition, type PickaxeDefinition } from "../../skills/mining";
+import {
+    getLumberjackAutoFletchMapping,
+    ARROW_SHAFT_ITEM_ID,
+    type HatchetDefinition,
+    type WoodcuttingTreeDefinition,
+} from "../../skills/woodcutting";
 import { type InventoryItem as RuneInventoryItem, RuneValidator } from "../../spells/RuneValidator";
 import type {
     SkillBoltEnchantActionData as BoltEnchantActionData,
@@ -755,7 +775,9 @@ export class SkillActionHandler {
         const burnBonus = heatSource === "fire" ? 0 : DEFAULT_COOKING_BURN_BONUS;
 
         const outcome = this.services.rollCookingOutcome(recipe, effectiveLevel, { burnBonus });
-        const cooked = outcome === "success";
+        // Animal Wrangler (Leagues V tier-1 relic): the player never burns food while cooking
+        // regardless of level or heat source, as long as the relic is selected.
+        const cooked = outcome === "success" || hasAnimalWranglerRelic(player);
         const burntItemId = recipe.burntItemId ?? -1;
         const producedItemId = cooked || !(burntItemId > 0) ? recipe.cookedItemId : burntItemId;
 
@@ -1368,8 +1390,17 @@ export class SkillActionHandler {
         }
 
         if (success) {
+            // Power Miner (Leagues V tier-1 relic): if the auto-smelt toggle is enabled and the
+            // ore has a smelt recipe, the ore is converted to a bar (sent to bank) and the player
+            // is granted Smithing XP regardless of their Smithing level.
+            const autoSmeltMapping =
+                hasEchoPickaxePerk && isPowerMinerAutoSmeltEnabled(player)
+                    ? getPowerMinerAutoSmeltMapping(rock.oreItemId)
+                    : undefined;
+            const depositItemId = autoSmeltMapping?.barItemId ?? rock.oreItemId;
+
             if (hasEchoPickaxePerk) {
-                const banked = this.services.addItemToBank(player, rock.oreItemId, 1);
+                const banked = this.services.addItemToBank(player, depositItemId, 1);
                 if (!banked) {
                     return this.failGatheringPrecheck(
                         player,
@@ -1398,16 +1429,35 @@ export class SkillActionHandler {
                 ),
             );
             if (hasEchoPickaxePerk) {
-                const capitalizedOreName =
-                    oreName.charAt(0).toUpperCase() + oreName.slice(1);
-                effects.push(
-                    this.services.buildSkillMessageEffect(
-                        player,
-                        `1x ${capitalizedOreName} were sent straight to your bank.`,
-                    ),
-                );
+                if (autoSmeltMapping) {
+                    const barName = this.services.describeBar(autoSmeltMapping.barItemId);
+                    const capitalizedBarName =
+                        barName.charAt(0).toUpperCase() + barName.slice(1);
+                    effects.push(
+                        this.services.buildSkillMessageEffect(
+                            player,
+                            `1x ${capitalizedBarName} were sent straight to your bank.`,
+                        ),
+                    );
+                } else {
+                    const capitalizedOreName =
+                        oreName.charAt(0).toUpperCase() + oreName.slice(1);
+                    effects.push(
+                        this.services.buildSkillMessageEffect(
+                            player,
+                            `1x ${capitalizedOreName} were sent straight to your bank.`,
+                        ),
+                    );
+                }
             }
             this.services.awardSkillXp(player, SkillId.Mining, rock.xp);
+            if (autoSmeltMapping) {
+                this.services.awardSkillXp(
+                    player,
+                    SkillId.Smithing,
+                    autoSmeltMapping.smithingXp,
+                );
+            }
 
             if (locId > 0) {
                 nextEchoMinedCount = hasEchoPickaxePerk ? echoMinedCount + 1 : 0;
@@ -1650,7 +1700,9 @@ export class SkillActionHandler {
         if (success) {
             let rewardItemId = catchItemId;
             let autoCooked = false;
-            if (hasEchoHarpoonPerk) {
+            // Animal Wrangler (Leagues V tier-1 relic): the Echo harpoon's 50% auto-cook chance
+            // requires the relic to be selected (always-on while active, no toggle).
+            if (hasEchoHarpoonPerk && isAnimalWranglerAutoCookEnabled(player)) {
                 const cookingRecipe = this.services.getCookingRecipeByRawItemId(catchItemId);
                 if (cookingRecipe && Math.random() < 0.5) {
                     rewardItemId = cookingRecipe.cookedItemId;
@@ -2389,17 +2441,51 @@ export class SkillActionHandler {
             success = true;
         }
         if (success) {
+            // Lumberjack (Leagues V tier-1 relic): when auto-fletch is enabled and the log has a
+            // matching arrow-shaft fletching recipe, the log is converted into arrow shafts and
+            // the player is granted Fletching XP regardless of level. When auto-burn is enabled
+            // (and the log has a firemaking definition), the log is consumed and the player is
+            // granted Firemaking XP regardless of level instead of being banked. Auto-fletch wins
+            // if both toggles are somehow active (UI enforces mutex).
+            const autoFletchMapping =
+                hasEchoAxePerk && isLumberjackAutoFletchEnabled(player)
+                    ? getLumberjackAutoFletchMapping(tree.logItemId)
+                    : undefined;
+            const firemakingLog =
+                hasEchoAxePerk && !autoFletchMapping && isLumberjackAutoBurnEnabled(player)
+                    ? getFiremakingLogDefinition(tree.logItemId)
+                    : undefined;
+
             if (hasEchoAxePerk) {
-                const banked = this.services.addItemToBank(player, tree.logItemId, 1);
-                if (!banked) {
-                    const logName = this.services.describeLog(tree.logItemId);
-                    return this.failGatheringPrecheck(
+                if (autoFletchMapping) {
+                    const banked = this.services.addItemToBank(
                         player,
-                        `Your bank is too full to hold any more ${logName}.`,
-                        "bank_full",
+                        ARROW_SHAFT_ITEM_ID,
+                        autoFletchMapping.arrowShaftQuantity,
                     );
+                    if (!banked) {
+                        const logName = this.services.describeLog(tree.logItemId);
+                        return this.failGatheringPrecheck(
+                            player,
+                            `Your bank is too full to hold any more ${logName}.`,
+                            "bank_full",
+                        );
+                    }
+                    bankSnapshot = true;
+                } else if (firemakingLog) {
+                    // Logs are incinerated for XP, nothing is banked.
+                } else {
+                    const banked = this.services.addItemToBank(player, tree.logItemId, 1);
+                    if (!banked) {
+                        const logName = this.services.describeLog(tree.logItemId);
+                        return this.failGatheringPrecheck(
+                            player,
+                            `Your bank is too full to hold any more ${logName}.`,
+                            "bank_full",
+                        );
+                    }
+                    bankSnapshot = true;
                 }
-                bankSnapshot = true;
             } else {
                 const result = this.services.addItemToInventory(player, tree.logItemId, 1);
                 if (result.added <= 0) {
@@ -2417,16 +2503,41 @@ export class SkillActionHandler {
             const logName = this.services.describeLog(tree.logItemId);
             effects.push(this.services.buildSkillMessageEffect(player, `You get some ${logName}.`));
             if (hasEchoAxePerk) {
-                const capitalizedLogName =
-                    logName.charAt(0).toUpperCase() + logName.slice(1);
-                effects.push(
-                    this.services.buildSkillMessageEffect(
-                        player,
-                        `1x ${capitalizedLogName} were sent straight to your bank.`,
-                    ),
-                );
+                if (autoFletchMapping) {
+                    effects.push(
+                        this.services.buildSkillMessageEffect(
+                            player,
+                            `${autoFletchMapping.arrowShaftQuantity}x Arrow shafts were sent straight to your bank.`,
+                        ),
+                    );
+                } else if (firemakingLog) {
+                    effects.push(
+                        this.services.buildSkillMessageEffect(
+                            player,
+                            `The ${logName} burn away in your hands.`,
+                        ),
+                    );
+                } else {
+                    const capitalizedLogName =
+                        logName.charAt(0).toUpperCase() + logName.slice(1);
+                    effects.push(
+                        this.services.buildSkillMessageEffect(
+                            player,
+                            `1x ${capitalizedLogName} were sent straight to your bank.`,
+                        ),
+                    );
+                }
             }
             this.services.awardSkillXp(player, SkillId.Woodcutting, tree.xp);
+            if (autoFletchMapping) {
+                this.services.awardSkillXp(
+                    player,
+                    SkillId.Fletching,
+                    autoFletchMapping.fletchingXp,
+                );
+            } else if (firemakingLog) {
+                this.services.awardSkillXp(player, SkillId.Firemaking, firemakingLog.xp);
+            }
 
             if (this.services.shouldDepleteTree(tree)) {
                 treeDepleted = true;
@@ -2855,18 +2966,19 @@ export class SkillActionHandler {
                 ),
             );
 
+            const resolveDelay = applyThievingSpeedMultiplier(player, 1);
             this.services.scheduleAction(
                 player.id,
                 {
                     kind: "skill.pickpocket",
                     data: { ...data, phase: 1 },
-                    delayTicks: 1,
-                    cooldownTicks: 1,
+                    delayTicks: resolveDelay,
+                    cooldownTicks: resolveDelay,
                     groups: ["skill.pickpocket"],
                 },
                 tick,
             );
-            return { ok: true, cooldownTicks: 1, effects };
+            return { ok: true, cooldownTicks: resolveDelay, effects };
         }
 
         // Phase 1: Resolve success/fail
@@ -2883,25 +2995,61 @@ export class SkillActionHandler {
                 this.services.clearPlayerFaceTarget(player);
                 this.services.sendSound(player, SkillActionHandler.PICKPOCKET_SUCCESS_SOUND);
 
-                const reward = this.rollPickpocketLoot(data.lootTable);
-                if (reward) {
-                    const itemId =
-                        reward.itemId === SkillActionHandler.COINS_ITEM_ID && data.coinPouchId
-                            ? data.coinPouchId
-                            : reward.itemId;
-                    const qty =
-                        itemId === data.coinPouchId ? 1 : reward.quantity;
-                    this.services.addItemToInventory(player, itemId, qty);
-                    effects.push({ type: "inventorySnapshot", playerId: player.id });
+                // Dodgy Deals (Leagues V tier-2 relic) auto-stores coins
+                // directly into the inventory, bypassing the coin pouch
+                // consumable. Other relics keep the OSRS coin-pouch flow.
+                const autoStoreCoins = shouldAutoStorePickpocketCoins(player);
 
-                    this.services.queueClientScript(
-                        player,
-                        SkillActionHandler.PICKPOCKET_NOTIFY_SCRIPT,
-                        data.npcTypeId,
-                        tick,
-                        itemId,
-                        qty,
-                    );
+                // Roll the standard pickpocket loot first.
+                const primaryReward = this.rollPickpocketLoot(data.lootTable);
+                const grantReward = (
+                    reward: { itemId: number; quantity: number },
+                    notify: boolean,
+                ): void => {
+                    const isCoinPouch =
+                        reward.itemId === SkillActionHandler.COINS_ITEM_ID &&
+                        data.coinPouchId !== undefined &&
+                        !autoStoreCoins;
+                    const itemId = isCoinPouch ? (data.coinPouchId as number) : reward.itemId;
+                    const qty = isCoinPouch ? 1 : reward.quantity;
+
+                    // Friendly Forager (Leagues V tier-2 relic): route grimy
+                    // herbs and herblore secondaries (e.g. Master Farmer's
+                    // grimy herb drops) into the Forager's Pouch first, then
+                    // grant any leftover quantity through the normal
+                    // inventory path. No-op for non-pouch items / players
+                    // without the relic.
+                    const route = onGatherItemForRelics(player, itemId, qty);
+                    const remaining = route.remaining;
+                    if (remaining > 0) {
+                        this.services.addItemToInventory(player, itemId, remaining);
+                    }
+                    if (notify) {
+                        this.services.queueClientScript(
+                            player,
+                            SkillActionHandler.PICKPOCKET_NOTIFY_SCRIPT,
+                            data.npcTypeId,
+                            tick,
+                            itemId,
+                            qty,
+                        );
+                    }
+                };
+
+                if (primaryReward) {
+                    grantReward(primaryReward, true);
+                    effects.push({ type: "inventorySnapshot", playerId: player.id });
+                }
+
+                // Dodgy Deals: chance to roll an additional loot drop on top
+                // of the primary reward. This keeps the existing weighted
+                // table and just gates a second roll behind the relic.
+                if (shouldRollPickpocketExtraLoot(player)) {
+                    const bonusReward = this.rollPickpocketLoot(data.lootTable);
+                    if (bonusReward) {
+                        grantReward(bonusReward, false);
+                        effects.push({ type: "inventorySnapshot", playerId: player.id });
+                    }
                 }
 
                 this.services.awardSkillXp(
@@ -2916,19 +3064,21 @@ export class SkillActionHandler {
                     ),
                 );
 
-                // Auto-repeat: schedule next attempt
+                // Auto-repeat: schedule next attempt. Dodgy Deals' thieving
+                // speed multiplier shrinks the rest delay (clamped at 1 tick).
+                const repeatDelay = applyThievingSpeedMultiplier(player, 1);
                 this.services.scheduleAction(
                     player.id,
                     {
                         kind: "skill.pickpocket",
                         data: { ...data, phase: 0 },
-                        delayTicks: 1,
-                        cooldownTicks: 1,
+                        delayTicks: repeatDelay,
+                        cooldownTicks: repeatDelay,
                         groups: ["skill.pickpocket"],
                     },
                     tick,
                 );
-                return { ok: true, cooldownTicks: 1, effects };
+                return { ok: true, cooldownTicks: repeatDelay, effects };
             }
 
             // Fail: message + NPC forced chat + set busy varbit
@@ -3046,6 +3196,11 @@ export class SkillActionHandler {
         reqLevel: number,
         player: PlayerState,
     ): boolean {
+        // Dodgy Deals (Leagues V tier-2 relic) bypasses the failure roll
+        // entirely while still respecting all other prechecks (level/stun/
+        // combat/inventory) since those are gated upstream.
+        if (shouldPickpocketAlwaysSucceed(player)) return true;
+
         const equip = this.services.getEquipArray(player);
         const glovesId = equip?.[SkillActionHandler.EQUIPMENT_SLOT_GLOVES] ?? -1;
         const bonus =

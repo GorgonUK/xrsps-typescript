@@ -1198,6 +1198,22 @@ export class NpcManager {
         );
     }
 
+    /**
+     * Public hook for content scripts that need to actively steer an NPC toward
+     * a tile (e.g. Hunter trap creature luring, quest event movement). Returns
+     * true if a path was queued, false if the NPC already has one or no walkable
+     * step toward the target exists.
+     */
+    requestPathToward(
+        npcId: number,
+        target: { x: number; y: number },
+        options?: { maxPathCalcSteps?: number; maxQueuedSteps?: number },
+    ): boolean {
+        const npc = this.npcs.get(npcId);
+        if (!npc) return false;
+        return this.queueNpcPathToward(npc, target, options ?? {});
+    }
+
     private queueNpcPathToward(
         npc: NpcState,
         target: { x: number; y: number },

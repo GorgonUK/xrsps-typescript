@@ -1,3 +1,4 @@
+import "./loadEnv";
 import path from "path";
 
 import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
