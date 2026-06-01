@@ -1,0 +1,1647 @@
+{
+  "generatedAt": "2026-05-29T00:56:53.019604+00:00",
+  "description": "Phase 4 spell_cast planning manifest. Do not import until spell_cast hook is wired.",
+  "summary": {
+    "totalSpellRelatedTasks": 70,
+    "byGroup": {
+      "specific_spell": 42,
+      "spellbook_switch": 8,
+      "teleport_spell": 18,
+      "generic_spell_count": 2
+    },
+    "uniqueSpellIdsRequired": [
+      3273,
+      3275,
+      3277,
+      3279,
+      3281,
+      3282,
+      3283,
+      3285,
+      3288,
+      3291,
+      3294,
+      3297,
+      3300,
+      3302,
+      3307,
+      3313,
+      3315,
+      3319,
+      3321,
+      3322,
+      4639,
+      4651,
+      9076,
+      9077,
+      9078,
+      9079,
+      9110,
+      9111,
+      21876,
+      21877,
+      21878,
+      21879
+    ],
+    "uniqueSpellIdsRequiredCount": 32,
+    "spellIdsInSpellsTs": 55,
+    "teleportsInTeleportDestinations": 29,
+    "phase3cCombatLevelTasks": 13,
+    "expectedReadyAfterPhase3c": "133 + 13 = 146",
+    "expectedReadyAfterPhase4": "146 + 70 = 216 (approx; 70 spell tasks in manifest)"
+  },
+  "groupSummaries": [
+    {
+      "group": "specific_spell",
+      "taskCount": 42,
+      "validationConfidence": "low",
+      "confidenceBreakdown": {
+        "high": 28,
+        "medium": 9,
+        "low": 5
+      },
+      "tasksWithSpellDefinitions": 37,
+      "spellIdsRequired": [
+        3273,
+        3275,
+        3277,
+        3279,
+        3281,
+        3282,
+        3283,
+        3285,
+        3288,
+        3291,
+        3294,
+        3297,
+        3300,
+        3302,
+        3307,
+        3313,
+        3315,
+        3319,
+        3321,
+        3322,
+        4639,
+        4651,
+        9076,
+        9077,
+        9078,
+        9079,
+        9110,
+        9111,
+        21876,
+        21877,
+        21878,
+        21879
+      ],
+      "spellIdsRequiredCount": 32,
+      "definitionsExist": false,
+      "hookShape": "spell_cast { spellId } or { spellCategory } or { spellIdsAny }",
+      "exampleTasks": [
+        "Cast a Wind Strike Spell.",
+        "Cast a Water Strike Spell.",
+        "Cast an Earth Strike Spell.",
+        "Cast a Fire Strike Spell."
+      ]
+    },
+    {
+      "group": "spellbook_switch",
+      "taskCount": 8,
+      "validationConfidence": "high",
+      "confidenceBreakdown": {
+        "high": 8,
+        "medium": 0,
+        "low": 0
+      },
+      "tasksWithSpellDefinitions": 8,
+      "spellIdsRequired": [],
+      "spellIdsRequiredCount": 0,
+      "definitionsExist": true,
+      "hookShape": "spell_cast { spellbook, event: spellbook_active_on_cast | any_cast_on_spellbook }",
+      "exampleTasks": [
+        "Cast an Ancient Magick spell",
+        "Cast a Lunar Magic spell",
+        "Use the Lunar Spellbook.",
+        "Use the Ancient Magicks Spellbook."
+      ]
+    },
+    {
+      "group": "teleport_spell",
+      "taskCount": 18,
+      "validationConfidence": "high",
+      "confidenceBreakdown": {
+        "high": 15,
+        "medium": 3,
+        "low": 0
+      },
+      "tasksWithSpellDefinitions": 15,
+      "spellIdsRequired": [],
+      "spellIdsRequiredCount": 0,
+      "definitionsExist": true,
+      "hookShape": "spell_cast { spellCategory: teleport } or { teleportName } via executeTeleport",
+      "exampleTasks": [
+        "Cast a Teleport Spell.",
+        "Cast 10 Teleport Spells.",
+        "Cast 100 Teleport Spells.",
+        "Cast 1,000 Teleport Spells."
+      ]
+    },
+    {
+      "group": "generic_spell_count",
+      "taskCount": 2,
+      "validationConfidence": "high",
+      "confidenceBreakdown": {
+        "high": 2,
+        "medium": 0,
+        "low": 0
+      },
+      "tasksWithSpellDefinitions": 2,
+      "spellIdsRequired": [],
+      "spellIdsRequiredCount": 0,
+      "definitionsExist": true,
+      "hookShape": "spell_cast { anySpellCount: N }",
+      "exampleTasks": [
+        "Cast 1,000 Spells.",
+        "Cast 10,000 Spells."
+      ]
+    }
+  ],
+  "groups": {
+    "specific_spell": [
+      {
+        "sourceTaskId": 435,
+        "taskName": "Cast a Wind Strike Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3273,
+          "spellName": "Wind Strike"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 436,
+        "taskName": "Cast a Water Strike Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "5 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3275,
+          "spellName": "Water Strike"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 437,
+        "taskName": "Cast an Earth Strike Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "9 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3277,
+          "spellName": "Earth Strike"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 438,
+        "taskName": "Cast a Fire Strike Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "13 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3279,
+          "spellName": "Fire Strike"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 439,
+        "taskName": "Cast a Wind Bolt Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "17 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3281,
+          "spellName": "Wind Bolt"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 440,
+        "taskName": "Cast a Water Bolt Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "23 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3285,
+          "spellName": "Water Bolt"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 441,
+        "taskName": "Cast an Earth Bolt Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "29 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3288,
+          "spellName": "Earth Bolt"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 442,
+        "taskName": "Cast a Fire Bolt Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "35 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3291,
+          "spellName": "Fire Bolt"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 443,
+        "taskName": "Cast a Wind Blast Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "41 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3294,
+          "spellName": "Wind Blast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 444,
+        "taskName": "Cast a Water Blast Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "47 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3297,
+          "spellName": "Water Blast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 445,
+        "taskName": "Cast an Earth Blast Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "53 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3302,
+          "spellName": "Earth Blast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 446,
+        "taskName": "Cast a Fire Blast Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "59 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3307,
+          "spellName": "Fire Blast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 447,
+        "taskName": "Cast a Wind Wave Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "62 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3313,
+          "spellName": "Wind Wave"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 448,
+        "taskName": "Cast a Water Wave Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "65 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3315,
+          "spellName": "Water Wave"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 449,
+        "taskName": "Cast an Earth Wave Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3319,
+          "spellName": "Earth Wave"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 450,
+        "taskName": "Cast a Fire Wave Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "75 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellId": 3321,
+          "spellName": "Fire Wave"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 451,
+        "taskName": "Cast a Surge Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "81 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellIdsAny",
+          "spellIds": [
+            {
+              "spellId": 21876,
+              "spellName": "Wind Surge"
+            },
+            {
+              "spellId": 21877,
+              "spellName": "Water Surge"
+            },
+            {
+              "spellId": 21878,
+              "spellName": "Earth Surge"
+            },
+            {
+              "spellId": 21879,
+              "spellName": "Fire Surge"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 452,
+        "taskName": "Cast a Barrage Spell.",
+        "area": "General",
+        "difficulty": "Elite",
+        "points": 200,
+        "requirements": "94 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4651,
+              "spellName": "Ice Barrage"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 457,
+        "taskName": "Cast Low Level Alchemy.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "21 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 9110,
+              "spellName": "Low Level Alchemy"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 458,
+        "taskName": "Cast High Level Alchemy.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "55 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 9111,
+              "spellName": "High Level Alchemy"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 459,
+        "taskName": "Alchemize 100 Items.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "55 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 9111,
+              "spellName": "High Level Alchemy"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 460,
+        "taskName": "Alchemize 1,000 Items.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 9111,
+              "spellName": "High Level Alchemy"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 461,
+        "taskName": "Enchant Jewelry.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "7 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellName",
+          "expectedSpellNames": [
+            "enchant level-1 sapphire"
+          ]
+        },
+        "confidence": "low",
+        "spellDefinitionsExist": false
+      },
+      {
+        "sourceTaskId": 462,
+        "taskName": "Enchant 100 Jewelry Items.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellName",
+          "expectedSpellNames": [
+            "enchant level-1 sapphire"
+          ]
+        },
+        "confidence": "low",
+        "spellDefinitionsExist": false
+      },
+      {
+        "sourceTaskId": 463,
+        "taskName": "Cast a Curse Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "19 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 3282,
+              "spellName": "Curse"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 464,
+        "taskName": "Cast a Bind Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "20 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 3283,
+              "spellName": "Bind"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 465,
+        "taskName": "Cast a Snare Spell.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "50 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 3300,
+              "spellName": "Snare"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 466,
+        "taskName": "Cast an Entangle Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "79 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 3322,
+              "spellName": "Entangle"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 467,
+        "taskName": "Cast a Combat Spell Against a Monster.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategory",
+          "spellCategory": "combat"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 471,
+        "taskName": "Cast a Multi-Target Spell.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategory",
+          "spellCategory": "multi_target"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Match spells with maxTargets > 1 (e.g. burst/barrage)"
+      },
+      {
+        "sourceTaskId": 474,
+        "taskName": "Charge an Orb.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "60 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellIdsAny",
+          "spellIds": [
+            {
+              "spellId": 9076,
+              "spellName": "Charge Air Orb"
+            },
+            {
+              "spellId": 9079,
+              "spellName": "Charge Water Orb"
+            },
+            {
+              "spellId": 9077,
+              "spellName": "Charge Earth Orb"
+            },
+            {
+              "spellId": 9078,
+              "spellName": "Charge Fire Orb"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 691,
+        "taskName": "Charge an Air Orb near Edgeville Dungeon.",
+        "area": "Misthalin",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "66 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 9076,
+              "spellName": "Charge Air Orb"
+            }
+          ]
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1044,
+        "taskName": "Cast Ice Burst in the Desert.",
+        "area": "Desert",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4639,
+              "spellName": "Ice Burst"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "the Desert",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1045,
+        "taskName": "Cast Ice Barrage in the Desert.",
+        "area": "Desert",
+        "difficulty": "Elite",
+        "points": 200,
+        "requirements": "94 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4651,
+              "spellName": "Ice Barrage"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "the Desert",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1107,
+        "taskName": "Cast Ice Burst in Morytania.",
+        "area": "Morytania",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4639,
+              "spellName": "Ice Burst"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "Morytania",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1108,
+        "taskName": "Cast Ice Barrage in Morytania.",
+        "area": "Morytania",
+        "difficulty": "Elite",
+        "points": 200,
+        "requirements": "94 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4651,
+              "spellName": "Ice Barrage"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "Morytania",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1190,
+        "taskName": "Cast Ice Barrage in Tirannwn.",
+        "area": "Tirannwn",
+        "difficulty": "Elite",
+        "points": 200,
+        "requirements": "94 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4651,
+              "spellName": "Ice Barrage"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "Tirannwn",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1258,
+        "taskName": "Cast Ice Burst in the Wilderness.",
+        "area": "Wilderness",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4639,
+              "spellName": "Ice Burst"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "the Wilderness",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1259,
+        "taskName": "Cast Ice Barrage in the Wilderness.",
+        "area": "Wilderness",
+        "difficulty": "Elite",
+        "points": 200,
+        "requirements": "94 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellId",
+          "spellIds": [
+            {
+              "spellId": 4651,
+              "spellName": "Ice Barrage"
+            }
+          ]
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": true,
+        "areaQualifier": "the Wilderness",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1350,
+        "taskName": "Cast Resurrect Greater Ghost in Kourend.",
+        "area": "Kourend",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "76 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellName",
+          "expectedSpellNames": [
+            "resurrect greater ghost"
+          ]
+        },
+        "confidence": "low",
+        "spellDefinitionsExist": false,
+        "areaQualifier": "Kourend",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1351,
+        "taskName": "Cast Ward of Arceuus in Kourend.",
+        "area": "Kourend",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "73 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellName",
+          "expectedSpellNames": [
+            "ward of arceuus"
+          ]
+        },
+        "confidence": "low",
+        "spellDefinitionsExist": false,
+        "areaQualifier": "Kourend",
+        "notes": " Requires player in area when cast succeeds."
+      },
+      {
+        "sourceTaskId": 1425,
+        "taskName": "Cast Superior Demonbane in Varlamore.",
+        "area": "Varlamore",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "62 Magic",
+        "group": "specific_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellName",
+          "expectedSpellNames": [
+            "superior demonbane"
+          ]
+        },
+        "confidence": "low",
+        "spellDefinitionsExist": false,
+        "areaQualifier": "Varlamore",
+        "notes": " Requires player in area when cast succeeds."
+      }
+    ],
+    "spellbook_switch": [
+      {
+        "sourceTaskId": 472,
+        "taskName": "Cast an Ancient Magick spell",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "ancient",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 473,
+        "taskName": "Cast a Lunar Magic spell",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "65 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "lunar",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 891,
+        "taskName": "Use the Lunar Spellbook.",
+        "area": "Fremennik",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "65 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "lunar",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1043,
+        "taskName": "Use the Ancient Magicks Spellbook.",
+        "area": "Desert",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "50 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "ancient",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1105,
+        "taskName": "Use the Ancient Magicks Spellbook in Morytania.",
+        "area": "Morytania",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "50 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "ancient",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1188,
+        "taskName": "Use the Lunar Spellbook in Tirannwn.",
+        "area": "Tirannwn",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "65 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "lunar",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1348,
+        "taskName": "Use the Arceuus Spellbook.",
+        "area": "Kourend",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "60 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "arceuus",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 1424,
+        "taskName": "Use the Arceuus Spellbook in Varlamore.",
+        "area": "Varlamore",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "60 Magic",
+        "group": "spellbook_switch",
+        "trigger": {
+          "type": "spell_cast",
+          "spellbook": "arceuus",
+          "event": "spellbook_active_on_cast"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      }
+    ],
+    "teleport_spell": [
+      {
+        "sourceTaskId": 453,
+        "taskName": "Cast a Teleport Spell.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "25 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategory",
+          "spellCategory": "teleport"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 454,
+        "taskName": "Cast 10 Teleport Spells.",
+        "area": "General",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "25 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategoryCount",
+          "spellCategory": "teleport",
+          "count": 10
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 455,
+        "taskName": "Cast 100 Teleport Spells.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "45 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategoryCount",
+          "spellCategory": "teleport",
+          "count": 100
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 456,
+        "taskName": "Cast 1,000 Teleport Spells.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "spellCategoryCount",
+          "spellCategory": "teleport",
+          "count": 1000
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 676,
+        "taskName": "Teleport to Varrock.",
+        "area": "Misthalin",
+        "difficulty": "Easy",
+        "points": 10,
+        "requirements": "25 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Varrock Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 677,
+        "taskName": "Teleport to Lumbridge.",
+        "area": "Misthalin",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "31 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Lumbridge Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 838,
+        "taskName": "Teleport to Falador.",
+        "area": "Asgarnia",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "37 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Falador Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 839,
+        "taskName": "Teleport to Taverley.",
+        "area": "Asgarnia",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "40 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Teleport to House",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 889,
+        "taskName": "Teleport to Lunar Isle.",
+        "area": "Fremennik",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "69 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportNameGuess": "Lunar Isle Teleport"
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": false,
+        "notes": "Teleport destination not verified in teleportDestinations.ts"
+      },
+      {
+        "sourceTaskId": 890,
+        "taskName": "Teleport to Waterbirth Island.",
+        "area": "Fremennik",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "72 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportNameGuess": "Waterbirth Island Teleport"
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": false,
+        "notes": "Teleport destination not verified in teleportDestinations.ts"
+      },
+      {
+        "sourceTaskId": 959,
+        "taskName": "Teleport to Camelot.",
+        "area": "Kandarin",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "45 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Camelot Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 960,
+        "taskName": "Teleport to Ardougne.",
+        "area": "Kandarin",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "51 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Ardougne Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1041,
+        "taskName": "Teleport to Pollnivneach.",
+        "area": "Desert",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "66 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Paddewwa Teleport",
+          "spellbook": "ancient"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1042,
+        "taskName": "Teleport to Nardah.",
+        "area": "Desert",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "70 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Senntisten Teleport",
+          "spellbook": "ancient"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1106,
+        "taskName": "Teleport to Barrows.",
+        "area": "Morytania",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "83 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Barrows Teleport",
+          "spellbook": "arceuus"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1189,
+        "taskName": "Teleport to Prifddinas.",
+        "area": "Tirannwn",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "75 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Teleport to House",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1349,
+        "taskName": "Teleport to Kourend Castle.",
+        "area": "Kourend",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "69 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportName": "Kourend Castle Teleport",
+          "spellbook": "standard"
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true,
+        "notes": "Teleport spells are widget-keyed in teleportDestinations.ts (no numeric spellId in ENTRIES)"
+      },
+      {
+        "sourceTaskId": 1426,
+        "taskName": "Teleport to Civitas illa Fortis.",
+        "area": "Varlamore",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "54 Magic",
+        "group": "teleport_spell",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "teleportName",
+          "teleportNameGuess": "Civitas illa Fortis Teleport"
+        },
+        "confidence": "medium",
+        "spellDefinitionsExist": false,
+        "notes": "Teleport destination not verified in teleportDestinations.ts"
+      }
+    ],
+    "generic_spell_count": [
+      {
+        "sourceTaskId": 476,
+        "taskName": "Cast 1,000 Spells.",
+        "area": "General",
+        "difficulty": "Medium",
+        "points": 30,
+        "requirements": "30 Magic",
+        "group": "generic_spell_count",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "anySpellCount",
+          "count": 1000
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      },
+      {
+        "sourceTaskId": 477,
+        "taskName": "Cast 10,000 Spells.",
+        "area": "General",
+        "difficulty": "Hard",
+        "points": 80,
+        "requirements": "",
+        "group": "generic_spell_count",
+        "trigger": {
+          "type": "spell_cast",
+          "resolution": "anySpellCount",
+          "count": 10000
+        },
+        "confidence": "high",
+        "spellDefinitionsExist": true
+      }
+    ]
+  },
+  "phase3cCombatLevelTasks": [
+    {
+      "sourceTaskId": 1467,
+      "taskName": "Achieve Level 10 Combat",
+      "minCombatLevel": 10,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 10
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1468,
+      "taskName": "Achieve Level 20 Combat",
+      "minCombatLevel": 20,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 20
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1469,
+      "taskName": "Achieve Level 30 Combat",
+      "minCombatLevel": 30,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 30
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1470,
+      "taskName": "Achieve Level 40 Combat",
+      "minCombatLevel": 40,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 40
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1471,
+      "taskName": "Achieve Level 50 Combat",
+      "minCombatLevel": 50,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 50
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1472,
+      "taskName": "Achieve Level 60 Combat",
+      "minCombatLevel": 60,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 60
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1473,
+      "taskName": "Achieve Level 70 Combat",
+      "minCombatLevel": 70,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 70
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1474,
+      "taskName": "Achieve Level 80 Combat",
+      "minCombatLevel": 80,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 80
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1475,
+      "taskName": "Achieve Level 90 Combat",
+      "minCombatLevel": 90,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 90
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1476,
+      "taskName": "Achieve Level 100 Combat",
+      "minCombatLevel": 100,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 100
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1477,
+      "taskName": "Achieve Level 110 Combat",
+      "minCombatLevel": 110,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 110
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1478,
+      "taskName": "Achieve Level 120 Combat",
+      "minCombatLevel": 120,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 120
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    },
+    {
+      "sourceTaskId": 1479,
+      "taskName": "Achieve Level 126 Combat",
+      "minCombatLevel": 126,
+      "proposedTrigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 126
+      },
+      "confidence": "high",
+      "implementationNotes": "Requires extending syncSkillProgressTasks / leagueSkillProgress to check player.combatLevel. Not parsed by TriggerParser today. Minimal hook work (~same pattern as level_reach)."
+    }
+  ],
+  "implementationNotes": [
+    "Emit spell_cast from SpellActionHandler on successful cast (include spellId from getSpellData).",
+    "Emit spell_cast from spellbookWidgets executeTeleport with teleportName + spellbook (widget-keyed teleports).",
+    "Jewelry enchant spells are NOT in spells.ts ENTRIES; likely widget-only \u2014 verify cache before import.",
+    "Arceuus utility (Resurrect, Ward) and Lunar spells may be missing from ENTRIES \u2014 low confidence until verified.",
+    "Region-qualified ice burst/barrage tasks need spell_cast + area_enter (or area predicate on cast tile).",
+    "Phase 5 teleport_use covers non-spell travel (fairy ring, charter, spirit tree); city Teleport to X tasks are in teleport_spell group here."
+  ]
+}

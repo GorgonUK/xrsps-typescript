@@ -377,6 +377,10 @@ const categoryStructsByTab: Map<number, number[]> = new Map();
 const slotItemIdsByTab: Map<number, number[]> = new Map();
 /** All collection log slot item IDs across all tabs */
 let allCollectionSlotItemIds: number[] = [];
+/** Loaded category metadata keyed by struct id */
+const categoriesByStructId: Map<number, CollectionLogCategoryData> = new Map();
+/** Categories containing a given item id */
+const categoriesByItemId: Map<number, CollectionLogCategoryData[]> = new Map();
 
 function toPositiveIntArray(input: unknown): number[] {
     if (!Array.isArray(input)) return [];
@@ -458,6 +462,9 @@ export function loadCollectionLogItems(): void {
     const nextAllCollectionSlotItemIds: number[] = [];
     let nextTotalMaxCount = 0;
 
+    categoriesByStructId.clear();
+    categoriesByItemId.clear();
+
     for (const category of data.categories) {
         const tabIndex = category.tabIndex;
         let bucket = categoriesByTab.get(tabIndex);
@@ -478,6 +485,16 @@ export function loadCollectionLogItems(): void {
 
         for (const itemId of category.itemIds) {
             nextItemSet.add(itemId);
+        }
+
+        categoriesByStructId.set(category.structId, category);
+        for (const itemId of category.itemIds) {
+            let bucket = categoriesByItemId.get(itemId);
+            if (!bucket) {
+                bucket = [];
+                categoriesByItemId.set(itemId, bucket);
+            }
+            bucket.push(category);
         }
     }
 
@@ -539,6 +556,67 @@ export function getCollectionLogItems(): Set<number> {
 export function getCategoryMaxCount(enumId: number): number {
     ensureCollectionLogLoaded();
     return categoryCounts.get(enumId) ?? 0;
+}
+
+export type CollectionLogCategoryRef = {
+    tabIndex: number;
+    categoryIndex: number;
+    structId: number;
+    itemIds: readonly number[];
+};
+
+function toCategoryRef(category: CollectionLogCategoryData): CollectionLogCategoryRef {
+    return {
+        tabIndex: category.tabIndex,
+        categoryIndex: category.categoryIndex,
+        structId: category.structId,
+        itemIds: category.itemIds,
+    };
+}
+
+/** Categories that contain this collection log item id. */
+export function getCollectionLogCategoriesForItem(itemId: number): CollectionLogCategoryRef[] {
+    ensureCollectionLogLoaded();
+    const normalized = itemId | 0;
+    if (normalized <= 0) return [];
+    return (categoriesByItemId.get(normalized) ?? []).map(toCategoryRef);
+}
+
+/** Category metadata by struct id (e.g. Slayer=527). */
+export function getCollectionLogCategoryByStructId(structId: number): CollectionLogCategoryRef | undefined {
+    ensureCollectionLogLoaded();
+    const category = categoriesByStructId.get(structId | 0);
+    return category ? toCategoryRef(category) : undefined;
+}
+
+/** True when the player owns every item slot in the category. */
+export function isCollectionLogCategoryComplete(
+    player: Pick<CollectionLogPlayer, "hasCollectionItem">,
+    category: CollectionLogCategoryRef,
+): boolean {
+    if (category.itemIds.length === 0) {
+        return false;
+    }
+    for (const itemId of category.itemIds) {
+        if (!player.hasCollectionItem(itemId)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** Count unique collection log slots the player has obtained. */
+export function countPlayerCollectionLogSlots(
+    player: Pick<CollectionLogPlayer, "hasCollectionItem">,
+): number {
+    ensureCollectionLogLoaded();
+    let count = 0;
+    for (const itemId of getCollectionLogItems()) {
+        if (player.hasCollectionItem(itemId)) {
+            count++;
+        }
+    }
+    return count;
 }
 
 /**
@@ -720,12 +798,12 @@ export function trackCollectionLogItem(
     player: CollectionLogPlayer,
     itemId: number,
     services: CollectionLogServices,
-): void {
+): boolean {
     const id = itemId;
-    if (id <= 0) return;
+    if (id <= 0) return false;
 
     // Check if this item is in the collection log set
-    if (!isCollectionLogItem(id)) return;
+    if (!isCollectionLogItem(id)) return false;
 
     // Check if player already has this item
     const wasNew = !player.hasCollectionItem(id);
@@ -748,6 +826,8 @@ export function trackCollectionLogItem(
             targetPlayerIds: [player.id],
         });
     }
+
+    return wasNew;
 }
 
 // ============================================================================

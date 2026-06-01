@@ -19,6 +19,7 @@ export interface EquipmentHandlerServices {
         player: PlayerState,
         itemId: number,
         quantity: number,
+        options?: import("../player").InventoryAddOptions,
     ) => InventoryAddResult;
     closeInterruptibleInterfaces: (player: PlayerState) => void;
     refreshCombatWeaponCategory: (player: PlayerState) => {
@@ -75,7 +76,8 @@ export class EquipmentHandler {
             itemId,
             equipSlot,
             getObjType: (id) => this.services.getObjType(id),
-            addItemToInventory: (id, qty) => this.services.addItemToInventory(player, id, qty),
+            addItemToInventory: (id, qty) =>
+                this.services.addItemToInventory(player, id, qty, { trackCollectionLog: false }),
             slotCount: EQUIP_SLOT_COUNT,
         });
 
@@ -128,7 +130,8 @@ export class EquipmentHandler {
         const result = unequipItemApply({
             appearance,
             equipSlot,
-            addItemToInventory: (id, qty) => this.services.addItemToInventory(player, id, qty),
+            addItemToInventory: (id, qty) =>
+                this.services.addItemToInventory(player, id, qty, { trackCollectionLog: false }),
             slotCount: EQUIP_SLOT_COUNT,
         });
 

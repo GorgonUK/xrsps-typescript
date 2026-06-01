@@ -1,0 +1,60 @@
+{
+  "description": "Phase 3A/3B: explicit area_enter and wilderness_level triggers.",
+  "tasks": [
+    {
+      "sourceTaskId": 818,
+      "mvpTaskId": 122,
+      "trigger": { "type": "area_enter", "areaKeys": ["mole_lair"] }
+    },
+    {
+      "sourceTaskId": 1142,
+      "mvpTaskId": 123,
+      "trigger": { "type": "area_enter", "areaKeys": ["nightmare_area"] }
+    },
+    {
+      "sourceTaskId": 1242,
+      "mvpTaskId": 124,
+      "trigger": { "type": "area_enter", "areaKeys": ["revenant_caves"] }
+    },
+    {
+      "sourceTaskId": 1313,
+      "mvpTaskId": 125,
+      "trigger": { "type": "area_enter", "areaKeys": ["catacombs_of_kourend"] }
+    },
+    {
+      "sourceTaskId": 1236,
+      "mvpTaskId": 126,
+      "trigger": { "type": "area_enter", "areaKeys": ["wilderness"] }
+    },
+    {
+      "sourceTaskId": 1309,
+      "mvpTaskId": 127,
+      "trigger": { "type": "area_enter", "areaKeys": ["rogues_castle"] }
+    },
+    {
+      "sourceTaskId": 1306,
+      "mvpTaskId": 128,
+      "trigger": { "type": "area_enter", "areaKeys": ["corporeal_beast_lair"] }
+    },
+    {
+      "sourceTaskId": 1237,
+      "mvpTaskId": 129,
+      "trigger": { "type": "wilderness_level", "minLevel": 10 }
+    },
+    {
+      "sourceTaskId": 1238,
+      "mvpTaskId": 130,
+      "trigger": { "type": "wilderness_level", "minLevel": 20 }
+    },
+    {
+      "sourceTaskId": 1239,
+      "mvpTaskId": 131,
+      "trigger": { "type": "wilderness_level", "minLevel": 30 }
+    },
+    {
+      "sourceTaskId": 1240,
+      "mvpTaskId": 132,
+      "trigger": { "type": "wilderness_level", "minLevel": 50 }
+    }
+  ]
+}

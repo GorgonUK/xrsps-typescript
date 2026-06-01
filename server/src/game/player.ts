@@ -162,6 +162,12 @@ export interface InventoryAddResult {
     added: number;
 }
 
+/** Options for inventory add wrappers (e.g. wsServer.addItemToInventory). */
+export type InventoryAddOptions = {
+    /** When false, skip collection log unlock (inventory transfers). Default true. */
+    trackCollectionLog?: boolean;
+};
+
 /**
  * Result of an inventory transaction (add/remove).
  * Matches RSMod's ItemTransaction pattern.

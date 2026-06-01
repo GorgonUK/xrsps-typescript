@@ -1186,6 +1186,10 @@ function executeTeleport(
     }
 
     services.sendGameMessage(player, `Teleporting to ${destination.name}...`);
+
+    services.onLeagueSpellCast?.(player.id, {
+        teleportName: name,
+    });
 }
 
 /**

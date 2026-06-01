@@ -71,7 +71,12 @@ export interface BankingServices {
     getEquipQtyArray(player: PlayerState): number[];
 
     /** Add item to player's inventory */
-    addItemToInventory(player: PlayerState, itemId: number, quantity: number): InventoryAddResult;
+    addItemToInventory(
+        player: PlayerState,
+        itemId: number,
+        quantity: number,
+        options?: import("../player").InventoryAddOptions,
+    ): InventoryAddResult;
 
     /** Send inventory snapshot to client */
     sendInventorySnapshot(playerId: number): void;
@@ -1057,7 +1062,9 @@ export class BankingManager {
             return { ok: false, message: resolved.message ?? "You can't withdraw that item." };
         }
 
-        const result = this.services.addItemToInventory(player, resolved.itemId, removal.quantity);
+        const result = this.services.addItemToInventory(player, resolved.itemId, removal.quantity, {
+            trackCollectionLog: false,
+        });
         if (result.added <= 0) {
             this.restoreBankSlot(player, serverSlot, removal.itemId, removal.quantity);
             return { ok: false, message: "You don't have enough inventory space." };

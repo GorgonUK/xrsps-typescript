@@ -1,0 +1,96 @@
+{
+  "description": "Phase 3C: combat level milestone tasks (import after combat_level_reach trigger extension).",
+  "tasks": [
+    {
+      "sourceTaskId": 1467,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 10
+      }
+    },
+    {
+      "sourceTaskId": 1468,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 20
+      }
+    },
+    {
+      "sourceTaskId": 1469,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 30
+      }
+    },
+    {
+      "sourceTaskId": 1470,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 40
+      }
+    },
+    {
+      "sourceTaskId": 1471,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 50
+      }
+    },
+    {
+      "sourceTaskId": 1472,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 60
+      }
+    },
+    {
+      "sourceTaskId": 1473,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 70
+      }
+    },
+    {
+      "sourceTaskId": 1474,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 80
+      }
+    },
+    {
+      "sourceTaskId": 1475,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 90
+      }
+    },
+    {
+      "sourceTaskId": 1476,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 100
+      }
+    },
+    {
+      "sourceTaskId": 1477,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 110
+      }
+    },
+    {
+      "sourceTaskId": 1478,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 120
+      }
+    },
+    {
+      "sourceTaskId": 1479,
+      "trigger": {
+        "type": "combat_level_reach",
+        "minCombatLevel": 126
+      }
+    }
+  ]
+}

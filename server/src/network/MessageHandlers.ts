@@ -21,6 +21,7 @@ import { clearAutocastState } from "../game/combat/AutocastState";
 import { DEFAULT_RESPAWN_LOCATIONS } from "../game/death/types";
 import type { NpcState } from "../game/npc";
 import type { PlayerState } from "../game/player";
+import { handleLeagueTaskDebugCommand } from "../game/leagues/leagueTaskDebug";
 import { logger } from "../utils/logger";
 import type { MessageHandler, MessagePayload, MessageRouter } from "./MessageRouter";
 import type { IndexedMenuRequest } from "./managers/Cs2ModalManager";
@@ -220,6 +221,32 @@ export interface MessageHandlerServices {
     syncLeagueGeneralVarp: (player: PlayerState) => void;
     /** Re-check league tasks tied to skill levels / total level / XP (e.g. after ::master) */
     syncSkillProgressLeagueTasks: (playerId: number) => void;
+    /** MVP league task debug / simulation hooks */
+    onLeagueNpcKill?: (playerId: number, npcId: number, combatLevel?: number) => void;
+    onLeagueItemObtain?: (playerId: number, itemId: number, count: number) => void;
+    onLeagueItemEquip?: (playerId: number, itemId: number) => void;
+    onLeagueItemCraft?: (playerId: number, itemId: number, count: number) => void;
+    onLeagueSkillingAction?: (
+        playerId: number,
+        skill: string,
+        action: string,
+        targetId: number,
+        count: number,
+    ) => void;
+    onLeagueAreaEnter?: (playerId: number, areaKey: string) => void;
+    onLeagueWildernessLevelCross?: (
+        playerId: number,
+        previousLevel: number,
+        currentLevel: number,
+    ) => void;
+    onLeagueSpellCast?: (
+        playerId: number,
+        opts: {
+            spellId?: number;
+            spellCategory?: "combat" | "teleport" | "utility" | "binding";
+            teleportName?: string;
+        },
+    ) => void;
 
     // Chat
     queueChatMessage: (msg: {
@@ -1321,6 +1348,12 @@ const COMMAND_HELP_ENTRIES: readonly CommandHelpEntry[] = [
         adminOnly: true,
     },
     {
+        usage: "::ltask <list|verify|complete|reset|progress|sim>",
+        description: "MVP league task debug (63 tasks). See ::ltask help.",
+        category: "Admin",
+        adminOnly: true,
+    },
+    {
         usage: "::maxmelee",
         description: "Spawn a max melee loadout.",
         category: "Admin",
@@ -2044,6 +2077,61 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                         targetPlayerIds: [sender.id],
                     });
                     logger.info(`[cmd] ::master - Player ${sender.id} set all skills to 99`);
+                    return;
+                } else if (root === "ltask" || root === "leaguetask") {
+                    if (!services.canUseAdminTeleport(sender)) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "You do not have permission to use this command.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    const lines = handleLeagueTaskDebugCommand(sender, parts, {
+                        queueVarp: (playerId, varpId, value) =>
+                            services.queueVarp(playerId, varpId, value),
+                        queueVarbit: (playerId, varbitId, value) =>
+                            services.queueVarbit(playerId, varbitId, value),
+                        queueNotification: (playerId, notification) =>
+                            services.queueNotification(playerId, notification),
+                        onNpcKill: (playerId, npcId, combatLevel) =>
+                            services.onLeagueNpcKill?.(playerId, npcId, combatLevel),
+                        onItemObtain: (playerId, itemId, count) =>
+                            services.onLeagueItemObtain?.(playerId, itemId, count),
+                        onItemEquip: (playerId, itemId) =>
+                            services.onLeagueItemEquip?.(playerId, itemId),
+                        onItemCraft: (playerId, itemId, count) =>
+                            services.onLeagueItemCraft?.(playerId, itemId, count),
+                        onSkillingAction: (playerId, skill, action, targetId, count) =>
+                            services.onLeagueSkillingAction?.(
+                                playerId,
+                                skill,
+                                action,
+                                targetId,
+                                count,
+                            ),
+                        onAreaEnter: (playerId, areaKey) =>
+                            services.onLeagueAreaEnter?.(playerId, areaKey),
+                        onWildernessLevelCross: (playerId, previousLevel, currentLevel) =>
+                            services.onLeagueWildernessLevelCross?.(
+                                playerId,
+                                previousLevel,
+                                currentLevel,
+                            ),
+                        onSpellCast: (playerId, opts) =>
+                            services.onLeagueSpellCast?.(playerId, opts),
+                        syncSkillProgressLeagueTasks: (playerId) =>
+                            services.syncSkillProgressLeagueTasks(playerId),
+                    });
+                    if (lines) {
+                        for (const line of lines) {
+                            services.queueChatMessage({
+                                messageType: "game",
+                                text: line,
+                                targetPlayerIds: [sender.id],
+                            });
+                        }
+                    }
                     return;
                 }
                 else if (root === "openbank") {

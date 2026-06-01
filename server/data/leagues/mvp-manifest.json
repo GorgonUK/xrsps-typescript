@@ -1,0 +1,997 @@
+{
+  "generatedAt": "2026-05-27T23:28:44.236Z",
+  "mvpTaskCount": 63,
+  "enumId": 5728,
+  "structIdRange": {
+    "start": 90000,
+    "end": 90062
+  },
+  "tasks": [
+    {
+      "mvpTaskId": 0,
+      "sourceTaskId": 0,
+      "name": "Achieve your First Level Up",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90000,
+      "trigger": {
+        "type": "level_reach",
+        "level": 1,
+        "firstLevelUp": true
+      }
+    },
+    {
+      "mvpTaskId": 1,
+      "sourceTaskId": 1,
+      "name": "Achieve your First Level 5",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90001,
+      "trigger": {
+        "type": "level_reach",
+        "level": 5,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 2,
+      "sourceTaskId": 2,
+      "name": "Achieve your First Level 10",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90002,
+      "trigger": {
+        "type": "level_reach",
+        "level": 10,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 3,
+      "sourceTaskId": 3,
+      "name": "Achieve your First Level 15",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90003,
+      "trigger": {
+        "type": "level_reach",
+        "level": 15,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 4,
+      "sourceTaskId": 4,
+      "name": "Achieve your First Level 20",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90004,
+      "trigger": {
+        "type": "level_reach",
+        "level": 20,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 5,
+      "sourceTaskId": 5,
+      "name": "Achieve your First Level 25",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90005,
+      "trigger": {
+        "type": "level_reach",
+        "level": 25,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 6,
+      "sourceTaskId": 6,
+      "name": "Achieve your First Level 30",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90006,
+      "trigger": {
+        "type": "level_reach",
+        "level": 30,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 7,
+      "sourceTaskId": 7,
+      "name": "Achieve your First Level 35",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90007,
+      "trigger": {
+        "type": "level_reach",
+        "level": 35,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 8,
+      "sourceTaskId": 8,
+      "name": "Achieve your First Level 40",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90008,
+      "trigger": {
+        "type": "level_reach",
+        "level": 40,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 9,
+      "sourceTaskId": 9,
+      "name": "Achieve your First Level 45",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90009,
+      "trigger": {
+        "type": "level_reach",
+        "level": 45,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 10,
+      "sourceTaskId": 10,
+      "name": "Achieve your First Level 50",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90010,
+      "trigger": {
+        "type": "level_reach",
+        "level": 50,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 11,
+      "sourceTaskId": 11,
+      "name": "Achieve your First Level 55",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90011,
+      "trigger": {
+        "type": "level_reach",
+        "level": 55,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 12,
+      "sourceTaskId": 12,
+      "name": "Achieve your First Level 60",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90012,
+      "trigger": {
+        "type": "level_reach",
+        "level": 60,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 13,
+      "sourceTaskId": 13,
+      "name": "Achieve your First Level 65",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90013,
+      "trigger": {
+        "type": "level_reach",
+        "level": 65,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 14,
+      "sourceTaskId": 14,
+      "name": "Achieve your First Level 70",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90014,
+      "trigger": {
+        "type": "level_reach",
+        "level": 70,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 15,
+      "sourceTaskId": 15,
+      "name": "Achieve your First Level 75",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90015,
+      "trigger": {
+        "type": "level_reach",
+        "level": 75,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 16,
+      "sourceTaskId": 16,
+      "name": "Achieve your First Level 80",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90016,
+      "trigger": {
+        "type": "level_reach",
+        "level": 80,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 17,
+      "sourceTaskId": 17,
+      "name": "Achieve your First Level 85",
+      "area": "General",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90017,
+      "trigger": {
+        "type": "level_reach",
+        "level": 85,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 18,
+      "sourceTaskId": 18,
+      "name": "Achieve your First Level 90",
+      "area": "General",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90018,
+      "trigger": {
+        "type": "level_reach",
+        "level": 90,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 19,
+      "sourceTaskId": 19,
+      "name": "Achieve your First Level 95",
+      "area": "General",
+      "difficulty": "Master",
+      "points": 400,
+      "tier": 5,
+      "structId": 90019,
+      "trigger": {
+        "type": "level_reach",
+        "level": 95,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 20,
+      "sourceTaskId": 20,
+      "name": "Achieve your First Level 99",
+      "area": "General",
+      "difficulty": "Master",
+      "points": 400,
+      "tier": 5,
+      "structId": 90020,
+      "trigger": {
+        "type": "level_reach",
+        "level": 99,
+        "anySkill": true,
+        "excludedSkillIds": []
+      }
+    },
+    {
+      "mvpTaskId": 21,
+      "sourceTaskId": 21,
+      "name": "Base Level 5",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90021,
+      "trigger": {
+        "type": "level_reach",
+        "level": 5,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 22,
+      "sourceTaskId": 22,
+      "name": "Base Level 10",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90022,
+      "trigger": {
+        "type": "level_reach",
+        "level": 10,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 23,
+      "sourceTaskId": 23,
+      "name": "Base Level 15",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90023,
+      "trigger": {
+        "type": "level_reach",
+        "level": 15,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 24,
+      "sourceTaskId": 24,
+      "name": "Base Level 20",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90024,
+      "trigger": {
+        "type": "level_reach",
+        "level": 20,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 25,
+      "sourceTaskId": 25,
+      "name": "Base Level 25",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90025,
+      "trigger": {
+        "type": "level_reach",
+        "level": 25,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 26,
+      "sourceTaskId": 26,
+      "name": "Base Level 30",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90026,
+      "trigger": {
+        "type": "level_reach",
+        "level": 30,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 27,
+      "sourceTaskId": 27,
+      "name": "Base Level 35",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90027,
+      "trigger": {
+        "type": "level_reach",
+        "level": 35,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 28,
+      "sourceTaskId": 28,
+      "name": "Base Level 40",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90028,
+      "trigger": {
+        "type": "level_reach",
+        "level": 40,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 29,
+      "sourceTaskId": 29,
+      "name": "Base Level 45",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90029,
+      "trigger": {
+        "type": "level_reach",
+        "level": 45,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 30,
+      "sourceTaskId": 30,
+      "name": "Base Level 50",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90030,
+      "trigger": {
+        "type": "level_reach",
+        "level": 50,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 31,
+      "sourceTaskId": 31,
+      "name": "Base Level 55",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90031,
+      "trigger": {
+        "type": "level_reach",
+        "level": 55,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 32,
+      "sourceTaskId": 32,
+      "name": "Base Level 60",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90032,
+      "trigger": {
+        "type": "level_reach",
+        "level": 60,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 33,
+      "sourceTaskId": 33,
+      "name": "Base Level 65",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90033,
+      "trigger": {
+        "type": "level_reach",
+        "level": 65,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 34,
+      "sourceTaskId": 34,
+      "name": "Base Level 70",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90034,
+      "trigger": {
+        "type": "level_reach",
+        "level": 70,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 35,
+      "sourceTaskId": 35,
+      "name": "Base Level 75",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90035,
+      "trigger": {
+        "type": "level_reach",
+        "level": 75,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 36,
+      "sourceTaskId": 36,
+      "name": "Base Level 80",
+      "area": "General",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90036,
+      "trigger": {
+        "type": "level_reach",
+        "level": 80,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 37,
+      "sourceTaskId": 37,
+      "name": "Base Level 85",
+      "area": "General",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90037,
+      "trigger": {
+        "type": "level_reach",
+        "level": 85,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 38,
+      "sourceTaskId": 38,
+      "name": "Base Level 90",
+      "area": "General",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90038,
+      "trigger": {
+        "type": "level_reach",
+        "level": 90,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 39,
+      "sourceTaskId": 39,
+      "name": "Base Level 95",
+      "area": "General",
+      "difficulty": "Master",
+      "points": 400,
+      "tier": 5,
+      "structId": 90039,
+      "trigger": {
+        "type": "level_reach",
+        "level": 95,
+        "allSkills": true
+      }
+    },
+    {
+      "mvpTaskId": 40,
+      "sourceTaskId": 40,
+      "name": "Reach Total Level 2376",
+      "area": "General",
+      "difficulty": "Master",
+      "points": 400,
+      "tier": 5,
+      "structId": 90040,
+      "trigger": {
+        "type": "total_level_reach",
+        "minTotalLevel": 2376
+      }
+    },
+    {
+      "mvpTaskId": 41,
+      "sourceTaskId": 91,
+      "name": "Chop a Tree",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90041,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8173
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 42,
+      "sourceTaskId": 92,
+      "name": "Chop an Oak Tree",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90042,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8175
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 43,
+      "sourceTaskId": 93,
+      "name": "Chop a Willow Tree",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90043,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8176
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 44,
+      "sourceTaskId": 95,
+      "name": "Chop a Maple Tree",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90044,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8177
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 45,
+      "sourceTaskId": 97,
+      "name": "Chop a Yew Tree",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90045,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8178
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 46,
+      "sourceTaskId": 98,
+      "name": "Chop a Magic Tree",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90046,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          8179
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 47,
+      "sourceTaskId": 224,
+      "name": "Cook Chicken.",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90047,
+      "trigger": {
+        "type": "item_craft",
+        "itemIds": [
+          5609
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 48,
+      "sourceTaskId": 267,
+      "name": "Catch a Desert Lizard.",
+      "area": "General",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90048,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          6695
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 49,
+      "sourceTaskId": 584,
+      "name": "Defeat Crazy Archaeologist.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90049,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6618
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 50,
+      "sourceTaskId": 585,
+      "name": "Defeat Chaos Fanatic.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90050,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6619
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 51,
+      "sourceTaskId": 586,
+      "name": "Defeat Scorpia.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90051,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6615
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 52,
+      "sourceTaskId": 591,
+      "name": "Defeat Sarachnis.",
+      "area": "Kourend",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90052,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8713
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 53,
+      "sourceTaskId": 634,
+      "name": "Defeat Bryophyta.",
+      "area": "General",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90053,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8195
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 54,
+      "sourceTaskId": 639,
+      "name": "Defeat Deranged Archaeologist.",
+      "area": "General",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90054,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7806
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 55,
+      "sourceTaskId": 1114,
+      "name": "Defeat a Ghoul in Morytania.",
+      "area": "Morytania",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90055,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          289
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 56,
+      "sourceTaskId": 1115,
+      "name": "Defeat a Banshee in Morytania.",
+      "area": "Morytania",
+      "difficulty": "Easy",
+      "points": 10,
+      "tier": 1,
+      "structId": 90056,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          414
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 57,
+      "sourceTaskId": 1198,
+      "name": "Defeat a Shadow Warrior in Tirannwn.",
+      "area": "Tirannwn",
+      "difficulty": "Medium",
+      "points": 30,
+      "tier": 2,
+      "structId": 90057,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2853
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 58,
+      "sourceTaskId": 1278,
+      "name": "Defeat a Mammoth in the Wilderness.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90058,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6604
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 59,
+      "sourceTaskId": 1284,
+      "name": "Defeat a Chaos Fanatic in the Wilderness.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90059,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6619
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 60,
+      "sourceTaskId": 1285,
+      "name": "Defeat Crazy Archaeologist in the Wilderness.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90060,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6618
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 61,
+      "sourceTaskId": 1286,
+      "name": "Defeat Scorpia in the Wilderness.",
+      "area": "Wilderness",
+      "difficulty": "Hard",
+      "points": 80,
+      "tier": 3,
+      "structId": 90061,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6615
+        ]
+      }
+    },
+    {
+      "mvpTaskId": 62,
+      "sourceTaskId": 1366,
+      "name": "Defeat a Hydra in Kourend.",
+      "area": "Kourend",
+      "difficulty": "Elite",
+      "points": 200,
+      "tier": 4,
+      "structId": 90062,
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8609
+        ]
+      }
+    }
+  ]
+}

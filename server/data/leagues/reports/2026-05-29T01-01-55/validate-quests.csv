@@ -1,0 +1,218 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+89,Enter the Mining Guild,need_hook,area:General,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+653,Use the Grand Exchange.,need_hook,quest/area:Misthalin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+664,Enter the Stronghold of Security.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+666,Enter Edgeville Dungeon.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+667,Enter Varrock Sewers.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+668,Enter Lumbridge Swamp Caves.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+669,Enter the Cook’s Guild.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+670,Enter the Champions’ Guild.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+671,Enter the Wizards’ Tower.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+672,Enter the Varrock Museum.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+673,Enter the Grand Exchange Tunnel.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+694,Speak to Oziach.,need_hook,quest/area:Misthalin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+695,Speak to the Wise Old Man.,need_hook,quest/area:Misthalin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+696,Speak to Aubury.,need_hook,quest/area:Misthalin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+697,Speak to the Lumbridge Guide.,need_hook,quest/area:Misthalin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+701,Enter the Earth Altar through Varrock.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+702,Enter the Chaos Altar near Edgeville.,need_hook,area:Misthalin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+711,Use the Karamja General Store.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+736,Enter the Hardwood Grove.,need_hook,area:Karamja,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+740,Enter the Nature Altar.,need_hook,area:Karamja,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+744,Use the Charter Ships on Karamja.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+747,Enter the Tribal Statue Area.,need_hook,area:Karamja,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+758,Use the Furnace in Shilo Village.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+759,Use the Anvil in Shilo Village.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+765,Enter the Fishing Platform Area.,need_hook,area:Karamja,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+768,Speak to Lubufu.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+769,Speak to Hajedy.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+770,Speak to Garth.,need_hook,quest/area:Karamja,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+779,Enter the Crafting Guild.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+780,Enter the Mining Guild.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+781,Enter the Warriors’ Guild.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+782,Enter the Heroes’ Guild.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+783,Enter the White Knights’ Castle.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+784,Enter the Dwarven Mines.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+785,Enter the Taverley Dungeon.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+786,Enter the Asgarnian Ice Dungeon.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+787,Enter the Falador Party Room.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+788,Use the Port Sarim Jail Shortcut.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+807,Enter the White Wolf Mountain Pass.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+818,Enter the Mole Lair.,ready,area_enter:mole_lair,LeagueTaskManager.onAreaEnter,,
+821,Enter the Rimmington Mine.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+824,Use the Furnace in Falador.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+825,Use the Anvil in Falador.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+830,Speak to Thurgo.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+831,Speak to Turael.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+832,Speak to Sir Tiffy Cashien.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+833,Enter the Rogues’ Den.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+836,Use the Burthorpe Games Room.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+837,Enter the Games Room Cellar.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+840,Enter the Falador Party Room Chest Area.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+843,Enter the Mudskipper Point Area.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+849,Use the Port Sarim Spirit Tree.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+850,Enter the Taverley Summoning Area.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+853,Use the Falador Herb Patch.,need_hook,quest/area:Asgarnia,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+856,Enter Falador Park.,need_hook,area:Asgarnia,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+858,Enter the Fremennik Slayer Dungeon.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+859,Enter the Waterbirth Island Dungeon.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+860,Enter the Ancient Cavern.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+861,Enter the Lighthouse Basement.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+862,Enter Jatizso.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+863,Enter Neitiznot.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+864,Enter Miscellania.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+865,Enter Etceteria.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+866,Enter Lunar Isle.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+887,Use the Rellekka Agility Shortcut.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+891,Use the Lunar Spellbook.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+907,Use the Furnace in Fremennik.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+908,Use the Anvil in Fremennik.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+910,Speak to Peer the Seer.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+911,Speak to Jarvald.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+912,Speak to Baba Yaga.,need_hook,quest/area:Fremennik,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+913,Enter the Keldagrim Entrance Tunnel.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+920,Enter the Penguin Agility Course.,need_hook,area:Fremennik,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+926,Enter the Fishing Guild.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+927,Enter the Ranging Guild.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+928,Enter the Wizards’ Guild.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+929,Enter the Legends’ Guild.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+930,Enter the Sorcerer’s Tower.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+931,Enter the Sinclair Mansion.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+932,Enter McGrubor’s Wood.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+933,Enter the Ardougne Sewers.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+934,Enter the Poison Waste Dungeon.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+935,Enter the Feldip Hunter Area.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+937,Use the Coal Trucks.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+957,Use the Seers’ Village Agility Shortcut.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+961,Use the Camelot Teleport Spell.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+969,Use the Ardougne Market Stalls.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+985,Use the Furnace in Ardougne.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+986,Use the Anvil in West Ardougne.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+987,Speak to Sherlock.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+988,Speak to King Arthur.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+989,Speak to the Monk of Entrana.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+992,Use the Spirit Tree in Kandarin.,need_hook,quest/area:Kandarin,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+993,Enter the Gnome Stronghold Agility Course.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+995,Enter the Barbarian Outpost Agility Course.,need_hook,area:Kandarin,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1004,Enter Sophanem.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1005,Enter Menaphos.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1006,Enter the Kalphite Lair.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1007,Enter the Smoke Dungeon.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1008,Enter the Ancient Pyramid.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1009,Enter the Agility Pyramid.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1010,Enter the Desert Mining Camp.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1011,Enter Pollnivneach Slayer Dungeon.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1012,Enter the Ancient Cavern in the Desert.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1043,Use the Ancient Magicks Spellbook.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1059,Use the Pollnivneach General Store.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1060,Use the Furnace in Al Kharid.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1061,Use the Anvil in Al Kharid.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1062,Speak to Ali Morrisane.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1063,Speak to Zahur.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1064,Speak to the Bandit Camp Barman.,need_hook,quest/area:Desert,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1069,Enter Sophanem Slayer Dungeon.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1073,Enter the Desert Treasure Pyramid Area.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1076,Enter the Ruins of Uzer.,need_hook,area:Desert,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1082,Enter the Slayer Tower.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1083,Enter Darkmeyer.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1084,Enter the Barrows Crypts.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1085,Enter the Haunted Mine.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1086,Enter the Mort Myre Swamp.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1087,Enter the Hallowed Sepulchre.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1088,Enter the Grotesque Guardians Rooftop.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1089,Enter Ver Sinhaza.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1090,Enter the Theatre of Blood Lobby.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1105,Use the Ancient Magicks Spellbook in Morytania.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1131,Use the Furnace in Port Phasmatys.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1132,Speak to the Strange Old Man.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1133,Speak to Veliaf Hurtz.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1134,Speak to the Slayer Master in Canifis.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1135,Use the Ectofuntus.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1139,Enter the Barrows Tunnel.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1142,Enter the Nightmare Area.,ready,area_enter:nightmare_area,LeagueTaskManager.onAreaEnter,,
+1143,Enter Slepe.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1144,Enter Burgh de Rott.,need_hook,area:Morytania,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1157,Use the Boat to Port Phasmatys.,need_hook,quest/area:Morytania,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1159,Enter Lletya.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1160,Enter Prifddinas.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1161,Enter the Iorwerth Dungeon.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1162,Enter the Poison Waste.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1163,Enter Zul-Andra.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1164,Enter the Gauntlet Lobby.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1165,Enter the Corrupted Gauntlet Lobby.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1166,Enter the Underground Pass Exit.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1167,Enter the Isafdar Forest.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1170,Use the Dense Forest Agility Shortcut.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1188,Use the Lunar Spellbook in Tirannwn.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1207,Use the Furnace in Prifddinas.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1208,Use the Anvil in Prifddinas.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1209,Speak to Eluned.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1210,Speak to Islwyn.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1211,Speak to Arianwyn.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1214,Enter the Crystal Singing Bowl Area.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1222,Enter the Rabbit Hole Shortcut in Tirannwn.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1232,Use the Sawmill in Prifddinas.,need_hook,quest/area:Tirannwn,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1233,Enter the Cadarn District.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1234,Enter the Iorwerth District.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1235,Enter the Crwys District.,need_hook,area:Tirannwn,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1236,Enter the Wilderness.,ready,area_enter:wilderness,LeagueTaskManager.onAreaEnter,,
+1237,Enter Level 10 Wilderness.,ready,wilderness_level:10,LeagueTaskManager.onWildernessLevelCross,,
+1238,Enter Level 20 Wilderness.,ready,wilderness_level:20,LeagueTaskManager.onWildernessLevelCross,,
+1239,Enter Level 30 Wilderness.,ready,wilderness_level:30,LeagueTaskManager.onWildernessLevelCross,,
+1240,Enter Level 50 Wilderness.,ready,wilderness_level:50,LeagueTaskManager.onWildernessLevelCross,,
+1241,Enter the Wilderness Slayer Cave.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1242,Enter the Revenant Caves.,ready,area_enter:revenant_caves,LeagueTaskManager.onAreaEnter,,
+1243,Enter the Lava Maze.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1244,Enter the Wilderness Agility Course.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1294,Use the Fountain of Rune.,need_hook,quest/area:Wilderness,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1296,Use the Obelisk Network in the Wilderness.,need_hook,quest/area:Wilderness,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1301,Enter the Deep Wilderness Dungeon.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1306,Enter the Corporeal Beast Cave.,ready,area_enter:corporeal_beast_lair,LeagueTaskManager.onAreaEnter,,
+1308,Enter the Pirate Hut in the Wilderness.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1309,Enter the Rogues’ Castle.,ready,area_enter:rogues_castle,LeagueTaskManager.onAreaEnter,,
+1310,Enter the Demonic Ruins.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1311,Enter the Forgotten Cemetery.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1312,Enter the Wilderness God Wars Dungeon.,need_hook,area:Wilderness,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1313,Enter the Catacombs of Kourend.,ready,area_enter:catacombs_of_kourend,LeagueTaskManager.onAreaEnter,,
+1314,Enter Mount Karuulm.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1315,Enter the Karuulm Slayer Dungeon.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1316,Enter the Farming Guild.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1317,Enter the Woodcutting Guild.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1318,Enter the Farming Guild Mid Tier.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1319,Enter the Farming Guild High Tier.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1320,Enter the Kebos Swamp.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1321,Enter the Lizardman Canyon.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1322,Enter the Shayzien Crypts.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1323,Enter the Arceuus Library.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1324,Enter the Blood Altar.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1325,Enter the Soul Altar.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1326,Enter the Chasm of Fire.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1329,Use the Mount Karuulm Agility Shortcut.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1348,Use the Arceuus Spellbook.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1372,Use the Furnace in Lovakengj.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1373,Use the Anvil in Lovakengj.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1374,Speak to Konar quo Maten.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1375,Speak to Lord Kandur Hosidius.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1376,Speak to Veos.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1377,Use the Minecart Network in Kourend.,need_hook,quest/area:Kourend,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1384,Enter the Wintertodt Camp.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1388,Enter the Chambers of Xeric Lobby.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1389,Enter Mount Quidamortem.,need_hook,area:Kourend,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1393,Enter Civitas illa Fortis.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1394,Enter the Fortis Colosseum.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1395,Enter the Hunter Guild.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1396,Enter the Avium Savannah.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1397,Enter the Tlati Rainforest.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1398,Enter Cam Torum.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1399,Enter Neypotzli.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1400,Enter the Twilight Temple.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1401,Enter the Fortis Bazaar.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1402,Enter the Hunter Guild Basement.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1424,Use the Arceuus Spellbook in Varlamore.,need_hook,quest/area:Varlamore,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1444,Use the Furnace in Cam Torum.,need_hook,quest/area:Varlamore,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1445,Use the Anvil in Cam Torum.,need_hook,quest/area:Varlamore,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1447,Speak to Servius.,need_hook,quest/area:Varlamore,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1448,Speak to the Colosseum Recruiter.,need_hook,quest/area:Varlamore,(unwired) quest completion,quest/diary completion not implemented,Implement quest system hook or script_manual
+1455,Enter the Perilous Moons Area.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1457,Enter the Earthbound Cavern in Varlamore.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry
+1463,Enter the Bazaar Upper Level.,need_hook,area:Varlamore,(unwired) area enter,area enter not wired to league tasks,Wire region enter hook or script_manual on area entry

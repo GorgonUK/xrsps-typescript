@@ -38,6 +38,7 @@ type TradeManagerOptions = {
         player: PlayerState,
         itemId: number,
         quantity: number,
+        options?: import("../player").InventoryAddOptions,
     ) => InventoryAddResult;
     getItemDefinition: (itemId: number) => { tradeable: boolean; stackable: boolean } | undefined;
 };
@@ -388,13 +389,16 @@ export class TradeManager {
     }
 
     private addItemsToInventory(player: PlayerState, itemId: number, quantity: number): boolean {
+        const transferOpts = { trackCollectionLog: false as const };
         const def = this.options.getItemDefinition(itemId);
         const isStackable = !!def?.stackable;
         if (isStackable) {
-            return this.options.addItemToInventory(player, itemId, quantity).added > 0;
+            return (
+                this.options.addItemToInventory(player, itemId, quantity, transferOpts).added > 0
+            );
         }
         for (let i = 0; i < quantity; i++) {
-            const result = this.options.addItemToInventory(player, itemId, 1);
+            const result = this.options.addItemToInventory(player, itemId, 1, transferOpts);
             if (result.added <= 0) {
                 return false;
             }

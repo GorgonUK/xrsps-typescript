@@ -8,6 +8,20 @@ import {
     extractPickpocketTarget,
     normalizeTaskNameForParser,
 } from "./normalize";
+import { getPhase2SkillingTrigger } from "./phase2Triggers";
+import { getPhase2b1PickpocketTrigger } from "./phase2b1PickpocketTriggers";
+import { getPhase2cSkillingTrigger } from "./phase2cSkillingTriggers";
+import { getPhase2dSkillingTrigger } from "./phase2dSkillingTriggers";
+import { getPhase3AreaTrigger } from "./phase3AreaTriggers";
+import { getPhase3dAreaTrigger } from "./phase3dAreaTriggers";
+import { getPhase3cCombatTrigger } from "./phase3cCombatTriggers";
+import { getPhase4a1SpellTrigger } from "./phase4a1SpellTriggers";
+import { getPhase4a2SpellTrigger } from "./phase4a2SpellTriggers";
+import { getPhase4a3AlchemyTrigger } from "./phase4a3AlchemyTriggers";
+import { getPhase4bCoreSpellTrigger } from "./phase4bCoreSpellTriggers";
+import { getPhase6bCollectionTrigger } from "./phase6bCollectionTriggers";
+import { getLeagueAreaDefinition } from "../../../src/game/leagues/AreaRegistry";
+import { getSpellData } from "../../../src/data/spells";
 import type { ValidationRegistries } from "./registries";
 import type { CsvTaskRow, TaskBatch, TaskStatus, ValidationRow } from "./types";
 
@@ -18,7 +32,13 @@ const WIRED_HOOKS: Record<string, string> = {
     item_craft: "LeagueTaskManager.onItemCraft",
     level_reach: "LeagueTaskManager.syncSkillProgressTasks",
     total_level_reach: "LeagueTaskManager.syncSkillProgressTasks",
+    combat_level_reach: "LeagueTaskManager.syncSkillProgressTasks",
     xp_reach: "LeagueTaskManager.syncSkillProgressTasks",
+    skilling_action: "LeagueTaskManager.onSkillingAction",
+    area_enter: "LeagueTaskManager.onAreaEnter",
+    wilderness_level: "LeagueTaskManager.onWildernessLevelCross",
+    spell_cast: "LeagueTaskManager.onSpellCast",
+    collection_log: "LeagueTaskManager.onCollectionLogEvent",
 };
 
 const UNWIRED_HOOKS: Record<string, string> = {
@@ -164,6 +184,36 @@ function checkItemIds(
     return { content, missing: "", status: "ready" };
 }
 
+function checkPickpocketNpcIds(
+    reg: ValidationRegistries,
+    npcIds: number[],
+): { content: string; missing: string; status: TaskStatus } {
+    if (npcIds.length === 0) {
+        return {
+            content: "",
+            missing: "pickpocket trigger missing targetIds",
+            status: "missing_content",
+        };
+    }
+    const missing = npcIds.filter((id) => !reg.pickpocketNpcIds.has(id | 0));
+    if (missing.length > 0) {
+        return {
+            content: `pickpocket npc ids: ${npcIds.slice(0, 5).join(",")}...`,
+            missing: `npc ids not in thieving.ts PICKPOCKET_NPCS: ${missing.slice(0, 5).join(",")}`,
+            status: "missing_content",
+        };
+    }
+    const sample = npcIds
+        .slice(0, 3)
+        .map((id) => `${id}:${reg.getNpcName(id)}`)
+        .join("; ");
+    return {
+        content: `thieving/pickpocket npcIds(${npcIds.length}) ${sample}`,
+        missing: "",
+        status: "ready",
+    };
+}
+
 function validateWithTrigger(
     reg: ValidationRegistries,
     row: CsvTaskRow,
@@ -215,16 +265,173 @@ function validateWithTrigger(
         }
         case "level_reach":
         case "total_level_reach":
+        case "combat_level_reach":
         case "xp_reach":
             return result(
                 row,
                 batch,
                 "ready",
-                `trigger:${trigger.type}`,
+                trigger.type === "combat_level_reach"
+                    ? `combat_level_reach:${trigger.minCombatLevel}`
+                    : `trigger:${trigger.type}`,
                 hook,
                 "",
                 "",
             );
+        case "skilling_action": {
+            if (trigger.skill === "thieving" && trigger.action === "pickpocket") {
+                const check = checkPickpocketNpcIds(reg, trigger.targetIds);
+                const content = check.content
+                    ? `skilling_action:${check.content}`
+                    : "skilling_action:thieving/pickpocket";
+                const status = check.status === "ready" ? "ready" : check.status;
+                return result(row, batch, status, content, hook, check.missing, suggest(check, row));
+            }
+            const check = checkItemIds(reg, trigger.targetIds, {
+                itemLabel: `${trigger.skill}/${trigger.action}`,
+            });
+            const content = check.content
+                ? `skilling_action:${trigger.skill}/${trigger.action} ${check.content}`
+                : `skilling_action:${trigger.skill}/${trigger.action}`;
+            const status = check.status === "ready" ? "ready" : check.status;
+            return result(row, batch, status, content, hook, check.missing, suggest(check, row));
+        }
+        case "area_enter": {
+            const areaKeys = trigger.areaKeys ?? [];
+            if (areaKeys.length > 0) {
+                return result(
+                    row,
+                    batch,
+                    "ready",
+                    `area_enter:${areaKeys.join(",")}`,
+                    hook,
+                    "",
+                    "",
+                );
+            }
+            if ((trigger.regionIds?.length ?? 0) > 0) {
+                return result(
+                    row,
+                    batch,
+                    "ready",
+                    `area_enter:regions:${(trigger.regionIds ?? []).join(",")}`,
+                    hook,
+                    "",
+                    "",
+                );
+            }
+            return result(
+                row,
+                batch,
+                "need_hook",
+                "area_enter",
+                hook,
+                "area_enter trigger missing areaKeys/regionIds",
+                "Add areaKeys or regionIds for area_enter trigger",
+            );
+        }
+        case "wilderness_level": {
+            const minLevel = trigger.minLevel | 0;
+            if (minLevel > 0) {
+                return result(
+                    row,
+                    batch,
+                    "ready",
+                    `wilderness_level:${minLevel}`,
+                    hook,
+                    "",
+                    "",
+                );
+            }
+            return result(
+                row,
+                batch,
+                "need_hook",
+                "wilderness_level",
+                hook,
+                "wilderness_level trigger missing minLevel",
+                "Add minLevel for wilderness_level trigger",
+            );
+        }
+        case "spell_cast": {
+            const spellIds: number[] = [];
+            if (trigger.spellId !== undefined && trigger.spellId > 0) {
+                spellIds.push(trigger.spellId);
+            }
+            if (trigger.spellIdsAny) {
+                spellIds.push(...trigger.spellIdsAny);
+            }
+            const missingIds = spellIds.filter((id) => !getSpellData(id));
+            if (spellIds.length > 0 && missingIds.length > 0) {
+                return result(
+                    row,
+                    batch,
+                    "missing_content",
+                    `spell_cast:missing:${missingIds.join(",")}`,
+                    hook,
+                    "spell id not in spells.ts",
+                    "Add SpellDataEntry or fix trigger spell id",
+                );
+            }
+            const contentParts: string[] = [];
+            if (trigger.spellId) contentParts.push(`spellId:${trigger.spellId}`);
+            if (trigger.spellIdsAny?.length) {
+                contentParts.push(`spellIdsAny:${trigger.spellIdsAny.join(",")}`);
+            }
+            if (trigger.spellCategory) contentParts.push(`category:${trigger.spellCategory}`);
+            if (trigger.teleportName) contentParts.push(`teleport:${trigger.teleportName}`);
+            if (trigger.anySpell) contentParts.push("anySpell");
+            if (trigger.spellbook) contentParts.push(`spellbook:${trigger.spellbook}`);
+            if (trigger.areaKeys?.length) {
+                contentParts.push(`areaKeys:${trigger.areaKeys.join(",")}`);
+            }
+            if (trigger.count) contentParts.push(`count:${trigger.count}`);
+            const missingAreas = (trigger.areaKeys ?? []).filter((key) => !getLeagueAreaDefinition(key));
+            if (missingAreas.length > 0) {
+                return result(
+                    row,
+                    batch,
+                    "missing_content",
+                    contentParts.join(" "),
+                    hook,
+                    `unknown areaKeys: ${missingAreas.join(",")}`,
+                    "Add AreaRegistry definition for areaKeys",
+                );
+            }
+            if (
+                trigger.spellbook &&
+                !trigger.spellId &&
+                !(trigger.spellIdsAny?.length ?? 0) &&
+                !trigger.spellCategory &&
+                !trigger.teleportName &&
+                !trigger.anySpell
+            ) {
+                return result(row, batch, "ready", contentParts.join(" "), hook, "", "");
+            }
+            return result(
+                row,
+                batch,
+                "ready",
+                contentParts.length > 0 ? `spell_cast:${contentParts.join(" ")}` : "spell_cast",
+                hook,
+                "",
+                "",
+            );
+        }
+        case "collection_log": {
+            const contentParts: string[] = [`milestone:${trigger.milestone}`];
+            if (trigger.milestone === "slot") {
+                contentParts.push(`minSlots:${Math.max(1, trigger.minSlots ?? 1)}`);
+            } else if (trigger.milestone === "page") {
+                if (trigger.tabIndex !== undefined) {
+                    contentParts.push(`tabIndex:${trigger.tabIndex}`);
+                }
+                if (trigger.categoryStructId !== undefined) {
+                    contentParts.push(`structId:${trigger.categoryStructId}`);
+                }
+            }
+            return result(row, batch, "ready", contentParts.join(" "), hook, "", "");
+        }
         default:
             return result(row, batch, "need_hook", "", hook, "unknown trigger", "");
     }
@@ -484,6 +691,90 @@ function validateMisc(reg: ValidationRegistries, row: CsvTaskRow): ValidationRow
 
 export function validateTask(reg: ValidationRegistries, row: CsvTaskRow): ValidationRow {
     const batch = categorizeTask(row);
+    const phase2Trigger = getPhase2SkillingTrigger(row.id);
+    if (phase2Trigger) {
+        return validateWithTrigger(reg, row, batch, phase2Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase2cTrigger = getPhase2cSkillingTrigger(row.id);
+    if (phase2cTrigger) {
+        return validateWithTrigger(reg, row, batch, phase2cTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase2dTrigger = getPhase2dSkillingTrigger(row.id);
+    if (phase2dTrigger) {
+        return validateWithTrigger(reg, row, batch, phase2dTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase2b1Trigger = getPhase2b1PickpocketTrigger(row.id);
+    if (phase2b1Trigger) {
+        return validateWithTrigger(reg, row, batch, phase2b1Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase3Trigger = getPhase3AreaTrigger(row.id);
+    if (phase3Trigger) {
+        return validateWithTrigger(reg, row, batch, phase3Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase3dTrigger = getPhase3dAreaTrigger(row.id);
+    if (phase3dTrigger) {
+        return validateWithTrigger(reg, row, batch, phase3dTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase3cTrigger = getPhase3cCombatTrigger(row.id);
+    if (phase3cTrigger) {
+        return validateWithTrigger(reg, row, batch, phase3cTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase4a1Trigger = getPhase4a1SpellTrigger(row.id);
+    if (phase4a1Trigger) {
+        return validateWithTrigger(reg, row, batch, phase4a1Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase4a2Trigger = getPhase4a2SpellTrigger(row.id);
+    if (phase4a2Trigger) {
+        return validateWithTrigger(reg, row, batch, phase4a2Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase4a3Trigger = getPhase4a3AlchemyTrigger(row.id);
+    if (phase4a3Trigger) {
+        return validateWithTrigger(reg, row, batch, phase4a3Trigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase4bCoreTrigger = getPhase4bCoreSpellTrigger(row.id);
+    if (phase4bCoreTrigger) {
+        return validateWithTrigger(reg, row, batch, phase4bCoreTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
+    const phase6bTrigger = getPhase6bCollectionTrigger(row.id);
+    if (phase6bTrigger) {
+        return validateWithTrigger(reg, row, batch, phase6bTrigger, {
+            requireSpawn: false,
+            requireObtainable: false,
+        });
+    }
     switch (batch) {
         case "skills":
             return validateSkills(reg, row);

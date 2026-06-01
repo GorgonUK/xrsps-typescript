@@ -779,4 +779,13 @@ export interface ScriptServices {
      * gate sensitive operations without each module re-implementing the check.
      */
     isAdminPlayer?: (player: PlayerState) => boolean;
+    /** MVP league task hook for successful spell casts / spellbook teleports. */
+    onLeagueSpellCast?: (
+        playerId: number,
+        opts: {
+            spellId?: number;
+            spellCategory?: "combat" | "teleport" | "utility" | "binding";
+            teleportName?: string;
+        },
+    ) => void;
 }

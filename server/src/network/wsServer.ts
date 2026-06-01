@@ -318,6 +318,7 @@ import {
 } from "../game/items/playerItemOwnership";
 import { LeagueTaskManager } from "../game/leagues/LeagueTaskManager";
 import { LeagueTaskService } from "../game/leagues/LeagueTaskService";
+import { resolveEnteredLeagueAreas, getLeagueAreasInsideNow } from "../game/leagues/AreaRegistry";
 import { syncLeagueGeneralVarp } from "../game/leagues/leagueGeneral";
 import { getLeaguePackedVarpsForPlayer } from "../game/leagues/leaguePackedVarps";
 import { getLeagueSkillXpMultiplier as getActiveLeagueSkillXpMultiplier } from "../game/leagues/leagueXp";
@@ -337,6 +338,7 @@ import {
     DEFAULT_BANK_CAPACITY,
     INVENTORY_SLOT_COUNT,
     type InventoryAddResult,
+    type InventoryAddOptions,
     type InventoryEntry,
     type PlayerAppearance as PlayerAppearanceState,
     PlayerManager,
@@ -1295,6 +1297,7 @@ export class WSServer {
     private enumTypeLoader?: EnumTypeLoader;
     private structTypeLoader?: any;
     private leagueTaskManager?: LeagueTaskManager;
+    private readonly leagueAreaInsideByPlayer = new Map<number, Set<string>>();
     private cacheEnv?: CacheEnv;
     private huffman?: Huffman;
     private healthBarDefLoader?: ArchiveHealthBarDefinitionLoader;
@@ -1950,6 +1953,8 @@ export class WSServer {
                     return true;
                 },
                 getPlayerById: (playerId) => this.players?.getById(playerId),
+                onLeagueSpellCast: (playerId, opts) =>
+                    this.leagueTaskManager?.onSpellCast(playerId, opts),
                 isAdminPlayer: (player) => this.isAdminPlayer(player),
                 openDialog: (player, request) =>
                     this.widgetDialogHandler.openDialog(player, request as any),
@@ -3771,10 +3776,28 @@ export class WSServer {
             // Note: player.x/y are in sub-tile units (128 per tile), convert to tile coordinates
             const tileX = player.x / 128;
             const tileY = player.y / 128;
+            const prevLeagueAreas = this.leagueAreaInsideByPlayer.get(player.id) ?? new Set<string>();
+            const { entered: enteredLeagueAreas, insideNow: leagueAreasNow } =
+                resolveEnteredLeagueAreas(prevLeagueAreas, tileX, tileY, player.level);
+            this.leagueAreaInsideByPlayer.set(player.id, leagueAreasNow);
+            if (enteredLeagueAreas.length > 0) {
+                const regionId = ((tileX >> 6) << 8) | (tileY >> 6);
+                for (const areaKey of enteredLeagueAreas) {
+                    this.leagueTaskManager?.onAreaEnter(player.id, areaKey, regionId);
+                }
+            }
             const currentWildyLevel = getWildernessLevel(tileX, tileY);
             const previousWildyLevel = player._lastWildernessLevel ?? 0;
 
             if (currentWildyLevel !== previousWildyLevel) {
+                if (currentWildyLevel > previousWildyLevel) {
+                    this.leagueTaskManager?.onWildernessLevelCross(
+                        player.id,
+                        previousWildyLevel,
+                        currentWildyLevel,
+                    );
+                }
+
                 player._lastWildernessLevel = currentWildyLevel;
 
                 // PVP interface (90) container: toplevel_osrs_stretch:pvp_icons = (161 << 16) | 3
@@ -6906,6 +6929,28 @@ export class WSServer {
     }
 
     private queueSpellResult(playerId: number, payload: SpellResultPayload): void {
+        if (payload.outcome === "success" && payload.spellId > 0) {
+            const spellData = getSpellData(payload.spellId);
+            const category = spellData?.category;
+            const spellbook = spellData?.spellbook;
+            this.leagueTaskManager?.onSpellCast(playerId, {
+                spellId: payload.spellId,
+                spellCategory:
+                    category === "combat" ||
+                    category === "utility" ||
+                    category === "binding" ||
+                    category === "teleport"
+                        ? category
+                        : undefined,
+                spellbook:
+                    spellbook === "standard" ||
+                    spellbook === "ancient" ||
+                    spellbook === "lunar" ||
+                    spellbook === "arceuus"
+                        ? spellbook
+                        : undefined,
+            });
+        }
         if (this.activeFrame) {
             this.activeFrame.spellResults.push({ playerId: playerId, payload });
             return;
@@ -7816,6 +7861,9 @@ export class WSServer {
             onItemCraft: (playerId, itemId, count) => {
                 this.leagueTaskManager?.onItemCraft(playerId, itemId, count);
             },
+            onSkillingAction: (playerId, skill, action, targetId, count) => {
+                this.leagueTaskManager?.onSkillingAction(playerId, skill, action, targetId, count);
+            },
 
             // --- Description Helpers ---
             describeLog: (itemId) => this.describeLog(itemId),
@@ -8109,7 +8157,8 @@ export class WSServer {
                 return unequipItemApply({
                     appearance,
                     equipSlot,
-                    addItemToInventory: (id, qty) => this.addItemToInventory(player, id, qty),
+                    addItemToInventory: (id, qty) =>
+                        this.addItemToInventory(player, id, qty, { trackCollectionLog: false }),
                     slotCount: EQUIP_SLOT_COUNT,
                 });
             },
@@ -8819,6 +8868,26 @@ export class WSServer {
             syncLeagueGeneralVarp: (player) => syncLeagueGeneralVarp(player),
             syncSkillProgressLeagueTasks: (playerId) =>
                 this.leagueTaskManager?.syncSkillProgressTasks(playerId),
+            onLeagueNpcKill: (playerId, npcId, combatLevel) =>
+                this.leagueTaskManager?.onNpcKill(playerId, npcId, combatLevel),
+            onLeagueItemObtain: (playerId, itemId, count) =>
+                this.leagueTaskManager?.onItemObtain(playerId, itemId, count),
+            onLeagueItemEquip: (playerId, itemId) =>
+                this.leagueTaskManager?.onItemEquip(playerId, itemId),
+            onLeagueItemCraft: (playerId, itemId, count) =>
+                this.leagueTaskManager?.onItemCraft(playerId, itemId, count),
+            onLeagueSkillingAction: (playerId, skill, action, targetId, count) =>
+                this.leagueTaskManager?.onSkillingAction(playerId, skill, action, targetId, count),
+            onLeagueAreaEnter: (playerId, areaKey) =>
+                this.leagueTaskManager?.onAreaEnter(playerId, areaKey),
+            onLeagueWildernessLevelCross: (playerId, previousLevel, currentLevel) =>
+                this.leagueTaskManager?.onWildernessLevelCross(
+                    playerId,
+                    previousLevel,
+                    currentLevel,
+                ),
+            onLeagueSpellCast: (playerId, opts) =>
+                this.leagueTaskManager?.onSpellCast(playerId, opts),
 
             // Chat
             queueChatMessage: (msg) => this.queueChatMessage(msg),
@@ -9253,6 +9322,17 @@ export class WSServer {
             else if (WSServer.GRACEFUL_CAPES.has(itemId)) count++;
         }
         return Math.min(6, count);
+    }
+
+    /** Seed area/wilderness tracking on login so standing inside does not fire enter events. */
+    private seedLeagueMovementPresence(player: PlayerState): void {
+        const tileX = player.x / 128;
+        const tileY = player.y / 128;
+        this.leagueAreaInsideByPlayer.set(
+            player.id,
+            getLeagueAreasInsideNow(tileX, tileY, player.level),
+        );
+        player._lastWildernessLevel = getWildernessLevel(tileX, tileY);
     }
 
     private updateRunEnergy(
@@ -10178,6 +10258,7 @@ export class WSServer {
         p: PlayerState,
         itemId: number,
         quantity: number,
+        options?: InventoryAddOptions,
     ): InventoryAddResult {
         // Delegate to RSMod-style player method
         const result = p.addItem(itemId, quantity, { assureFullInsertion: true });
@@ -10186,9 +10267,13 @@ export class WSServer {
         }
         const added = result.completed;
 
-        // League task: notify on item obtain
         if (added > 0) {
+            // League task: notify on item obtain
             this.leagueTaskManager?.onItemObtain(p.id, itemId, added);
+            // Collection log: first-time unlock for trackable items (central acquisition hook)
+            if (options?.trackCollectionLog !== false) {
+                this.doTrackCollectionLogItem(p, itemId);
+            }
         }
 
         return { slot: result.slots[0].slot, added };
@@ -11061,7 +11146,10 @@ export class WSServer {
      * Delegates to collectionlog.ts trackCollectionLogItem function.
      */
     private doTrackCollectionLogItem(player: PlayerState, itemId: number): void {
-        trackCollectionLogItem(player, itemId, this.getCollectionLogServices());
+        const wasNew = trackCollectionLogItem(player, itemId, this.getCollectionLogServices());
+        if (wasNew) {
+            this.leagueTaskManager?.onCollectionLogEvent(player.id, itemId);
+        }
     }
 
     private handleBankDepositInventory(ws: WebSocket, payload?: { tab?: number }): void {
@@ -12860,6 +12948,12 @@ export class WSServer {
                             logger.warn("[leagues] failed to sync skill progress tasks on login", err);
                         }
 
+                        try {
+                            this.seedLeagueMovementPresence(p);
+                        } catch (err) {
+                            logger.warn("[leagues] failed to seed league movement presence on login", err);
+                        }
+
                         // Unlock all achievement diaries
                         // Structure: [varbitId, value] pairs
                         const DIARY_VARBITS: Array<[number, number]> = [
@@ -14174,6 +14268,7 @@ export class WSServer {
                     if (id !== undefined) {
                         this.groundItemHandler?.clearPlayerState(id);
                         this.playerDynamicLocSceneKeys.delete(id);
+                        this.leagueAreaInsideByPlayer.delete(id);
                     }
                     // Clean up all interruptible interfaces (level-up popups, dialogs, modals)
                     this.dismissLevelUpPopupQueue(player.id);

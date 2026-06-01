@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-05-30T16:39:01.974Z",
+  "totals": {
+    "total": 1766,
+    "ready": 279,
+    "missing_content": 187,
+    "need_hook": 882,
+    "ambiguous": 410,
+    "duplicate": 8,
+    "medium_points_invalid": 0,
+    "cache_available": true
+  },
+  "batches": [
+    {
+      "batch": "skills",
+      "total": 665,
+      "ready": 184,
+      "missing_content": 11,
+      "need_hook": 441,
+      "ambiguous": 28,
+      "duplicate": 1
+    },
+    {
+      "batch": "combat",
+      "total": 208,
+      "ready": 6,
+      "missing_content": 57,
+      "need_hook": 0,
+      "ambiguous": 145,
+      "duplicate": 0
+    },
+    {
+      "batch": "bosses",
+      "total": 45,
+      "ready": 8,
+      "missing_content": 4,
+      "need_hook": 0,
+      "ambiguous": 33,
+      "duplicate": 0
+    },
+    {
+      "batch": "minigames",
+      "total": 16,
+      "ready": 0,
+      "missing_content": 0,
+      "need_hook": 16,
+      "ambiguous": 0,
+      "duplicate": 0
+    },
+    {
+      "batch": "collection",
+      "total": 343,
+      "ready": 10,
+      "missing_content": 115,
+      "need_hook": 8,
+      "ambiguous": 204,
+      "duplicate": 6
+    },
+    {
+      "batch": "quests",
+      "total": 217,
+      "ready": 11,
+      "missing_content": 0,
+      "need_hook": 206,
+      "ambiguous": 0,
+      "duplicate": 0
+    },
+    {
+      "batch": "misc",
+      "total": 272,
+      "ready": 60,
+      "missing_content": 0,
+      "need_hook": 211,
+      "ambiguous": 0,
+      "duplicate": 1
+    }
+  ]
+}

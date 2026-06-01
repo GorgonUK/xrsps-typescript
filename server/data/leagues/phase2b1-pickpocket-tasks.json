@@ -1,0 +1,625 @@
+{
+  "description": "Phase 2C-B1: verified thieving/pickpocket skilling_action triggers (18 tasks).",
+  "tasks": [
+    {
+      "sourceTaskId": 41,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3014,
+          3015,
+          3106,
+          3107,
+          3108,
+          3109,
+          3110,
+          3111,
+          3112,
+          3113,
+          3261,
+          3264,
+          3265,
+          3268,
+          3298,
+          3299,
+          3652,
+          6815,
+          6818,
+          6987,
+          6988,
+          6989,
+          6990,
+          6991,
+          6992,
+          10728,
+          11053,
+          11054,
+          11057,
+          11058,
+          14920,
+          14921
+        ]
+      },
+      "mvpTaskId": 259
+    },
+    {
+      "sourceTaskId": 42,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3114,
+          3243,
+          3244,
+          11918,
+          11919,
+          11920,
+          11921,
+          13228,
+          13229,
+          13230,
+          13231,
+          13232,
+          13233,
+          13234,
+          13235,
+          14751,
+          14752,
+          14753,
+          14754,
+          14773
+        ]
+      },
+      "mvpTaskId": 260
+    },
+    {
+      "sourceTaskId": 43,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          2540,
+          2541
+        ]
+      },
+      "mvpTaskId": 261
+    },
+    {
+      "sourceTaskId": 44,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3292
+        ]
+      },
+      "mvpTaskId": 262
+    },
+    {
+      "sourceTaskId": 46,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          5730,
+          5731,
+          5832,
+          11940,
+          11941,
+          13236,
+          13237,
+          13238,
+          13239,
+          13240,
+          13241,
+          13242,
+          13243,
+          14755,
+          14756,
+          14757,
+          14758
+        ]
+      },
+      "mvpTaskId": 263
+    },
+    {
+      "sourceTaskId": 47,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          397,
+          398,
+          399,
+          400,
+          1546,
+          1547,
+          1548,
+          1549,
+          1550,
+          3010,
+          3011,
+          3254,
+          3269,
+          3270,
+          3271,
+          3272,
+          3273,
+          3274,
+          3283,
+          4522,
+          4523,
+          4524,
+          4525,
+          4526,
+          5418,
+          11092,
+          11094,
+          11096,
+          11098,
+          11100,
+          11102,
+          11104,
+          11106,
+          11911,
+          11912,
+          11913,
+          11914,
+          11915,
+          11916,
+          11917,
+          11922,
+          11923,
+          11924,
+          11937,
+          11938,
+          11939,
+          11942,
+          11943,
+          11944,
+          11945,
+          11946,
+          11947,
+          13100,
+          13101,
+          13102,
+          13103,
+          13104,
+          13105,
+          13106,
+          13107,
+          13108,
+          13109,
+          13986,
+          13987,
+          13988,
+          13989,
+          13990,
+          13991,
+          13992,
+          13993,
+          13994,
+          13995,
+          14663,
+          14664,
+          14665,
+          14666,
+          14667,
+          14668,
+          14669,
+          14670,
+          14716,
+          14717,
+          14718,
+          14719,
+          14720,
+          14721,
+          14722,
+          14723,
+          14887,
+          14888,
+          14889,
+          14890
+        ]
+      },
+      "mvpTaskId": 264
+    },
+    {
+      "sourceTaskId": 48,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3937,
+          3938,
+          3939,
+          3940,
+          3941,
+          3943,
+          3944,
+          3945,
+          3946
+        ]
+      },
+      "mvpTaskId": 265
+    },
+    {
+      "sourceTaskId": 50,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          690,
+          695
+        ]
+      },
+      "mvpTaskId": 266
+    },
+    {
+      "sourceTaskId": 51,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3297,
+          3300,
+          8854,
+          11902,
+          11936
+        ]
+      },
+      "mvpTaskId": 267
+    },
+    {
+      "sourceTaskId": 52,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3293,
+          3294,
+          8853,
+          11901,
+          11930,
+          11931,
+          11932,
+          11933
+        ]
+      },
+      "mvpTaskId": 268
+    },
+    {
+      "sourceTaskId": 53,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          5130,
+          6077,
+          6078,
+          6079,
+          6086,
+          6087,
+          6094,
+          6095,
+          6096
+        ]
+      },
+      "mvpTaskId": 269
+    },
+    {
+      "sourceTaskId": 54,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3295,
+          11934,
+          11935
+        ]
+      },
+      "mvpTaskId": 270
+    },
+    {
+      "sourceTaskId": 57,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          7682,
+          7683,
+          7684,
+          7685,
+          7686,
+          7687
+        ]
+      },
+      "mvpTaskId": 271
+    },
+    {
+      "sourceTaskId": 682,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3014,
+          3015,
+          3106,
+          3107,
+          3108,
+          3109,
+          3110,
+          3111,
+          3112,
+          3113,
+          3261,
+          3264,
+          3265,
+          3268,
+          3298,
+          3299,
+          3652,
+          6815,
+          6818,
+          6987,
+          6988,
+          6989,
+          6990,
+          6991,
+          6992,
+          10728,
+          11053,
+          11054,
+          11057,
+          11058,
+          14920,
+          14921
+        ]
+      },
+      "mvpTaskId": 272
+    },
+    {
+      "sourceTaskId": 683,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          397,
+          398,
+          399,
+          400,
+          1546,
+          1547,
+          1548,
+          1549,
+          1550,
+          3010,
+          3011,
+          3254,
+          3269,
+          3270,
+          3271,
+          3272,
+          3273,
+          3274,
+          3283,
+          4522,
+          4523,
+          4524,
+          4525,
+          4526,
+          5418,
+          11092,
+          11094,
+          11096,
+          11098,
+          11100,
+          11102,
+          11104,
+          11106,
+          11911,
+          11912,
+          11913,
+          11914,
+          11915,
+          11916,
+          11917,
+          11922,
+          11923,
+          11924,
+          11937,
+          11938,
+          11939,
+          11942,
+          11943,
+          11944,
+          11945,
+          11946,
+          11947,
+          13100,
+          13101,
+          13102,
+          13103,
+          13104,
+          13105,
+          13106,
+          13107,
+          13108,
+          13109,
+          13986,
+          13987,
+          13988,
+          13989,
+          13990,
+          13991,
+          13992,
+          13993,
+          13994,
+          13995,
+          14663,
+          14664,
+          14665,
+          14666,
+          14667,
+          14668,
+          14669,
+          14670,
+          14716,
+          14717,
+          14718,
+          14719,
+          14720,
+          14721,
+          14722,
+          14723,
+          14887,
+          14888,
+          14889,
+          14890
+        ]
+      },
+      "mvpTaskId": 273
+    },
+    {
+      "sourceTaskId": 967,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          5730,
+          5731,
+          5832,
+          11940,
+          11941,
+          13236,
+          13237,
+          13238,
+          13239,
+          13240,
+          13241,
+          13242,
+          13243,
+          14755,
+          14756,
+          14757,
+          14758
+        ]
+      },
+      "mvpTaskId": 274
+    },
+    {
+      "sourceTaskId": 968,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3295,
+          11934,
+          11935
+        ]
+      },
+      "mvpTaskId": 275
+    },
+    {
+      "sourceTaskId": 1017,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3550
+        ]
+      },
+      "mvpTaskId": 276
+    },
+    {
+      "sourceTaskId": 1352,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          3014,
+          3015,
+          3106,
+          3107,
+          3108,
+          3109,
+          3110,
+          3111,
+          3112,
+          3113,
+          3261,
+          3264,
+          3265,
+          3268,
+          3298,
+          3299,
+          3652,
+          6815,
+          6818,
+          6987,
+          6988,
+          6989,
+          6990,
+          6991,
+          6992,
+          10728,
+          11053,
+          11054,
+          11057,
+          11058,
+          14920,
+          14921
+        ]
+      },
+      "mvpTaskId": 277
+    },
+    {
+      "sourceTaskId": 1355,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "thieving",
+        "action": "pickpocket",
+        "targetIds": [
+          5730,
+          5731,
+          5832,
+          11940,
+          11941,
+          13236,
+          13237,
+          13238,
+          13239,
+          13240,
+          13241,
+          13242,
+          13243,
+          14755,
+          14756,
+          14757,
+          14758
+        ]
+      },
+      "mvpTaskId": 278
+    }
+  ]
+}

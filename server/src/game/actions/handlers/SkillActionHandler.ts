@@ -15,6 +15,10 @@ import {
     isPowerMinerAutoSmeltEnabled,
 } from "../../../../../src/shared/leagues/leagueRelicEffects";
 import {
+    SKILLING_ACTION_SKILLS,
+    SKILLING_ACTION_VERBS,
+} from "../../leagues/skillingAction";
+import {
     applyThievingSpeedMultiplier,
     onGatherItemForRelics,
     shouldAutoStorePickpocketCoins,
@@ -494,6 +498,13 @@ export interface SkillActionServices {
 
     // --- League Tasks ---
     onItemCraft?(playerId: number, itemId: number, count: number): void;
+    onSkillingAction?(
+        playerId: number,
+        skill: string,
+        action: string,
+        targetId: number,
+        count: number,
+    ): void;
 
     // --- Logging ---
     log(level: "info" | "warn" | "error", message: string, data?: unknown): void;
@@ -565,6 +576,17 @@ const ECHO_HARPOON_SUBSTITUTABLE_TOOL_IDS = new Set([
  */
 export class SkillActionHandler {
     constructor(private readonly services: SkillActionServices) {}
+
+    private emitLeagueSkillingAction(
+        player: PlayerState,
+        skill: string,
+        action: string,
+        targetId: number,
+        count: number = 1,
+    ): void {
+        if (targetId <= 0) return;
+        this.services.onSkillingAction?.(player.id, skill, action, targetId, count);
+    }
 
     private stopGatheringInteraction(player: PlayerState): void {
         try {
@@ -685,7 +707,15 @@ export class SkillActionHandler {
 
         player.queueOneShotSeq(recipe.animation ?? 898);
         this.services.awardSkillXp(player, SkillId.Smithing, recipe.xp);
-        this.services.onItemCraft?.(player.id, recipe.outputItemId, Math.max(1, recipe.outputQuantity));
+        const smithQty = Math.max(1, recipe.outputQuantity);
+        this.services.onItemCraft?.(player.id, recipe.outputItemId, smithQty);
+        this.emitLeagueSkillingAction(
+            player,
+            SKILLING_ACTION_SKILLS.smithing,
+            SKILLING_ACTION_VERBS.smith,
+            recipe.outputItemId,
+            smithQty,
+        );
 
         const effects: ActionEffect[] = [
             { type: "inventorySnapshot", playerId: player.id },
@@ -787,6 +817,13 @@ export class SkillActionHandler {
         if (cooked) {
             this.services.awardSkillXp(player, SkillId.Cooking, recipe.xp);
             this.services.onItemCraft?.(player.id, recipe.cookedItemId, 1);
+            this.emitLeagueSkillingAction(
+                player,
+                SKILLING_ACTION_SKILLS.cooking,
+                SKILLING_ACTION_VERBS.cook,
+                recipe.cookedItemId,
+                1,
+            );
         }
 
         const effects: ActionEffect[] = [
@@ -1010,6 +1047,13 @@ export class SkillActionHandler {
         }
 
         this.services.onItemCraft?.(player.id, recipe.productItemId, productQuantity);
+        this.emitLeagueSkillingAction(
+            player,
+            SKILLING_ACTION_SKILLS.fletching,
+            SKILLING_ACTION_VERBS.fletch,
+            recipe.productItemId,
+            productQuantity,
+        );
         player.queueOneShotSeq(recipe.animation ?? 1248);
         this.services.awardSkillXp(player, SkillId.Fletching, recipe.xp);
 
@@ -1123,6 +1167,13 @@ export class SkillActionHandler {
         }
 
         this.services.onItemCraft?.(player.id, recipe.productItemId, productQuantity);
+        this.emitLeagueSkillingAction(
+            player,
+            SKILLING_ACTION_SKILLS.crafting,
+            SKILLING_ACTION_VERBS.spin,
+            recipe.productItemId,
+            productQuantity,
+        );
         player.queueOneShotSeq(recipe.animation);
         this.services.awardSkillXp(player, SkillId.Crafting, recipe.xp);
 
@@ -1451,6 +1502,13 @@ export class SkillActionHandler {
                 }
             }
             this.services.awardSkillXp(player, SkillId.Mining, rock.xp);
+            this.emitLeagueSkillingAction(
+                player,
+                SKILLING_ACTION_SKILLS.mining,
+                SKILLING_ACTION_VERBS.mine,
+                rock.oreItemId,
+                1,
+            );
             if (autoSmeltMapping) {
                 this.services.awardSkillXp(
                     player,
@@ -1753,6 +1811,13 @@ export class SkillActionHandler {
                 );
             }
             this.services.awardSkillXp(player, SkillId.Fishing, catchDef.xp);
+            this.emitLeagueSkillingAction(
+                player,
+                SKILLING_ACTION_SKILLS.fishing,
+                SKILLING_ACTION_VERBS.catch,
+                rewardItemId,
+                quantity,
+            );
 
             if (baitSlot !== undefined && Array.isArray(method.baitItemIds)) {
                 if (!this.services.consumeItem(player, baitSlot)) {
@@ -2279,6 +2344,13 @@ export class SkillActionHandler {
         );
 
         this.services.awardSkillXp(player, SkillId.Firemaking, logDef.xp);
+        this.emitLeagueSkillingAction(
+            player,
+            SKILLING_ACTION_SKILLS.firemaking,
+            SKILLING_ACTION_VERBS.burn,
+            logId,
+            1,
+        );
 
         const tickNow = tick;
         const fire = this.services.lightFire({
@@ -2529,6 +2601,13 @@ export class SkillActionHandler {
                 }
             }
             this.services.awardSkillXp(player, SkillId.Woodcutting, tree.xp);
+            this.emitLeagueSkillingAction(
+                player,
+                SKILLING_ACTION_SKILLS.woodcutting,
+                SKILLING_ACTION_VERBS.chop,
+                tree.logItemId,
+                1,
+            );
             if (autoFletchMapping) {
                 this.services.awardSkillXp(
                     player,
@@ -3056,6 +3135,13 @@ export class SkillActionHandler {
                     player,
                     SkillActionHandler.THIEVING_SKILL_ID,
                     data.xp,
+                );
+                this.emitLeagueSkillingAction(
+                    player,
+                    SKILLING_ACTION_SKILLS.thieving,
+                    SKILLING_ACTION_VERBS.pickpocket,
+                    data.npcTypeId,
+                    1,
                 );
                 effects.push(
                     this.services.buildSkillMessageEffect(

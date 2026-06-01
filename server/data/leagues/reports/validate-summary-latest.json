@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-27T22:52:54.055Z",
+  "generatedAt": "2026-05-31T23:54:24.211Z",
   "totals": {
     "total": 1766,
-    "ready": 63,
-    "missing_content": 200,
-    "need_hook": 1056,
-    "ambiguous": 439,
+    "ready": 323,
+    "missing_content": 187,
+    "need_hook": 838,
+    "ambiguous": 410,
     "duplicate": 8,
     "medium_points_invalid": 0,
     "cache_available": true
@@ -14,10 +14,10 @@
     {
       "batch": "skills",
       "total": 665,
-      "ready": 49,
-      "missing_content": 24,
-      "need_hook": 534,
-      "ambiguous": 57,
+      "ready": 224,
+      "missing_content": 11,
+      "need_hook": 401,
+      "ambiguous": 28,
       "duplicate": 1
     },
     {
@@ -50,27 +50,27 @@
     {
       "batch": "collection",
       "total": 343,
-      "ready": 0,
+      "ready": 10,
       "missing_content": 115,
-      "need_hook": 18,
+      "need_hook": 8,
       "ambiguous": 204,
       "duplicate": 6
     },
     {
       "batch": "quests",
       "total": 217,
-      "ready": 0,
+      "ready": 15,
       "missing_content": 0,
-      "need_hook": 217,
+      "need_hook": 202,
       "ambiguous": 0,
       "duplicate": 0
     },
     {
       "batch": "misc",
       "total": 272,
-      "ready": 0,
+      "ready": 60,
       "missing_content": 0,
-      "need_hook": 271,
+      "need_hook": 211,
       "ambiguous": 0,
       "duplicate": 1
     }

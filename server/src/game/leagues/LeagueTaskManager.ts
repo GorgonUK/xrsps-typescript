@@ -18,6 +18,13 @@ import { type LeagueTaskPlayer, LeagueTaskService } from "./LeagueTaskService";
 import { syncLeaguePackedVarps } from "./leaguePackedVarps";
 import { playerMatchesSkillProgressTrigger } from "./leagueSkillProgress";
 import type { PlayerState } from "../player";
+import {
+    countPlayerCollectionLogSlots,
+    getCollectionLogCategoriesForItem,
+} from "../collectionlog";
+import { isInsideLeagueArea } from "./AreaRegistry";
+import { getNewlyCompleteCategoriesForItem } from "./collectionLogLeague";
+import type { SpellCastTrigger } from "./triggers/TriggerTypes";
 
 export interface TaskManagerServices {
     getPlayer: (playerId: number) => LeagueTaskPlayer | undefined;
@@ -71,7 +78,7 @@ export class LeagueTaskManager {
             `[LeagueTaskManager] Index built: ${stats.parsed}/${stats.total} tasks parsed (${stats.coverage}), ${stats.challenges} challenges`,
         );
         logger.info(
-            `[LeagueTaskManager] Task index sizes: npcKill=${stats.indexSizes.npcKill}, itemEquip=${stats.indexSizes.itemEquip}, itemObtain=${stats.indexSizes.itemObtain}, itemCraft=${stats.indexSizes.itemCraft}, skillProgress=${stats.indexSizes.skillProgress}`,
+            `[LeagueTaskManager] Task index sizes: npcKill=${stats.indexSizes.npcKill}, itemEquip=${stats.indexSizes.itemEquip}, itemObtain=${stats.indexSizes.itemObtain}, itemCraft=${stats.indexSizes.itemCraft}, skillingAction=${stats.indexSizes.skillingAction}, areaEnter=${stats.indexSizes.areaEnter}, wildernessLevel=${stats.indexSizes.wildernessLevel}, skillProgress=${stats.indexSizes.skillProgress}, spellCastSpellId=${stats.indexSizes.spellCastSpellId}, spellCastCategory=${stats.indexSizes.spellCastCategory}, spellCastSpellbook=${stats.indexSizes.spellCastSpellbook}, spellCastTeleport=${stats.indexSizes.spellCastTeleport}, spellCastAny=${stats.indexSizes.spellCastAny}`,
         );
         if (stats.challenges > 0) {
             logger.info(
@@ -275,6 +282,216 @@ export class LeagueTaskManager {
     }
 
     /**
+     * Called after a successful skilling action (mine, catch, chop, cook, etc.).
+     */
+    onSkillingAction(
+        playerId: number,
+        skill: string,
+        action: string,
+        targetId: number,
+        count: number = 1,
+    ): void {
+        if (!this.initialized) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const tasks = this.index.getTasksForSkillingAction(skill, action, targetId);
+        const increment = normalizeProgressIncrement(count);
+        if (increment <= 0) {
+            return;
+        }
+        for (const task of tasks) {
+            this.tryCompleteTask(player, playerId, task, increment);
+        }
+    }
+
+    onAreaEnter(playerId: number, areaKey: string, regionId?: number): void {
+        if (!this.initialized) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const tasks = this.index.getTasksForAreaEnter(areaKey);
+        for (const task of tasks) {
+            this.tryCompleteTask(player, playerId, task, 1);
+        }
+
+        if (regionId !== undefined && Number.isFinite(regionId)) {
+            const regionTasks = this.index.getTasksForAreaEnterRegion(regionId);
+            for (const task of regionTasks) {
+                this.tryCompleteTask(player, playerId, task, 1);
+            }
+        }
+    }
+
+    /**
+     * Called when wilderness level increases (uses getWildernessLevel; false→true threshold cross only).
+     */
+    /**
+     * Called after a successful spell cast (combat/utility) or spellbook teleport.
+     */
+    onSpellCast(
+        playerId: number,
+        opts: {
+            spellId?: number;
+            spellCategory?: "combat" | "teleport" | "utility" | "binding";
+            spellbook?: "standard" | "ancient" | "lunar" | "arceuus";
+            teleportName?: string;
+        },
+    ): void {
+        if (!this.initialized) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const tasks = this.index.getTasksForSpellCast(opts);
+        for (const task of tasks) {
+            if (task.trigger.type !== "spell_cast") continue;
+            if (!this.matchesSpellCastTrigger(task.trigger, opts, player)) continue;
+            this.tryCompleteTask(player, playerId, task, 1);
+        }
+    }
+
+    private matchesSpellCastTrigger(
+        trigger: SpellCastTrigger,
+        opts: {
+            spellId?: number;
+            spellCategory?: "combat" | "teleport" | "utility" | "binding";
+            spellbook?: "standard" | "ancient" | "lunar" | "arceuus";
+            teleportName?: string;
+        },
+        player: PlayerState,
+    ): boolean {
+        const areaKeys = trigger.areaKeys ?? [];
+        if (areaKeys.length > 0) {
+            const x = player.tileX | 0;
+            const y = player.tileY | 0;
+            const plane = player.level | 0;
+            const inside = areaKeys.some((key) => isInsideLeagueArea(key, x, y, plane));
+            if (!inside) {
+                return false;
+            }
+        }
+
+        if (trigger.anySpell) {
+            return true;
+        }
+        if (trigger.teleportName) {
+            return (
+                !!opts.teleportName &&
+                trigger.teleportName.toLowerCase() === opts.teleportName.toLowerCase()
+            );
+        }
+        if (trigger.spellCategory) {
+            if (opts.teleportName) {
+                return trigger.spellCategory === "teleport";
+            }
+            if (opts.spellCategory) {
+                return trigger.spellCategory === opts.spellCategory;
+            }
+            return false;
+        }
+        if (trigger.spellbook) {
+            if (opts.spellbook !== trigger.spellbook) {
+                return false;
+            }
+            const spellId = opts.spellId | 0;
+            if (trigger.spellId !== undefined && trigger.spellId > 0) {
+                return spellId === trigger.spellId;
+            }
+            if (trigger.spellIdsAny && trigger.spellIdsAny.length > 0) {
+                return spellId > 0 && trigger.spellIdsAny.includes(spellId);
+            }
+            return true;
+        }
+        const spellId = opts.spellId | 0;
+        if (spellId <= 0) {
+            return false;
+        }
+        if (trigger.spellId !== undefined && trigger.spellId > 0) {
+            return spellId === trigger.spellId;
+        }
+        if (trigger.spellIdsAny && trigger.spellIdsAny.length > 0) {
+            return trigger.spellIdsAny.includes(spellId);
+        }
+        return false;
+    }
+
+    onWildernessLevelCross(
+        playerId: number,
+        previousLevel: number,
+        currentLevel: number,
+    ): void {
+        if (!this.initialized) return;
+        if (currentLevel <= previousLevel || currentLevel <= 0) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const tasks = this.index.getTasksForWildernessLevelCross(previousLevel, currentLevel);
+        for (const task of tasks) {
+            this.tryCompleteTask(player, playerId, task, 1);
+        }
+    }
+
+    /**
+     * Called when the player obtains a new collection log item (first-time unlock only).
+     */
+    onCollectionLogEvent(playerId: number, itemId: number): void {
+        if (!this.initialized) return;
+
+        const player = this.services.getPlayer(playerId);
+        if (!player) return;
+
+        const ps = player as PlayerState;
+        const totalSlots = countPlayerCollectionLogSlots(ps);
+
+        for (const task of this.index.getCollectionLogSlotTasks()) {
+            const trigger = task.trigger;
+            if (trigger.type !== "collection_log" || trigger.milestone !== "slot") continue;
+            const minSlots = Math.max(1, trigger.minSlots ?? 1);
+            if (totalSlots >= minSlots) {
+                this.tryCompleteTask(player, playerId, task, 1);
+            }
+        }
+
+        const categoriesForItem = getCollectionLogCategoriesForItem(itemId);
+        const completedCategories = getNewlyCompleteCategoriesForItem(
+            ps,
+            itemId,
+            categoriesForItem,
+        );
+        if (completedCategories.length === 0) {
+            return;
+        }
+
+        const seenTaskIds = new Set<number>();
+        for (const category of completedCategories) {
+            if (category.tabIndex >= 0) {
+                for (const task of this.index.getCollectionLogPageTabTasks(category.tabIndex)) {
+                    const trigger = task.trigger;
+                    if (trigger.type !== "collection_log" || trigger.milestone !== "page") {
+                        continue;
+                    }
+                    if (trigger.tabIndex !== undefined && trigger.tabIndex !== category.tabIndex) {
+                        continue;
+                    }
+                    if (seenTaskIds.has(task.taskId)) continue;
+                    seenTaskIds.add(task.taskId);
+                    this.tryCompleteTask(player, playerId, task, 1);
+                }
+            }
+
+            for (const task of this.index.getCollectionLogPageStructTasks(category.structId)) {
+                if (seenTaskIds.has(task.taskId)) continue;
+                seenTaskIds.add(task.taskId);
+                this.tryCompleteTask(player, playerId, task, 1);
+            }
+        }
+    }
+
+    /**
      * Re-evaluate skill / total level / XP milestone tasks (e.g. after ::master, on login, or after gaining XP).
      */
     syncSkillProgressTasks(playerId: number): void {
@@ -394,6 +611,8 @@ export class LeagueTaskManager {
             case "npc_kill":
             case "item_obtain":
             case "item_craft":
+            case "skilling_action":
+            case "spell_cast":
                 return Math.max(1, task.trigger.count ?? 1);
             default:
                 return 1;

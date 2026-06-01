@@ -1,0 +1,19 @@
+{
+  "description": "Phase 4B tasks deferred until prerequisites are proven (not imported).",
+  "blocked": [
+    {
+      "sourceTaskId": 691,
+      "taskName": "Charge an Air Orb near Edgeville Dungeon.",
+      "reason": "Live from 4A1 with spellId-only; needs air_obelisk_edgeville AreaRegistry + server obelisk validation before area gate",
+      "requires": ["air_obelisk_edgeville area", "server-side obelisk validation"]
+    }
+  ],
+  "deferredSpellbookSwitch": {
+    "reason": "No validated server-side spellbook_change event; do not hook VARBIT_ACTIVE_SPELLBOOK alone",
+    "sourceTaskIds": [891, 1043, 1105, 1188, 1348, 1424, 473]
+  },
+  "deferredRegionalSpells": {
+    "reason": "Missing AreaRegistry keys for desert/morytania/tirannwn/kourend/varlamore",
+    "sourceTaskIds": [1044, 1045, 1107, 1108, 1190]
+  }
+}

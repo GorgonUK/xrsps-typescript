@@ -40,6 +40,8 @@ export function playerMatchesSkillProgressTrigger(
         }
         case "total_level_reach":
             return player.skillTotal >= trigger.minTotalLevel;
+        case "combat_level_reach":
+            return player.combatLevel >= trigger.minCombatLevel;
         case "xp_reach":
             return player.getSkill(trigger.skillId).xp >= trigger.minXp;
         default:

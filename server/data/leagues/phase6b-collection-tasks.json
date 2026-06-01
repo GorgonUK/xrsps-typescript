@@ -1,0 +1,16 @@
+{
+  "description": "Phase 6B: collection log slot milestones + page completion (10 tasks; defer 547 Skilling page).",
+  "batchSize": 10,
+  "tasks": [
+    { "sourceTaskId": 525, "trigger": { "type": "collection_log", "milestone": "slot", "minSlots": 1 } },
+    { "sourceTaskId": 526, "trigger": { "type": "collection_log", "milestone": "slot", "minSlots": 10 } },
+    { "sourceTaskId": 527, "trigger": { "type": "collection_log", "milestone": "slot", "minSlots": 25 } },
+    { "sourceTaskId": 528, "trigger": { "type": "collection_log", "milestone": "slot", "minSlots": 50 } },
+    { "sourceTaskId": 529, "trigger": { "type": "collection_log", "milestone": "slot", "minSlots": 100 } },
+    { "sourceTaskId": 542, "trigger": { "type": "collection_log", "milestone": "page", "tabIndex": 0 } },
+    { "sourceTaskId": 543, "trigger": { "type": "collection_log", "milestone": "page", "tabIndex": 1 } },
+    { "sourceTaskId": 544, "trigger": { "type": "collection_log", "milestone": "page", "tabIndex": 2 } },
+    { "sourceTaskId": 545, "trigger": { "type": "collection_log", "milestone": "page", "tabIndex": 3 } },
+    { "sourceTaskId": 546, "trigger": { "type": "collection_log", "milestone": "page", "categoryStructId": 527 } }
+  ]
+}

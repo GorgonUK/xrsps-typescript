@@ -34,6 +34,15 @@ export type ItemCraftTrigger = {
     count?: number;
 };
 
+/** Successful skilling action (mine/catch/chop/cook/etc.) with explicit product item id. */
+export type SkillingActionTrigger = {
+    type: "skilling_action";
+    skill: string;
+    action: string;
+    targetIds: number[];
+    count?: number;
+};
+
 export type QuestCompleteTrigger = {
     type: "quest_complete";
     questId: number;
@@ -59,6 +68,12 @@ export type TotalLevelReachTrigger = {
     minTotalLevel: number;
 };
 
+/** "Achieve Level N Combat" — evaluated against player.combatLevel (sync on login / skill XP). */
+export type CombatLevelReachTrigger = {
+    type: "combat_level_reach";
+    minCombatLevel: number;
+};
+
 export type XpReachTrigger = {
     type: "xp_reach";
     skillId: SkillId;
@@ -73,7 +88,46 @@ export type XpGainTrigger = {
 
 export type AreaEnterTrigger = {
     type: "area_enter";
-    regionIds: number[];
+    regionIds?: number[];
+    areaKeys?: string[];
+};
+
+/** Cross into wilderness at or above minLevel (uses getWildernessLevel; no duplicate bounds). */
+export type WildernessLevelTrigger = {
+    type: "wilderness_level";
+    minLevel: number;
+};
+
+/** Successful spell cast (combat/utility) or spellbook teleport. */
+export type SpellCastTrigger = {
+    type: "spell_cast";
+    /** Match this exact spell id (from spells.ts). */
+    spellId?: number;
+    /** Match any of these spell ids (indexed under each id). */
+    spellIdsAny?: number[];
+    /** Match spells with this category (SpellDataEntry.category or teleport category). */
+    spellCategory?: "combat" | "teleport" | "utility" | "binding";
+    /** Match this teleport by name (teleportDestinations.ts). */
+    teleportName?: string;
+    /** Match any successful spell cast (combat, utility, teleport). */
+    anySpell?: boolean;
+    /** Match SpellDataEntry.spellbook on successful cast. */
+    spellbook?: "standard" | "ancient" | "lunar" | "arceuus";
+    /** Require caster tile inside one of these AreaRegistry keys when cast succeeds. */
+    areaKeys?: string[];
+    count?: number;
+};
+
+/** Collection log slot milestone or category page completion. */
+export type CollectionLogTrigger = {
+    type: "collection_log";
+    milestone: "slot" | "page";
+    /** Unique collection log slots obtained (milestone: slot). */
+    minSlots?: number;
+    /** Any page complete on this tab: 0=Bosses, 1=Raids, 2=Clues, 3=Minigames (milestone: page). */
+    tabIndex?: number;
+    /** Specific category struct id, e.g. Slayer=527 (milestone: page). */
+    categoryStructId?: number;
 };
 
 // Tier 3 - Custom validator
@@ -89,12 +143,17 @@ export type TaskTrigger =
     | ItemEquipTrigger
     | ItemObtainTrigger
     | ItemCraftTrigger
+    | SkillingActionTrigger
     | QuestCompleteTrigger
     | LevelReachTrigger
     | TotalLevelReachTrigger
+    | CombatLevelReachTrigger
     | XpReachTrigger
     | XpGainTrigger
     | AreaEnterTrigger
+    | WildernessLevelTrigger
+    | SpellCastTrigger
+    | CollectionLogTrigger
     | CustomTrigger;
 
 // Event types emitted by game systems
@@ -125,4 +184,52 @@ export type ItemCraftEvent = {
     playerId: number;
 };
 
-export type TaskEvent = NpcKillEvent | ItemEquipEvent | ItemObtainEvent | ItemCraftEvent;
+export type SkillingActionEvent = {
+    type: "skilling_action";
+    skill: string;
+    action: string;
+    targetId: number;
+    count: number;
+    playerId: number;
+};
+
+export type AreaEnterEvent = {
+    type: "area_enter";
+    areaKey?: string;
+    regionId?: number;
+    playerId: number;
+};
+
+export type WildernessLevelEvent = {
+    type: "wilderness_level";
+    minLevel: number;
+    previousLevel: number;
+    currentLevel: number;
+    playerId: number;
+};
+
+export type SpellCastEvent = {
+    type: "spell_cast";
+    spellId?: number;
+    spellCategory?: "combat" | "teleport" | "utility" | "binding";
+    spellbook?: "standard" | "ancient" | "lunar" | "arceuus";
+    teleportName?: string;
+    playerId: number;
+};
+
+export type CollectionLogEvent = {
+    type: "collection_log";
+    itemId: number;
+    playerId: number;
+};
+
+export type TaskEvent =
+    | NpcKillEvent
+    | ItemEquipEvent
+    | ItemObtainEvent
+    | ItemCraftEvent
+    | SkillingActionEvent
+    | AreaEnterEvent
+    | WildernessLevelEvent
+    | SpellCastEvent
+    | CollectionLogEvent;

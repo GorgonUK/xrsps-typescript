@@ -15,12 +15,14 @@ import {
 } from "../../../../src/shared/leagues/custom";
 import { LEAGUE_TASKS } from "../../../../src/shared/leagues/leagueTasks.data";
 import type { LeagueTaskRow } from "../../../../src/shared/leagues/leagueTypes";
+import { getLeagueTaskTrigger } from "../../../../src/shared/leagues/leagueTaskTriggers";
 import {
     type TriggerParserLoaders,
     buildNameLookups,
     parseTaskTrigger,
 } from "./triggers/TriggerParser";
-import type { TaskTrigger } from "./triggers/TriggerTypes";
+import { skillingActionIndexKey } from "./skillingAction";
+import type { CollectionLogTrigger, SpellCastTrigger, TaskTrigger } from "./triggers/TriggerTypes";
 
 export interface ParsedTask {
     taskId: number;
@@ -41,6 +43,17 @@ export class LeagueTaskIndex {
     private itemEquipToTasks = new Map<number, ParsedTask[]>();
     private itemObtainToTasks = new Map<number, ParsedTask[]>();
     private itemCraftToTasks = new Map<number, ParsedTask[]>();
+    private skillingActionToTasks = new Map<string, ParsedTask[]>();
+    private areaEnterToTasks = new Map<string, ParsedTask[]>();
+    private wildernessLevelToTasks = new Map<number, ParsedTask[]>();
+    private spellIdToTasks = new Map<number, ParsedTask[]>();
+    private spellCategoryToTasks = new Map<string, ParsedTask[]>();
+    private spellbookToTasks = new Map<string, ParsedTask[]>();
+    private teleportNameToTasks = new Map<string, ParsedTask[]>();
+    private anySpellCastTasks: ParsedTask[] = [];
+    private collectionLogSlotTasks: ParsedTask[] = [];
+    private collectionLogPageTabToTasks = new Map<number, ParsedTask[]>();
+    private collectionLogPageStructToTasks = new Map<number, ParsedTask[]>();
 
     // Challenge indexes - O(1) lookup by trigger ID
     private npcIdToChallenges = new Map<number, ParsedChallenge[]>();
@@ -90,10 +103,11 @@ export class LeagueTaskIndex {
     }
 
     private indexTask(task: LeagueTaskRow, loaders: TriggerParserLoaders): void {
-        // Check if task has a manual trigger override
-        const manualTrigger = (task as any).trigger as TaskTrigger | undefined;
+        // Generated MVP triggers, then optional row override, then name parser
+        const manualTrigger =
+            getLeagueTaskTrigger(task.taskId) ??
+            ((task as { trigger?: TaskTrigger }).trigger as TaskTrigger | undefined);
 
-        // Parse trigger from task name, or use manual override
         const trigger =
             manualTrigger ?? parseTaskTrigger(task.name, task.description ?? "", loaders);
 
@@ -140,14 +154,91 @@ export class LeagueTaskIndex {
                 }
                 break;
 
+            case "skilling_action":
+                for (const targetId of trigger.targetIds) {
+                    const key = skillingActionIndexKey(trigger.skill, trigger.action, targetId);
+                    this.addToStringIndex(this.skillingActionToTasks, key, parsed);
+                }
+                break;
+
+            case "area_enter":
+                for (const areaKey of trigger.areaKeys ?? []) {
+                    this.addToStringIndex(this.areaEnterToTasks, areaKey, parsed);
+                }
+                for (const regionId of trigger.regionIds ?? []) {
+                    this.addToStringIndex(this.areaEnterToTasks, `region:${regionId | 0}`, parsed);
+                }
+                break;
+
+            case "wilderness_level":
+                this.addToIndex(this.wildernessLevelToTasks, trigger.minLevel | 0, parsed);
+                break;
+
+            case "spell_cast":
+                this.indexSpellCastTrigger(parsed, trigger);
+                break;
+
+            case "collection_log":
+                this.indexCollectionLogTrigger(parsed, trigger);
+                break;
+
             case "level_reach":
             case "total_level_reach":
+            case "combat_level_reach":
             case "xp_reach":
                 this.skillProgressTasks.push(parsed);
                 break;
 
             default:
                 break;
+        }
+    }
+
+    private indexSpellCastTrigger(parsed: ParsedTask, trigger: SpellCastTrigger): void {
+        if (trigger.anySpell) {
+            this.anySpellCastTasks.push(parsed);
+        }
+        if (trigger.teleportName) {
+            this.addToStringIndex(
+                this.teleportNameToTasks,
+                trigger.teleportName.toLowerCase(),
+                parsed,
+            );
+        }
+        if (trigger.spellCategory) {
+            this.addToStringIndex(this.spellCategoryToTasks, trigger.spellCategory, parsed);
+        }
+        if (trigger.spellbook) {
+            this.addToStringIndex(this.spellbookToTasks, trigger.spellbook, parsed);
+        }
+        if (trigger.spellId !== undefined && trigger.spellId > 0) {
+            this.addToIndex(this.spellIdToTasks, trigger.spellId | 0, parsed);
+        }
+        if (trigger.spellIdsAny) {
+            for (const spellId of trigger.spellIdsAny) {
+                if (spellId > 0) {
+                    this.addToIndex(this.spellIdToTasks, spellId | 0, parsed);
+                }
+            }
+        }
+    }
+
+    private indexCollectionLogTrigger(parsed: ParsedTask, trigger: CollectionLogTrigger): void {
+        if (trigger.milestone === "slot") {
+            this.collectionLogSlotTasks.push(parsed);
+            return;
+        }
+        if (trigger.milestone === "page") {
+            if (trigger.tabIndex !== undefined) {
+                this.addToIndex(this.collectionLogPageTabToTasks, trigger.tabIndex | 0, parsed);
+            }
+            if (trigger.categoryStructId !== undefined && trigger.categoryStructId > 0) {
+                this.addToIndex(
+                    this.collectionLogPageStructToTasks,
+                    trigger.categoryStructId | 0,
+                    parsed,
+                );
+            }
         }
     }
 
@@ -210,8 +301,37 @@ export class LeagueTaskIndex {
                 }
                 break;
 
+            case "skilling_action":
+                for (const targetId of trigger.targetIds) {
+                    const key = skillingActionIndexKey(trigger.skill, trigger.action, targetId);
+                    this.addToStringIndex(this.skillingActionToTasks, key, parsed);
+                }
+                break;
+
+            case "area_enter":
+                for (const areaKey of trigger.areaKeys ?? []) {
+                    this.addToStringIndex(this.areaEnterToTasks, areaKey, parsed);
+                }
+                for (const regionId of trigger.regionIds ?? []) {
+                    this.addToStringIndex(this.areaEnterToTasks, `region:${regionId | 0}`, parsed);
+                }
+                break;
+
+            case "wilderness_level":
+                this.addToIndex(this.wildernessLevelToTasks, trigger.minLevel | 0, parsed);
+                break;
+
+            case "spell_cast":
+                this.indexSpellCastTrigger(parsed, trigger);
+                break;
+
+            case "collection_log":
+                this.indexCollectionLogTrigger(parsed, trigger);
+                break;
+
             case "level_reach":
             case "total_level_reach":
+            case "combat_level_reach":
             case "xp_reach":
                 this.skillProgressTasks.push(parsed);
                 break;
@@ -222,6 +342,15 @@ export class LeagueTaskIndex {
     }
 
     private addToIndex(map: Map<number, ParsedTask[]>, key: number, task: ParsedTask): void {
+        let tasks = map.get(key);
+        if (!tasks) {
+            tasks = [];
+            map.set(key, tasks);
+        }
+        tasks.push(task);
+    }
+
+    private addToStringIndex(map: Map<string, ParsedTask[]>, key: string, task: ParsedTask): void {
         let tasks = map.get(key);
         if (!tasks) {
             tasks = [];
@@ -327,10 +456,97 @@ export class LeagueTaskIndex {
     }
 
     /**
+     * Get tasks triggered by a successful skilling action.
+     */
+    getTasksForSkillingAction(skill: string, action: string, targetId: number): ParsedTask[] {
+        const key = skillingActionIndexKey(skill, action, targetId);
+        return this.skillingActionToTasks.get(key) ?? [];
+    }
+
+    getTasksForAreaEnter(areaKey: string): ParsedTask[] {
+        return this.areaEnterToTasks.get(areaKey) ?? [];
+    }
+
+    getTasksForAreaEnterRegion(regionId: number): ParsedTask[] {
+        return this.areaEnterToTasks.get(`region:${regionId | 0}`) ?? [];
+    }
+
+    getTasksForWildernessLevel(minLevel: number): ParsedTask[] {
+        return this.wildernessLevelToTasks.get(minLevel | 0) ?? [];
+    }
+
+    getTasksForWildernessLevelCross(previousLevel: number, currentLevel: number): ParsedTask[] {
+        if (currentLevel <= previousLevel || currentLevel <= 0) {
+            return [];
+        }
+        const matched: ParsedTask[] = [];
+        for (const [minLevel, tasks] of this.wildernessLevelToTasks) {
+            if (previousLevel < minLevel && currentLevel >= minLevel) {
+                matched.push(...tasks);
+            }
+        }
+        return matched;
+    }
+
+    /**
      * Tasks that depend on skill levels, total level, or XP (checked on login / XP gain).
      */
     getSkillProgressTasks(): ParsedTask[] {
         return this.skillProgressTasks;
+    }
+
+    getCollectionLogSlotTasks(): ParsedTask[] {
+        return this.collectionLogSlotTasks;
+    }
+
+    getCollectionLogPageTabTasks(tabIndex: number): ParsedTask[] {
+        return this.collectionLogPageTabToTasks.get(tabIndex | 0) ?? [];
+    }
+
+    getCollectionLogPageStructTasks(structId: number): ParsedTask[] {
+        return this.collectionLogPageStructToTasks.get(structId | 0) ?? [];
+    }
+
+    /**
+     * Collect tasks matching a successful spell cast (deduped by taskId).
+     */
+    getTasksForSpellCast(opts: {
+        spellId?: number;
+        spellCategory?: string;
+        spellbook?: string;
+        teleportName?: string;
+    }): ParsedTask[] {
+        const seen = new Set<number>();
+        const out: ParsedTask[] = [];
+        const add = (tasks: ParsedTask[]) => {
+            for (const task of tasks) {
+                if (seen.has(task.taskId)) continue;
+                seen.add(task.taskId);
+                out.push(task);
+            }
+        };
+
+        add(this.anySpellCastTasks);
+
+        const spellId = opts.spellId | 0;
+        if (spellId > 0) {
+            add(this.spellIdToTasks.get(spellId) ?? []);
+        }
+
+        if (opts.spellCategory) {
+            add(this.spellCategoryToTasks.get(opts.spellCategory) ?? []);
+        }
+
+        if (opts.spellbook) {
+            add(this.spellbookToTasks.get(opts.spellbook) ?? []);
+        }
+
+        if (opts.teleportName) {
+            add(this.teleportNameToTasks.get(opts.teleportName.toLowerCase()) ?? []);
+            add(this.spellCategoryToTasks.get("teleport") ?? []);
+        }
+
+        return out;
     }
 
     // === Challenge Lookup methods ===
@@ -387,7 +603,15 @@ export class LeagueTaskIndex {
             itemEquip: number;
             itemObtain: number;
             itemCraft: number;
+            skillingAction: number;
+            areaEnter: number;
+            wildernessLevel: number;
             skillProgress: number;
+            spellCastSpellId: number;
+            spellCastCategory: number;
+            spellCastSpellbook: number;
+            spellCastTeleport: number;
+            spellCastAny: number;
         };
         challengeIndexSizes: {
             npcKill: number;
@@ -409,7 +633,15 @@ export class LeagueTaskIndex {
                 itemEquip: this.itemEquipToTasks.size,
                 itemObtain: this.itemObtainToTasks.size,
                 itemCraft: this.itemCraftToTasks.size,
+                skillingAction: this.skillingActionToTasks.size,
+                areaEnter: this.areaEnterToTasks.size,
+                wildernessLevel: this.wildernessLevelToTasks.size,
                 skillProgress: this.skillProgressTasks.length,
+                spellCastSpellId: this.spellIdToTasks.size,
+                spellCastCategory: this.spellCategoryToTasks.size,
+                spellCastSpellbook: this.spellbookToTasks.size,
+                spellCastTeleport: this.teleportNameToTasks.size,
+                spellCastAny: this.anySpellCastTasks.length,
             },
             challengeIndexSizes: {
                 npcKill: this.npcIdToChallenges.size,

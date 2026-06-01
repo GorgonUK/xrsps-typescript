@@ -1,0 +1,718 @@
+{
+  "description": "Explicit skilling_action triggers for CSV tasks wired into live league task list.",
+  "tasks": [
+    {
+      "sourceTaskId": 73,
+      "mvpTaskId": 63,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          434
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 74,
+      "mvpTaskId": 64,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          440
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 75,
+      "mvpTaskId": 65,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          442
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 76,
+      "mvpTaskId": 66,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          453
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 147,
+      "mvpTaskId": 67,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1521
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 122,
+      "mvpTaskId": 68,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          54
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 201,
+      "mvpTaskId": 69,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          361
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 169,
+      "mvpTaskId": 70,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          331
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 363,
+      "mvpTaskId": 71,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "crafting",
+        "action": "spin",
+        "targetIds": [
+          1777
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 679,
+      "mvpTaskId": 72,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1205
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 71,
+      "mvpTaskId": 73,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          436
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 72,
+      "mvpTaskId": 74,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          438
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 77,
+      "mvpTaskId": 75,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          444
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 78,
+      "mvpTaskId": 76,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          447
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 79,
+      "mvpTaskId": 77,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          449
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 80,
+      "mvpTaskId": 78,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          451
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 94,
+      "mvpTaskId": 79,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          6333
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 120,
+      "mvpTaskId": 80,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          37
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 121,
+      "mvpTaskId": 81,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          48
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 123,
+      "mvpTaskId": 82,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          56
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 124,
+      "mvpTaskId": 83,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          60
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 125,
+      "mvpTaskId": 84,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          58
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 126,
+      "mvpTaskId": 85,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          64
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 127,
+      "mvpTaskId": 86,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          62
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 128,
+      "mvpTaskId": 87,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          68
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 129,
+      "mvpTaskId": 88,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          66
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 130,
+      "mvpTaskId": 89,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          72
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 131,
+      "mvpTaskId": 90,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fletching",
+        "action": "fletch",
+        "targetIds": [
+          70
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 148,
+      "mvpTaskId": 91,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1519
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 149,
+      "mvpTaskId": 92,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1517
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 150,
+      "mvpTaskId": 93,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1515
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 151,
+      "mvpTaskId": 94,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1513
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 152,
+      "mvpTaskId": 95,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1511
+        ],
+        "count": 25
+      }
+    },
+    {
+      "sourceTaskId": 153,
+      "mvpTaskId": 96,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          1511
+        ],
+        "count": 100
+      }
+    },
+    {
+      "sourceTaskId": 163,
+      "mvpTaskId": 97,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          317
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 164,
+      "mvpTaskId": 98,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          321
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 165,
+      "mvpTaskId": 99,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          327
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 166,
+      "mvpTaskId": 100,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          345
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 167,
+      "mvpTaskId": 101,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          335
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 168,
+      "mvpTaskId": 102,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          349
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 170,
+      "mvpTaskId": 103,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          359
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 171,
+      "mvpTaskId": 104,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          377
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 173,
+      "mvpTaskId": 105,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          371
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 174,
+      "mvpTaskId": 106,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          7944
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 175,
+      "mvpTaskId": 107,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          383
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 191,
+      "mvpTaskId": 108,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          377
+        ],
+        "count": 250
+      }
+    },
+    {
+      "sourceTaskId": 192,
+      "mvpTaskId": 109,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          371
+        ],
+        "count": 500
+      }
+    },
+    {
+      "sourceTaskId": 194,
+      "mvpTaskId": 110,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          315
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 195,
+      "mvpTaskId": 111,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          323
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 197,
+      "mvpTaskId": 112,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          347
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 198,
+      "mvpTaskId": 113,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          333
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 199,
+      "mvpTaskId": 114,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          351
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 200,
+      "mvpTaskId": 115,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          329
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 202,
+      "mvpTaskId": 116,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          379
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 204,
+      "mvpTaskId": 117,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          373
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 205,
+      "mvpTaskId": 118,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          7946
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 206,
+      "mvpTaskId": 119,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          385
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 364,
+      "mvpTaskId": 120,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "crafting",
+        "action": "spin",
+        "targetIds": [
+          1777
+        ],
+        "count": 1000
+      }
+    },
+    {
+      "sourceTaskId": 172,
+      "mvpTaskId": 121,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "fishing",
+        "action": "catch",
+        "targetIds": [
+          363
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,666 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+0,Achieve your First Level Up,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+1,Achieve your First Level 5,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+2,Achieve your First Level 10,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+3,Achieve your First Level 15,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+4,Achieve your First Level 20,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+5,Achieve your First Level 25,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+6,Achieve your First Level 30,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+7,Achieve your First Level 35,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+8,Achieve your First Level 40,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+9,Achieve your First Level 45,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+10,Achieve your First Level 50,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+11,Achieve your First Level 55,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+12,Achieve your First Level 60,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+13,Achieve your First Level 65,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+14,Achieve your First Level 70,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+15,Achieve your First Level 75,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+16,Achieve your First Level 80,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+17,Achieve your First Level 85,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+18,Achieve your First Level 90,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+19,Achieve your First Level 95,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+20,Achieve your First Level 99,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+21,Base Level 5,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+22,Base Level 10,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+23,Base Level 15,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+24,Base Level 20,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+25,Base Level 25,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+26,Base Level 30,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+27,Base Level 35,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+28,Base Level 40,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+29,Base Level 45,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+30,Base Level 50,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+31,Base Level 55,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+32,Base Level 60,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+33,Base Level 65,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+34,Base Level 70,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+35,Base Level 75,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+36,Base Level 80,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+37,Base Level 85,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+38,Base Level 90,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+39,Base Level 95,ready,trigger:level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+40,Reach Total Level 2376,ready,trigger:total_level_reach,LeagueTaskManager.syncSkillProgressTasks,,
+41,Pickpocket a Citizen,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Citizen"" in thieving.ts"
+42,Pickpocket a Farmer,need_hook,"pickpocket npc ids: 3114,3243,3244,11918,11919,11920,11921,13228,13229,13230,13231,13232,13233,13234,13235,14751,14752,14753,14754,14773",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+43,Pickpocket a HAM follower,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""HAM follower"" in thieving.ts"
+44,Pickpocket a Warrior,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Warrior"" in thieving.ts"
+45,Pickpocket a Villager,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Villager"" in thieving.ts"
+46,Pickpocket a Master Farmer,need_hook,"pickpocket npc ids: 5730,5731,11940,11941,13236,13237,13238,13239,13240,13241,13242,13243,14755,14756,14757,14758",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+47,Pickpocket a Guard,need_hook,"pickpocket npc ids: 397,398,399,400,1546,1547,1548,1549,1550,3010,3011,3254,3269,3270,3271,3272,3273,3274,3283,4522,4523,4524,4525,4526,5418,11092,11094,11096,11098,11100,11102,11104,11106,11911,11912,11913,11914,11915,11916,11917,11922,11923,11924,11937,11938,11939,11942,11943,11944,11945,11946,11947,13100,13101,13102,13103,13104,13105,13106,13107,13108,13109,13986,13987,13988,13989,13990,13991,13992,13993,13994,13995,14663,14664,14665,14666,14667,14668,14669,14670,14716,14717,14718,14719,14720,14721,14722,14723,14887,14888,14889,14890",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+48,Pickpocket a Fremennik,need_hook,pickpocket def: Fremennik,skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+49,Pickpocket a Wealthy Citizen,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Wealthy Citizen"" in thieving.ts"
+50,Pickpocket a Desert bandit,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Desert bandit"" in thieving.ts"
+51,Pickpocket a Knight,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Knight"" in thieving.ts"
+52,Pickpocket a Paladin,need_hook,"pickpocket npc ids: 3293,3294,8853,11901,11930,11931,11932,11933",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+53,Pickpocket a Gnome,need_hook,"pickpocket npc ids: 5130,6094,6095,6096",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+54,Pickpocket a Hero,need_hook,"pickpocket npc ids: 3295,11934,11935",skill.pickpocket (no league hook),pickpocket works but does not call LeagueTaskManager,Emit league task check after successful pickpocket or use script_manual
+55,Pickpocket a Vyre,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Vyre"" in thieving.ts"
+56,Pickpocket an Elf,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Elf"" in thieving.ts"
+57,Pickpocket a Tzhaar,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Tzhaar"" in thieving.ts"
+58,Steal from a Vegetable stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+59,Steal from a Cake stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+60,Steal from a Tea stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+61,Steal from a Crafting stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+62,Steal from a Silk stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+63,Steal from a Wine stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+64,Steal from a Fruit stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+65,Steal from a Seed stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+66,Steal from a Fur stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+67,Steal from a Fish stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+68,Steal from a Silver stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+69,Steal from a Magic stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+70,Steal from a Gem stall,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+71,Mine Copper Ore,ready,skilling_action:mining/mine mining/mine:436 Copper ore,LeagueTaskManager.onSkillingAction,,
+72,Mine Tin Ore,ready,skilling_action:mining/mine mining/mine:438 Tin ore manual-drop,LeagueTaskManager.onSkillingAction,,
+73,Mine Clay,ready,skilling_action:mining/mine mining/mine:434 Clay,LeagueTaskManager.onSkillingAction,,
+74,Mine Iron Ore,ready,skilling_action:mining/mine mining/mine:440 Iron ore,LeagueTaskManager.onSkillingAction,,
+75,Mine Silver Ore,ready,skilling_action:mining/mine mining/mine:442 Silver ore,LeagueTaskManager.onSkillingAction,,
+76,Mine Coal,ready,skilling_action:mining/mine mining/mine:453 Coal manual-drop,LeagueTaskManager.onSkillingAction,,
+77,Mine Gold Ore,ready,skilling_action:mining/mine mining/mine:444 Gold ore manual-drop,LeagueTaskManager.onSkillingAction,,
+79,Mine Adamantite Ore,ready,skilling_action:mining/mine mining/mine:449 Adamantite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+80,Mine Runite Ore,ready,skilling_action:mining/mine mining/mine:451 Runite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+81,Mine Rune Essence,ambiguous,item candidates: 1436:Rune essence; 1437:Rune essence; 19225:Rune essence,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+82,Mine Sandstone,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+83,Mine Gem rocks,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+84,Mine Granite,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+85,Mine with a Steel pickaxe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+86,Mine with a Rune pickaxe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+87,Mine with a Dragon pickaxe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+91,Chop a Tree,ready,item_obtain:8173 Tree,LeagueTaskManager.onItemObtain,,
+92,Chop an Oak Tree,ready,item_obtain:8175 Oak tree,LeagueTaskManager.onItemObtain,,
+93,Chop a Willow Tree,ready,item_obtain:8176 Willow tree,LeagueTaskManager.onItemObtain,,
+94,Chop a Teak Tree,ready,skilling_action:woodcutting/chop woodcutting/chop:6333 Teak logs,LeagueTaskManager.onSkillingAction,,
+95,Chop a Maple Tree,ready,item_obtain:8177 Maple tree,LeagueTaskManager.onItemObtain,,
+96,Chop a Mahogany Tree,ready,skilling_action:woodcutting/chop woodcutting/chop:6332 Mahogany logs manual-drop,LeagueTaskManager.onSkillingAction,,
+97,Chop a Yew Tree,ready,item_obtain:8178 Yew tree,LeagueTaskManager.onItemObtain,,
+98,Chop a Magic Tree,ready,item_obtain:8179 Magic tree,LeagueTaskManager.onItemObtain,,
+99,Chop a Redwood Tree,ready,skilling_action:woodcutting/chop woodcutting/chop:19669 Redwood logs,LeagueTaskManager.onSkillingAction,,
+100,Chop a tree with a Steel axe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+101,Chop a tree with a Rune axe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+102,Chop a tree with a Dragon axe,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+104,Chop 25 Trees,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+105,Chop 100 Trees,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+106,Chop 500 Trees,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+107,Fletch Arrow Shafts.,ready,skilling_action:fletching/fletch fletching/fletch:52 Arrow shaft,LeagueTaskManager.onSkillingAction,,
+108,Fletch Headless Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+109,Fletch Bronze Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+110,Fletch Iron Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+111,Fletch Steel Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+112,Fletch Mithril Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+113,Fletch Adamant Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+114,Fletch Rune Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+115,Fletch Bronze Bolts.,ambiguous,item candidates: 877:Bronze bolts; 14509:Bronze bolts,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+116,Fletch Steel Bolts.,ambiguous,item candidates: 9141:Steel bolts; 14513:Steel bolts,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+117,Fletch Mithril Bolts.,ambiguous,item candidates: 9142:Mithril bolts; 14514:Mithril bolts,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+118,Fletch Adamant Bolts.,ambiguous,item candidates: 9143:Adamant bolts; 14515:Adamant bolts,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+119,Fletch Rune Bolts.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+120,Fletch Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:37 Candle,LeagueTaskManager.onSkillingAction,,
+121,Fletch Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:48 Longbow (u),LeagueTaskManager.onSkillingAction,,
+122,Fletch Oak Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:54 Oak shortbow (u),LeagueTaskManager.onSkillingAction,,
+123,Fletch Oak Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:56 Oak longbow (u),LeagueTaskManager.onSkillingAction,,
+124,Fletch Willow Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:60 Willow shortbow (u),LeagueTaskManager.onSkillingAction,,
+125,Fletch Willow Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:58 Willow longbow (u),LeagueTaskManager.onSkillingAction,,
+126,Fletch Maple Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:64 Maple shortbow (u),LeagueTaskManager.onSkillingAction,,
+127,Fletch Maple Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:62 Maple longbow (u),LeagueTaskManager.onSkillingAction,,
+128,Fletch Yew Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:68 Yew shortbow (u),LeagueTaskManager.onSkillingAction,,
+129,Fletch Yew Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:66 Yew longbow (u),LeagueTaskManager.onSkillingAction,,
+130,Fletch Magic Shortbows.,ready,skilling_action:fletching/fletch fletching/fletch:72 Magic shortbow (u),LeagueTaskManager.onSkillingAction,,
+131,Fletch Magic Longbows.,ready,skilling_action:fletching/fletch fletching/fletch:70 Magic longbow (u),LeagueTaskManager.onSkillingAction,,
+134,String 100 Bows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+135,String 500 Bows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+137,Fletch 100 Arrow Shafts.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+138,"Fletch 1,000 Arrow Shafts.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+139,"Fletch 10,000 Arrow Shafts.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+140,Fletch 100 Arrows.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+141,"Fletch 1,000 Arrows.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+142,"Fletch 10,000 Arrows.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+143,Fletch 100 Bolts.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+144,"Fletch 1,000 Bolts.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+145,"Fletch 10,000 Bolts.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+147,Burn Oak Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1521 Oak logs,LeagueTaskManager.onSkillingAction,,
+148,Burn Willow Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1519 Willow logs,LeagueTaskManager.onSkillingAction,,
+149,Burn Maple Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1517 Maple logs,LeagueTaskManager.onSkillingAction,,
+150,Burn Yew Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1515 Yew logs manual-drop,LeagueTaskManager.onSkillingAction,,
+151,Burn Magic Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1513 Magic logs manual-drop,LeagueTaskManager.onSkillingAction,,
+152,Burn 25 Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1511 Logs,LeagueTaskManager.onSkillingAction,,
+153,Burn 100 Logs.,ready,skilling_action:firemaking/burn firemaking/burn:1511 Logs,LeagueTaskManager.onSkillingAction,,
+154,Burn 500 Logs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+155,"Burn 1,000 Logs.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+156,"Burn 5,000 Logs.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+157,Burn Regular Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+158,Burn Oak Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+159,Burn Willow Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+160,Burn Maple Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+161,Burn Yew Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+162,Burn Magic Logs Without Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+163,Catch a Shrimp.,ready,skilling_action:fishing/catch fishing/catch:317 Raw shrimps,LeagueTaskManager.onSkillingAction,,
+164,Catch Anchovies.,ready,skilling_action:fishing/catch fishing/catch:321 Raw anchovies,LeagueTaskManager.onSkillingAction,,
+165,Catch Sardines.,ready,skilling_action:fishing/catch fishing/catch:327 Raw sardine,LeagueTaskManager.onSkillingAction,,
+166,Catch Herring.,ready,skilling_action:fishing/catch fishing/catch:345 Raw herring,LeagueTaskManager.onSkillingAction,,
+167,Catch Trout.,ready,skilling_action:fishing/catch fishing/catch:335 Raw trout,LeagueTaskManager.onSkillingAction,,
+168,Catch Pike.,ready,skilling_action:fishing/catch fishing/catch:349 Raw pike,LeagueTaskManager.onSkillingAction,,
+169,Catch Salmon.,ready,skilling_action:fishing/catch fishing/catch:331 Raw salmon,LeagueTaskManager.onSkillingAction,,
+170,Catch Tuna.,ready,skilling_action:fishing/catch fishing/catch:359 Raw tuna,LeagueTaskManager.onSkillingAction,,
+171,Catch Lobsters.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+172,Catch Bass.,ready,skilling_action:fishing/catch fishing/catch:363 Raw bass,LeagueTaskManager.onSkillingAction,,
+173,Catch Swordfish.,ready,skilling_action:fishing/catch fishing/catch:371 Raw swordfish,LeagueTaskManager.onSkillingAction,,
+174,Catch Monkfish.,ready,skilling_action:fishing/catch fishing/catch:7944 Raw monkfish manual-drop,LeagueTaskManager.onSkillingAction,,
+175,Catch Sharks.,ready,skilling_action:fishing/catch fishing/catch:383 Raw shark manual-drop,LeagueTaskManager.onSkillingAction,,
+176,Catch Anglerfish.,ambiguous,item candidates: 13441:Anglerfish; 13442:Anglerfish; 18482:Anglerfish,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+177,Catch Manta Rays.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+178,Catch Dark Crabs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+179,Catch 25 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+180,Catch 100 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+181,Catch 500 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+182,"Catch 1,000 Fish.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+183,"Catch 5,000 Fish.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+184,Catch Fish with a Small Net.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+185,Catch Fish with Fly Fishing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+186,Catch Fish with a Harpoon.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+187,Catch Fish with a Lobster Pot.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+188,Catch Fish Barehanded.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+189,Catch 100 Shrimp.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+190,Catch 100 Trout.,ambiguous,item candidates: 333:Trout; 334:Trout; 15448:Trout,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+191,Catch 250 Lobsters.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+192,Catch 500 Swordfish.,ready,skilling_action:fishing/catch fishing/catch:371 Raw swordfish,LeagueTaskManager.onSkillingAction,,
+193,Catch 250 Sharks.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+194,Cook Shrimp.,ready,skilling_action:cooking/cook cooking/cook:315 Shrimps,LeagueTaskManager.onSkillingAction,,
+195,Cook Anchovies.,ready,skilling_action:cooking/cook cooking/cook:323 Burnt fish,LeagueTaskManager.onSkillingAction,,
+196,Cook Sardines.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+197,Cook Herring.,ready,skilling_action:cooking/cook cooking/cook:347 Herring,LeagueTaskManager.onSkillingAction,,
+198,Cook Trout.,ready,skilling_action:cooking/cook cooking/cook:333 Trout,LeagueTaskManager.onSkillingAction,,
+199,Cook Pike.,ready,skilling_action:cooking/cook cooking/cook:351 Pike,LeagueTaskManager.onSkillingAction,,
+200,Cook Salmon.,ready,skilling_action:cooking/cook cooking/cook:329 Salmon,LeagueTaskManager.onSkillingAction,,
+201,Cook Tuna.,ready,skilling_action:cooking/cook cooking/cook:361 Tuna,LeagueTaskManager.onSkillingAction,,
+202,Cook Lobster.,ready,skilling_action:cooking/cook cooking/cook:379 Lobster,LeagueTaskManager.onSkillingAction,,
+203,Cook Bass.,ambiguous,item candidates: 365:Bass; 366:Bass; 15463:Bass,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+204,Cook Swordfish.,ready,skilling_action:cooking/cook cooking/cook:373 Swordfish,LeagueTaskManager.onSkillingAction,,
+205,Cook Monkfish.,ready,skilling_action:cooking/cook cooking/cook:7946 Monkfish,LeagueTaskManager.onSkillingAction,,
+206,Cook Shark.,ready,skilling_action:cooking/cook cooking/cook:385 Shark manual-drop,LeagueTaskManager.onSkillingAction,,
+207,Cook Anglerfish.,ambiguous,item candidates: 13441:Anglerfish; 13442:Anglerfish; 18482:Anglerfish,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+208,Cook Manta Rays.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+209,Cook 25 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+210,Cook 100 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+211,Cook 500 Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+212,"Cook 1,000 Fish.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+213,"Cook 5,000 Fish.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+214,Cook Food on a Fire.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+215,Cook Food on a Range.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+216,Burn a Piece of Food.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+217,Cook an Entire Inventory of Fish.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+218,Make Bread.,ambiguous,item candidates: 2309:Bread; 2310:Bread; 18919:Bread,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+221,Make Pizza.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+223,Cook Meat.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+224,Cook Chicken.,ready,item_craft:5609 Chicken,LeagueTaskManager.onItemCraft,,
+225,Plant a Seed.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+226,Harvest a Crop.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+227,Rake a Farming Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+228,Water a Farming Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+229,Compost a Farming Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+230,Plant Potatoes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+231,Plant Onions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+232,Plant Cabbages.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+233,Plant Tomatoes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+234,Plant Sweetcorn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+235,Plant Strawberries.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+236,Plant Watermelons.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+237,Plant Snape Grass.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+238,Plant Ranarr Weed.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+239,Plant Snapdragon.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+240,Plant Torstol.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+241,Plant Marigolds.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+242,Plant Rosemary.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+243,Plant Limpwurt.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+244,Plant White Lilies.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+245,Plant an Oak Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+246,Plant a Willow Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+247,Plant a Maple Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+248,Plant a Yew Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+249,Plant a Magic Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+250,Plant an Apple Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+251,Plant a Banana Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+252,Plant a Palm Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+253,Plant a Dragonfruit Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+255,Harvest an Herb Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+256,Harvest an Allotment Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+257,Harvest a Fruit Tree.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+258,Harvest a Tree Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+260,Protect a Farming Patch.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+265,Catch a Crimson Bird.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+266,Catch a Rabbit with a Box Trap.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+267,Catch a Desert Lizard.,ready,item_obtain:6695 Desert lizard,LeagueTaskManager.onItemObtain,,
+268,Catch a Spotted Bird.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+269,Catch a Swamp Lizard.,ambiguous,item candidates: 10149:Swamp lizard; 10163:Swamp lizard; 15369:Swamp lizard,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+270,Catch a Chinchompa.,ambiguous,item candidates: 9976:Chinchompa; 10033:Chinchompa; 15363:Chinchompa,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+271,Catch a Red Chinchompa.,ambiguous,item candidates: 9977:Red chinchompa; 10034:Red chinchompa; 15364:Red chinchompa,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+272,Catch a Black Chinchompa.,ambiguous,item candidates: 11959:Black chinchompa; 15365:Black chinchompa,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+273,Catch a Rare Hunter Creature.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+276,Catch 10 Hunter Creatures.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+277,Catch 50 Hunter Creatures.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+278,Catch 100 Hunter Creatures.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+279,Catch 500 Hunter Creatures.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+280,"Catch 1,000 Hunter Creatures.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+281,"Catch 5,000 Hunter Creatures.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+282,Catch 25 Creatures with Box Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+283,Catch 100 Creatures with Box Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+284,Catch 500 Creatures with Box Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+285,Catch 25 Creatures with Net Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+286,Catch 100 Creatures with Net Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+287,Catch 500 Creatures with Net Traps.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+289,Have 2 Active Hunter Traps at Once.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+290,Have 3 Active Hunter Traps at Once.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+291,Have 4 Active Hunter Traps at Once.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+292,Have 5 Active Hunter Traps at Once.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+293,Catch a Creature Without a Trap Failing.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+294,Catch 10 Creatures in a Row Without Failure.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+295,Catch 50 Creatures in a Row Without Failure.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+296,Receive a Slayer Task.,need_hook,slayer task system exists,(unwired) slayer task complete,slayer task completion not wired to league tasks,Hook slayer task completion in player/slayer module
+297,Complete a Slayer Task.,need_hook,slayer task system exists,(unwired) slayer task complete,slayer task completion not wired to league tasks,Hook slayer task completion in player/slayer module
+320,Unlock a Slayer Helmet.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+322,Craft a Slayer Helmet.,ambiguous,item candidates: 11864:Slayer helmet; 14002:Slayer helmet,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+325,Block a Slayer Task.,need_hook,slayer task system exists,(unwired) slayer task complete,slayer task completion not wired to league tasks,Hook slayer task completion in player/slayer module
+326,Skip a Slayer Task.,need_hook,slayer task system exists,(unwired) slayer task complete,slayer task completion not wired to league tasks,Hook slayer task completion in player/slayer module
+339,Craft Leather Gloves.,ambiguous,item candidates: 1059:Leather gloves; 1060:Leather gloves; 14197:Leather gloves,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+340,Craft Leather Boots.,ambiguous,item candidates: 1061:Leather boots; 1062:Leather boots; 6893:Leather boots; 14198:Leather boots,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+341,Craft Leather Cowl.,ambiguous,item candidates: 1167:Leather cowl; 1168:Leather cowl; 14151:Leather cowl,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+342,Craft Hard Leather Body.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+343,Craft Studded Body.,ambiguous,item candidates: 1133:Studded body; 1134:Studded body; 14109:Studded body; 26264:Studded body; 26265:Studded body,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+344,Craft Green Dragonhide Armor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+345,Craft Blue Dragonhide Armor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+346,Craft Red Dragonhide Armor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+347,Craft Black Dragonhide Armor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+354,Craft a Sapphire Ring.,ambiguous,item candidates: 1637:Sapphire ring; 1638:Sapphire ring; 16323:Sapphire ring,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+355,Craft an Emerald Necklace.,ambiguous,item candidates: 1658:Emerald necklace; 1659:Emerald necklace; 16330:Emerald necklace,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+356,Craft a Ruby Amulet.,ambiguous,item candidates: 1698:Ruby amulet; 1699:Ruby amulet; 16343:Ruby amulet,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+357,Craft a Diamond Bracelet.,ambiguous,item candidates: 11092:Diamond bracelet; 11093:Diamond bracelet; 11094:Diamond bracelet; 16262:Diamond bracelet,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+358,Craft a Dragonstone Amulet.,ambiguous,item candidates: 1702:Dragonstone amulet; 1703:Dragonstone amulet; 16345:Dragonstone amulet,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+365,Craft Pottery.,ambiguous,item candidates: 11178:Pottery; 18823:Pottery,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+367,Craft Gold Jewelry.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+368,Craft Silver Jewelry.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+369,Craft 25 Leather Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+370,Craft 100 Leather Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+371,Craft 500 Leather Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+372,"Craft 1,000 Leather Items.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+376,Craft 25 Jewelry Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+377,Craft 100 Jewelry Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+378,Craft 500 Jewelry Items.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+381,Clean a Guam Leaf.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+382,Clean a Marrentill.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+383,Clean a Tarromin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+384,Clean a Harralander.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+385,Clean a Ranarr Weed.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+386,Clean an Irit Leaf.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+387,Clean a Kwuarm.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+388,Clean a Snapdragon.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+389,Clean a Cadantine.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+390,Clean a Torstol.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+391,Make an Attack Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+392,Make an Anti-poison Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+393,Make a Strength Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+394,Make a Restore Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+395,Make an Energy Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+396,Make a Defence Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+397,Make a Prayer Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+398,Make a Super Attack Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+399,Make a Super Strength Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+400,Make a Super Restore Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+401,Make a Saradomin Brew.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+402,Make a Super Combat Potion.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+405,Make 25 Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+406,Make 100 Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+407,Make 500 Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+408,"Make 1,000 Potions.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+409,"Make 5,000 Potions.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+410,Clean 25 Herbs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+411,Clean 100 Herbs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+412,Clean 500 Herbs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+413,"Clean 1,000 Herbs.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+414,Create 100 Unfinished Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+415,Create 500 Unfinished Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+416,"Create 1,000 Unfinished Potions.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+418,Make Combat Potions.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+419,Craft Air Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+420,Craft Mind Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+421,Craft Water Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+422,Craft Earth Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+423,Craft Fire Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+424,Craft Body Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+425,Craft Cosmic Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+426,Craft Chaos Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+427,Craft Nature Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+428,Craft Law Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+429,Craft Death Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+430,Craft Blood Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+431,Craft Soul Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+432,Craft 100 Runes.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+433,"Craft 1,000 Runes.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+434,"Craft 10,000 Runes.",need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+475,Make a Teleport Tablet,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+654,Cook on the Lumbridge Castle Range.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+655,Mine Copper in Lumbridge Swamp.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+656,Fish Shrimp in Lumbridge.,ready,skilling_action:fishing/catch fishing/catch:317 Raw shrimps,LeagueTaskManager.onSkillingAction,,
+657,Chop a Tree in Draynor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+658,Burn Logs in Varrock.,ready,skilling_action:firemaking/burn firemaking/burn:1511 Logs,LeagueTaskManager.onSkillingAction,,
+674,Craft Air Runes at the Air Altar.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+675,Craft Mind Runes at the Mind Altar.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+679,Smith a Bronze Dagger in Varrock.,ready,skilling_action:smithing/smith smithing/smith:1205 Bronze dagger,LeagueTaskManager.onSkillingAction,,
+680,Steal from a Tea Stall in Varrock.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+681,Steal from the Varrock Bakery Stall.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+682,Pickpocket a Man in Lumbridge.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Man in Lumbridge"" in thieving.ts"
+683,Pickpocket a Guard in Varrock.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Guard in Varrock"" in thieving.ts"
+684,Catch Trout in Barbarian Village.,ready,skilling_action:fishing/catch fishing/catch:335 Raw trout,LeagueTaskManager.onSkillingAction,,
+685,Cook Lobsters in Edgeville.,ready,skilling_action:cooking/cook cooking/cook:379 Lobster,LeagueTaskManager.onSkillingAction,,
+688,Mine Iron Ore in Varrock Mine.,ready,skilling_action:mining/mine mining/mine:440 Iron ore,LeagueTaskManager.onSkillingAction,,
+689,Chop Willow Trees in Draynor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+690,Burn Willow Logs in Draynor.,ready,skilling_action:firemaking/burn firemaking/burn:1519 Willow logs,LeagueTaskManager.onSkillingAction,,
+712,Fish Shrimp on Karamja.,ready,skilling_action:fishing/catch fishing/catch:317 Raw shrimps,LeagueTaskManager.onSkillingAction,,
+713,Catch Tuna on Karamja.,ready,skilling_action:fishing/catch fishing/catch:359 Raw tuna,LeagueTaskManager.onSkillingAction,,
+714,Catch Lobsters on Karamja.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+715,Catch Swordfish on Karamja.,ready,skilling_action:fishing/catch fishing/catch:371 Raw swordfish,LeagueTaskManager.onSkillingAction,,
+716,Cook Tuna on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+717,Cook Lobsters on Karamja.,ready,skilling_action:cooking/cook cooking/cook:379 Lobster,LeagueTaskManager.onSkillingAction,,
+718,Cook Swordfish on Karamja.,ready,skilling_action:cooking/cook cooking/cook:373 Swordfish,LeagueTaskManager.onSkillingAction,,
+719,Chop Jungle Trees.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+720,Chop Teak Trees.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+721,Chop Mahogany Trees.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+722,Burn Teak Logs on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+723,Burn Mahogany Logs on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+724,Mine Gold Ore in Karamja Volcano.,ready,skilling_action:mining/mine mining/mine:444 Gold ore manual-drop,LeagueTaskManager.onSkillingAction,,
+725,Mine Gem Rocks in Shilo Village.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+726,Catch Karambwanji.,ambiguous,item candidates: 21394:Karambwanji; 21395:Karambwanji,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+727,Catch Karambwan.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+728,Cook Karambwan.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+735,Burn Jungle Logs.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+737,Harvest Bananas on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+739,Pick Pineapples on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+741,Craft Nature Runes.,duplicate,,,duplicate of task 427,Remove or differentiate from task 427
+743,Fish at Musa Point.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+749,Catch Salmon on Karamja.,ready,skilling_action:fishing/catch fishing/catch:331 Raw salmon,LeagueTaskManager.onSkillingAction,,
+757,Catch Lobsters at Musa Point.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+760,Mine Iron Ore on Karamja.,ready,skilling_action:mining/mine mining/mine:440 Iron ore,LeagueTaskManager.onSkillingAction,,
+761,Mine Mithril Ore on Karamja.,ready,skilling_action:mining/mine mining/mine:447 Mithril ore,LeagueTaskManager.onSkillingAction,,
+764,Burn a Mahogany Log on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+766,Catch Fish from the Fishing Platform.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+773,Catch a Nature Impling on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+774,Catch a Dragon Impling on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+775,Catch a Butterfly on Karamja.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+791,Mine Clay in the Dwarven Mine.,ready,skilling_action:mining/mine mining/mine:434 Clay,LeagueTaskManager.onSkillingAction,,
+792,Mine Coal in the Mining Guild.,ready,skilling_action:mining/mine mining/mine:453 Coal manual-drop,LeagueTaskManager.onSkillingAction,,
+793,Mine Mithril Ore in the Mining Guild.,ready,skilling_action:mining/mine mining/mine:447 Mithril ore,LeagueTaskManager.onSkillingAction,,
+794,Mine Adamantite Ore in the Mining Guild.,ready,skilling_action:mining/mine mining/mine:449 Adamantite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+796,Smith an Iron Platebody in Falador.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+797,Smith a Mithril Item in Falador.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+798,Chop Oak Trees near Draynor Manor.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+799,Chop Willow Trees near Port Sarim.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+800,Burn Willow Logs in Falador.,ready,skilling_action:firemaking/burn firemaking/burn:1519 Willow logs,LeagueTaskManager.onSkillingAction,,
+801,Fish Sardines in Port Sarim.,ready,skilling_action:fishing/catch fishing/catch:327 Raw sardine,LeagueTaskManager.onSkillingAction,,
+802,Fish Lobsters in Port Sarim.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+803,Cook Lobsters in Port Sarim.,ready,skilling_action:cooking/cook cooking/cook:379 Lobster,LeagueTaskManager.onSkillingAction,,
+804,Catch Cerulean Twitches.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+805,Catch Copper Longtails.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+806,Catch a Butterfly in Taverley.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+819,Pick Cabbages in Falador Farm.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+822,Craft a Sapphire Ring in Falador.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+823,Craft a Ruby Amulet in Falador.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+827,Recharge Prayer at the Monastery near Burthorpe.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+842,Fish on the Docks in Port Sarim.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+844,Catch a Mudskipper.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+845,Burn Oak Logs in Port Sarim.,ready,skilling_action:firemaking/burn firemaking/burn:1521 Oak logs,LeagueTaskManager.onSkillingAction,,
+851,Catch an Impling in Puro-Puro Entrance Area.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+852,Mine Blurite Ore.,ambiguous,item candidates: 668:Blurite ore; 17302:Blurite ore,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+854,Harvest Herbs in Falador.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+867,Mine Coal in Fremennik.,ready,skilling_action:mining/mine mining/mine:453 Coal manual-drop,LeagueTaskManager.onSkillingAction,,
+868,Mine Mithril Ore in Fremennik.,ready,skilling_action:mining/mine mining/mine:447 Mithril ore,LeagueTaskManager.onSkillingAction,,
+869,Mine Adamantite Ore in Fremennik.,ready,skilling_action:mining/mine mining/mine:449 Adamantite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+871,Catch Lobsters in Fremennik.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+872,Catch Sharks in Fremennik.,ready,skilling_action:fishing/catch fishing/catch:383 Raw shark manual-drop,LeagueTaskManager.onSkillingAction,,
+873,Cook Sharks in Fremennik.,ready,skilling_action:cooking/cook cooking/cook:385 Shark manual-drop,LeagueTaskManager.onSkillingAction,,
+874,Fish at the Barbarian Fishing Spot.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+875,Catch Leaping Trout in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+876,Catch Leaping Salmon in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+877,Catch Leaping Sturgeon in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+878,Chop Arctic Pine Trees in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+879,Burn Arctic Pine Logs in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+880,Chop Maple Trees in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+881,Chop Yew Trees in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+882,Catch a Polar Kebbit in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+883,Catch a Cerulean Twitches in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+884,Catch a Sabre-toothed Kebbit in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+885,Catch a Dark Kebbit in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+893,Craft a Fremennik Shield.,ambiguous,item candidates: 3758:Fremennik shield; 16759:Fremennik shield,LeagueTaskManager.onItemCraft,multiple item ids for name,Set explicit target_id(s) in tasks source
+894,Craft Yak-hide Armor in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+895,Smith a Mithril Item in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+896,Smith an Adamant Item in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+905,Recharge Prayer at the Rellekka Altar.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+916,Catch Monkfish in Fremennik.,ready,skilling_action:fishing/catch fishing/catch:7944 Raw monkfish manual-drop,LeagueTaskManager.onSkillingAction,,
+917,Burn Yew Logs in Fremennik.,ready,skilling_action:firemaking/burn firemaking/burn:1515 Yew logs manual-drop,LeagueTaskManager.onSkillingAction,,
+918,Mine Runite Ore in Fremennik.,ready,skilling_action:mining/mine mining/mine:451 Runite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+922,Fish from the Fremennik Docks.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+924,Catch an Impling in Fremennik.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+938,Mine Coal in Kandarin.,ready,skilling_action:mining/mine mining/mine:453 Coal manual-drop,LeagueTaskManager.onSkillingAction,,
+939,Mine Mithril Ore in Kandarin.,ready,skilling_action:mining/mine mining/mine:447 Mithril ore,LeagueTaskManager.onSkillingAction,,
+941,Fish Trout in Kandarin.,ready,skilling_action:fishing/catch fishing/catch:335 Raw trout,LeagueTaskManager.onSkillingAction,,
+942,Fish Lobsters in Kandarin.,ready,skilling_action:fishing/catch fishing/catch:377 Raw lobster,LeagueTaskManager.onSkillingAction,,
+943,Fish Sharks in Kandarin.,ready,skilling_action:fishing/catch fishing/catch:383 Raw shark manual-drop,LeagueTaskManager.onSkillingAction,,
+944,Cook Sharks in Kandarin.,ready,skilling_action:cooking/cook cooking/cook:385 Shark manual-drop,LeagueTaskManager.onSkillingAction,,
+945,Chop Maple Trees in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+946,Chop Yew Trees in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+947,Chop Magic Trees in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+949,Burn Maple Logs in Kandarin.,ready,skilling_action:firemaking/burn firemaking/burn:1517 Maple logs,LeagueTaskManager.onSkillingAction,,
+950,Burn Magic Logs in Kandarin.,ready,skilling_action:firemaking/burn firemaking/burn:1513 Magic logs manual-drop,LeagueTaskManager.onSkillingAction,,
+951,Catch Copper Longtails in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+952,Catch Tropical Wagtails in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+953,Catch Orange Salamanders in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+954,Catch Red Salamanders in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+955,Catch Chinchompas in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+956,Catch Red Chinchompas in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+962,Craft Water Runes in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+963,Craft Law Runes in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+964,Craft Death Runes in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+965,Pickpocket a Cake Stall in Kandarin.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Cake Stall in Kandarin"" in thieving.ts"
+966,Pickpocket a Silk Stall in Kandarin.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Silk Stall in Kandarin"" in thieving.ts"
+967,Pickpocket a Master Farmer in Kandarin.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Master Farmer in Kandarin"" in thieving.ts"
+968,Pickpocket a Hero in Kandarin.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Hero in Kandarin"" in thieving.ts"
+970,Harvest Flax in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+972,Craft a Battlestaff in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+973,Craft a Black Dragonhide Item in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+974,Smith a Mithril Item in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+975,Smith an Adamant Item in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+984,Recharge Prayer at the Seers’ Village Church.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+991,Catch Fish on the Fishing Trawler.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+994,Complete a Lap of the Gnome Stronghold Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+996,Complete a Lap of the Barbarian Outpost Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+999,Burn Yew Logs in Kandarin.,ready,skilling_action:firemaking/burn firemaking/burn:1515 Yew logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1000,Catch an Impling in Kandarin.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1002,Fish at Catherby Beach.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1003,Cook Lobsters in Catherby.,ready,skilling_action:cooking/cook cooking/cook:379 Lobster,LeagueTaskManager.onSkillingAction,,
+1013,Complete a Lap of the Agility Pyramid.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1015,Steal from a Silk Stall in Pollnivneach.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1016,Pickpocket a Bandit in Pollnivneach.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Bandit in Pollnivneach"" in thieving.ts"
+1017,Pickpocket a Menaphite Thug in Pollnivneach.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Menaphite Thug in Pollnivneach"" in thieving.ts"
+1018,Steal from a Spice Stall in the Desert.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1019,Mine Granite in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1020,Mine Sandstone in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1023,Catch Desert Lizards in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1024,Catch Orange Salamanders in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1025,Catch Red Salamanders in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1026,Catch Black Salamanders in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1027,Catch a Desert Devil in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1028,Catch a Dragon Impling in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1029,Fish Desert Sole in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1030,Fish Catfish in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1031,Fish Sharks in the Desert.,ready,skilling_action:fishing/catch fishing/catch:383 Raw shark manual-drop,LeagueTaskManager.onSkillingAction,,
+1032,Cook Catfish in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1033,Cook Sharks in the Desert.,ready,skilling_action:cooking/cook cooking/cook:385 Shark manual-drop,LeagueTaskManager.onSkillingAction,,
+1034,Chop Dead Trees in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1035,Burn Oak Logs in the Desert.,ready,skilling_action:firemaking/burn firemaking/burn:1521 Oak logs,LeagueTaskManager.onSkillingAction,,
+1036,Burn Magic Logs in the Desert.,ready,skilling_action:firemaking/burn firemaking/burn:1513 Magic logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1037,Craft Fire Runes in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1038,Craft Smoke Runes in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1039,Craft Steam Runes in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1040,Craft Lava Runes in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1058,Recharge Prayer at the Sophanem Altar.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1075,Catch an Impling in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1080,Burn Yew Logs in the Desert.,ready,skilling_action:firemaking/burn firemaking/burn:1515 Yew logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1081,Craft a Water Battlestaff in the Desert.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1092,Complete a Lap of the Canifis Rooftop Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1094,Mine Daeyalt Essence in Darkmeyer.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1095,Fish Slimy Eels in Mort Myre.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1096,Catch Karambwanji in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1097,Cook Slimy Eels in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1098,Chop Hollow Trees in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1099,Burn Magic Logs in Morytania.,ready,skilling_action:firemaking/burn firemaking/burn:1513 Magic logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1100,Catch a Swamp Lizard in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1101,Catch a Nature Impling in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1102,Catch a Dragon Impling in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1103,Craft Blood Runes in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1104,Craft Nature Runes in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1109,Pickpocket a Villager in Darkmeyer.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Villager in Darkmeyer"" in thieving.ts"
+1110,Pickpocket a Vyre in Darkmeyer.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Vyre in Darkmeyer"" in thieving.ts"
+1111,Steal from a Chest in Hallowed Sepulchre.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1112,Craft Splitbark Armor in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1113,Smith a Mithril Item in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1129,Recharge Prayer at the Paterdomus Temple.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1130,Recharge Prayer in Darkmeyer.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1145,Burn Shade Remains in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1147,Catch an Impling in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1150,Burn Yew Logs in Morytania.,ready,skilling_action:firemaking/burn firemaking/burn:1515 Yew logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1152,Catch a Black Salamander in Morytania.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1168,Train at the Prifddinas Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1169,Complete a Lap of the Prifddinas Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1172,Mine Soft Clay in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1173,Mine Runite Ore in Tirannwn.,ready,skilling_action:mining/mine mining/mine:451 Runite ore manual-drop,LeagueTaskManager.onSkillingAction,,
+1175,Catch Raw Bass in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1176,Catch Raw Shark in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1177,Cook Sharks in Tirannwn.,ready,skilling_action:cooking/cook cooking/cook:385 Shark manual-drop,LeagueTaskManager.onSkillingAction,,
+1178,Chop Teak Trees in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1179,Chop Magic Trees in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1180,Burn Magic Logs in Tirannwn.,ready,skilling_action:firemaking/burn firemaking/burn:1513 Magic logs manual-drop,LeagueTaskManager.onSkillingAction,,
+1181,Catch a Copper Longtail in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1182,Catch a Carnivorous Chinchompa in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1183,Catch a Crystal Impling in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1184,Catch a Dragon Impling in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1186,Craft Cosmic Runes in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1187,Craft Death Runes in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1191,Pickpocket an Elf in Tirannwn.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Elf in Tirannwn"" in thieving.ts"
+1192,Steal from an Elf Stall in Tirannwn.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1193,Craft a Crystal Key in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1194,Craft Black Dragonhide Armor in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1195,Smith an Adamant Item in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1196,Smith a Rune Item in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1206,Recharge Prayer in Prifddinas.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1215,Create a Crystal Tool in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1216,Create Crystal Armor in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1217,Fish in the Prifddinas Waterfall Area.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1218,Burn Yew Logs in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1220,Catch an Impling in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1224,Mine Crystal Shards in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1225,Catch a Black Warlock in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1230,Catch Raw Lobsters in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1231,Cook Raw Lobsters in Tirannwn.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1245,Complete a Lap of the Wilderness Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1247,Mine Runite Ore in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1248,Mine Adamantite Ore in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1249,Fish Dark Crabs in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1250,Cook Dark Crabs in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1251,Chop Magic Trees in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1252,Burn Magic Logs in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1253,Catch Black Salamanders in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1254,Catch a Dragon Impling in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1255,Catch an Impling in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1256,Craft Blood Runes at the Wilderness Blood Altar.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1257,Craft Chaos Runes in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1261,Pick the Wilderness Lever.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1263,Steal from the Rogues’ Castle Stalls.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1264,Craft Black Dragonhide Armor in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1265,Smith a Rune Item in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1293,Recharge Prayer at the Chaos Temple.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1302,Catch Raw Dark Crabs at the Resource Area.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1303,Chop Yew Trees in the Wilderness Resource Area.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1304,Mine Coal in the Wilderness Resource Area.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1305,Burn Yew Logs in the Wilderness.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1327,Complete a Lap of the Shayzien Agility Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1328,Complete a Lap of the Kourend Woodland Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1330,Mine Lovakite Ore in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1331,Mine Sulphur in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1332,Mine Dense Essence in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1333,Fish Trout in Kourend.,ready,skilling_action:fishing/catch fishing/catch:335 Raw trout,LeagueTaskManager.onSkillingAction,,
+1334,Fish Anglerfish in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1335,Cook Anglerfish in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1336,Chop Redwoods in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1338,Burn Redwood Logs in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1339,Chop Teak Trees in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1340,Catch Copper Longtails in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1341,Catch Swamp Lizards in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1342,Catch Red Salamanders in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1343,Catch Herbiboars in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1344,Catch a Dragon Impling in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1346,Craft Blood Runes in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1347,Craft Soul Runes in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1352,Pickpocket a Citizen in Kourend.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Citizen in Kourend"" in thieving.ts"
+1353,Steal from Fruit Stalls in Kourend.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1354,Steal from Stone Chests in Kourend.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1355,Pickpocket a Master Farmer in Kourend.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Master Farmer in Kourend"" in thieving.ts"
+1356,Craft Xerician Robes in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1357,Craft Black Dragonhide Armor in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1358,Smith Shayzien Armor in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1359,Smith Lovakite Bars in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1371,Recharge Prayer at the Kourend Cathedral.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1379,Catch an Impling in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1382,Burn Yew Logs in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1386,Burn Bruma Roots in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1387,Fletch Kindling in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1390,Fish at Molch Lake.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1391,Catch Bluegill in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1392,Catch Common Tench in Kourend.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1403,Complete a Lap of the Fortis Rooftop Course.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1406,Mine Calcified Deposits in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1407,Mine Runite Ore in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1409,Fish Sunlight Antelope in Varlamore Waters.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1410,Fish Raw Lobsters in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1412,Cook Lobsters in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1413,Chop Teak Trees in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1414,Chop Mahogany Trees in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1416,Burn Mahogany Logs in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1417,Catch a Sunlight Moth in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1418,Catch a Moonlight Moth in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1419,Catch a Sunlight Antelope in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1420,Catch a Moonlight Antelope in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1421,Catch a Tecu Salamander in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1423,Craft Sunfire Runes in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1427,Pickpocket a Wealthy Citizen in Varlamore.,missing_content,,skill.pickpocket (no league hook),pickpocket target not in thieving.ts PICKPOCKET_NPCS,"Add pickpocket def for ""Wealthy Citizen in Varlamore"" in thieving.ts"
+1428,Steal from a Market Stall in Varlamore.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1429,Steal from a Chest in Varlamore.,need_hook,stall theft,(unwired) world interaction,stall theft not wired to league tasks,Wire stall theft success or script_manual
+1430,Craft Sunfire Fanatic Armor in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1431,Craft Black Dragonhide Armor in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1432,Smith Mithril Armor in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1433,Smith Rune Armor in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1443,Recharge Prayer in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1446,Speak to the Hunter Guild Master.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1452,Catch an Impling in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1454,Burn Yew Logs in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1458,Mine Barronite in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1460,Fish at the Varlamore Coastline.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1461,Catch Raw Swordfish in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1462,Cook Swordfish in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern
+1465,Catch a Butterfly in Varlamore.,need_hook,,,no TaskTrigger could be parsed from task name,Add explicit trigger JSON or implement parser pattern

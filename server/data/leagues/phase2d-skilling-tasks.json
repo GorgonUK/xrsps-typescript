@@ -1,0 +1,353 @@
+{
+  "description": "Phase 2D Slice 1: location-tagged skilling_action triggers (29 tasks).",
+  "tasks": [
+    {
+      "sourceTaskId": 655,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "mining",
+        "action": "mine",
+        "targetIds": [
+          436
+        ]
+      },
+      "mvpTaskId": 292
+    },
+    {
+      "sourceTaskId": 657,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1511
+        ]
+      },
+      "mvpTaskId": 293
+    },
+    {
+      "sourceTaskId": 689,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1519
+        ]
+      },
+      "mvpTaskId": 294
+    },
+    {
+      "sourceTaskId": 716,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "cooking",
+        "action": "cook",
+        "targetIds": [
+          361
+        ]
+      },
+      "mvpTaskId": 295
+    },
+    {
+      "sourceTaskId": 722,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          6333
+        ]
+      },
+      "mvpTaskId": 296
+    },
+    {
+      "sourceTaskId": 723,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          6332
+        ]
+      },
+      "mvpTaskId": 297
+    },
+    {
+      "sourceTaskId": 796,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1115
+        ]
+      },
+      "mvpTaskId": 298
+    },
+    {
+      "sourceTaskId": 797,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1143
+        ]
+      },
+      "mvpTaskId": 299
+    },
+    {
+      "sourceTaskId": 798,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1521
+        ]
+      },
+      "mvpTaskId": 300
+    },
+    {
+      "sourceTaskId": 799,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1519
+        ]
+      },
+      "mvpTaskId": 301
+    },
+    {
+      "sourceTaskId": 880,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1517
+        ]
+      },
+      "mvpTaskId": 302
+    },
+    {
+      "sourceTaskId": 881,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1515
+        ]
+      },
+      "mvpTaskId": 303
+    },
+    {
+      "sourceTaskId": 895,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1143
+        ]
+      },
+      "mvpTaskId": 304
+    },
+    {
+      "sourceTaskId": 896,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1123
+        ]
+      },
+      "mvpTaskId": 305
+    },
+    {
+      "sourceTaskId": 945,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1517
+        ]
+      },
+      "mvpTaskId": 306
+    },
+    {
+      "sourceTaskId": 946,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1515
+        ]
+      },
+      "mvpTaskId": 307
+    },
+    {
+      "sourceTaskId": 947,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1513
+        ]
+      },
+      "mvpTaskId": 308
+    },
+    {
+      "sourceTaskId": 974,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1143
+        ]
+      },
+      "mvpTaskId": 309
+    },
+    {
+      "sourceTaskId": 975,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1123
+        ]
+      },
+      "mvpTaskId": 310
+    },
+    {
+      "sourceTaskId": 1113,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1143
+        ]
+      },
+      "mvpTaskId": 311
+    },
+    {
+      "sourceTaskId": 1178,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          6333
+        ]
+      },
+      "mvpTaskId": 312
+    },
+    {
+      "sourceTaskId": 1179,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1513
+        ]
+      },
+      "mvpTaskId": 313
+    },
+    {
+      "sourceTaskId": 1195,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "smithing",
+        "action": "smith",
+        "targetIds": [
+          1123
+        ]
+      },
+      "mvpTaskId": 314
+    },
+    {
+      "sourceTaskId": 1251,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1513
+        ]
+      },
+      "mvpTaskId": 315
+    },
+    {
+      "sourceTaskId": 1303,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          1515
+        ]
+      },
+      "mvpTaskId": 316
+    },
+    {
+      "sourceTaskId": 1339,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          6333
+        ]
+      },
+      "mvpTaskId": 317
+    },
+    {
+      "sourceTaskId": 1413,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          6333
+        ]
+      },
+      "mvpTaskId": 318
+    },
+    {
+      "sourceTaskId": 1414,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "woodcutting",
+        "action": "chop",
+        "targetIds": [
+          6332
+        ]
+      },
+      "mvpTaskId": 319
+    },
+    {
+      "sourceTaskId": 1416,
+      "trigger": {
+        "type": "skilling_action",
+        "skill": "firemaking",
+        "action": "burn",
+        "targetIds": [
+          6332
+        ]
+      },
+      "mvpTaskId": 320
+    }
+  ]
+}

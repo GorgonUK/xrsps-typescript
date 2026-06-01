@@ -545,9 +545,6 @@ export class GroundItemHandler {
             this.services.sendPickupSound(player),
         );
 
-        // Track for collection log (sends "new item" notification only for new collection log items)
-        this.services.trackCollectionLogItem(player, itemId);
-
         // Force ground item update for this player
         this.services.getPlayerGroundSerial().delete(player.id);
 

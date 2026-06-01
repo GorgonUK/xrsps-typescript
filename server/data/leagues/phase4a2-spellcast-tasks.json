@@ -1,0 +1,41 @@
+{
+  "description": "Phase 4A2: teleport category/counts, named teleports, generic spell counts (13 tasks). Alchemy 457-460 deferred (would make 17).",
+  "batchSize": 13,
+  "deferred": {
+    "alchemySourceTaskIds": [457, 458, 459, 460],
+    "alchemyReason": "Excluded to keep batch at 13; import in a follow-up alchemy batch"
+  },
+  "phase4bNotes": [
+    {
+      "sourceTaskId": 691,
+      "reason": "Live from 4A1 but needs area gate: Charge Air Orb near Edgeville Dungeon"
+    }
+  ],
+  "tasks": [
+    { "sourceTaskId": 453, "trigger": { "type": "spell_cast", "spellCategory": "teleport" } },
+    {
+      "sourceTaskId": 454,
+      "trigger": { "type": "spell_cast", "spellCategory": "teleport", "count": 10 }
+    },
+    {
+      "sourceTaskId": 455,
+      "trigger": { "type": "spell_cast", "spellCategory": "teleport", "count": 100 }
+    },
+    {
+      "sourceTaskId": 456,
+      "trigger": { "type": "spell_cast", "spellCategory": "teleport", "count": 1000 }
+    },
+    { "sourceTaskId": 676, "trigger": { "type": "spell_cast", "teleportName": "Varrock Teleport" } },
+    { "sourceTaskId": 677, "trigger": { "type": "spell_cast", "teleportName": "Lumbridge Teleport" } },
+    { "sourceTaskId": 838, "trigger": { "type": "spell_cast", "teleportName": "Falador Teleport" } },
+    { "sourceTaskId": 959, "trigger": { "type": "spell_cast", "teleportName": "Camelot Teleport" } },
+    { "sourceTaskId": 960, "trigger": { "type": "spell_cast", "teleportName": "Ardougne Teleport" } },
+    { "sourceTaskId": 1106, "trigger": { "type": "spell_cast", "teleportName": "Barrows Teleport" } },
+    {
+      "sourceTaskId": 1349,
+      "trigger": { "type": "spell_cast", "teleportName": "Kourend Castle Teleport" }
+    },
+    { "sourceTaskId": 476, "trigger": { "type": "spell_cast", "anySpell": true, "count": 1000 } },
+    { "sourceTaskId": 477, "trigger": { "type": "spell_cast", "anySpell": true, "count": 10000 } }
+  ]
+}

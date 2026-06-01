@@ -1,0 +1,15 @@
+{
+  "description": "Phase 4B-Core: ancient spellbook cast + wilderness-gated ice burst/barrage (3 tasks).",
+  "batchSize": 3,
+  "tasks": [
+    { "sourceTaskId": 472, "trigger": { "type": "spell_cast", "spellbook": "ancient" } },
+    {
+      "sourceTaskId": 1258,
+      "trigger": { "type": "spell_cast", "spellId": 4639, "areaKeys": ["wilderness"] }
+    },
+    {
+      "sourceTaskId": 1259,
+      "trigger": { "type": "spell_cast", "spellId": 4651, "areaKeys": ["wilderness"] }
+    }
+  ]
+}

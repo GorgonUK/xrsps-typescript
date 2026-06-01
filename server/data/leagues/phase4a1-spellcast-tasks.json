@@ -1,0 +1,47 @@
+{
+  "description": "Phase 4A1: core spell-id league tasks (strikes through orbs). Excludes teleports, counts, alch.",
+  "tasks": [
+    { "sourceTaskId": 435, "trigger": { "type": "spell_cast", "spellId": 3273 } },
+    { "sourceTaskId": 436, "trigger": { "type": "spell_cast", "spellId": 3275 } },
+    { "sourceTaskId": 437, "trigger": { "type": "spell_cast", "spellId": 3277 } },
+    { "sourceTaskId": 438, "trigger": { "type": "spell_cast", "spellId": 3279 } },
+    { "sourceTaskId": 439, "trigger": { "type": "spell_cast", "spellId": 3281 } },
+    { "sourceTaskId": 440, "trigger": { "type": "spell_cast", "spellId": 3285 } },
+    { "sourceTaskId": 441, "trigger": { "type": "spell_cast", "spellId": 3288 } },
+    { "sourceTaskId": 442, "trigger": { "type": "spell_cast", "spellId": 3291 } },
+    { "sourceTaskId": 443, "trigger": { "type": "spell_cast", "spellId": 3294 } },
+    { "sourceTaskId": 444, "trigger": { "type": "spell_cast", "spellId": 3297 } },
+    { "sourceTaskId": 445, "trigger": { "type": "spell_cast", "spellId": 3302 } },
+    { "sourceTaskId": 446, "trigger": { "type": "spell_cast", "spellId": 3307 } },
+    { "sourceTaskId": 447, "trigger": { "type": "spell_cast", "spellId": 3313 } },
+    { "sourceTaskId": 448, "trigger": { "type": "spell_cast", "spellId": 3315 } },
+    { "sourceTaskId": 449, "trigger": { "type": "spell_cast", "spellId": 3319 } },
+    { "sourceTaskId": 450, "trigger": { "type": "spell_cast", "spellId": 3321 } },
+    {
+      "sourceTaskId": 451,
+      "trigger": {
+        "type": "spell_cast",
+        "spellIdsAny": [21876, 21877, 21878, 21879]
+      }
+    },
+    {
+      "sourceTaskId": 452,
+      "trigger": {
+        "type": "spell_cast",
+        "spellIdsAny": [4647, 4648, 4650, 4651]
+      }
+    },
+    { "sourceTaskId": 463, "trigger": { "type": "spell_cast", "spellId": 3282 } },
+    { "sourceTaskId": 464, "trigger": { "type": "spell_cast", "spellId": 3283 } },
+    { "sourceTaskId": 465, "trigger": { "type": "spell_cast", "spellId": 3300 } },
+    { "sourceTaskId": 466, "trigger": { "type": "spell_cast", "spellId": 3322 } },
+    {
+      "sourceTaskId": 474,
+      "trigger": {
+        "type": "spell_cast",
+        "spellIdsAny": [9076, 9077, 9078, 9079]
+      }
+    },
+    { "sourceTaskId": 691, "trigger": { "type": "spell_cast", "spellId": 9076 } }
+  ]
+}

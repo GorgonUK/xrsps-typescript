@@ -1,0 +1,45 @@
+{
+  "description": "Phase 3D: proven Boundary.java area_enter triggers (Slice 1: Crafting/Warriors' Guild; Slice 2: Woodcutting Guild, Taverley Dungeon).",
+  "tasks": [
+    {
+      "sourceTaskId": 779,
+      "trigger": {
+        "type": "area_enter",
+        "areaKeys": [
+          "crafting_guild"
+        ]
+      },
+      "mvpTaskId": 290
+    },
+    {
+      "sourceTaskId": 781,
+      "trigger": {
+        "type": "area_enter",
+        "areaKeys": [
+          "warriors_guild"
+        ]
+      },
+      "mvpTaskId": 291
+    },
+    {
+      "sourceTaskId": 1317,
+      "trigger": {
+        "type": "area_enter",
+        "areaKeys": [
+          "woodcutting_guild"
+        ]
+      },
+      "mvpTaskId": 321
+    },
+    {
+      "sourceTaskId": 785,
+      "trigger": {
+        "type": "area_enter",
+        "areaKeys": [
+          "taverley_dungeon"
+        ]
+      },
+      "mvpTaskId": 322
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Phase 4A3: alchemy spell_cast tasks only. Alchemize counts include both Low (9110) and High (9111) alchemy.",
+  "batchSize": 4,
+  "tasks": [
+    { "sourceTaskId": 457, "trigger": { "type": "spell_cast", "spellId": 9110 } },
+    { "sourceTaskId": 458, "trigger": { "type": "spell_cast", "spellId": 9111 } },
+    {
+      "sourceTaskId": 459,
+      "trigger": { "type": "spell_cast", "spellIdsAny": [9110, 9111], "count": 100 }
+    },
+    {
+      "sourceTaskId": 460,
+      "trigger": { "type": "spell_cast", "spellIdsAny": [9110, 9111], "count": 1000 }
+    }
+  ]
+}
