@@ -1,29 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { isIosSafari } from "../util/DeviceUtil";
+import { isIosSafari, readAppViewportSize } from "../util/DeviceUtil";
 
 interface SafariLandscapeLockState {
     enabled: boolean;
     rotated: boolean;
-}
-
-function readViewportSize(): { width: number; height: number } {
-    if (typeof window === "undefined") {
-        return { width: 0, height: 0 };
-    }
-
-    const viewport = window.visualViewport;
-    if (viewport) {
-        return {
-            width: Math.max(1, Math.round(viewport.width)),
-            height: Math.max(1, Math.round(viewport.height)),
-        };
-    }
-
-    return {
-        width: Math.max(1, Math.round(window.innerWidth)),
-        height: Math.max(1, Math.round(window.innerHeight)),
-    };
 }
 
 export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscapeLockState {
@@ -44,7 +25,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
         let rafId: number | undefined;
 
         const applyViewportMetrics = () => {
-            const { width, height } = readViewportSize();
+            const { width, height } = readAppViewportSize();
             root.style.setProperty("--ios-safari-vw", `${width}px`);
             root.style.setProperty("--ios-safari-vh", `${height}px`);
             root.style.setProperty("--ios-safari-landscape-w", `${Math.max(width, height)}px`);

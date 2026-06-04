@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-06-02T11:18:31.437Z",
+  "description": "Phase 7A-2 Slice 3 alternate candidate audit trail.",
+  "entries": [
+    {
+      "sourceTaskId": 1592,
+      "taskName": "Equip Dragon Claws.",
+      "chosenItemId": 13652,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        13652,
+        15597,
+        20784,
+        20848
+      ]
+    },
+    {
+      "sourceTaskId": 1627,
+      "taskName": "Equip a Fire Cape.",
+      "chosenItemId": 6570,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6570,
+        10566,
+        18244
+      ]
+    },
+    {
+      "sourceTaskId": 1628,
+      "taskName": "Equip Infernal Cape.",
+      "chosenItemId": 21295,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        21295,
+        21296,
+        21297,
+        23622,
+        23623
+      ]
+    },
+    {
+      "sourceTaskId": 1498,
+      "taskName": "Equip a Saradomin Godsword.",
+      "chosenItemId": 11806,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11806,
+        11807,
+        18344
+      ]
+    },
+    {
+      "sourceTaskId": 1499,
+      "taskName": "Equip a Zamorak Godsword.",
+      "chosenItemId": 11808,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11808,
+        11809,
+        18345
+      ]
+    },
+    {
+      "sourceTaskId": 1500,
+      "taskName": "Equip an Armadyl Godsword.",
+      "chosenItemId": 11802,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        11802,
+        11803,
+        18342,
+        20593,
+        22665
+      ]
+    },
+    {
+      "sourceTaskId": 1501,
+      "taskName": "Equip a Bandos Godsword.",
+      "chosenItemId": 11804,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        11804,
+        11805,
+        18343,
+        20782,
+        21060
+      ]
+    },
+    {
+      "sourceTaskId": 1526,
+      "taskName": "Equip an Abyssal Bludgeon.",
+      "chosenItemId": 13263,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        13263,
+        13264,
+        18628
+      ]
+    }
+  ]
+}

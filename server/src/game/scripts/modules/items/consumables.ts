@@ -693,6 +693,20 @@ const resolveHeal = (def: FoodDef, player: PlayerState): number => {
 
 const formatDrinkMessage = (label: string): string => `You drink some of your ${label} potion.`;
 
+/** Swap to the next dose/item id, or consume one from the slot when finished. */
+const finishConsumableSlot = (
+    services: Parameters<ScriptModule["register"]>[1],
+    player: PlayerState,
+    slot: number,
+    nextItemId?: number,
+): void => {
+    if (nextItemId !== undefined) {
+        services.setInventorySlot(player, slot, nextItemId, 1);
+        return;
+    }
+    services.consumeItem(player, slot);
+};
+
 const applyPrayerRestore = (player: PlayerState, formula: PrayerRestoreFormula): void => {
     if (!formula) return;
     const skill = player.getSkill(SkillId.Prayer);
@@ -771,9 +785,7 @@ export const consumablesModule: ScriptModule = {
                             if (healAmount > 0) {
                                 player.applyHitpointsHeal(healAmount);
                             }
-                            if (def.nextItemId !== undefined) {
-                                setInventorySlot(player, slot, def.nextItemId, 1);
-                            }
+                            finishConsumableSlot(services, player, slot, def.nextItemId);
                             services.playPlayerSeq?.(player, EAT_SEQ);
                             services.playAreaSound?.({
                                 soundId: EAT_SOUND,
@@ -821,9 +833,7 @@ export const consumablesModule: ScriptModule = {
                         profile: option === "eat" ? "food" : "potion",
                         loggerTag: "energy-consumables",
                         onExecute: ({ tick: actionTick }) => {
-                            if (def.nextItemId !== undefined) {
-                                setInventorySlot(player, slot, def.nextItemId, 1);
-                            }
+                            finishConsumableSlot(services, player, slot, def.nextItemId);
                             player.adjustRunEnergyPercent(def.boostPercent);
                             if (def.healAmount && def.healAmount > 0) {
                                 player.applyHitpointsHeal(def.healAmount);

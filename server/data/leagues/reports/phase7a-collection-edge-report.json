@@ -1,0 +1,13 @@
+{
+  "phase": "7A Collection Edge Pass",
+  "checkedAt": "2026-06-03",
+  "targetSourceIds": [1575, 1576, 1583, 1584],
+  "imported": 0,
+  "reason": "zero collection-log canonical hits for all four item_equip ambiguous tasks; cannot prove single canonical item without guessing",
+  "details": {
+    "1575": { "name": "Equip a Heavy Ballista.", "candidates": [19481, 19482, 19483, 23630, 23631], "collectionLogHits": 0 },
+    "1576": { "name": "Equip a Light Ballista.", "candidates": [19478, 19479, 19480, 27188], "collectionLogHits": 0 },
+    "1583": { "name": "Equip a Crystal Bow.", "candidates": [23983, 23984, 24123, 24124], "collectionLogHits": 0 },
+    "1584": { "name": "Equip a Crystal Shield.", "candidates": [23991, 23992, 24127, 24128], "collectionLogHits": 0 }
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "generatedAt": "2026-06-02T10:14:02.211Z",
+  "description": "Phase 7A-2 Slice 1 alternate candidate audit trail.",
+  "entries": [
+    {
+      "sourceTaskId": 1482,
+      "taskName": "Equip a Dragon Pickaxe.",
+      "chosenItemId": 11920,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        11920,
+        11921,
+        12797,
+        14766,
+        14767
+      ]
+    },
+    {
+      "sourceTaskId": 1483,
+      "taskName": "Equip a Tyrannical Ring.",
+      "chosenItemId": 12603,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12603,
+        12604,
+        18280
+      ]
+    },
+    {
+      "sourceTaskId": 1484,
+      "taskName": "Equip a Treasonous Ring.",
+      "chosenItemId": 12605,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12605,
+        12606,
+        18282
+      ]
+    },
+    {
+      "sourceTaskId": 1485,
+      "taskName": "Equip a Ring of the Gods.",
+      "chosenItemId": 12601,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12601,
+        12602,
+        18278
+      ]
+    },
+    {
+      "sourceTaskId": 1491,
+      "taskName": "Equip a Saradomin Sword.",
+      "chosenItemId": 11838,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11838,
+        11839,
+        18358
+      ]
+    },
+    {
+      "sourceTaskId": 1492,
+      "taskName": "Equip a Zamorakian Spear.",
+      "chosenItemId": 11824,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11824,
+        11825,
+        18350
+      ]
+    },
+    {
+      "sourceTaskId": 1493,
+      "taskName": "Equip an Armadyl Crossbow.",
+      "chosenItemId": 11785,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        11785,
+        11786,
+        14508,
+        23611,
+        23612
+      ]
+    },
+    {
+      "sourceTaskId": 1494,
+      "taskName": "Equip Bandos Tassets.",
+      "chosenItemId": 11834,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        11834,
+        11835,
+        18356,
+        23646,
+        23647
+      ]
+    },
+    {
+      "sourceTaskId": 1495,
+      "taskName": "Equip Bandos Chestplate.",
+      "chosenItemId": 11832,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11832,
+        11833,
+        18355
+      ]
+    },
+    {
+      "sourceTaskId": 1496,
+      "taskName": "Equip an Armadyl Chestplate.",
+      "chosenItemId": 11828,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11828,
+        11829,
+        18353
+      ]
+    },
+    {
+      "sourceTaskId": 1497,
+      "taskName": "Equip Armadyl Chainskirt.",
+      "chosenItemId": 11830,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11830,
+        11831,
+        18354
+      ]
+    },
+    {
+      "sourceTaskId": 1502,
+      "taskName": "Equip Dragon Boots.",
+      "chosenItemId": 11840,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11840,
+        11841,
+        18361
+      ]
+    },
+    {
+      "sourceTaskId": 1509,
+      "taskName": "Equip a Berserker Ring.",
+      "chosenItemId": 6737,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        6737,
+        6738,
+        18398,
+        23595,
+        23596
+      ]
+    },
+    {
+      "sourceTaskId": 1511,
+      "taskName": "Equip a Seers Ring.",
+      "chosenItemId": 6731,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6731,
+        6732,
+        18392
+      ]
+    },
+    {
+      "sourceTaskId": 1512,
+      "taskName": "Equip a Warrior Ring.",
+      "chosenItemId": 6735,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6735,
+        6736,
+        18396
+      ]
+    },
+    {
+      "sourceTaskId": 1513,
+      "taskName": "Equip a Dragon Axe.",
+      "chosenItemId": 6739,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6739,
+        6740,
+        14711
+      ]
+    },
+    {
+      "sourceTaskId": 1514,
+      "taskName": "Equip a Mud Battlestaff.",
+      "chosenItemId": 6562,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6562,
+        6726,
+        14695
+      ]
+    },
+    {
+      "sourceTaskId": 1522,
+      "taskName": "Equip a Draconic Visage.",
+      "chosenItemId": 11286,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        11286,
+        11287,
+        16834
+      ]
+    },
+    {
+      "sourceTaskId": 1524,
+      "taskName": "Equip an Abyssal Whip.",
+      "chosenItemId": 4151,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        4151,
+        4152,
+        4178,
+        14032,
+        20405
+      ]
+    },
+    {
+      "sourceTaskId": 1525,
+      "taskName": "Equip an Abyssal Dagger.",
+      "chosenItemId": 13265,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        13265,
+        13266,
+        18629
+      ]
+    },
+    {
+      "sourceTaskId": 1529,
+      "taskName": "Equip an Occult Necklace.",
+      "chosenItemId": 12002,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        12002,
+        12003,
+        14004,
+        23654
+      ]
+    },
+    {
+      "sourceTaskId": 1533,
+      "taskName": "Equip a Kraken Tentacle.",
+      "chosenItemId": 12004,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12004,
+        12005,
+        14005
+      ]
+    },
+    {
+      "sourceTaskId": 1544,
+      "taskName": "Equip Ghrazi Rapier.",
+      "chosenItemId": 22324,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        22324,
+        22483,
+        22484,
+        23628,
+        23629
+      ]
+    },
+    {
+      "sourceTaskId": 1557,
+      "taskName": "Equip a Lightbearer.",
+      "chosenItemId": 25975,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        25975,
+        25976,
+        27244,
+        27870
+      ]
+    },
+    {
+      "sourceTaskId": 1564,
+      "taskName": "Equip a Dragon Warhammer.",
+      "chosenItemId": 13576,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        13576,
+        13577,
+        14728,
+        20785
+      ]
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import {
     TRAP_DEFINITIONS,
     getCreatureDefinitionById,
     getCreatureDefinitionByNpcTypeId,
+    getLeagueHunterCatchTargetId,
     getMaxActiveTrapsForLevel,
     getTrapDefinitionById,
     rollCatchSuccess,
@@ -324,6 +325,10 @@ const checkTrap = (
                 ? `You catch a pair of ${creature.displayName.toLowerCase()}s!`
                 : `You catch a ${creature.displayName.toLowerCase()}!`,
         );
+        const catchTargetId = getLeagueHunterCatchTargetId(creature);
+        if (catchTargetId > 0) {
+            services.onLeagueSkillingAction?.(player.id, "hunter", "catch", catchTargetId, 1);
+        }
         // The trap item is returned when the trap is collected (OSRS parity).
         restoreTrapItem(services, player, trapDef);
         removeTrapAndRevert(services, trapManager, trap, tick);

@@ -295,11 +295,10 @@ export function getOrientation(): "portrait" | "landscape" {
 }
 
 /**
- * Get current viewport size.
- * Uses visualViewport when available for accurate mobile measurements
- * (accounts for virtual keyboard, browser chrome, etc).
+ * Visible viewport in CSS pixels. Clamps iOS PWA visualViewport to window so the shell
+ * does not extend below the painted area (bottom HUD cut-off).
  */
-export function getViewportSize(): { width: number; height: number } {
+export function readAppViewportSize(): { width: number; height: number } {
     if (typeof window === "undefined") {
         return { width: 765, height: 503 };
     }
@@ -309,12 +308,29 @@ export function getViewportSize(): { width: number; height: number } {
         return forcedLandscape;
     }
 
-    // Use visualViewport if available (more accurate on mobile)
+    const innerWidth = Math.max(1, window.innerWidth);
+    const innerHeight = Math.max(1, window.innerHeight);
     const vp = window.visualViewport;
-    if (vp) {
-        return { width: vp.width, height: vp.height };
+    if (!vp) {
+        return { width: innerWidth, height: innerHeight };
     }
 
-    // Fallback to window dimensions
-    return { width: window.innerWidth, height: window.innerHeight };
+    let width = Math.max(1, vp.width);
+    let height = Math.max(1, vp.height);
+
+    if (isIosStandalonePwa()) {
+        width = Math.min(width, innerWidth);
+        height = Math.min(height, innerHeight);
+    }
+
+    return { width, height };
+}
+
+/**
+ * Get current viewport size.
+ * Uses visualViewport when available for accurate mobile measurements
+ * (accounts for virtual keyboard, browser chrome, etc).
+ */
+export function getViewportSize(): { width: number; height: number } {
+    return readAppViewportSize();
 }

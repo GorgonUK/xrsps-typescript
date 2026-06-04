@@ -318,6 +318,10 @@ import {
 } from "../game/items/playerItemOwnership";
 import { LeagueTaskManager } from "../game/leagues/LeagueTaskManager";
 import { LeagueTaskService } from "../game/leagues/LeagueTaskService";
+import {
+    completeLeagueTaskByName,
+    LEAGUE_TUTORIAL_TASK_OPEN_MENU,
+} from "../game/leagues/leagueTutorialTasks";
 import { resolveEnteredLeagueAreas, getLeagueAreasInsideNow } from "../game/leagues/AreaRegistry";
 import { syncLeagueGeneralVarp } from "../game/leagues/leagueGeneral";
 import { getLeaguePackedVarpsForPlayer } from "../game/leagues/leaguePackedVarps";
@@ -1513,8 +1517,7 @@ export class WSServer {
             this.performScheduledAction(player, action, tick),
         );
         this.actionScheduler.setPriorityProvider((p) => p.getPidPriority());
-        // OSRS parity: Pause skill actions while modal (level-up dialog) is open
-        this.actionScheduler.setModalChecker((playerId) => this.hasModalOpen(playerId));
+        // OSRS parity: Level-up dialogs do not pause combat or skilling; no modal gate here.
         this.wss = new WebSocketServer({
             host: opts.host,
             port: opts.port,
@@ -1955,6 +1958,14 @@ export class WSServer {
                 getPlayerById: (playerId) => this.players?.getById(playerId),
                 onLeagueSpellCast: (playerId, opts) =>
                     this.leagueTaskManager?.onSpellCast(playerId, opts),
+                onLeagueSkillingAction: (playerId, skill, action, targetId, count) =>
+                    this.leagueTaskManager?.onSkillingAction(
+                        playerId,
+                        skill,
+                        action,
+                        targetId,
+                        count ?? 1,
+                    ),
                 isAdminPlayer: (player) => this.isAdminPlayer(player),
                 openDialog: (player, request) =>
                     this.widgetDialogHandler.openDialog(player, request as any),
@@ -2546,6 +2557,8 @@ export class WSServer {
                             this.queueVarbit(playerId, varbitId, value),
                         queueNotification: (playerId, notification) =>
                             this.queueNotification(playerId, notification),
+                        queueWidgetEvent: (playerId, action) =>
+                            this.queueWidgetEvent(playerId, action),
                     },
                 );
             } catch (err) {
@@ -8472,7 +8485,19 @@ export class WSServer {
             getGroundChunkKey: (player) => this.getGroundChunkKey(player),
             addItemToInventory: (player, itemId, quantity) =>
                 this.addItemToInventory(player, itemId, quantity),
-            getItemDefinition: (itemId) => this.getObjType(itemId) ?? getItemDefinition(itemId),
+            getItemDefinition: (itemId) => {
+                const json = getItemDefinition(itemId);
+                const obj = this.getObjType(itemId);
+                if (!json && !obj) return undefined;
+                return {
+                    stackable:
+                        json?.stackable === true ||
+                        obj?.stackability === ObjStackability.ALWAYS,
+                    stackability: obj?.stackability,
+                    examine: obj?.examine ?? json?.examine,
+                    groundActions: obj?.groundActions,
+                };
+            },
             isInWilderness: (x, y) => isInWilderness(x, y),
             sendPickupSound: (player) => this.sendSound(player, 2582),
             sendLootNotification: (player, itemId, quantity) =>
@@ -11335,10 +11360,11 @@ export class WSServer {
         const inv = this.getInventory(p);
         const slotEntry = inv[slotIndex];
         if (!slotEntry || slotEntry.itemId <= 0 || slotEntry.quantity <= 0) return false;
-        slotEntry.quantity = Math.max(0, slotEntry.quantity - 1);
-        if (slotEntry.quantity <= 0) {
-            slotEntry.itemId = -1;
-            slotEntry.quantity = 0;
+        const nextQty = slotEntry.quantity - 1;
+        if (nextQty <= 0) {
+            p.setInventorySlot(slotIndex, -1, 0);
+        } else {
+            p.setInventorySlot(slotIndex, slotEntry.itemId, nextQty);
         }
         return true;
     }
@@ -11693,6 +11719,12 @@ export class WSServer {
 
     private enqueueLevelUpPopup(player: PlayerState, popup: LevelUpPopup): void {
         const playerId = player.id;
+
+        // OSRS parity: Level-up dialogs must not interrupt skilling or combat loops.
+        if (this.playerCombatManager?.getCombatState(playerId)) {
+            this.playerCombatManager.resumeAutoAttack(playerId);
+        }
+
         let queue = this.levelUpPopupQueue.get(playerId);
         if (!queue) {
             queue = [];
@@ -11817,12 +11849,11 @@ export class WSServer {
     }
 
     /**
-     * OSRS parity: Check if player has a modal dialog open (level-up, etc.)
-     * that should pause skill action execution.
+     * OSRS parity: Level-up dialogs do not pause skilling, combat, or other gameplay.
+     * Popup queue state is tracked separately via levelUpPopupQueue.
      */
-    hasModalOpen(playerId: number): boolean {
-        const queue = this.levelUpPopupQueue.get(playerId);
-        return queue !== undefined && queue.length > 0;
+    hasModalOpen(_playerId: number): boolean {
+        return false;
     }
 
     /**
@@ -12943,7 +12974,13 @@ export class WSServer {
                         }
 
                         try {
-                            this.leagueTaskManager?.syncSkillProgressTasks(p.id);
+                            // Only retro-sync skill milestones for returning saves; fresh accounts
+                            // should not evaluate level tasks on login (avoids HP-10 false positives).
+                            const persistKey =
+                                p.__saveKey ?? this.getPlayerSaveKey(p.name, p.id);
+                            if (this.playerPersistence.hasKey(persistKey)) {
+                                this.leagueTaskManager?.syncSkillProgressTasks(p.id);
+                            }
                         } catch (err) {
                             logger.warn("[leagues] failed to sync skill progress tasks on login", err);
                         }
@@ -13411,20 +13448,19 @@ export class WSServer {
 
                         // Send league task completion bitfield varps.
                         // OSRS parity: these are NOT contiguous (see shared/leagues/leagueTaskVarps.ts).
+                        // Always sync every group (including zeros) so the client never shows stale bits.
                         for (const varpId of LEAGUE_TASK_COMPLETION_VARPS) {
                             const value = p.getVarpValue(varpId);
-                            if (value !== 0) {
-                                this.withDirectSendBypass("varp", () =>
-                                    this.sendWithGuard(
-                                        ws,
-                                        encodeMessage({
-                                            type: "varp",
-                                            payload: { varpId, value },
-                                        }),
-                                        "varp",
-                                    ),
-                                );
-                            }
+                            this.withDirectSendBypass("varp", () =>
+                                this.sendWithGuard(
+                                    ws,
+                                    encodeMessage({
+                                        type: "varp",
+                                        payload: { varpId, value },
+                                    }),
+                                    "varp",
+                                ),
+                            );
                         }
 
                         const clientType = parsed.payload.clientType;
@@ -13963,12 +13999,14 @@ export class WSServer {
                                 this.applyLeagueTutorialStepNineUi(p);
                             }
 
-                            // If the player opened the Leagues tab, complete the league task
-                            // "Open the Leagues Menu" (league_task_id=189) and award its points once.
+                            // If the player opened the Leagues tab, award "Open the Leagues Menu" once.
                             if (sideJournalTab === 4) {
                                 try {
-                                    const result = LeagueTaskService.completeTask(p, 189);
-                                    if (result.changed) {
+                                    const result = completeLeagueTaskByName(
+                                        p,
+                                        LEAGUE_TUTORIAL_TASK_OPEN_MENU,
+                                    );
+                                    if (result?.changed) {
                                         for (const v of result.varpUpdates) {
                                             this.queueVarp(p.id, v.id, v.value);
                                         }

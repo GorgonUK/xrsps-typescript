@@ -556,6 +556,9 @@
         "type": "skilling_action",
         "skill": "thieving",
         "action": "pickpocket",
+        "areaKeys": [
+          "kourend"
+        ],
         "targetIds": [
           3014,
           3015,

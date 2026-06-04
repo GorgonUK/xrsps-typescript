@@ -1,0 +1,2439 @@
+{
+  "description": "Phase 7B: NPC kill disambiguation (manifest overrides cache name lookup for validate + import).",
+  "tasks": [
+    {
+      "sourceTaskId": 554,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 655,
+      "candidateNpcIds": [
+        655,
+        656,
+        657,
+        658,
+        659
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          655
+        ]
+      },
+      "mvpTaskId": 381
+    },
+    {
+      "sourceTaskId": 555,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2790,
+      "candidateNpcIds": [
+        2790,
+        2791,
+        2793,
+        2795,
+        5842
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2790
+        ]
+      },
+      "mvpTaskId": 382
+    },
+    {
+      "sourceTaskId": 556,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 1173,
+      "candidateNpcIds": [
+        1173,
+        1174,
+        2804,
+        2805,
+        2806
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          1173
+        ]
+      },
+      "mvpTaskId": 383
+    },
+    {
+      "sourceTaskId": 557,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 1020,
+      "candidateNpcIds": [
+        1020,
+        1021,
+        1022,
+        2492,
+        2513
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          1020
+        ]
+      },
+      "mvpTaskId": 384
+    },
+    {
+      "sourceTaskId": 558,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2510,
+      "candidateNpcIds": [
+        2510,
+        2511,
+        2512,
+        2856,
+        2857
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2510
+        ]
+      },
+      "mvpTaskId": 385
+    },
+    {
+      "sourceTaskId": 559,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 510,
+      "candidateNpcIds": [
+        510,
+        512,
+        2056,
+        2057,
+        2058
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          510
+        ]
+      },
+      "mvpTaskId": 386
+    },
+    {
+      "sourceTaskId": 560,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 70,
+      "candidateNpcIds": [
+        70,
+        71,
+        72,
+        73,
+        74
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          70
+        ]
+      },
+      "mvpTaskId": 387
+    },
+    {
+      "sourceTaskId": 561,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 26,
+      "candidateNpcIds": [
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          26
+        ]
+      },
+      "mvpTaskId": 388
+    },
+    {
+      "sourceTaskId": 562,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2241,
+      "candidateNpcIds": [
+        132,
+        2241,
+        3049,
+        3050,
+        3286
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2241
+        ]
+      },
+      "mvpTaskId": 389
+    },
+    {
+      "sourceTaskId": 563,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2481,
+      "candidateNpcIds": [
+        2481,
+        2482,
+        2483,
+        12812,
+        12813
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2481
+        ]
+      },
+      "mvpTaskId": 390
+    },
+    {
+      "sourceTaskId": 564,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2098,
+      "candidateNpcIds": [
+        2098,
+        2099,
+        2100,
+        2101,
+        2102
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2098
+        ]
+      },
+      "mvpTaskId": 391
+    },
+    {
+      "sourceTaskId": 565,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2090,
+      "candidateNpcIds": [
+        2090,
+        2091,
+        2092,
+        2093,
+        3851
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2090
+        ]
+      },
+      "mvpTaskId": 392
+    },
+    {
+      "sourceTaskId": 566,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2841,
+      "candidateNpcIds": [
+        2841,
+        2842,
+        2851,
+        13802
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2841
+        ]
+      },
+      "mvpTaskId": 393
+    },
+    {
+      "sourceTaskId": 567,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2085,
+      "candidateNpcIds": [
+        2085,
+        2086,
+        2087,
+        2088,
+        2089
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2085
+        ]
+      },
+      "mvpTaskId": 394
+    },
+    {
+      "sourceTaskId": 568,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2005,
+      "candidateNpcIds": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2018
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2005
+        ]
+      },
+      "mvpTaskId": 395
+    },
+    {
+      "sourceTaskId": 569,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2097,
+      "candidateNpcIds": [
+        2097,
+        2137,
+        2138,
+        2139,
+        2140
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2097
+        ]
+      },
+      "mvpTaskId": 396
+    },
+    {
+      "sourceTaskId": 571,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 104,
+      "candidateNpcIds": [
+        104,
+        105,
+        135,
+        3133,
+        7256
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          104
+        ]
+      },
+      "mvpTaskId": 397
+    },
+    {
+      "sourceTaskId": 572,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2025,
+      "candidateNpcIds": [
+        2025,
+        2026,
+        2027,
+        2028,
+        2029
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2025
+        ]
+      },
+      "mvpTaskId": 398
+    },
+    {
+      "sourceTaskId": 573,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 265,
+      "candidateNpcIds": [
+        265,
+        266,
+        267,
+        268,
+        269
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          265
+        ]
+      },
+      "mvpTaskId": 399
+    },
+    {
+      "sourceTaskId": 574,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 240,
+      "candidateNpcIds": [
+        240,
+        1432,
+        2048,
+        2049,
+        2050
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          240
+        ]
+      },
+      "mvpTaskId": 400
+    },
+    {
+      "sourceTaskId": 575,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2075,
+      "candidateNpcIds": [
+        2075,
+        2076,
+        2077,
+        2078,
+        2079
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2075
+        ]
+      },
+      "mvpTaskId": 401
+    },
+    {
+      "sourceTaskId": 576,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 260,
+      "candidateNpcIds": [
+        260,
+        261,
+        262,
+        263,
+        264
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          260
+        ]
+      },
+      "mvpTaskId": 402
+    },
+    {
+      "sourceTaskId": 577,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 270,
+      "candidateNpcIds": [
+        270,
+        271,
+        7253
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          270
+        ]
+      },
+      "mvpTaskId": 403
+    },
+    {
+      "sourceTaskId": 578,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 274,
+      "candidateNpcIds": [
+        139,
+        274,
+        275,
+        7255,
+        8086
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          274
+        ]
+      },
+      "mvpTaskId": 404
+    },
+    {
+      "sourceTaskId": 579,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 252,
+      "candidateNpcIds": [
+        252,
+        253,
+        254,
+        255,
+        256
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          252
+        ]
+      },
+      "mvpTaskId": 405
+    },
+    {
+      "sourceTaskId": 750,
+      "slice": "1a",
+      "tier": "A",
+      "chosenNpcId": 2094,
+      "candidateNpcIds": [
+        2094,
+        2234
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2094
+        ]
+      },
+      "mvpTaskId": 406
+    },
+    {
+      "sourceTaskId": 583,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 7939,
+      "candidateNpcIds": [
+        7939,
+        15184
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7939
+        ]
+      },
+      "mvpTaskId": 412
+    },
+    {
+      "sourceTaskId": 587,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 2054,
+      "candidateNpcIds": [
+        2054,
+        6505
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2054
+        ]
+      },
+      "mvpTaskId": 407
+    },
+    {
+      "sourceTaskId": 590,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 5779,
+      "candidateNpcIds": [
+        5779,
+        6499
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5779
+        ]
+      },
+      "mvpTaskId": 408
+    },
+    {
+      "sourceTaskId": 602,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 499,
+      "candidateNpcIds": [
+        499,
+        13659
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          499
+        ]
+      },
+      "mvpTaskId": 409
+    },
+    {
+      "sourceTaskId": 641,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 6609,
+      "candidateNpcIds": [
+        6503,
+        6609
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6609
+        ]
+      },
+      "mvpTaskId": 410
+    },
+    {
+      "sourceTaskId": 642,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 6610,
+      "candidateNpcIds": [
+        6504,
+        6610
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6610
+        ]
+      },
+      "mvpTaskId": 411
+    },
+    {
+      "sourceTaskId": 808,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 107,
+      "candidateNpcIds": [
+        107,
+        108
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          107
+        ]
+      },
+      "mvpTaskId": 421
+    },
+    {
+      "sourceTaskId": 810,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 291,
+      "candidateNpcIds": [
+        291,
+        2423
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          291
+        ]
+      },
+      "mvpTaskId": 422
+    },
+    {
+      "sourceTaskId": 817,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 5779,
+      "candidateNpcIds": [
+        5779,
+        6499
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5779
+        ]
+      },
+      "mvpTaskId": 413
+    },
+    {
+      "sourceTaskId": 897,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 100,
+      "candidateNpcIds": [
+        100,
+        102
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          100
+        ]
+      },
+      "mvpTaskId": 419
+    },
+    {
+      "sourceTaskId": 899,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 5938,
+      "candidateNpcIds": [
+        5938,
+        5939
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5938
+        ]
+      },
+      "mvpTaskId": 420
+    },
+    {
+      "sourceTaskId": 1056,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 4185,
+      "candidateNpcIds": [
+        4185,
+        11583
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          4185
+        ]
+      },
+      "mvpTaskId": 424
+    },
+    {
+      "sourceTaskId": 1119,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 8,
+      "candidateNpcIds": [
+        8,
+        11
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8
+        ]
+      },
+      "mvpTaskId": 425
+    },
+    {
+      "sourceTaskId": 1201,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 4005,
+      "candidateNpcIds": [
+        4005,
+        7250
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          4005
+        ]
+      },
+      "mvpTaskId": 426
+    },
+    {
+      "sourceTaskId": 1202,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 5293,
+      "candidateNpcIds": [
+        5293,
+        5294
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5293
+        ]
+      },
+      "mvpTaskId": 427
+    },
+    {
+      "sourceTaskId": 1274,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 7931,
+      "candidateNpcIds": [
+        7931,
+        14864
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7931
+        ]
+      },
+      "mvpTaskId": 416
+    },
+    {
+      "sourceTaskId": 1275,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 7939,
+      "candidateNpcIds": [
+        7939,
+        15184
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7939
+        ]
+      },
+      "mvpTaskId": 417
+    },
+    {
+      "sourceTaskId": 1276,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 7940,
+      "candidateNpcIds": [
+        7940,
+        15185
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7940
+        ]
+      },
+      "mvpTaskId": 418
+    },
+    {
+      "sourceTaskId": 1280,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 291,
+      "candidateNpcIds": [
+        291,
+        2423
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          291
+        ]
+      },
+      "mvpTaskId": 423
+    },
+    {
+      "sourceTaskId": 1283,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 526,
+      "candidateNpcIds": [
+        526,
+        6603
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "futureReview": "regional-wilderness-filter",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          526
+        ]
+      },
+      "mvpTaskId": 428
+    },
+    {
+      "sourceTaskId": 1288,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 6609,
+      "candidateNpcIds": [
+        6503,
+        6609
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6609
+        ]
+      },
+      "mvpTaskId": 414
+    },
+    {
+      "sourceTaskId": 1289,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 6610,
+      "candidateNpcIds": [
+        6504,
+        6610
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6610
+        ]
+      },
+      "mvpTaskId": 415
+    },
+    {
+      "sourceTaskId": 1362,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 7273,
+      "candidateNpcIds": [
+        7273,
+        13795
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7273
+        ]
+      },
+      "mvpTaskId": 429
+    },
+    {
+      "sourceTaskId": 1364,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 8610,
+      "candidateNpcIds": [
+        8610,
+        8611
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8610
+        ]
+      },
+      "mvpTaskId": 430
+    },
+    {
+      "sourceTaskId": 1441,
+      "slice": "1b",
+      "tier": "A",
+      "chosenNpcId": 8614,
+      "candidateNpcIds": [
+        8614,
+        12458
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8614
+        ]
+      },
+      "mvpTaskId": 431
+    },
+    {
+      "sourceTaskId": 319,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 5886,
+      "candidateNpcIds": [
+        5886,
+        5887,
+        5888,
+        5889,
+        5890
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5886
+        ]
+      },
+      "mvpTaskId": 442
+    },
+    {
+      "sourceTaskId": 580,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 465,
+      "candidateNpcIds": [
+        465,
+        466,
+        467,
+        468
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          465
+        ]
+      },
+      "mvpTaskId": 439
+    },
+    {
+      "sourceTaskId": 581,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 7275,
+      "candidateNpcIds": [
+        7275,
+        8092,
+        8093
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7275
+        ]
+      },
+      "mvpTaskId": 446
+    },
+    {
+      "sourceTaskId": 582,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 7144,
+      "candidateNpcIds": [
+        7144,
+        7145,
+        7146,
+        7147,
+        7148
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7144
+        ]
+      },
+      "mvpTaskId": 448
+    },
+    {
+      "sourceTaskId": 592,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 2267,
+      "candidateNpcIds": [
+        2267,
+        6498,
+        12439
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2267
+        ]
+      },
+      "mvpTaskId": 436
+    },
+    {
+      "sourceTaskId": 593,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 2266,
+      "candidateNpcIds": [
+        2266,
+        6497,
+        12442
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2266
+        ]
+      },
+      "mvpTaskId": 437
+    },
+    {
+      "sourceTaskId": 594,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 2265,
+      "candidateNpcIds": [
+        2265,
+        6496,
+        12441
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2265
+        ]
+      },
+      "mvpTaskId": 438
+    },
+    {
+      "sourceTaskId": 595,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 963,
+      "candidateNpcIds": [
+        128,
+        963,
+        965,
+        4303,
+        4304
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          963
+        ]
+      },
+      "mvpTaskId": 444
+    },
+    {
+      "sourceTaskId": 597,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 8058,
+      "candidateNpcIds": [
+        8026,
+        8058,
+        8059,
+        8060,
+        8061
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8058
+        ]
+      },
+      "mvpTaskId": 451
+    },
+    {
+      "sourceTaskId": 598,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 12079,
+      "candidateNpcIds": [
+        12077,
+        12078,
+        12079,
+        12080,
+        12082
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          12079
+        ]
+      },
+      "mvpTaskId": 452
+    },
+    {
+      "sourceTaskId": 600,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 5863,
+      "candidateNpcIds": [
+        5862,
+        5863,
+        5866,
+        13657
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5863
+        ]
+      },
+      "mvpTaskId": 445
+    },
+    {
+      "sourceTaskId": 603,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 5886,
+      "candidateNpcIds": [
+        5886,
+        5887,
+        5888,
+        5889,
+        5890
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          5886
+        ]
+      },
+      "mvpTaskId": 443
+    },
+    {
+      "sourceTaskId": 604,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 2215,
+      "candidateNpcIds": [
+        2215,
+        6494,
+        12444
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2215
+        ]
+      },
+      "mvpTaskId": 432
+    },
+    {
+      "sourceTaskId": 605,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 3162,
+      "candidateNpcIds": [
+        3162,
+        6492,
+        12443
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          3162
+        ]
+      },
+      "mvpTaskId": 433
+    },
+    {
+      "sourceTaskId": 606,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 2205,
+      "candidateNpcIds": [
+        2205,
+        6493,
+        12445
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2205
+        ]
+      },
+      "mvpTaskId": 434
+    },
+    {
+      "sourceTaskId": 607,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 3129,
+      "candidateNpcIds": [
+        3129,
+        6495,
+        12446
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          3129
+        ]
+      },
+      "mvpTaskId": 435
+    },
+    {
+      "sourceTaskId": 640,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 6611,
+      "candidateNpcIds": [
+        6611,
+        6612,
+        12002
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6611
+        ]
+      },
+      "mvpTaskId": 449
+    },
+    {
+      "sourceTaskId": 646,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 12191,
+      "candidateNpcIds": [
+        12166,
+        12167,
+        12191,
+        12192,
+        12193
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          12191
+        ]
+      },
+      "mvpTaskId": 453
+    },
+    {
+      "sourceTaskId": 649,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 12223,
+      "candidateNpcIds": [
+        12223,
+        12224,
+        12228,
+        12425,
+        12426
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          12223
+        ]
+      },
+      "mvpTaskId": 450
+    },
+    {
+      "sourceTaskId": 816,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 465,
+      "candidateNpcIds": [
+        465,
+        466,
+        467,
+        468
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          465
+        ]
+      },
+      "mvpTaskId": 440
+    },
+    {
+      "sourceTaskId": 904,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 465,
+      "candidateNpcIds": [
+        465,
+        466,
+        467,
+        468
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          465
+        ]
+      },
+      "mvpTaskId": 441
+    },
+    {
+      "sourceTaskId": 1363,
+      "slice": "1c",
+      "tier": "A",
+      "chosenNpcId": 7275,
+      "candidateNpcIds": [
+        7275,
+        8092,
+        8093
+      ],
+      "note": "lowest spawned variant (id < 14000)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7275
+        ]
+      },
+      "mvpTaskId": 447
+    },
+    {
+      "sourceTaskId": 596,
+      "slice": "7B-allowlist",
+      "tier": "A",
+      "chosenNpcId": 2042,
+      "candidateNpcIds": [
+        2042,
+        2043,
+        2044
+      ],
+      "note": "allowlist (instance_boss) — Zulrah green form — canonical id; boss script + DamageTracker registered on 2042",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2042
+        ]
+      },
+      "mvpTaskId": 454
+    },
+    {
+      "sourceTaskId": 638,
+      "slice": "7B-allowlist",
+      "tier": "A",
+      "chosenNpcId": 8583,
+      "candidateNpcIds": [
+        8583,
+        11192
+      ],
+      "note": "allowlist (farming_boss) — Hespori — primary id (11192 is alternate/instance variant)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8583
+        ]
+      },
+      "mvpTaskId": 455
+    },
+    {
+      "sourceTaskId": 601,
+      "slice": "7B-allowlist",
+      "tier": "A",
+      "chosenNpcId": 494,
+      "candidateNpcIds": [
+        494,
+        6640,
+        6656
+      ],
+      "note": "allowlist (dynamic_spawn) — Kraken boss — primary kill-credit id (6640/6656 are phase variants)",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          494
+        ]
+      },
+      "mvpTaskId": 456
+    },
+    {
+      "sourceTaskId": 661,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2856,
+      "candidateNpcIds": [
+        2510,
+        2511,
+        2512,
+        2856,
+        2857
+      ],
+      "note": "regional: Edgeville Dungeon 3072-3135 x 9856-9919",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2856
+        ]
+      },
+      "mvpTaskId": 607
+    },
+    {
+      "sourceTaskId": 662,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 74,
+      "candidateNpcIds": [
+        70,
+        71,
+        72,
+        73,
+        74
+      ],
+      "note": "regional: Varrock Sewers 3150-3300 x 9850-9920",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          74
+        ]
+      },
+      "mvpTaskId": 608
+    },
+    {
+      "sourceTaskId": 751,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2848,
+      "candidateNpcIds": [
+        23,
+        1038,
+        1469,
+        1817,
+        2848
+      ],
+      "note": "regional: Karamja league area 2688-2943 x 2688-3200",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2848
+        ]
+      },
+      "mvpTaskId": 609
+    },
+    {
+      "sourceTaskId": 901,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 417,
+      "candidateNpcIds": [
+        417,
+        418,
+        9283,
+        9284,
+        9285
+      ],
+      "note": "regional: Fremennik Slayer Dungeon 2688-2815 x 9984-10111",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          417
+        ]
+      },
+      "mvpTaskId": 610
+    },
+    {
+      "sourceTaskId": 977,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2095,
+      "candidateNpcIds": [
+        136,
+        1153,
+        2095,
+        2096,
+        2233
+      ],
+      "note": "regional: Tree Gnome Village ogre pen 2528-2559 x 3168-3199",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2095
+        ]
+      },
+      "mvpTaskId": 611
+    },
+    {
+      "sourceTaskId": 978,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2064,
+      "candidateNpcIds": [
+        2064,
+        2065,
+        2066
+      ],
+      "note": "regional: Kandarin league area 2432-2815 x 3136-3519",
+      "confidence": "medium-high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2064
+        ]
+      },
+      "mvpTaskId": 612
+    },
+    {
+      "sourceTaskId": 983,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 106,
+      "candidateNpcIds": [
+        106,
+        110,
+        116,
+        117,
+        231
+      ],
+      "note": "regional: Kandarin league area 2432-2815 x 3136-3519",
+      "confidence": "medium-high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          106
+        ]
+      },
+      "mvpTaskId": 613
+    },
+    {
+      "sourceTaskId": 1046,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 459,
+      "candidateNpcIds": [
+        459,
+        460,
+        461,
+        12003
+      ],
+      "note": "regional: Desert lizard cluster 3382-3388 x 3010-3020",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          459
+        ]
+      },
+      "mvpTaskId": 614
+    },
+    {
+      "sourceTaskId": 1050,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 423,
+      "candidateNpcIds": [
+        423,
+        7249,
+        11238
+      ],
+      "note": "regional: Smoke Dungeon 3200-3327 x 9344-9471",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          423
+        ]
+      },
+      "mvpTaskId": 615
+    },
+    {
+      "sourceTaskId": 1052,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 955,
+      "candidateNpcIds": [
+        955,
+        956,
+        961
+      ],
+      "note": "regional: Kalphite Lair 3456-3519 x 9472-9535",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          955
+        ]
+      },
+      "mvpTaskId": 616
+    },
+    {
+      "sourceTaskId": 1053,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 957,
+      "candidateNpcIds": [
+        138,
+        957,
+        958
+      ],
+      "note": "regional: Kalphite Lair 3456-3519 x 9472-9535",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          957
+        ]
+      },
+      "mvpTaskId": 617
+    },
+    {
+      "sourceTaskId": 1055,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 4184,
+      "candidateNpcIds": [
+        4184,
+        11513,
+        11581,
+        11582,
+        11705
+      ],
+      "note": "regional: Nardah crocodile bank 3264-3280 x 2880-2900",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          4184
+        ]
+      },
+      "mvpTaskId": 618
+    },
+    {
+      "sourceTaskId": 1120,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 415,
+      "candidateNpcIds": [
+        415,
+        416,
+        7241,
+        11239,
+        14174
+      ],
+      "note": "regional: Slayer Tower all floors 3392-3455 x 3520-9949",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          415
+        ]
+      },
+      "mvpTaskId": 619
+    },
+    {
+      "sourceTaskId": 1156,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2834,
+      "candidateNpcIds": [
+        2834,
+        4504,
+        4562,
+        5791,
+        6824
+      ],
+      "note": "regional: Slayer Tower all floors 3392-3455 x 3520-9949",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2834
+        ]
+      },
+      "mvpTaskId": 620
+    },
+    {
+      "sourceTaskId": 1228,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 106,
+      "candidateNpcIds": [
+        106,
+        110,
+        116,
+        117,
+        231
+      ],
+      "note": "regional: Tirannwn league area 2112-2431 x 3008-3391",
+      "confidence": "medium-high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          106
+        ]
+      },
+      "mvpTaskId": 621
+    },
+    {
+      "sourceTaskId": 1271,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 104,
+      "candidateNpcIds": [
+        104,
+        105,
+        135,
+        3133,
+        7256
+      ],
+      "note": "regional: Wilderness 2944-3391 x 3520-3966",
+      "confidence": "medium-high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          104
+        ]
+      },
+      "mvpTaskId": 622
+    },
+    {
+      "sourceTaskId": 1273,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 2841,
+      "candidateNpcIds": [
+        2841,
+        2842,
+        2851,
+        13802
+      ],
+      "note": "regional: Wilderness 2944-3391 x 3520-3966",
+      "confidence": "medium-high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2841
+        ]
+      },
+      "mvpTaskId": 623
+    },
+    {
+      "sourceTaskId": 1281,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 6593,
+      "candidateNpcIds": [
+        6593,
+        12607,
+        12608
+      ],
+      "note": "regional: Lava Maze 3192-3223 x 3800-3839",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6593
+        ]
+      },
+      "mvpTaskId": 624
+    },
+    {
+      "sourceTaskId": 1367,
+      "slice": "2",
+      "tier": "A",
+      "chosenNpcId": 7249,
+      "candidateNpcIds": [
+        423,
+        7249,
+        11238
+      ],
+      "note": "regional: Catacombs of Kourend 1600-1727 x 9984-10111",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          7249
+        ]
+      },
+      "mvpTaskId": 625
+    },
+    {
+      "sourceTaskId": 663,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2092,
+      "candidateNpcIds": [
+        2090,
+        2091,
+        2092,
+        2093,
+        3851
+      ],
+      "note": "sub-chamber: 3153-3157 x 9901-9905 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2092
+        ]
+      },
+      "mvpTaskId": 626
+    },
+    {
+      "sourceTaskId": 753,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2079,
+      "candidateNpcIds": [
+        2075,
+        2076,
+        2077,
+        2078,
+        2079
+      ],
+      "note": "sub-chamber: 2626-2630 x 9541-9545 plane=2",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2079
+        ]
+      },
+      "mvpTaskId": 627
+    },
+    {
+      "sourceTaskId": 755,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2050,
+      "candidateNpcIds": [
+        240,
+        1432,
+        2048,
+        2049,
+        2050
+      ],
+      "note": "sub-chamber: 2698-2702 x 9487-9491 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2050
+        ]
+      },
+      "mvpTaskId": 628
+    },
+    {
+      "sourceTaskId": 756,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 250,
+      "candidateNpcIds": [
+        247,
+        248,
+        249,
+        250,
+        251
+      ],
+      "note": "sub-chamber: 2702-2706 x 9537-9541 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          250
+        ]
+      },
+      "mvpTaskId": 629
+    },
+    {
+      "sourceTaskId": 809,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 4331,
+      "candidateNpcIds": [
+        516,
+        517,
+        1545,
+        4331,
+        4934
+      ],
+      "note": "sub-chamber: 3014-3018 x 3514-3518 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          4331
+        ]
+      },
+      "mvpTaskId": 630
+    },
+    {
+      "sourceTaskId": 811,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 268,
+      "candidateNpcIds": [
+        265,
+        266,
+        267,
+        268,
+        269
+      ],
+      "note": "sub-chamber: 2901-2905 x 9778-9782 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          268
+        ]
+      },
+      "mvpTaskId": 631
+    },
+    {
+      "sourceTaskId": 814,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2007,
+      "candidateNpcIds": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2018
+      ],
+      "note": "sub-chamber: 2924-2928 x 9800-9804 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2007
+        ]
+      },
+      "mvpTaskId": 632
+    },
+    {
+      "sourceTaskId": 902,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 429,
+      "candidateNpcIds": [
+        426,
+        427,
+        428,
+        429,
+        430
+      ],
+      "note": "sub-chamber: 2719-2723 x 10012-10016 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          429
+        ]
+      },
+      "mvpTaskId": 633
+    },
+    {
+      "sourceTaskId": 903,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 410,
+      "candidateNpcIds": [
+        410,
+        411,
+        14172,
+        14173
+      ],
+      "note": "sub-chamber: 2692-2696 x 9993-9997 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          410
+        ]
+      },
+      "mvpTaskId": 634
+    },
+    {
+      "sourceTaskId": 1047,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 690,
+      "candidateNpcIds": [
+        690,
+        691,
+        692,
+        693,
+        694
+      ],
+      "note": "sub-chamber: 3162-3166 x 2982-2986 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          690
+        ]
+      },
+      "mvpTaskId": 635
+    },
+    {
+      "sourceTaskId": 1116,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 487,
+      "candidateNpcIds": [
+        484,
+        485,
+        486,
+        487,
+        3138
+      ],
+      "note": "sub-chamber: 3401-3405 x 9932-9936 plane=3",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          487
+        ]
+      },
+      "mvpTaskId": 636
+    },
+    {
+      "sourceTaskId": 1117,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 4,
+      "candidateNpcIds": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "note": "sub-chamber: 3409-3413 x 3532-3536 plane=1",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          4
+        ]
+      },
+      "mvpTaskId": 637
+    },
+    {
+      "sourceTaskId": 1118,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 1543,
+      "candidateNpcIds": [
+        412,
+        413,
+        1543
+      ],
+      "note": "sub-chamber: 3425-3429 x 9941-9945 plane=3",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          1543
+        ]
+      },
+      "mvpTaskId": 638
+    },
+    {
+      "sourceTaskId": 1226,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 3420,
+      "candidateNpcIds": [
+        1852,
+        1853,
+        3420,
+        3421,
+        3422
+      ],
+      "note": "sub-chamber: 2277-2281 x 3217-3221 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          3420
+        ]
+      },
+      "mvpTaskId": 639
+    },
+    {
+      "sourceTaskId": 1266,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 71,
+      "candidateNpcIds": [
+        70,
+        71,
+        72,
+        73,
+        74
+      ],
+      "note": "sub-chamber: 3006-3010 x 3593-3597 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          71
+        ]
+      },
+      "mvpTaskId": 640
+    },
+    {
+      "sourceTaskId": 1268,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 264,
+      "candidateNpcIds": [
+        260,
+        261,
+        262,
+        263,
+        264
+      ],
+      "note": "sub-chamber: 3329-3333 x 3670-3674 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          264
+        ]
+      },
+      "mvpTaskId": 641
+    },
+    {
+      "sourceTaskId": 1269,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2028,
+      "candidateNpcIds": [
+        2025,
+        2026,
+        2027,
+        2028,
+        2029
+      ],
+      "note": "sub-chamber: 3280-3284 x 3878-3882 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2028
+        ]
+      },
+      "mvpTaskId": 642
+    },
+    {
+      "sourceTaskId": 1272,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2087,
+      "candidateNpcIds": [
+        2085,
+        2086,
+        2087,
+        2088,
+        2089
+      ],
+      "note": "sub-chamber: 2945-2949 x 3893-3897 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2087
+        ]
+      },
+      "mvpTaskId": 643
+    },
+    {
+      "sourceTaskId": 1282,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 6606,
+      "candidateNpcIds": [
+        531,
+        6606,
+        11109,
+        11110,
+        11111
+      ],
+      "note": "sub-chamber: 3021-3025 x 3627-3631 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          6606
+        ]
+      },
+      "mvpTaskId": 644
+    },
+    {
+      "sourceTaskId": 1361,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 8563,
+      "candidateNpcIds": [
+        6914,
+        6915,
+        6916,
+        6917,
+        8563
+      ],
+      "note": "sub-chamber: 1361-1365 x 3712-3716 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          8563
+        ]
+      },
+      "mvpTaskId": 645
+    },
+    {
+      "sourceTaskId": 1370,
+      "slice": "2a",
+      "tier": "A",
+      "chosenNpcId": 2100,
+      "candidateNpcIds": [
+        2098,
+        2099,
+        2100,
+        2101,
+        2102
+      ],
+      "note": "sub-chamber: 1437-1441 x 3608-3612 plane=0",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2100
+        ]
+      },
+      "mvpTaskId": 646
+    },
+    {
+      "sourceTaskId": 659,
+      "slice": "2b",
+      "tier": "A",
+      "chosenNpcId": 659,
+      "candidateNpcIds": [
+        655,
+        656,
+        657,
+        658,
+        659
+      ],
+      "note": "monster-route sub-chamber: 2949-2953 x 3481-3485 plane=0 (Edgeville goblin cluster 2944-2975 x 3480-3515)",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          659
+        ]
+      },
+      "mvpTaskId": 647
+    },
+    {
+      "sourceTaskId": 752,
+      "slice": "2b",
+      "tier": "A",
+      "chosenNpcId": 2008,
+      "candidateNpcIds": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2018
+      ],
+      "note": "monster-route sub-chamber: 2834-2838 x 9556-9560 plane=0 (Karamja Volcano dungeon 2832-2879 x 9552-9599)",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          2008
+        ]
+      },
+      "mvpTaskId": 648
+    },
+    {
+      "sourceTaskId": 1054,
+      "slice": "2b",
+      "tier": "A",
+      "chosenNpcId": 962,
+      "candidateNpcIds": [
+        959,
+        960,
+        962
+      ],
+      "note": "monster-route sub-chamber: 3493-3497 x 9487-9491 plane=0 (Kalphite Lair 3456-3519 x 9472-9535)",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          962
+        ]
+      },
+      "mvpTaskId": 649
+    },
+    {
+      "sourceTaskId": 1121,
+      "slice": "2b",
+      "tier": "A",
+      "chosenNpcId": 1050,
+      "candidateNpcIds": [
+        1047,
+        1048,
+        1049,
+        1050,
+        1051
+      ],
+      "note": "monster-route sub-chamber: 3777-3781 x 9436-9440 plane=0 (Mos LeHarmless cave horrors 3776-3839 x 9376-9471)",
+      "confidence": "high",
+      "trigger": {
+        "type": "npc_kill",
+        "npcIds": [
+          1050
+        ]
+      },
+      "mvpTaskId": 650
+    }
+  ]
+}

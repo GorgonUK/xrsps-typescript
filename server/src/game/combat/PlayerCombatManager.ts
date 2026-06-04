@@ -1436,13 +1436,27 @@ export class PlayerCombatManager {
     }
 
     /**
-     * Helper to check if attack should auto-repeat (melee/ranged yes, manual spell no).
+     * Helper to check if attack should auto-repeat during active NPC combat.
      */
     private shouldRepeatAttackInternal(player: PlayerState): boolean {
-        // Manual spell casts don't auto-repeat
+        const engagement = this.engagements.getState(player.id);
+        if (engagement) {
+            // OSRS parity: Level-ups and other popups do not stop auto-attack mid-fight.
+            // Keep swinging for melee/ranged even if a spell is selected without autocast.
+            const attackType = resolvePlayerAttackType(player);
+            if (attackType !== "magic") {
+                return true;
+            }
+            if (player.autocastEnabled && player.combatSpellId > 0) {
+                return true;
+            }
+            // Manual magic (no autocast) is one-shot inside an engagement.
+            return false;
+        }
+
+        // Outside NPC combat: manual spellbook casts should not auto-repeat.
         const spellId = player.combatSpellId;
-        const autocastEnabled = player.autocastEnabled;
-        if (spellId > 0 && !autocastEnabled) {
+        if (spellId > 0 && !player.autocastEnabled) {
             return false;
         }
         return true;

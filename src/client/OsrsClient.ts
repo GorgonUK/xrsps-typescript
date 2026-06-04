@@ -63,6 +63,7 @@ import {
     sendLogout,
     sendResumeNameDialog,
     sendResumeStringDialog,
+    disposeServerConnection,
     subscribeLogoutResponse,
     suppressReconnection,
 } from "../network/ServerConnection";
@@ -764,6 +765,7 @@ export class OsrsClient {
     private clientTickLastNowMs: number = 0;
     private clientTickAccumulatedMs: number = 0;
     private loginMusicStartTimer?: ReturnType<typeof setTimeout>;
+    private loginPhaseTimeout?: ReturnType<typeof setTimeout>;
 
     // Appearance is server-driven; no client defaults.
 
@@ -8886,6 +8888,7 @@ export class OsrsClient {
 
         // Setup new state
         if (newState === GameState.LOGIN_SCREEN) {
+            this.clearLoginPhaseTimeout();
             this.loginState.networkState = 0;
             // Reset loading tracker on return to login
             this.loadingTracker.reset();
@@ -8894,11 +8897,13 @@ export class OsrsClient {
             // Flush buffered keystrokes so in-game typing does not leak into login fields
             try { this.inputManager.flushInput(); } catch {}
             // Apply persisted server URL so sendLogin connects to the right place
-            setServerUrl(`${this.loginState.serverSecure ? "wss" : "ws"}://${this.loginState.serverAddress}`);
+            this.syncLoginServerUrl();
         }
 
         if (newState === GameState.CONNECTING) {
+            this.syncLoginServerUrl();
             this.loginState.setResponse("", "Connecting to server...", "", "");
+            this.startLoginPhaseTimeout();
 
             // Set up loading requirements BEFORE server responds
             // This prevents race condition where handshake arrives before onLoginSuccess
@@ -8937,6 +8942,38 @@ export class OsrsClient {
         }
     }
 
+    syncLoginServerUrl(): void {
+        setServerUrl(
+            `${this.loginState.serverSecure ? "wss" : "ws"}://${this.loginState.serverAddress}`,
+        );
+    }
+
+    private clearLoginPhaseTimeout(): void {
+        if (!this.loginPhaseTimeout) return;
+        clearTimeout(this.loginPhaseTimeout);
+        this.loginPhaseTimeout = undefined;
+    }
+
+    private startLoginPhaseTimeout(): void {
+        this.clearLoginPhaseTimeout();
+        this.loginPhaseTimeout = setTimeout(() => {
+            this.loginPhaseTimeout = undefined;
+            if (this.gameState !== GameState.CONNECTING) return;
+
+            this.loginState.loginIndex = LoginIndex.TRY_AGAIN;
+            this.loginState.setResponse(
+                "",
+                "Connection timed out.",
+                `Could not reach ${this.loginState.serverAddress}. Is the game server running?`,
+                "",
+            );
+            try {
+                disposeServerConnection("login timeout");
+            } catch {}
+            this.updateGameState(GameState.LOGIN_SCREEN);
+        }, 20000);
+    }
+
     private cancelPendingLoginMusicStart(): void {
         if (this.loginMusicStartTimer) {
             clearTimeout(this.loginMusicStartTimer);
@@ -8971,6 +9008,7 @@ export class OsrsClient {
      * Matches OSRS HealthBar.getLoginError() messages.
      */
     handleLoginError(errorCode: number): void {
+        this.clearLoginPhaseTimeout();
         console.log(`[OsrsClient] handleLoginError(${errorCode})`);
         switch (errorCode) {
             case LoginErrorCode.INVALID_CREDENTIALS:
@@ -9454,6 +9492,7 @@ export class OsrsClient {
      * race conditions where handshake arrives before this method is called.
      */
     onLoginSuccess(): void {
+        this.clearLoginPhaseTimeout();
         this.loginState.savePersistedLoginState();
 
         // OSRS parity: First show "Loading - please wait." (gameState 25)
@@ -9468,6 +9507,7 @@ export class OsrsClient {
      * Called when login fails.
      */
     onLoginFailed(reason: string): void {
+        this.clearLoginPhaseTimeout();
         this.loginState.setResponse("", reason, "", "");
         this.loginState.loginIndex = LoginIndex.INVALID_CREDENTIALS;
         this.updateGameState(GameState.LOGIN_SCREEN);

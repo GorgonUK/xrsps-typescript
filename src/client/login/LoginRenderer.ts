@@ -808,6 +808,9 @@ export class LoginRenderer {
             renderScale = mobileFocusTransform.renderScale;
             renderOffsetX = mobileFocusTransform.renderOffsetX;
             renderOffsetY = mobileFocusTransform.renderOffsetY;
+        } else if (safeSurfaceScale > 1.01) {
+            // HiDPI login: fractional scale (fit × DPR) blurs bitmap fonts in setTransform.
+            renderScale = Math.max(1, Math.round(renderScale));
         }
 
         this.renderScale = renderScale;

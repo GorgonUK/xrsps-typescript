@@ -1,0 +1,209 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+304,Kill Crawling Hands.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+305,Kill Banshees.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+306,Kill Cave Bugs.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+307,Kill Cave Crawlers.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+308,Kill Rockslugs.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+309,Kill Pyrefiends.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+310,Kill Basilisks.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+311,Kill Bloodveld.,ambiguous,npc candidates: 484:Bloodveld; 485:Bloodveld; 486:Bloodveld; 487:Bloodveld; 3138:Bloodveld,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+312,Kill Dust Devils.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+313,Kill Kurasks.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+314,Kill Skeletal Wyverns.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+315,Kill Gargoyles.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+316,Kill Nechryaels.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+317,Kill Abyssal Demons.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+318,Kill Dark Beasts.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+319,Defeat Abyssal Sire,ready,npc:5886 Abyssal Sire spawned,LeagueTaskManager.onNpcKill,,
+335,Kill 100 Slayer Creatures.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+336,"Kill 1,000 Slayer Creatures.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+337,"Kill 5,000 Slayer Creatures.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+468,Kill 100 Monsters with Magic.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+469,"Kill 1,000 Monsters with Magic.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+470,"Kill 5,000 Monsters with Magic.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+492,Kill a Monster with Ranged.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+493,Kill 100 Monsters with Ranged.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+494,"Kill 1,000 Monsters with Ranged.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+495,"Kill 5,000 Monsters with Ranged.",missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+496,Defeat a Boss with Ranged.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+497,Defeat 10 Bosses with Ranged.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+507,Kill a Chicken with Melee.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+508,Kill a Hill Giant with Melee.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+509,Kill a Dragon with Melee.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+510,Defeat a Boss with Melee.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+511,Defeat 10 Bosses with Melee.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+554,Defeat a Goblin.,ready,npc:655 Goblin spawned,LeagueTaskManager.onNpcKill,,
+555,Defeat a Cow.,ready,npc:2790 Cow spawned,LeagueTaskManager.onNpcKill,,
+556,Defeat a Chicken.,ready,npc:1173 Chicken spawned,LeagueTaskManager.onNpcKill,,
+557,Defeat a Rat.,ready,npc:1020 Rat spawned,LeagueTaskManager.onNpcKill,,
+558,Defeat a Giant Rat.,ready,npc:2510 Giant rat spawned,LeagueTaskManager.onNpcKill,,
+559,Defeat a Dark Wizard.,ready,npc:510 Dark wizard spawned,LeagueTaskManager.onNpcKill,,
+560,Defeat a Skeleton.,ready,npc:70 Skeleton spawned,LeagueTaskManager.onNpcKill,,
+561,Defeat a Zombie.,ready,npc:26 Zombie spawned,LeagueTaskManager.onNpcKill,,
+562,Defeat a Hobgoblin.,ready,npc:2241 Hobgoblin spawned,LeagueTaskManager.onNpcKill,,
+563,Defeat a Minotaur.,ready,npc:2481 Minotaur spawned,LeagueTaskManager.onNpcKill,,
+564,Defeat a Hill Giant.,ready,npc:2098 Hill Giant spawned,LeagueTaskManager.onNpcKill,,
+565,Defeat a Moss Giant.,ready,npc:2090 Moss giant spawned,LeagueTaskManager.onNpcKill,,
+566,Defeat an Ice Warrior.,ready,npc:2841 Ice warrior spawned,LeagueTaskManager.onNpcKill,,
+567,Defeat an Ice Giant.,ready,npc:2085 Ice giant spawned,LeagueTaskManager.onNpcKill,,
+568,Defeat a Lesser Demon.,ready,npc:2005 Lesser demon spawned,LeagueTaskManager.onNpcKill,,
+569,Defeat a Cyclops.,ready,npc:2097 Cyclops spawned,LeagueTaskManager.onNpcKill,,
+570,Defeat a Troll.,ambiguous,npc candidates: 133:Troll; 8470:Troll; 8471:Troll; 8472:Troll; 8473:Troll,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+571,Defeat a Hellhound.,ready,npc:104 Hellhound spawned,LeagueTaskManager.onNpcKill,,
+572,Defeat a Greater Demon.,ready,npc:2025 Greater demon spawned,LeagueTaskManager.onNpcKill,,
+573,Defeat a Blue Dragon.,ready,npc:265 Blue dragon spawned,LeagueTaskManager.onNpcKill,,
+574,Defeat a Black Demon.,ready,npc:240 Black demon spawned,LeagueTaskManager.onNpcKill,,
+575,Defeat a Fire Giant.,ready,npc:2075 Fire giant spawned,LeagueTaskManager.onNpcKill,,
+576,Defeat a Green Dragon.,ready,npc:260 Green dragon spawned,LeagueTaskManager.onNpcKill,,
+577,Defeat a Bronze Dragon.,ready,npc:270 Bronze dragon spawned,LeagueTaskManager.onNpcKill,,
+578,Defeat a Steel Dragon.,ready,npc:274 Steel dragon spawned,LeagueTaskManager.onNpcKill,,
+579,Defeat a Black Dragon.,ready,npc:252 Black dragon spawned,LeagueTaskManager.onNpcKill,,
+592,Defeat Dagannoth Rex.,ready,npc:2267 Dagannoth Rex spawned,LeagueTaskManager.onNpcKill,,
+593,Defeat Dagannoth Prime.,ready,npc:2266 Dagannoth Prime spawned,LeagueTaskManager.onNpcKill,,
+594,Defeat Dagannoth Supreme.,ready,npc:2265 Dagannoth Supreme spawned,LeagueTaskManager.onNpcKill,,
+599,Defeat Grotesque Guardians.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+603,Defeat Abyssal Sire.,ready,npc:5886 Abyssal Sire spawned,LeagueTaskManager.onNpcKill,,
+607,Defeat K'ril Tsutsaroth.,ready,npc:3129 K'ril Tsutsaroth spawned,LeagueTaskManager.onNpcKill,,
+611,Defeat The Gauntlet.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+612,Defeat the Corrupted Gauntlet.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+621,Defeat Kephri.,ambiguous,npc candidates: 11719:Kephri; 11720:Kephri; 11721:Kephri; 11722:Kephri; 12125:Kephri,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+622,Defeat Zebak.,ambiguous,npc candidates: 10680:Zebak; 11730:Zebak; 11732:Zebak; 11733:Zebak; 12128:Zebak,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+623,Defeat Ba-Ba.,ambiguous,npc candidates: 11778:Ba-Ba; 11779:Ba-Ba; 11780:Ba-Ba; 12127:Ba-Ba,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+624,Defeat Akkha.,ambiguous,npc candidates: 11789:Akkha; 11790:Akkha; 11791:Akkha; 11792:Akkha; 11793:Akkha,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+625,Defeat Maiden of Sugadinti.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+626,Defeat Sotetseg.,ambiguous,npc candidates: 8387:Sotetseg; 8388:Sotetseg; 10864:Sotetseg; 10865:Sotetseg; 10867:Sotetseg,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+627,Defeat Xarpus.,ambiguous,npc candidates: 8338:Xarpus; 8339:Xarpus; 8340:Xarpus; 8341:Xarpus; 10766:Xarpus,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+628,Defeat Bloat.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+629,Defeat Tekton.,ambiguous,npc candidates: 7540:Tekton; 7541:Tekton; 7542:Tekton; 7545:Tekton,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+630,Defeat Vasa Nistirio.,ambiguous,npc candidates: 7566:Vasa Nistirio; 7567:Vasa Nistirio,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+631,Defeat Vespula.,ambiguous,npc candidates: 7530:Vespula; 7531:Vespula; 7532:Vespula,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+632,Defeat the Mimic.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+633,Defeat Obor.,missing_content,npc:7416 Obor not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 633 or change target
+634,Defeat Bryophyta.,ready,npc:8195 Bryophyta spawned,LeagueTaskManager.onNpcKill,,
+637,Defeat Skotizo.,missing_content,npc:7286 Skotizo not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 637 or change target
+638,Defeat Hespori.,ready,npc:8583 Hespori not-spawned league-npc-allowlist,LeagueTaskManager.onNpcKill,,
+643,Defeat Artio.,missing_content,npc:11992 Artio not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 643 or change target
+644,Defeat Calvar'ion.,ambiguous,npc candidates: 11993:Calvar'ion; 11994:Calvar'ion; 11995:Calvar'ion,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+645,Defeat Spindel.,missing_content,npc:11998 Spindel not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 645 or change target
+659,Defeat a Goblin near Lumbridge.,ambiguous,npc candidates: 655:Goblin; 656:Goblin; 657:Goblin; 658:Goblin; 659:Goblin,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+660,Defeat a Dark Wizard south of Varrock.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+661,Defeat a Giant Rat in Edgeville Dungeon.,ambiguous,npc candidates: 2510:Giant rat; 2511:Giant rat; 2512:Giant rat; 2856:Giant rat; 2857:Giant rat,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+662,Defeat a Skeleton in Varrock Sewers.,ambiguous,npc candidates: 70:Skeleton; 71:Skeleton; 72:Skeleton; 73:Skeleton; 74:Skeleton,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+663,Defeat a Moss Giant in Varrock Sewers.,ambiguous,npc candidates: 2090:Moss giant; 2091:Moss giant; 2092:Moss giant; 2093:Moss giant; 3851:Moss giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+692,Defeat Delrith.,missing_content,npc:5079 Delrith not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 692 or change target
+693,Defeat Count Draynor.,ambiguous,npc candidates: 3481:Count Draynor; 3482:Count Draynor; 6393:Count Draynor,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+750,Defeat a Jogre.,ready,npc:2094 Jogre spawned,LeagueTaskManager.onNpcKill,,
+751,Defeat a Monkey on Karamja.,ambiguous,npc candidates: 23:Monkey; 1038:Monkey; 1469:Monkey; 1817:Monkey; 2848:Monkey,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+752,Defeat a Lesser Demon in Karamja Volcano.,ambiguous,npc candidates: 2005:Lesser demon; 2006:Lesser demon; 2007:Lesser demon; 2008:Lesser demon; 2018:Lesser demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+753,Defeat a Fire Giant in Brimhaven Dungeon.,ambiguous,npc candidates: 2075:Fire giant; 2076:Fire giant; 2077:Fire giant; 2078:Fire giant; 2079:Fire giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+754,Defeat a Metal Dragon in Brimhaven Dungeon.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+755,Defeat a Black Demon in Brimhaven Dungeon.,ambiguous,npc candidates: 240:Black demon; 1432:Black demon; 2048:Black demon; 2049:Black demon; 2050:Black demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+756,Defeat a Red Dragon in Brimhaven Dungeon.,ambiguous,npc candidates: 247:Red dragon; 248:Red dragon; 249:Red dragon; 250:Red dragon; 251:Red dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+808,Defeat a White Wolf.,ready,npc:107 White wolf spawned,LeagueTaskManager.onNpcKill,,
+809,Defeat a Black Knight.,ambiguous,npc candidates: 516:Black Knight; 517:Black Knight; 1545:Black knight; 4331:Black Knight; 4934:Black Knight,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+810,Defeat a Chaos Dwarf.,ready,npc:291 Chaos dwarf spawned,LeagueTaskManager.onNpcKill,,
+811,Defeat a Blue Dragon in Taverley Dungeon.,ambiguous,npc candidates: 265:Blue dragon; 266:Blue dragon; 267:Blue dragon; 268:Blue dragon; 269:Blue dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+812,Defeat a Black Dragon in Taverley Dungeon.,ambiguous,npc candidates: 252:Black dragon; 253:Black dragon; 254:Black dragon; 255:Black dragon; 256:Black dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+813,Defeat a Hellhound in Taverley Dungeon.,ambiguous,npc candidates: 104:Hellhound; 105:Hellhound; 135:Hellhound; 3133:Hellhound; 7256:Hellhound,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+814,Defeat a Lesser Demon in Taverley Dungeon.,ambiguous,npc candidates: 2005:Lesser demon; 2006:Lesser demon; 2007:Lesser demon; 2008:Lesser demon; 2018:Lesser demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+815,Defeat a Greater Demon in Taverley Dungeon.,ambiguous,npc candidates: 2025:Greater demon; 2026:Greater demon; 2027:Greater demon; 2028:Greater demon; 2029:Greater demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+897,Defeat a Rock Crab in Fremennik.,ready,npc:100 Rock Crab spawned,LeagueTaskManager.onNpcKill,,
+898,Defeat a Dagannoth in Fremennik.,ambiguous,npc candidates: 140:Dagannoth; 970:Dagannoth; 971:Dagannoth; 972:Dagannoth; 973:Dagannoth,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+899,Defeat a Wallasalki in Fremennik.,ready,npc:5938 Wallasalki spawned,LeagueTaskManager.onNpcKill,,
+900,Defeat an Ice Troll in Fremennik.,ambiguous,npc candidates: 648:Ice Troll; 649:Ice Troll; 650:Ice Troll; 651:Ice Troll; 652:Ice Troll,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+901,Defeat a Basilisk in Fremennik.,ambiguous,npc candidates: 417:Basilisk; 418:Basilisk; 9283:Basilisk; 9284:Basilisk; 9285:Basilisk,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+902,Defeat a Turoth in Fremennik.,ambiguous,npc candidates: 426:Turoth; 427:Turoth; 428:Turoth; 429:Turoth; 430:Turoth,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+903,Defeat a Kurask in Fremennik.,ambiguous,npc candidates: 410:Kurask; 411:Kurask; 14172:Kurask; 14173:Kurask,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+976,Defeat a Guard in Kandarin.,ambiguous,npc candidates: 397:Guard; 398:Guard; 399:Guard; 400:Guard; 995:Guard,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+977,Defeat an Ogre in Kandarin.,ambiguous,npc candidates: 136:Ogre; 1153:Ogre; 2095:Ogre; 2096:Ogre; 2233:Ogre,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+978,Defeat a Terrorbird in Kandarin.,ambiguous,npc candidates: 2064:Terrorbird; 2065:Terrorbird; 2066:Terrorbird,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+979,Defeat a Blue Dragon in Kandarin.,ambiguous,npc candidates: 265:Blue dragon; 266:Blue dragon; 267:Blue dragon; 268:Blue dragon; 269:Blue dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+980,Defeat a Black Demon in Kandarin.,ambiguous,npc candidates: 240:Black demon; 1432:Black demon; 2048:Black demon; 2049:Black demon; 2050:Black demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+981,Defeat a Fire Giant in Kandarin.,ambiguous,npc candidates: 2075:Fire giant; 2076:Fire giant; 2077:Fire giant; 2078:Fire giant; 2079:Fire giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+982,Defeat a Poison Spider in Kandarin.,ambiguous,npc candidates: 3023:Poison spider; 5373:Poison spider; 11990:Poison spider; 11999:Poison spider,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+983,Defeat a Wolf in Kandarin.,ambiguous,npc candidates: 106:Wolf; 110:Wolf; 116:Wolf; 117:Wolf; 231:Wolf,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1046,Defeat a Desert Lizard in the Desert.,ambiguous,npc candidates: 459:Desert Lizard; 460:Desert Lizard; 461:Desert Lizard; 12003:Desert Lizard,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1047,Defeat a Bandit in the Desert.,ambiguous,npc candidates: 690:Bandit; 691:Bandit; 692:Bandit; 693:Bandit; 694:Bandit,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1048,Defeat a Menaphite Thug in the Desert.,ambiguous,npc candidates: 3549:Menaphite Thug; 3550:Menaphite Thug,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1049,Defeat a Scarab Mage in the Desert.,ambiguous,npc candidates: 794:Scarab Mage; 799:Scarab Mage; 11508:Scarab Mage; 11510:Scarab Mage; 11511:Scarab Mage,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1050,Defeat a Dust Devil in the Desert.,ambiguous,npc candidates: 423:Dust devil; 7249:Dust devil; 11238:Dust devil,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1051,Defeat a Smoke Devil in the Desert.,ambiguous,npc candidates: 498:Smoke devil; 6639:Smoke Devil; 6655:Smoke Devil; 8482:Smoke Devil; 8483:Smoke Devil,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1052,Defeat a Kalphite Worker in the Desert.,ambiguous,npc candidates: 955:Kalphite Worker; 956:Kalphite Worker; 961:Kalphite Worker,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1053,Defeat a Kalphite Soldier in the Desert.,ambiguous,npc candidates: 138:Kalphite Soldier; 957:Kalphite Soldier; 958:Kalphite Soldier,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1054,Defeat a Kalphite Guardian in the Desert.,ambiguous,npc candidates: 959:Kalphite Guardian; 960:Kalphite Guardian; 962:Kalphite Guardian,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1055,Defeat a Crocodile in the Desert.,ambiguous,npc candidates: 4184:Crocodile; 11513:Crocodile; 11581:Crocodile; 11582:Crocodile; 11705:Crocodile,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1056,Defeat a Jackal in the Desert.,ready,npc:4185 Jackal spawned,LeagueTaskManager.onNpcKill,,
+1057,Defeat a Locust Rider in the Desert.,ambiguous,npc candidates: 795:Locust rider; 796:Locust rider; 800:Locust rider; 801:Locust rider,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1077,Defeat a Skeleton in the Desert.,ambiguous,npc candidates: 70:Skeleton; 71:Skeleton; 72:Skeleton; 73:Skeleton; 74:Skeleton,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1078,Defeat a Zombie in the Desert.,ambiguous,npc candidates: 26:Zombie; 27:Zombie; 28:Zombie; 29:Zombie; 30:Zombie,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1079,Defeat a Locust in the Desert.,ambiguous,npc candidates: 11584:Locust; 11585:Locust,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1114,Defeat a Ghoul in Morytania.,ready,npc:289 Ghoul spawned,LeagueTaskManager.onNpcKill,,
+1115,Defeat a Banshee in Morytania.,ready,npc:414 Banshee spawned,LeagueTaskManager.onNpcKill,,
+1116,Defeat a Bloodveld in Morytania.,ambiguous,npc candidates: 484:Bloodveld; 485:Bloodveld; 486:Bloodveld; 487:Bloodveld; 3138:Bloodveld,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1117,Defeat an Aberrant Spectre in Morytania.,ambiguous,npc candidates: 2:Aberrant spectre; 3:Aberrant spectre; 4:Aberrant spectre; 5:Aberrant spectre; 6:Aberrant spectre,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1118,Defeat a Gargoyle in Morytania.,ambiguous,npc candidates: 412:Gargoyle; 413:Gargoyle; 1543:Gargoyle,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1119,Defeat a Nechryael in Morytania.,ready,npc:8 Nechryael spawned,LeagueTaskManager.onNpcKill,,
+1120,Defeat an Abyssal Demon in Morytania.,ambiguous,npc candidates: 415:Abyssal demon; 416:Abyssal demon; 7241:Abyssal demon; 11239:Abyssal demon; 14174:Abyssal demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1121,Defeat a Cave Horror in Morytania.,ambiguous,npc candidates: 1047:Cave horror; 1048:Cave horror; 1049:Cave horror; 1050:Cave horror; 1051:Cave horror,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1122,Defeat a Werewolf in Morytania.,ambiguous,npc candidates: 2593:Werewolf; 2594:Werewolf; 2595:Werewolf; 2596:Werewolf; 2597:Werewolf,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1123,Defeat a Shade in Morytania.,ambiguous,npc candidates: 5633:Shade; 6740:Shade; 7258:Shade,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1124,Defeat a Loar Shade in Morytania.,missing_content,npc:1277 Loar Shade not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 1124 or change target
+1125,Defeat a Pyrefiend in Morytania.,ambiguous,npc candidates: 433:Pyrefiend; 434:Pyrefiend; 435:Pyrefiend; 436:Pyrefiend; 3139:Pyrefiend,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1126,Defeat a Jelly in Morytania.,ambiguous,npc candidates: 437:Jelly; 438:Jelly; 439:Jelly; 440:Jelly; 441:Jelly,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1127,Defeat a Basilisk in Morytania.,ambiguous,npc candidates: 417:Basilisk; 418:Basilisk; 9283:Basilisk; 9284:Basilisk; 9285:Basilisk,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1128,Defeat a Kurask in Morytania.,ambiguous,npc candidates: 410:Kurask; 411:Kurask; 14172:Kurask; 14173:Kurask,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1153,Defeat a Vampire in Morytania.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1154,Defeat a Vyrewatch Sentinel in Morytania.,ambiguous,npc candidates: 9599:Vyrewatch Sentinel; 9600:Vyrewatch Sentinel; 9601:Vyrewatch Sentinel; 9602:Vyrewatch Sentinel; 9603:Vyrewatch Sentinel,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1155,Defeat a Flesh Crawler in Morytania.,ambiguous,npc candidates: 2498:Flesh Crawler; 2499:Flesh Crawler; 2500:Flesh Crawler,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1156,Defeat a Giant Bat in Morytania.,ambiguous,npc candidates: 2834:Giant bat; 4504:Giant bat; 4562:Giant bat; 5791:Giant bat; 6824:Giant bat,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1197,Defeat a Moss Giant in Tirannwn.,ambiguous,npc candidates: 2090:Moss giant; 2091:Moss giant; 2092:Moss giant; 2093:Moss giant; 3851:Moss giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1198,Defeat a Shadow Warrior in Tirannwn.,ready,npc:2853 Shadow warrior spawned,LeagueTaskManager.onNpcKill,,
+1199,Defeat a Fire Giant in Tirannwn.,ambiguous,npc candidates: 2075:Fire giant; 2076:Fire giant; 2077:Fire giant; 2078:Fire giant; 2079:Fire giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1200,Defeat a Greater Demon in Tirannwn.,ambiguous,npc candidates: 2025:Greater demon; 2026:Greater demon; 2027:Greater demon; 2028:Greater demon; 2029:Greater demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1201,Defeat a Dark Beast in Tirannwn.,ready,npc:4005 Dark beast spawned,LeagueTaskManager.onNpcKill,,
+1202,Defeat an Elf Warrior in Tirannwn.,ready,npc:5293 Elf Warrior spawned,LeagueTaskManager.onNpcKill,,
+1203,Defeat a Death Spawn in Tirannwn.,missing_content,npc:10 Death spawn not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 1203 or change target
+1204,Defeat a Mourner in Tirannwn.,ambiguous,npc candidates: 8771:Mourner; 8844:Mourner; 8845:Mourner; 8846:Mourner; 8970:Mourner,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1205,Defeat a Kurask in Tirannwn.,ambiguous,npc candidates: 410:Kurask; 411:Kurask; 14172:Kurask; 14173:Kurask,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1226,Defeat a Rabbit in Tirannwn.,ambiguous,npc candidates: 1852:Rabbit; 1853:Rabbit; 3420:Rabbit; 3421:Rabbit; 3422:Rabbit,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1227,Defeat a Bear in Tirannwn.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1228,Defeat a Wolf in Tirannwn.,ambiguous,npc candidates: 106:Wolf; 110:Wolf; 116:Wolf; 117:Wolf; 231:Wolf,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1266,Defeat a Skeleton in the Wilderness.,ambiguous,npc candidates: 70:Skeleton; 71:Skeleton; 72:Skeleton; 73:Skeleton; 74:Skeleton,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1267,Defeat a Zombie in the Wilderness.,ambiguous,npc candidates: 26:Zombie; 27:Zombie; 28:Zombie; 29:Zombie; 30:Zombie,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1268,Defeat a Green Dragon in the Wilderness.,ambiguous,npc candidates: 260:Green dragon; 261:Green dragon; 262:Green dragon; 263:Green dragon; 264:Green dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1269,Defeat a Greater Demon in the Wilderness.,ambiguous,npc candidates: 2025:Greater demon; 2026:Greater demon; 2027:Greater demon; 2028:Greater demon; 2029:Greater demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1270,Defeat a Black Demon in the Wilderness.,ambiguous,npc candidates: 240:Black demon; 1432:Black demon; 2048:Black demon; 2049:Black demon; 2050:Black demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1271,Defeat a Hellhound in the Wilderness.,ambiguous,npc candidates: 104:Hellhound; 105:Hellhound; 135:Hellhound; 3133:Hellhound; 7256:Hellhound,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1272,Defeat an Ice Giant in the Wilderness.,ambiguous,npc candidates: 2085:Ice giant; 2086:Ice giant; 2087:Ice giant; 2088:Ice giant; 2089:Ice giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1273,Defeat an Ice Warrior in the Wilderness.,ambiguous,npc candidates: 2841:Ice warrior; 2842:Ice warrior; 2851:Ice warrior; 13802:Ice warrior,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1277,Defeat an Ankous in the Wilderness.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1278,Defeat a Mammoth in the Wilderness.,ready,npc:6604 Mammoth spawned,LeagueTaskManager.onNpcKill,,
+1279,Defeat a Bandit in the Wilderness.,ambiguous,npc candidates: 690:Bandit; 691:Bandit; 692:Bandit; 693:Bandit; 694:Bandit,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1280,Defeat a Chaos Dwarf in the Wilderness.,ready,npc:291 Chaos dwarf spawned,LeagueTaskManager.onNpcKill,,
+1281,Defeat a Lava Dragon in the Wilderness.,ambiguous,npc candidates: 6593:Lava dragon; 12607:Lava dragon; 12608:Lava dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1282,Defeat a Dark Warrior in the Wilderness.,ambiguous,npc candidates: 531:Dark warrior; 6606:Dark warrior; 11109:Dark warrior; 11110:Dark warrior; 11111:Dark warrior,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1283,Defeat a Rogue in the Wilderness.,ready,npc:526 Rogue spawned,LeagueTaskManager.onNpcKill,,
+1287,Defeat Vet’ion in the Wilderness.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1290,Defeat Artio in the Wilderness.,missing_content,npc:11992 Artio not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 1290 or change target
+1291,Defeat Calvar’ion in the Wilderness.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1292,Defeat Spindel in the Wilderness.,missing_content,npc:11998 Spindel not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 1292 or change target
+1360,Defeat a Sand Crab in Kourend.,ambiguous,npc candidates: 5935:Sand Crab; 7206:Sand Crab,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1361,Defeat a Lizardman in Kourend.,ambiguous,npc candidates: 6914:Lizardman; 6915:Lizardman; 6916:Lizardman; 6917:Lizardman; 8563:Lizardman,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1362,Defeat a Brutal Blue Dragon in Kourend.,ready,npc:7273 Brutal blue dragon spawned,LeagueTaskManager.onNpcKill,,
+1364,Defeat a Wyrm in Kourend.,ready,npc:8610 Wyrm spawned,LeagueTaskManager.onNpcKill,,
+1365,Defeat a Drake in Kourend.,ambiguous,npc candidates: 2004:Drake; 8612:Drake; 8613:Drake,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1366,Defeat a Hydra in Kourend.,ready,npc:8609 Hydra spawned,LeagueTaskManager.onNpcKill,,
+1367,Defeat a Dust Devil in Kourend.,ambiguous,npc candidates: 423:Dust devil; 7249:Dust devil; 11238:Dust devil,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1368,Defeat a Greater Demon in Kourend.,ambiguous,npc candidates: 2025:Greater demon; 2026:Greater demon; 2027:Greater demon; 2028:Greater demon; 2029:Greater demon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1369,Defeat a Fire Giant in Kourend.,ambiguous,npc candidates: 2075:Fire giant; 2076:Fire giant; 2077:Fire giant; 2078:Fire giant; 2079:Fire giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1370,Defeat a Hill Giant in Kourend.,ambiguous,npc candidates: 2098:Hill Giant; 2099:Hill Giant; 2100:Hill Giant; 2101:Hill Giant; 2102:Hill Giant,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1434,Defeat a Harpy in Varlamore.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1435,Defeat a Frost Nagua in Varlamore.,ambiguous,npc candidates: 13728:Frost Nagua; 13787:Frost Nagua; 13788:Frost Nagua,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1436,Defeat a Sulphur Nagua in Varlamore.,ambiguous,npc candidates: 12879:Sulphur Nagua; 13033:Sulphur Nagua,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1437,Defeat a Javelin Colossus in Varlamore.,missing_content,npc:12817 Javelin Colossus not-spawned,LeagueTaskManager.onNpcKill,npc not present in npc-spawns.json,Add NPC spawn for task 1437 or change target
+1438,Defeat a Minotaur in Varlamore.,ambiguous,npc candidates: 2481:Minotaur; 2482:Minotaur; 2483:Minotaur; 12812:Minotaur; 12813:Minotaur,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1439,Defeat a Snake in Varlamore.,ambiguous,npc candidates: 1037:Snake; 2845:Snake; 3544:Snake; 3545:Snake; 5244:Snake,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1440,Defeat a Jaguar Warrior in Varlamore.,ambiguous,npc candidates: 12810:Jaguar warrior; 13660:Jaguar warrior,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+1441,Defeat a Sulphur Lizard in Varlamore.,ready,npc:8614 Sulphur Lizard spawned,LeagueTaskManager.onNpcKill,,
+1442,Defeat a Colosseum Wave in Varlamore.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+1456,Defeat a Moonlight Creature in Varlamore.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling

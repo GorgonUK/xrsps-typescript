@@ -3,6 +3,8 @@ import { registerSerializer } from "threads";
 import WebFont from "webfontloader";
 
 import {
+    getLastUrl,
+    initServerConnection,
     sendHandshake,
     setAutoSendHandshake,
     subscribeHandshake,
@@ -16,7 +18,7 @@ import {
     removeCacheManifestEntry,
     writeCacheManifestEntry,
 } from "../util/CacheManifest";
-import { isIos, isStandaloneDisplayMode, isTouchDevice } from "../util/DeviceUtil";
+import { isIos, isMobileMode, isStandaloneDisplayMode, isTouchDevice } from "../util/DeviceUtil";
 import {
     describeStorageShortfall,
     ensurePersistentStorage,
@@ -24,6 +26,7 @@ import {
     hasEnoughStorage,
 } from "../util/StorageUtil";
 import { fetchCacheList, loadCacheFiles } from "./Caches";
+import { GameState } from "./login/GameState";
 import { GameContainer } from "./GameContainer";
 import { getAvailableRenderers } from "./GameRenderers";
 import { OsrsClient } from "./OsrsClient";
@@ -163,7 +166,7 @@ function OsrsClientApp() {
     // Two workers build maps in parallel — halves total grid load time.
     // Progressive rendering shows each map as it arrives, no main-thread freeze.
     const workerCount = useMemo(() => {
-        return 2;
+        return isTouchDevice ? 1 : 2;
     }, []);
 
     const workerPool = useMemo(
@@ -340,6 +343,25 @@ function OsrsClientApp() {
 
             // ========== Login Screen Flow ==========
             setAutoSendHandshake(false);
+            client.syncLoginServerUrl();
+            // Defer the websocket on handheld until after cache download — parallel connect +
+            // multi‑MB cache ingest was triggering iOS Safari OOM reload loops over LAN.
+            if (!isMobileMode) {
+                initServerConnection(getLastUrl());
+            } else {
+                window.setTimeout(() => {
+                    try {
+                        initServerConnection(getLastUrl());
+                    } catch {}
+                }, 1500);
+            }
+
+            let handshakeTimeout: ReturnType<typeof setTimeout> | undefined;
+            const clearHandshakeTimeout = () => {
+                if (!handshakeTimeout) return;
+                clearTimeout(handshakeTimeout);
+                handshakeTimeout = undefined;
+            };
 
             const unsubLogin = subscribeLoginResponse((response) => {
                 if (response.success) {
@@ -347,7 +369,14 @@ function OsrsClientApp() {
                     const username =
                         client.loginState?.username || response.displayName || "Player";
                     sendHandshake(username);
+                    clearHandshakeTimeout();
+                    handshakeTimeout = setTimeout(() => {
+                        handshakeTimeout = undefined;
+                        if (client.gameState !== GameState.CONNECTING) return;
+                        client.onLoginFailed("Connection timed out waiting for server handshake.");
+                    }, 20000);
                 } else {
+                    clearHandshakeTimeout();
                     console.log(
                         "[OsrsClientApp] Login failed:",
                         response.errorCode,
@@ -362,10 +391,11 @@ function OsrsClientApp() {
             });
 
             const unsubHandshake = subscribeHandshake((info) => {
+                clearHandshakeTimeout();
                 console.log("[OsrsClientApp] Handshake received, player logged in:", info.name);
                 client.onLoginSuccess();
             });
-            loginUnsubscribers.push(unsubLogin, unsubHandshake);
+            loginUnsubscribers.push(unsubLogin, unsubHandshake, clearHandshakeTimeout);
 
             try {
                 const fileNames = cache.files.getFileNames();

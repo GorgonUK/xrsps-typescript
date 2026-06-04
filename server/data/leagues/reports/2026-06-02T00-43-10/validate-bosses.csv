@@ -1,0 +1,46 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+580,Defeat a Skeletal Wyvern.,ready,npc:465 Skeletal Wyvern spawned,LeagueTaskManager.onNpcKill,,
+581,Defeat a Brutal Black Dragon.,ready,npc:7275 Brutal black dragon spawned,LeagueTaskManager.onNpcKill,,
+582,Defeat a Demonic Gorilla.,ready,npc:7144 Demonic gorilla spawned,LeagueTaskManager.onNpcKill,,
+583,Defeat a Revenant Knight.,ready,npc:7939 Revenant knight spawned,LeagueTaskManager.onNpcKill,,
+584,Defeat Crazy Archaeologist.,ready,npc:6618 Crazy archaeologist spawned,LeagueTaskManager.onNpcKill,,
+585,Defeat Chaos Fanatic.,ready,npc:6619 Chaos Fanatic spawned,LeagueTaskManager.onNpcKill,,
+586,Defeat Scorpia.,ready,npc:6615 Scorpia spawned,LeagueTaskManager.onNpcKill,,
+587,Defeat Chaos Elemental.,ready,npc:2054 Chaos Elemental spawned,LeagueTaskManager.onNpcKill,,
+588,Defeat King Black Dragon.,ambiguous,npc candidates: 239:King Black Dragon; 2642:King Black Dragon; 6502:King Black Dragon; 12440:King Black Dragon,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+589,Defeat Barrows Brothers.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+590,Defeat Giant Mole.,ready,npc:5779 Giant Mole spawned,LeagueTaskManager.onNpcKill,,
+591,Defeat Sarachnis.,ready,npc:8713 Sarachnis spawned,LeagueTaskManager.onNpcKill,,
+595,Defeat Kalphite Queen.,ready,npc:963 Kalphite Queen spawned,LeagueTaskManager.onNpcKill,,
+596,Defeat Zulrah.,ambiguous,npc candidates: 2042:Zulrah; 2043:Zulrah; 2044:Zulrah,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+597,Defeat Vorkath.,ready,npc:8058 Vorkath spawned,LeagueTaskManager.onNpcKill,,
+598,Defeat Phantom Muspah.,ready,npc:12079 Phantom Muspah spawned,LeagueTaskManager.onNpcKill,,
+600,Defeat Cerberus.,ready,npc:5863 Cerberus spawned,LeagueTaskManager.onNpcKill,,
+601,Defeat Kraken.,ambiguous,npc candidates: 494:Kraken; 6640:Kraken; 6656:Kraken,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+602,Defeat Thermonuclear Smoke Devil.,ready,npc:499 Thermonuclear smoke devil spawned,LeagueTaskManager.onNpcKill,,
+604,Defeat General Graardor.,ready,npc:2215 General Graardor spawned,LeagueTaskManager.onNpcKill,,
+605,Defeat Kree'arra.,ready,npc:3162 Kree'arra spawned,LeagueTaskManager.onNpcKill,,
+606,Defeat Commander Zilyana.,ready,npc:2205 Commander Zilyana spawned,LeagueTaskManager.onNpcKill,,
+608,Defeat Nex.,ambiguous,npc candidates: 11278:Nex; 11279:Nex; 11280:Nex; 11281:Nex; 11282:Nex,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+609,Defeat The Nightmare.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+610,Defeat Phosani's Nightmare.,ambiguous,npc candidates: 377:Phosani's Nightmare; 9416:Phosani's Nightmare; 9417:Phosani's Nightmare; 9418:Phosani's Nightmare; 9419:Phosani's Nightmare,LeagueTaskManager.onNpcKill,multiple NPC ids for name,Set explicit target_id(s) in tasks source
+639,Defeat Deranged Archaeologist.,ready,npc:7806 Deranged archaeologist spawned,LeagueTaskManager.onNpcKill,,
+640,Defeat Vet'ion.,ready,npc:6611 Vet'ion spawned,LeagueTaskManager.onNpcKill,,
+641,Defeat Callisto.,ready,npc:6609 Callisto spawned,LeagueTaskManager.onNpcKill,,
+642,Defeat Venenatis.,ready,npc:6610 Venenatis spawned,LeagueTaskManager.onNpcKill,,
+646,Defeat Duke Sucellus.,ready,npc:12191 Duke Sucellus spawned,LeagueTaskManager.onNpcKill,,
+647,Defeat The Leviathan.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+648,Defeat The Whisperer.,missing_content,,LeagueTaskManager.onNpcKill,npc not found in cache,Verify item/NPC name matches cache (r235) spelling
+649,Defeat Vardorvis.,ready,npc:12223 Vardorvis spawned,LeagueTaskManager.onNpcKill,,
+816,Defeat a Skeletal Wyvern in Asgarnian Ice Dungeon.,ready,npc:465 Skeletal Wyvern spawned,LeagueTaskManager.onNpcKill,,
+817,Defeat a Giant Mole.,ready,npc:5779 Giant Mole spawned,LeagueTaskManager.onNpcKill,,
+904,Defeat a Skeletal Wyvern in Fremennik.,ready,npc:465 Skeletal Wyvern spawned,LeagueTaskManager.onNpcKill,,
+1274,Defeat a Revenant Goblin in the Wilderness.,ready,npc:7931 Revenant goblin spawned,LeagueTaskManager.onNpcKill,,
+1275,Defeat a Revenant Knight in the Wilderness.,ready,npc:7939 Revenant knight spawned,LeagueTaskManager.onNpcKill,,
+1276,Defeat a Revenant Dragon in the Wilderness.,ready,npc:7940 Revenant dragon spawned,LeagueTaskManager.onNpcKill,,
+1284,Defeat a Chaos Fanatic in the Wilderness.,ready,npc:6619 Chaos Fanatic spawned,LeagueTaskManager.onNpcKill,,
+1285,Defeat Crazy Archaeologist in the Wilderness.,ready,npc:6618 Crazy archaeologist spawned,LeagueTaskManager.onNpcKill,,
+1286,Defeat Scorpia in the Wilderness.,ready,npc:6615 Scorpia spawned,LeagueTaskManager.onNpcKill,,
+1288,Defeat Callisto in the Wilderness.,ready,npc:6609 Callisto spawned,LeagueTaskManager.onNpcKill,,
+1289,Defeat Venenatis in the Wilderness.,ready,npc:6610 Venenatis spawned,LeagueTaskManager.onNpcKill,,
+1363,Defeat a Brutal Black Dragon in Kourend.,ready,npc:7275 Brutal black dragon spawned,LeagueTaskManager.onNpcKill,,

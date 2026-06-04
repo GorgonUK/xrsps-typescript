@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-06-02T10:59:43.376Z",
+  "description": "Phase 7A-2 Slice 2 alternate candidate audit trail.",
+  "entries": [
+    {
+      "sourceTaskId": 1503,
+      "taskName": "Equip Primordial Boots.",
+      "chosenItemId": 13239,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        13239,
+        13240,
+        14027
+      ]
+    },
+    {
+      "sourceTaskId": 1504,
+      "taskName": "Equip Pegasian Boots.",
+      "chosenItemId": 13237,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        13237,
+        13238,
+        14026
+      ]
+    },
+    {
+      "sourceTaskId": 1505,
+      "taskName": "Equip Eternal Boots.",
+      "chosenItemId": 13235,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        13235,
+        13236,
+        14025,
+        23644,
+        23645
+      ]
+    },
+    {
+      "sourceTaskId": 1579,
+      "taskName": "Equip a Necklace of Anguish.",
+      "chosenItemId": 19547,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        19547,
+        19548,
+        19549,
+        27172
+      ]
+    },
+    {
+      "sourceTaskId": 1580,
+      "taskName": "Equip a Tormented Bracelet.",
+      "chosenItemId": 19544,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        19544,
+        19545,
+        19546,
+        27171
+      ]
+    },
+    {
+      "sourceTaskId": 1581,
+      "taskName": "Equip a Ring of Suffering.",
+      "chosenItemId": 19550,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        19550,
+        19551,
+        19552
+      ]
+    },
+    {
+      "sourceTaskId": 1589,
+      "taskName": "Equip a Crystal Helm.",
+      "chosenItemId": 23971,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        23971,
+        23972,
+        27705,
+        27706,
+        27717
+      ]
+    },
+    {
+      "sourceTaskId": 1590,
+      "taskName": "Equip Crystal Legs.",
+      "chosenItemId": 23979,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        23979,
+        23980,
+        27701,
+        27702,
+        27713
+      ]
+    },
+    {
+      "sourceTaskId": 1591,
+      "taskName": "Equip a Crystal Body.",
+      "chosenItemId": 23975,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        23975,
+        23976,
+        27697,
+        27698,
+        27709
+      ]
+    },
+    {
+      "sourceTaskId": 1596,
+      "taskName": "Equip a Kodai Wand.",
+      "chosenItemId": 21006,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        21006,
+        21007,
+        21008,
+        23626,
+        23627
+      ]
+    }
+  ]
+}

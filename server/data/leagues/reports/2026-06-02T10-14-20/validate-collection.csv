@@ -1,0 +1,344 @@
+task_id,task_name,status,matched_content,matched_hook,missing_requirement,suggested_fix
+103,Wear a piece of Lumberjack,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""piece of Lumberjack"")",Verify item/NPC name matches cache (r235) spelling
+321,Equip a Slayer Helmet.,ready,item_equip:11864 Slayer helmet league-allowlist,LeagueTaskManager.onItemEquip,,
+478,Equip a Shortbow.,ambiguous,item candidates: 841:Shortbow; 842:Shortbow; 14559:Shortbow,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+479,Equip a Longbow.,ambiguous,item candidates: 839:Longbow; 840:Longbow; 14558:Longbow,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+480,Equip a Crossbow.,ambiguous,item candidates: 837:Crossbow; 838:Crossbow; 14500:Crossbow,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+481,Equip Throwing Knives,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Throwing Knives"")",Verify item/NPC name matches cache (r235) spelling
+488,Equip Green Dragonhide Armor.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Green Dragonhide Armor"")",Verify item/NPC name matches cache (r235) spelling
+489,Equip Blue Dragonhide Armor.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blue Dragonhide Armor"")",Verify item/NPC name matches cache (r235) spelling
+490,Equip Red Dragonhide Armor.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Red Dragonhide Armor"")",Verify item/NPC name matches cache (r235) spelling
+491,Equip Black Dragonhide Armor.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Black Dragonhide Armor"")",Verify item/NPC name matches cache (r235) spelling
+499,Equip a Bronze weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Bronze weapon"")",Verify item/NPC name matches cache (r235) spelling
+500,Equip an Iron weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Iron weapon"")",Verify item/NPC name matches cache (r235) spelling
+501,Equip a Steel weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Steel weapon"")",Verify item/NPC name matches cache (r235) spelling
+502,Equip a Mithril weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Mithril weapon"")",Verify item/NPC name matches cache (r235) spelling
+503,Equip an Adamant weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Adamant weapon"")",Verify item/NPC name matches cache (r235) spelling
+504,Equip a Rune weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Rune weapon"")",Verify item/NPC name matches cache (r235) spelling
+505,Equip a Dragon Weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dragon Weapon"")",Verify item/NPC name matches cache (r235) spelling
+506,Equip a Godsword.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Godsword"")",Verify item/NPC name matches cache (r235) spelling
+519,Obtain a Clue Scroll.,ambiguous,item candidates: 713:Clue scroll; 23814:Clue scroll; 23815:Clue scroll; 23816:Clue scroll; 23817:Clue scroll,LeagueTaskManager.onItemObtain,multiple item ids for name,Set explicit target_id(s) in tasks source
+520,Complete an Easy Clue Scroll.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+521,Complete a Medium Clue Scroll.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+522,Complete a Hard Clue Scroll.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+523,Complete an Elite Clue Scroll.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+524,Obtain a Pet Drop.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Pet Drop"")",Verify item/NPC name matches cache (r235) spelling
+525,Fill a Collection Log Slot.,ready,milestone:slot minSlots:1,LeagueTaskManager.onCollectionLogEvent,,
+526,Fill 10 Collection Log Slots.,ready,milestone:slot minSlots:10,LeagueTaskManager.onCollectionLogEvent,,
+527,Fill 25 Collection Log Slots.,ready,milestone:slot minSlots:25,LeagueTaskManager.onCollectionLogEvent,,
+528,Fill 50 Collection Log Slots.,ready,milestone:slot minSlots:50,LeagueTaskManager.onCollectionLogEvent,,
+529,Fill 100 Collection Log Slots.,ready,milestone:slot minSlots:100,LeagueTaskManager.onCollectionLogEvent,,
+530,Obtain a Rare Clue Reward.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Rare Clue Reward"")",Verify item/NPC name matches cache (r235) spelling
+531,Obtain an Ornament Kit,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Ornament Kit"")",Verify item/NPC name matches cache (r235) spelling
+532,Obtain a Raid Unique.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Raid Unique"")",Verify item/NPC name matches cache (r235) spelling
+533,Obtain a Mega Rare Raid Unique.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Mega Rare Raid Unique"")",Verify item/NPC name matches cache (r235) spelling
+534,Obtain a Skilling Outfit Piece.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Skilling Outfit Piece"")",Verify item/NPC name matches cache (r235) spelling
+536,Obtain a Barrows piece,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Barrows piece"")",Verify item/NPC name matches cache (r235) spelling
+537,Obtain a Full Barrows Set.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Full Barrows Set"")",Verify item/NPC name matches cache (r235) spelling
+538,Obtain a Rare Boss Pet.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Rare Boss Pet"")",Verify item/NPC name matches cache (r235) spelling
+539,Obtain a Rare Skilling Pet.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Rare Skilling Pet"")",Verify item/NPC name matches cache (r235) spelling
+540,Obtain a Unique Drop Worth Over 1 Million Coins.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Drop Worth Over 1 Million Coins"")",Verify item/NPC name matches cache (r235) spelling
+541,Obtain a Unique Drop Worth Over 10 Million Coins.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Drop Worth Over 10 Million Coins"")",Verify item/NPC name matches cache (r235) spelling
+542,Complete a Boss Collection Log Page.,ready,milestone:page tabIndex:0,LeagueTaskManager.onCollectionLogEvent,,
+543,Complete a Raid Collection Log Page.,ready,milestone:page tabIndex:1,LeagueTaskManager.onCollectionLogEvent,,
+544,Complete a Clue Collection Log Page.,ready,milestone:page tabIndex:2,LeagueTaskManager.onCollectionLogEvent,,
+545,Complete a Minigame Collection Log Page.,ready,milestone:page tabIndex:3,LeagueTaskManager.onCollectionLogEvent,,
+546,Complete a Slayer Collection Log Page.,ready,milestone:page structId:527,LeagueTaskManager.onCollectionLogEvent,,
+547,Complete a Skilling Collection Log Page.,need_hook,collection log page,(unwired) collection log add,collection log page completion not wired,Hook collection log milestone or script_manual
+548,Obtain 5 Unique Boss Drops.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Boss Drops"")",Verify item/NPC name matches cache (r235) spelling
+549,Obtain 10 Unique Boss Drops.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Boss Drops"")",Verify item/NPC name matches cache (r235) spelling
+550,Obtain 25 Unique Boss Drops.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Boss Drops"")",Verify item/NPC name matches cache (r235) spelling
+551,Obtain 5 Unique Clue Rewards.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Clue Rewards"")",Verify item/NPC name matches cache (r235) spelling
+552,Obtain 25 Unique Clue Rewards.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Clue Rewards"")",Verify item/NPC name matches cache (r235) spelling
+553,Obtain 100 Unique Clue Rewards.,missing_content,,LeagueTaskManager.onItemObtain,"item not found in cache (""Unique Clue Rewards"")",Verify item/NPC name matches cache (r235) spelling
+699,Obtain a Giant Key.,ready,item_obtain:20754 Giant key collection-log,LeagueTaskManager.onItemObtain,,
+700,Obtain a Mossy Key.,ready,item_obtain:22374 Mossy key collection-log,LeagueTaskManager.onItemObtain,,
+705,Complete a Beginner Clue Scroll in Misthalin.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+706,Complete an Easy Clue Scroll in Misthalin.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+707,Complete a Hard Clue Scroll in Misthalin.,need_hook,,,could not parse collection task target,Add explicit trigger with item ids
+1480,Equip a Hill Giant Club.,ready,item_equip:20756 Hill giant club collection-log,LeagueTaskManager.onItemEquip,,
+1481,Equip Bryophyta’s Staff.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Bryophyta’s Staff"")",Verify item/NPC name matches cache (r235) spelling
+1482,Equip a Dragon Pickaxe.,ready,item_equip:11920 Dragon pickaxe collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1483,Equip a Tyrannical Ring.,ready,item_equip:12603 Tyrannical ring collection-log,LeagueTaskManager.onItemEquip,,
+1484,Equip a Treasonous Ring.,ready,item_equip:12605 Treasonous ring collection-log,LeagueTaskManager.onItemEquip,,
+1485,Equip a Ring of the Gods.,ready,item_equip:12601 Ring of the gods collection-log,LeagueTaskManager.onItemEquip,,
+1486,Equip Craw’s Bow.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Craw’s Bow"")",Verify item/NPC name matches cache (r235) spelling
+1487,Equip Viggora’s Chainmace.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Viggora’s Chainmace"")",Verify item/NPC name matches cache (r235) spelling
+1488,Equip Thammaron’s Sceptre.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Thammaron’s Sceptre"")",Verify item/NPC name matches cache (r235) spelling
+1489,Equip an Amulet of Avarice.,ready,item_equip:22557 Amulet of avarice collection-log,LeagueTaskManager.onItemEquip,,
+1490,Equip a Revenant Weapon Upgrade.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Revenant Weapon Upgrade"")",Verify item/NPC name matches cache (r235) spelling
+1491,Equip a Saradomin Sword.,ready,item_equip:11838 Saradomin sword collection-log,LeagueTaskManager.onItemEquip,,
+1492,Equip a Zamorakian Spear.,ready,item_equip:11824 Zamorakian spear collection-log,LeagueTaskManager.onItemEquip,,
+1493,Equip an Armadyl Crossbow.,ready,item_equip:11785 Armadyl crossbow collection-log,LeagueTaskManager.onItemEquip,,
+1494,Equip Bandos Tassets.,ready,item_equip:11834 Bandos tassets collection-log,LeagueTaskManager.onItemEquip,,
+1495,Equip Bandos Chestplate.,ready,item_equip:11832 Bandos chestplate collection-log,LeagueTaskManager.onItemEquip,,
+1496,Equip an Armadyl Chestplate.,ready,item_equip:11828 Armadyl chestplate collection-log,LeagueTaskManager.onItemEquip,,
+1497,Equip Armadyl Chainskirt.,ready,item_equip:11830 Armadyl chainskirt collection-log,LeagueTaskManager.onItemEquip,,
+1498,Equip a Saradomin Godsword.,ambiguous,item candidates: 11806:Saradomin godsword; 11807:Saradomin godsword; 18344:Saradomin godsword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1499,Equip a Zamorak Godsword.,ambiguous,item candidates: 11808:Zamorak godsword; 11809:Zamorak godsword; 18345:Zamorak godsword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1500,Equip an Armadyl Godsword.,ambiguous,item candidates: 11802:Armadyl godsword; 11803:Armadyl godsword; 18342:Armadyl godsword; 20593:Armadyl godsword; 22665:Armadyl godsword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1501,Equip a Bandos Godsword.,ambiguous,item candidates: 11804:Bandos godsword; 11805:Bandos godsword; 18343:Bandos godsword; 20782:Bandos godsword; 21060:Bandos godsword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1502,Equip Dragon Boots.,ready,item_equip:11840 Dragon boots collection-log,LeagueTaskManager.onItemEquip,,
+1503,Equip Primordial Boots.,ambiguous,item candidates: 13239:Primordial boots; 13240:Primordial boots; 14027:Primordial boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1504,Equip Pegasian Boots.,ambiguous,item candidates: 13237:Pegasian boots; 13238:Pegasian boots; 14026:Pegasian boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1505,Equip Eternal Boots.,ambiguous,item candidates: 13235:Eternal boots; 13236:Eternal boots; 14025:Eternal boots; 23644:Eternal boots; 23645:Eternal boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1506,Equip a Granite Ring.,ready,item_equip:21739 Granite ring collection-log,LeagueTaskManager.onItemEquip,,
+1507,Equip a Granite Hammer.,ready,item_equip:21742 Granite hammer collection-log,LeagueTaskManager.onItemEquip,,
+1508,Equip a Black Tourmaline Core.,ready,item_equip:21730 Black tourmaline core collection-log,LeagueTaskManager.onItemEquip,,
+1509,Equip a Berserker Ring.,ready,item_equip:6737 Berserker ring collection-log,LeagueTaskManager.onItemEquip,,
+1510,Equip an Archer Ring.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Archer Ring"")",Verify item/NPC name matches cache (r235) spelling
+1511,Equip a Seers Ring.,ready,item_equip:6731 Seers ring collection-log,LeagueTaskManager.onItemEquip,,
+1512,Equip a Warrior Ring.,ready,item_equip:6735 Warrior ring collection-log,LeagueTaskManager.onItemEquip,,
+1513,Equip a Dragon Axe.,ready,item_equip:6739 Dragon axe collection-log,LeagueTaskManager.onItemEquip,,
+1514,Equip a Mud Battlestaff.,ready,item_equip:6562 Mud battlestaff collection-log,LeagueTaskManager.onItemEquip,,
+1515,Equip a Leaf-Bladed Battleaxe.,ready,item_equip:20727 Leaf-bladed battleaxe collection-log,LeagueTaskManager.onItemEquip,,
+1516,Equip Fremennik Blade Armor.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Fremennik Blade Armor"")",Verify item/NPC name matches cache (r235) spelling
+1517,Equip a Helm of Neitiznot.,ambiguous,item candidates: 10828:Helm of neitiznot; 10843:Helm of neitiznot; 17668:Helm of neitiznot; 23591:Helm of neitiznot; 23592:Helm of neitiznot,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1518,Equip a Basilisk Jaw.,ready,item_equip:24268 Basilisk jaw collection-log,LeagueTaskManager.onItemEquip,,
+1519,Equip a Dragonbone Necklace.,ready,item_equip:22111 Dragonbone necklace collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1520,Equip Vorkath’s Head.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Vorkath’s Head"")",Verify item/NPC name matches cache (r235) spelling
+1521,Equip a Skeletal Visage.,ready,item_equip:22006 Skeletal visage collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1522,Equip a Draconic Visage.,ready,item_equip:11286 Draconic visage collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1523,Equip a Jar of Decay.,ready,item_equip:22106 Jar of decay collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1524,Equip an Abyssal Whip.,ready,item_equip:4151 Abyssal whip collection-log,LeagueTaskManager.onItemEquip,,
+1525,Equip an Abyssal Dagger.,ready,item_equip:13265 Abyssal dagger collection-log,LeagueTaskManager.onItemEquip,,
+1526,Equip an Abyssal Bludgeon.,ambiguous,item candidates: 13263:Abyssal bludgeon; 13264:Abyssal bludgeon; 18628:Abyssal bludgeon,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1527,Equip Granite Gloves.,ready,item_equip:21736 Granite gloves collection-log,LeagueTaskManager.onItemEquip,,
+1528,Equip a Black Mask.,ambiguous,item candidates: 8921:Black mask; 8922:Black mask; 18758:Black mask,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1529,Equip an Occult Necklace.,ready,item_equip:12002 Occult necklace collection-log,LeagueTaskManager.onItemEquip,,
+1530,Equip a Trident of the Seas.,missing_content,item_equip:11907 Trident of the seas,LeagueTaskManager.onItemEquip,no known obtain path (drop/collection-log/allowlist),"Add drop table, shop, craft recipe, or obtain-allowlist entry"
+1531,Equip a Trident of the Swamp.,ready,item_equip:12899 Trident of the swamp league-allowlist,LeagueTaskManager.onItemEquip,,
+1532,Equip an Abyssal Tentacle.,ready,item_equip:12006 Abyssal tentacle league-allowlist,LeagueTaskManager.onItemEquip,,
+1533,Equip a Kraken Tentacle.,ready,item_equip:12004 Kraken tentacle collection-log manual-drop,LeagueTaskManager.onItemEquip,,
+1534,Equip a Granite Maul Ornament Kit.,ambiguous,item candidates: 4153:Granite maul; 4154:Granite maul; 12848:Granite maul; 14033:Granite maul; 14034:Granite maul,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1535,Equip Dharok’s Greataxe.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dharok’s Greataxe"")",Verify item/NPC name matches cache (r235) spelling
+1536,Equip Guthan’s Warspear.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Guthan’s Warspear"")",Verify item/NPC name matches cache (r235) spelling
+1537,Equip Karil’s Crossbow.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Karil’s Crossbow"")",Verify item/NPC name matches cache (r235) spelling
+1538,Equip Ahrim’s Staff.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ahrim’s Staff"")",Verify item/NPC name matches cache (r235) spelling
+1539,Equip Torag’s Hammers.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Torag’s Hammers"")",Verify item/NPC name matches cache (r235) spelling
+1540,Equip Verac’s Flail.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Verac’s Flail"")",Verify item/NPC name matches cache (r235) spelling
+1541,Equip Justiciar Faceguard.,ready,item_equip:22326 Justiciar faceguard collection-log,LeagueTaskManager.onItemEquip,,
+1542,Equip a Scythe of Vitur.,ready,item_equip:22325 Scythe of vitur league-allowlist,LeagueTaskManager.onItemEquip,,
+1543,Equip a Sanguinesti Staff.,ready,item_equip:22323 Sanguinesti staff league-allowlist,LeagueTaskManager.onItemEquip,,
+1544,Equip Ghrazi Rapier.,ready,item_equip:22324 Ghrazi rapier collection-log,LeagueTaskManager.onItemEquip,,
+1545,Equip Avernic Defender Hilt.,ready,item_equip:22477 Avernic defender hilt collection-log,LeagueTaskManager.onItemEquip,,
+1546,Equip a Nightmare Staff.,ready,item_equip:24422 Nightmare staff collection-log,LeagueTaskManager.onItemEquip,,
+1547,Equip an Inquisitor’s Mace.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Inquisitor’s Mace"")",Verify item/NPC name matches cache (r235) spelling
+1548,Equip Inquisitor’s Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Inquisitor’s Armour"")",Verify item/NPC name matches cache (r235) spelling
+1549,Equip a Harmonised Orb Weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Harmonised Orb Weapon"")",Verify item/NPC name matches cache (r235) spelling
+1550,Equip an Ancient Staff.,ambiguous,item candidates: 4675:Ancient staff; 4676:Ancient staff; 16476:Ancient staff; 20431:Ancient staff,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1551,Equip a Dragon Chainbody.,ambiguous,item candidates: 2513:Dragon chainbody; 3140:Dragon chainbody; 3141:Dragon chainbody; 14099:Dragon chainbody; 20428:Dragon chainbody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1552,Equip a Keris Partisan.,ready,item_equip:25979 Keris partisan league-allowlist,LeagueTaskManager.onItemEquip,,
+1553,Equip Osmumten’s Fang.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Osmumten’s Fang"")",Verify item/NPC name matches cache (r235) spelling
+1554,Equip Elidinis’ Ward.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Elidinis’ Ward"")",Verify item/NPC name matches cache (r235) spelling
+1555,Equip Masori Body Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Masori Body Armour"")",Verify item/NPC name matches cache (r235) spelling
+1556,Equip Tumeken’s Shadow.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Tumeken’s Shadow"")",Verify item/NPC name matches cache (r235) spelling
+1557,Equip a Lightbearer.,ready,item_equip:25975 Lightbearer collection-log,LeagueTaskManager.onItemEquip,,
+1558,Equip a Dragon 2h Sword.,ambiguous,item candidates: 7158:Dragon 2h sword; 7407:Dragon 2h sword; 15285:Dragon 2h sword; 20559:Dragon 2h sword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1559,Equip a Dragon Chainbody Ornament Kit.,ambiguous,item candidates: 12534:Dragon chainbody ornament kit; 12535:Dragon chainbody ornament kit; 16002:Dragon chainbody ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1560,Equip a Pharaoh’s Sceptre.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Pharaoh’s Sceptre"")",Verify item/NPC name matches cache (r235) spelling
+1561,Equip Infinity Boots.,ambiguous,item candidates: 6920:Infinity boots; 6921:Infinity boots; 18601:Infinity boots; 27170:Infinity boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1562,Equip Infinity Robes.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Infinity Robes"")",Verify item/NPC name matches cache (r235) spelling
+1563,Equip Mage’s Book.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Mage’s Book"")",Verify item/NPC name matches cache (r235) spelling
+1564,Equip a Dragon Warhammer.,ready,item_equip:13576 Dragon warhammer collection-log,LeagueTaskManager.onItemEquip,,
+1565,Equip Ranger Boots.,ambiguous,item candidates: 2577:Ranger boots; 2578:Ranger boots; 15756:Ranger boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1566,Equip Robin Hood Hat.,ambiguous,item candidates: 2581:Robin hood hat; 2582:Robin hood hat; 15758:Robin hood hat,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1567,Equip a Seercull.,ambiguous,item candidates: 6724:Seercull; 6725:Seercull; 14571:Seercull,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1568,Equip Granite Legs.,ambiguous,item candidates: 6809:Granite legs; 6813:Granite legs; 14091:Granite legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1569,Equip Granite Boots.,ready,item_equip:21643 Granite boots collection-log,LeagueTaskManager.onItemEquip,,
+1570,Equip Granite Shield.,ambiguous,item candidates: 3122:Granite shield; 3134:Granite shield; 14130:Granite shield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1571,Equip a Mystic Hat (Dark).,ambiguous,item candidates: 4099:Mystic hat (dark); 4100:Mystic hat (dark); 14158:Mystic hat (dark),LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1572,Equip a Dragon Full Helmet.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dragon Full Helmet"")",Verify item/NPC name matches cache (r235) spelling
+1573,Equip a Dragon Platelegs.,ambiguous,item candidates: 4087:Dragon platelegs; 4088:Dragon platelegs; 4180:Dragon platelegs; 14175:Dragon platelegs; 20429:Dragon platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1574,Equip a Dragon Plateskirt.,ambiguous,item candidates: 4585:Dragon plateskirt; 4586:Dragon plateskirt; 14183:Dragon plateskirt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1575,Equip a Heavy Ballista.,ambiguous,item candidates: 19481:Heavy ballista; 19482:Heavy ballista; 19483:Heavy ballista; 23630:Heavy ballista; 23631:Heavy ballista,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1576,Equip a Light Ballista.,ambiguous,item candidates: 19478:Light ballista; 19479:Light ballista; 19480:Light ballista; 27188:Light ballista,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1577,Equip Zenyte Jewellery.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Zenyte Jewellery"")",Verify item/NPC name matches cache (r235) spelling
+1578,Equip a Torture Amulet.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Torture Amulet"")",Verify item/NPC name matches cache (r235) spelling
+1579,Equip a Necklace of Anguish.,ambiguous,item candidates: 19547:Necklace of anguish; 19548:Necklace of anguish; 19549:Necklace of anguish; 27172:Necklace of anguish,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1580,Equip a Tormented Bracelet.,ambiguous,item candidates: 19544:Tormented bracelet; 19545:Tormented bracelet; 19546:Tormented bracelet; 27171:Tormented bracelet,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1581,Equip a Ring of Suffering.,ambiguous,item candidates: 19550:Ring of suffering; 19551:Ring of suffering; 19552:Ring of suffering,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1582,Equip a Dragon Scimitar Ornament Kit.,ambiguous,item candidates: 20002:Dragon scimitar ornament kit; 20003:Dragon scimitar ornament kit; 20004:Dragon scimitar ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1583,Equip a Crystal Bow.,ambiguous,item candidates: 23983:Crystal bow; 23984:Crystal bow; 24123:Crystal bow; 24124:Crystal bow,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1584,Equip a Crystal Shield.,ambiguous,item candidates: 23991:Crystal shield; 23992:Crystal shield; 24127:Crystal shield; 24128:Crystal shield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1585,Equip Crystal Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Crystal Armour"")",Verify item/NPC name matches cache (r235) spelling
+1586,Equip a Blade of Saeldor.,ready,item_equip:23995 Blade of saeldor league-allowlist,LeagueTaskManager.onItemEquip,,
+1587,Equip a Bow of Faerdhinen.,ready,item_equip:25865 Bow of faerdhinen league-allowlist,LeagueTaskManager.onItemEquip,,
+1588,Equip a Crystal Tool Seed Item.,ready,item_equip:23953 Crystal tool seed collection-log,LeagueTaskManager.onItemEquip,,
+1589,Equip a Crystal Helm.,ambiguous,item candidates: 23971:Crystal helm; 23972:Crystal helm; 27705:Crystal helm; 27706:Crystal helm; 27717:Crystal helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1590,Equip Crystal Legs.,ambiguous,item candidates: 23979:Crystal legs; 23980:Crystal legs; 27701:Crystal legs; 27702:Crystal legs; 27713:Crystal legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1591,Equip a Crystal Body.,ambiguous,item candidates: 23975:Crystal body; 23976:Crystal body; 27697:Crystal body; 27698:Crystal body; 27709:Crystal body,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1592,Equip Dragon Claws.,ambiguous,item candidates: 13652:Dragon claws; 15597:Dragon claws; 20784:Dragon claws; 20848:Dragon claws,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1593,Equip Dinh’s Bulwark.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dinh’s Bulwark"")",Verify item/NPC name matches cache (r235) spelling
+1594,Equip Ancestral Robes.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ancestral Robes"")",Verify item/NPC name matches cache (r235) spelling
+1595,Equip a Twisted Bow.,ready,item_equip:20997 Twisted bow collection-log,LeagueTaskManager.onItemEquip,,
+1596,Equip a Kodai Wand.,ambiguous,item candidates: 21006:Kodai wand; 21007:Kodai wand; 21008:Kodai wand; 23626:Kodai wand; 23627:Kodai wand,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1597,Equip a Dragon Hunter Crossbow.,ready,item_equip:21012 Dragon hunter crossbow collection-log,LeagueTaskManager.onItemEquip,,
+1598,Equip Dragon Hunter Lance.,ready,item_equip:22978 Dragon hunter lance league-allowlist,LeagueTaskManager.onItemEquip,,
+1599,Equip a Brimstone Ring.,ready,item_equip:22975 Brimstone ring league-allowlist,LeagueTaskManager.onItemEquip,,
+1600,Equip Brimstone Boots.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Brimstone Boots"")",Verify item/NPC name matches cache (r235) spelling
+1601,Equip a Hydra Leather Item.,ready,item_equip:22983 Hydra leather collection-log,LeagueTaskManager.onItemEquip,,
+1602,Equip Ferocious Gloves.,ready,item_equip:22981 Ferocious gloves league-allowlist,LeagueTaskManager.onItemEquip,,
+1603,Equip a Tome of Fire.,ready,item_equip:20714 Tome of fire league-allowlist,LeagueTaskManager.onItemEquip,,
+1604,Equip a Tome of Water.,ready,item_equip:25574 Tome of water league-allowlist,LeagueTaskManager.onItemEquip,,
+1605,Equip a Dusk Mystic Set Piece.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dusk Mystic Set Piece"")",Verify item/NPC name matches cache (r235) spelling
+1606,Equip a Xerician Robe Top.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Xerician Robe Top"")",Verify item/NPC name matches cache (r235) spelling
+1607,Equip a Xerician Robe Bottom.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Xerician Robe Bottom"")",Verify item/NPC name matches cache (r235) spelling
+1608,Equip a Xerician Hat.,ambiguous,item candidates: 13385:Xerician hat; 13386:Xerician hat; 18461:Xerician hat,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1609,Equip a Dark Totem Piece Reward.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dark Totem Piece Reward"")",Verify item/NPC name matches cache (r235) spelling
+1610,Equip an Ancient Shard Charged Weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ancient Shard Charged Weapon"")",Verify item/NPC name matches cache (r235) spelling
+1611,Equip a Konar Slayer Helmet Variant.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Konar Slayer Helmet Variant"")",Verify item/NPC name matches cache (r235) spelling
+1612,Equip Sunfire Fanatic Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Sunfire Fanatic Armour"")",Verify item/NPC name matches cache (r235) spelling
+1613,Equip Dual Macuahuitl.,ambiguous,item candidates: 28997:Dual macuahuitl; 28998:Dual macuahuitl; 28999:Dual macuahuitl; 29850:Dual macuahuitl,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1614,Equip Blood Moon Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blood Moon Armour"")",Verify item/NPC name matches cache (r235) spelling
+1615,Equip Blue Moon Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blue Moon Armour"")",Verify item/NPC name matches cache (r235) spelling
+1616,Equip Eclipse Moon Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Eclipse Moon Armour"")",Verify item/NPC name matches cache (r235) spelling
+1617,Equip a Sunfire Crossbow.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Sunfire Crossbow"")",Verify item/NPC name matches cache (r235) spelling
+1618,Equip a Colossal Blade.,ready,item_equip:27021 Colossal blade collection-log,LeagueTaskManager.onItemEquip,,
+1619,Equip a Dizana’s Quiver.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dizana’s Quiver"")",Verify item/NPC name matches cache (r235) spelling
+1620,Equip a Tonalztics of Ralos.,ready,item_equip:28922 Tonalztics of ralos league-allowlist,LeagueTaskManager.onItemEquip,,
+1621,Equip a Glacial Temotli.,ready,item_equip:29889 Glacial temotli collection-log,LeagueTaskManager.onItemEquip,,
+1622,Equip an Obsidian Cape.,ambiguous,item candidates: 6568:Obsidian cape; 6569:Obsidian cape; 18243:Obsidian cape,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1623,Equip an Obsidian Shield.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Obsidian Shield"")",Verify item/NPC name matches cache (r235) spelling
+1624,Equip an Obsidian Maul.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Obsidian Maul"")",Verify item/NPC name matches cache (r235) spelling
+1625,Equip Toktz-xil-ak.,ambiguous,item candidates: 6523:Toktz-xil-ak; 6535:Toktz-xil-ak; 18254:Toktz-xil-ak; 20554:Toktz-xil-ak,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1626,Equip Toktz-ket-xil.,ambiguous,item candidates: 6524:Toktz-ket-xil; 6536:Toktz-ket-xil; 18255:Toktz-ket-xil,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1627,Equip a Fire Cape.,ambiguous,item candidates: 6570:Fire cape; 10566:Fire cape; 18244:Fire cape,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1628,Equip Infernal Cape.,ambiguous,item candidates: 21295:Infernal cape; 21296:Infernal cape; 21297:Infernal cape; 23622:Infernal cape; 23623:Infernal cape,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1629,Equip a Dragon Harpoon.,ready,item_equip:21028 Dragon harpoon collection-log,LeagueTaskManager.onItemEquip,,
+1630,Equip a Toktz-mej-tal.,ambiguous,item candidates: 6526:Toktz-mej-tal; 6538:Toktz-mej-tal; 18257:Toktz-mej-tal,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1631,Equip an Obsidian Armour Piece.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Obsidian Armour Piece"")",Verify item/NPC name matches cache (r235) spelling
+1632,Equip a Twisted Ornament Kit Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Twisted Ornament Kit"")",Verify item/NPC name matches cache (r235) spelling
+1633,Equip a Trailblazer Ornament Kit Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Trailblazer Ornament Kit"")",Verify item/NPC name matches cache (r235) spelling
+1634,Equip a Third Age Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Third Age"")",Verify item/NPC name matches cache (r235) spelling
+1635,Equip a Gilded Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Gilded"")",Verify item/NPC name matches cache (r235) spelling
+1636,Equip Ranger Gloves.,ambiguous,item candidates: 19994:Ranger gloves; 19995:Ranger gloves; 19996:Ranger gloves,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1637,Equip Holy Sandals.,ambiguous,item candidates: 12598:Holy sandals; 12599:Holy sandals; 16007:Holy sandals,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1638,Equip Wizard Boots.,ambiguous,item candidates: 2579:Wizard boots; 2580:Wizard boots; 15757:Wizard boots; 27162:Wizard boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1639,Equip a Fury Ornament Kit Item.,ambiguous,item candidates: 12526:Fury ornament kit; 12527:Fury ornament kit; 15998:Fury ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1640,Equip an Eternal Glory.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Eternal Glory"")",Verify item/NPC name matches cache (r235) spelling
+1641,Equip a Dragonbone Upgrade Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Dragonbone Upgrade"")",Verify item/NPC name matches cache (r235) spelling
+1642,Equip a Pet Transmog Cosmetic.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Pet Transmog Cosmetic"")",Verify item/NPC name matches cache (r235) spelling
+1643,Equip a Clue Scroll Reward Weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Clue Scroll Reward Weapon"")",Verify item/NPC name matches cache (r235) spelling
+1644,Equip a Clue Scroll Reward Armour Piece.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Clue Scroll Reward Armour Piece"")",Verify item/NPC name matches cache (r235) spelling
+1645,Equip a Clue Scroll Reward Cosmetic.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Clue Scroll Reward Cosmetic"")",Verify item/NPC name matches cache (r235) spelling
+1646,Equip a Golden Treasure Trail Item.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Golden Treasure Trail"")",Verify item/NPC name matches cache (r235) spelling
+1647,Equip an Ornament Kit Enhanced Weapon.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ornament Kit Enhanced Weapon"")",Verify item/NPC name matches cache (r235) spelling
+1648,Equip a Robin Hood Hat.,ambiguous,item candidates: 2581:Robin hood hat; 2582:Robin hood hat; 15758:Robin hood hat,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1649,Equip Ranger Boots.,duplicate,item candidates: 2577:Ranger boots; 2578:Ranger boots; 15756:Ranger boots,LeagueTaskManager.onItemEquip,duplicate of task 1565,Remove or differentiate from task 1565
+1650,Equip Holy Sandals.,duplicate,item candidates: 12598:Holy sandals; 12599:Holy sandals; 16007:Holy sandals,LeagueTaskManager.onItemEquip,duplicate of task 1637,Remove or differentiate from task 1637
+1651,Equip Wizard Boots.,duplicate,item candidates: 2579:Wizard boots; 2580:Wizard boots; 15757:Wizard boots; 27162:Wizard boots,LeagueTaskManager.onItemEquip,duplicate of task 1638,Remove or differentiate from task 1638
+1652,Equip a Black Elegant Shirt.,ambiguous,item candidates: 10400:Black elegant shirt; 10401:Black elegant shirt; 16110:Black elegant shirt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1653,Equip Black Elegant Legs.,ambiguous,item candidates: 10402:Black elegant legs; 10403:Black elegant legs; 16111:Black elegant legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1654,Equip a Red Elegant Shirt.,ambiguous,item candidates: 10404:Red elegant shirt; 10405:Red elegant shirt; 16112:Red elegant shirt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1655,Equip Red Elegant Legs.,ambiguous,item candidates: 10406:Red elegant legs; 10407:Red elegant legs; 16113:Red elegant legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1656,Equip a Green Elegant Shirt.,ambiguous,item candidates: 10412:Green elegant shirt; 10413:Green elegant shirt; 16116:Green elegant shirt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1657,Equip Green Elegant Legs.,ambiguous,item candidates: 10414:Green elegant legs; 10415:Green elegant legs; 16117:Green elegant legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1658,Equip a Blue Elegant Shirt.,ambiguous,item candidates: 10408:Blue elegant shirt; 10409:Blue elegant shirt; 16114:Blue elegant shirt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1659,Equip Blue Elegant Legs.,ambiguous,item candidates: 10410:Blue elegant legs; 10411:Blue elegant legs; 16115:Blue elegant legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1660,Equip a Zamorak Platebody.,ambiguous,item candidates: 2653:Zamorak platebody; 2654:Zamorak platebody; 15800:Zamorak platebody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1661,Equip a Saradomin Platebody.,ambiguous,item candidates: 2661:Saradomin platebody; 2662:Saradomin platebody; 15805:Saradomin platebody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1662,Equip a Guthix Platebody.,ambiguous,item candidates: 2669:Guthix platebody; 2670:Guthix platebody; 15810:Guthix platebody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1663,Equip a Zamorak Full Helm.,ambiguous,item candidates: 2657:Zamorak full helm; 2658:Zamorak full helm; 15803:Zamorak full helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1664,Equip a Saradomin Full Helm.,ambiguous,item candidates: 2665:Saradomin full helm; 2666:Saradomin full helm; 15808:Saradomin full helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1665,Equip a Guthix Full Helm.,ambiguous,item candidates: 2673:Guthix full helm; 2674:Guthix full helm; 15813:Guthix full helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1666,Equip Zamorak Platelegs.,ambiguous,item candidates: 2655:Zamorak platelegs; 2656:Zamorak platelegs; 15801:Zamorak platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1667,Equip Saradomin Platelegs.,ambiguous,item candidates: 2663:Saradomin platelegs; 2664:Saradomin platelegs; 15806:Saradomin platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1668,Equip Guthix Platelegs.,ambiguous,item candidates: 2671:Guthix platelegs; 2672:Guthix platelegs; 15811:Guthix platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1669,Equip a Zamorak Kiteshield.,ambiguous,item candidates: 2659:Zamorak kiteshield; 2660:Zamorak kiteshield; 15804:Zamorak kiteshield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1670,Equip a Saradomin Kiteshield.,ambiguous,item candidates: 2667:Saradomin kiteshield; 2668:Saradomin kiteshield; 15809:Saradomin kiteshield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1671,Equip a Guthix Kiteshield.,ambiguous,item candidates: 2675:Guthix kiteshield; 2676:Guthix kiteshield; 15814:Guthix kiteshield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1672,Equip a Zamorak Crozier.,ambiguous,item candidates: 10444:Zamorak crozier; 10445:Zamorak crozier; 16132:Zamorak crozier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1673,Equip a Saradomin Crozier.,ambiguous,item candidates: 10440:Saradomin crozier; 10441:Saradomin crozier; 16130:Saradomin crozier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1674,Equip a Guthix Crozier.,ambiguous,item candidates: 10442:Guthix crozier; 10443:Guthix crozier; 16131:Guthix crozier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1675,Equip a Bandos Crozier.,ambiguous,item candidates: 12275:Bandos crozier; 12276:Bandos crozier; 15878:Bandos crozier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1676,Equip an Armadyl Crozier.,ambiguous,item candidates: 12263:Armadyl crozier; 12264:Armadyl crozier; 15872:Armadyl crozier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1677,Equip a Gilded Full Helm.,ambiguous,item candidates: 3486:Gilded full helm; 3487:Gilded full helm; 15833:Gilded full helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1678,Equip a Gilded Platebody.,ambiguous,item candidates: 3481:Gilded platebody; 3482:Gilded platebody; 15830:Gilded platebody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1679,Equip Gilded Platelegs.,ambiguous,item candidates: 3483:Gilded platelegs; 3484:Gilded platelegs; 15831:Gilded platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1680,Equip Gilded Boots.,ambiguous,item candidates: 12391:Gilded boots; 12392:Gilded boots; 15836:Gilded boots,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1681,Equip Gilded Gloves.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Gilded Gloves"")",Verify item/NPC name matches cache (r235) spelling
+1682,Equip a Gilded Kiteshield.,ambiguous,item candidates: 3488:Gilded kiteshield; 3489:Gilded kiteshield; 15834:Gilded kiteshield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1683,Equip a Gilded Med Helm.,ready,item_equip:20146 Gilded med helm collection-log,LeagueTaskManager.onItemEquip,,
+1684,Equip a Gilded Chainbody.,ready,item_equip:20149 Gilded chainbody collection-log,LeagueTaskManager.onItemEquip,,
+1685,Equip a Gilded Sq Shield.,ready,item_equip:20152 Gilded sq shield collection-log,LeagueTaskManager.onItemEquip,,
+1686,Equip a Gilded 2h Sword.,ready,item_equip:20155 Gilded 2h sword collection-log,LeagueTaskManager.onItemEquip,,
+1687,Equip an Infinity Hat.,ambiguous,item candidates: 6918:Infinity hat; 6919:Infinity hat; 18600:Infinity hat,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1688,Equip an Infinity Top.,ambiguous,item candidates: 6916:Infinity top; 6917:Infinity top; 18599:Infinity top; 20574:Infinity top,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1689,Equip Infinity Bottoms.,ambiguous,item candidates: 6924:Infinity bottoms; 6925:Infinity bottoms; 18603:Infinity bottoms; 20575:Infinity bottoms,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1690,Equip Infinity Boots.,duplicate,item candidates: 6920:Infinity boots; 6921:Infinity boots; 18601:Infinity boots; 27170:Infinity boots,LeagueTaskManager.onItemEquip,duplicate of task 1561,Remove or differentiate from task 1561
+1691,Equip a Mage’s Book.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Mage’s Book"")",Verify item/NPC name matches cache (r235) spelling
+1692,Equip a Master Wand.,ambiguous,item candidates: 6914:Master wand; 6915:Master wand; 18598:Master wand; 20560:Master wand,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1693,Equip a Dragon Cane.,ambiguous,item candidates: 12373:Dragon cane; 12374:Dragon cane; 15927:Dragon cane,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1694,Equip a Black Cavalier.,ambiguous,item candidates: 2643:Black cavalier; 2644:Black cavalier; 15785:Black cavalier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1695,Equip a Red Cavalier.,ambiguous,item candidates: 12323:Red cavalier; 12324:Red cavalier; 15902:Red cavalier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1696,Equip a White Cavalier.,ambiguous,item candidates: 12321:White cavalier; 12322:White cavalier; 15901:White cavalier,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1697,Equip a Ranger Tunic.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ranger Tunic"")",Verify item/NPC name matches cache (r235) spelling
+1698,Equip Ranger Tights.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Ranger Tights"")",Verify item/NPC name matches cache (r235) spelling
+1699,Equip Ranger Gloves.,duplicate,item candidates: 19994:Ranger gloves; 19995:Ranger gloves; 19996:Ranger gloves,LeagueTaskManager.onItemEquip,duplicate of task 1636,Remove or differentiate from task 1636
+1700,Equip a Powdered Wig.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Powdered Wig"")",Verify item/NPC name matches cache (r235) spelling
+1701,Equip a 3rd Age Range Coif.,ambiguous,item candidates: 10334:3rd age range coif; 10335:3rd age range coif; 16081:3rd age range coif; 27201:3rd age range coif,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1702,Equip 3rd Age Range Top.,ambiguous,item candidates: 10330:3rd age range top; 10331:3rd age range top; 16079:3rd age range top; 27199:3rd age range top,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1703,Equip 3rd Age Range Legs.,ambiguous,item candidates: 10332:3rd age range legs; 10333:3rd age range legs; 16080:3rd age range legs; 27200:3rd age range legs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1704,Equip a 3rd Age Bow.,ambiguous,item candidates: 12424:3rd age bow; 12425:3rd age bow; 15960:3rd age bow,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1705,Equip a 3rd Age Cloak.,ambiguous,item candidates: 12437:3rd age cloak; 12438:3rd age cloak; 15967:3rd age cloak,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1706,Equip 3rd Age Vambraces.,ambiguous,item candidates: 10336:3rd age vambraces; 10337:3rd age vambraces; 16082:3rd age vambraces,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1707,Equip 3rd Age Mage Hat.,ambiguous,item candidates: 10342:3rd age mage hat; 10343:3rd age mage hat; 16085:3rd age mage hat; 27183:3rd age mage hat,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1708,Equip 3rd Age Robe Top.,ambiguous,item candidates: 10338:3rd age robe top; 10339:3rd age robe top; 16083:3rd age robe top; 20576:3rd age robe top,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1709,Equip 3rd Age Robe Bottom.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""3rd Age Robe Bottom"")",Verify item/NPC name matches cache (r235) spelling
+1710,Equip a 3rd Age Amulet.,ambiguous,item candidates: 10344:3rd age amulet; 10345:3rd age amulet; 16086:3rd age amulet,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1711,Equip a 3rd Age Wand.,ambiguous,item candidates: 12422:3rd age wand; 12423:3rd age wand; 15959:3rd age wand,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1712,Equip 3rd Age Mage Legs.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""3rd Age Mage Legs"")",Verify item/NPC name matches cache (r235) spelling
+1713,Equip 3rd Age Full Helmet.,ambiguous,item candidates: 10350:3rd age full helmet; 10351:3rd age full helmet; 16089:3rd age full helmet,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1714,Equip 3rd Age Platebody.,ambiguous,item candidates: 10348:3rd age platebody; 10349:3rd age platebody; 16088:3rd age platebody,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1715,Equip 3rd Age Platelegs.,ambiguous,item candidates: 10346:3rd age platelegs; 10347:3rd age platelegs; 16087:3rd age platelegs,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1716,Equip a 3rd Age Kiteshield.,ambiguous,item candidates: 10352:3rd age kiteshield; 10353:3rd age kiteshield; 16090:3rd age kiteshield,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1717,Equip a 3rd Age Longsword.,ambiguous,item candidates: 12426:3rd age longsword; 12427:3rd age longsword; 15961:3rd age longsword,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1718,Equip a 3rd Age Axe.,ready,item_equip:20011 3rd age axe collection-log,LeagueTaskManager.onItemEquip,,
+1719,Equip a 3rd Age Pickaxe.,ready,item_equip:20014 3rd age pickaxe collection-log,LeagueTaskManager.onItemEquip,,
+1720,Equip a 3rd Age Druidic Cloak.,ready,item_equip:23345 3rd age druidic cloak collection-log,LeagueTaskManager.onItemEquip,,
+1721,Equip 3rd Age Druidic Robe Top.,ready,item_equip:23336 3rd age druidic robe top collection-log,LeagueTaskManager.onItemEquip,,
+1722,Equip 3rd Age Druidic Robe Bottoms.,ready,item_equip:23339 3rd age druidic robe bottoms collection-log,LeagueTaskManager.onItemEquip,,
+1723,Equip 3rd Age Druidic Staff.,ready,item_equip:23342 3rd age druidic staff collection-log,LeagueTaskManager.onItemEquip,,
+1724,Equip a Firelighter.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Firelighter"")",Verify item/NPC name matches cache (r235) spelling
+1725,Equip Purple Firelighter.,ready,item_equip:10326 Purple firelighter collection-log,LeagueTaskManager.onItemEquip,,
+1726,Equip Red Firelighter.,ready,item_equip:7329 Red firelighter collection-log,LeagueTaskManager.onItemEquip,,
+1727,Equip White Firelighter.,ready,item_equip:10327 White firelighter collection-log,LeagueTaskManager.onItemEquip,,
+1728,Equip Green Firelighter.,ready,item_equip:7330 Green firelighter collection-log,LeagueTaskManager.onItemEquip,,
+1729,Equip Blue Firelighter.,ready,item_equip:7331 Blue firelighter collection-log,LeagueTaskManager.onItemEquip,,
+1730,Equip a Briefcase.,ambiguous,item candidates: 12335:Briefcase; 12336:Briefcase; 15908:Briefcase,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1731,Equip a Pirate Hat.,missing_content,item_equip:8950 Pirate hat,LeagueTaskManager.onItemEquip,no known obtain path (drop/collection-log/allowlist),"Add drop table, shop, craft recipe, or obtain-allowlist entry"
+1732,Equip a Fremennik Kilt.,ambiguous,item candidates: 23246:Fremennik kilt; 23247:Fremennik kilt; 23248:Fremennik kilt; 27177:Fremennik kilt,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1733,Equip a Sleeping Cap.,ambiguous,item candidates: 10398:Sleeping cap; 10399:Sleeping cap; 16109:Sleeping cap,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1734,Equip a Bob Shirt.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Bob Shirt"")",Verify item/NPC name matches cache (r235) spelling
+1735,Equip a Highwayman Mask.,ambiguous,item candidates: 2631:Highwayman mask; 2632:Highwayman mask; 15779:Highwayman mask,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1736,Equip a Rune Heraldic Shield.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Rune Heraldic Shield"")",Verify item/NPC name matches cache (r235) spelling
+1737,Equip a Rune Heraldic Helm.,ambiguous,item candidates: 8464:Rune heraldic helm; 8466:Rune heraldic helm; 8468:Rune heraldic helm; 8470:Rune heraldic helm; 8472:Rune heraldic helm,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1738,Equip a Heraldic Platebody.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Heraldic Platebody"")",Verify item/NPC name matches cache (r235) spelling
+1739,Equip any Piece of 3rd Age Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Piece of 3rd Age Armour"")",Verify item/NPC name matches cache (r235) spelling
+1740,Equip any Piece of 3rd Age Range Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Piece of 3rd Age Range Armour"")",Verify item/NPC name matches cache (r235) spelling
+1741,Equip any Piece of 3rd Age Mage Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Piece of 3rd Age Mage Armour"")",Verify item/NPC name matches cache (r235) spelling
+1742,Equip any Piece of 3rd Age Druidic Armour.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Piece of 3rd Age Druidic Armour"")",Verify item/NPC name matches cache (r235) spelling
+1743,Equip any Gilded Armour Piece.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Gilded Armour Piece"")",Verify item/NPC name matches cache (r235) spelling
+1744,Equip a God Rune Armour Piece.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""God Rune Armour Piece"")",Verify item/NPC name matches cache (r235) spelling
+1745,Equip a God Dragonhide Armour Set.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""God Dragonhide Armour Set"")",Verify item/NPC name matches cache (r235) spelling
+1746,Equip Blessed Dragonhide Boots.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blessed Dragonhide Boots"")",Verify item/NPC name matches cache (r235) spelling
+1747,Equip Blessed Dragonhide Chaps.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blessed Dragonhide Chaps"")",Verify item/NPC name matches cache (r235) spelling
+1748,Equip Blessed Dragonhide Body.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blessed Dragonhide Body"")",Verify item/NPC name matches cache (r235) spelling
+1749,Equip Blessed Dragonhide Coif.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""Blessed Dragonhide Coif"")",Verify item/NPC name matches cache (r235) spelling
+1750,Equip a Fury Ornament Kit Item.,duplicate,item candidates: 12526:Fury ornament kit; 12527:Fury ornament kit; 15998:Fury ornament kit,LeagueTaskManager.onItemEquip,duplicate of task 1639,Remove or differentiate from task 1639
+1751,Equip an Anguish Ornament Kit Item.,ambiguous,item candidates: 22246:Anguish ornament kit; 22247:Anguish ornament kit; 22248:Anguish ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1752,Equip a Torture Ornament Kit Item.,ambiguous,item candidates: 20062:Torture ornament kit; 20063:Torture ornament kit; 20064:Torture ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1753,Equip a Tormented Ornament Kit Item.,ambiguous,item candidates: 23348:Tormented ornament kit; 23349:Tormented ornament kit; 23350:Tormented ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1754,Equip a Dragon Defender Ornament Kit Item.,ambiguous,item candidates: 20143:Dragon defender ornament kit; 20144:Dragon defender ornament kit; 20145:Dragon defender ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1755,Equip a Dragon Boots Ornament Kit Item.,ambiguous,item candidates: 22231:Dragon boots ornament kit; 22232:Dragon boots ornament kit; 22233:Dragon boots ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1756,Equip a Rune Scimitar Ornament Kit Item.,ambiguous,item candidates: 1333:Rune scimitar; 1334:Rune scimitar; 14758:Rune scimitar; 20402:Rune scimitar; 23330:Rune scimitar,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1757,Equip a Dragon Scimitar Ornament Kit Item.,ambiguous,item candidates: 20002:Dragon scimitar ornament kit; 20003:Dragon scimitar ornament kit; 20004:Dragon scimitar ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1758,Equip a Dragon Chainbody Ornament Kit Item.,ambiguous,item candidates: 12534:Dragon chainbody ornament kit; 12535:Dragon chainbody ornament kit; 16002:Dragon chainbody ornament kit,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1759,Equip a God Book.,missing_content,,LeagueTaskManager.onItemEquip,"item not found in cache (""God Book"")",Verify item/NPC name matches cache (r235) spelling
+1760,Equip a Holy Book.,ready,item_equip:3840 Holy book league-allowlist,LeagueTaskManager.onItemEquip,,
+1761,Equip an Unholy Book.,ambiguous,item candidates: 3842:Unholy book; 14407:Unholy book; 27191:Unholy book,LeagueTaskManager.onItemEquip,multiple item ids for name,Set explicit target_id(s) in tasks source
+1762,Equip a Book of Balance.,ready,item_equip:3844 Book of balance league-allowlist,LeagueTaskManager.onItemEquip,,
+1763,Equip a Book of War.,ready,item_equip:12608 Book of war league-allowlist,LeagueTaskManager.onItemEquip,,
+1764,Equip a Book of Law.,ready,item_equip:12610 Book of law league-allowlist,LeagueTaskManager.onItemEquip,,
+1765,Equip a Book of Darkness.,ready,item_equip:12612 Book of darkness league-allowlist,LeagueTaskManager.onItemEquip,,

@@ -1,0 +1,13 @@
+{
+  "phase": "7B-2 Slice 2A",
+  "importedAt": "2026-06-03",
+  "taskCount": 21,
+  "sourceTaskIds": [
+    663, 753, 755, 756, 809, 811, 814, 902, 903, 1047, 1116, 1117, 1118, 1226, 1266, 1268, 1269, 1272, 1282, 1361, 1370
+  ],
+  "method": "sub-chamber spawn-cluster proof (exactly one candidate in tight bounds)",
+  "confidence": "high",
+  "runtimeChanges": false,
+  "validation": "PASS",
+  "matrices": "PASS"
+}

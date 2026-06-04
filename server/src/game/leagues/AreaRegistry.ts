@@ -56,6 +56,47 @@ const AREA_DEFINITIONS: AreaDefinition[] = [
         key: "taverley_dungeon",
         bounds: { minX: 2802, minY: 9715, maxX: 2959, maxY: 9858, plane: 0 },
     },
+    // Misthalin towns (RuneRogue Boundary.java — VARROCK_BOUNDARY, DRAYNOR_BOUNDARY, LUMRIDGE_BOUNDARY)
+    {
+        key: "varrock",
+        bounds: { minX: 3136, minY: 3349, maxX: 3326, maxY: 3519, plane: 0 },
+    },
+    {
+        key: "draynor",
+        bounds: { minX: 3065, minY: 3216, maxX: 3136, maxY: 3292, plane: 0 },
+    },
+    // West of Draynor (RuneRogue DRAYNOR_BOUNDARY minX 3065); covers docks, jail, southern willows, spirit tree.
+    {
+        key: "port_sarim",
+        bounds: { minX: 3008, minY: 3188, maxX: 3064, maxY: 3290, plane: 0 },
+    },
+    {
+        key: "draynor_manor",
+        bounds: { minX: 3074, minY: 3311, maxX: 3131, maxY: 3388, plane: 0 },
+    },
+    {
+        key: "lumbridge",
+        bounds: { minX: 3142, minY: 3139, maxX: 3265, maxY: 3306, plane: 0 },
+    },
+    // Varrock south-east mine (iron rocks cluster ~3286–3293 x 3366–3370)
+    {
+        key: "varrock_mine",
+        bounds: { minX: 3279, minY: 3361, maxX: 3303, maxY: 3378, plane: 0 },
+    },
+    // Lumbridge swamp copper/tin rocks (west of castle)
+    {
+        key: "lumbridge_swamp",
+        bounds: { minX: 3136, minY: 3140, maxX: 3172, maxY: 3178, plane: 0 },
+    },
+    {
+        key: "karamja",
+        bounds: { minX: 2816, minY: 3139, maxX: 2965, maxY: 3205, plane: 0 },
+    },
+    // Kourend & Kebos (league region 20; leagueWidgets packCoord + phase7b2 regional scans)
+    {
+        key: "kourend",
+        bounds: { minX: 1280, minY: 3456, maxX: 1791, maxY: 4031, plane: 0 },
+    },
 ];
 
 const AREA_BY_KEY = new Map(AREA_DEFINITIONS.map((d) => [d.key, d] as const));

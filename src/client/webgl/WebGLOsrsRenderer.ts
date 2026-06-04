@@ -979,19 +979,81 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             }
         }
 
-        const maxScale = isLoginLikeState ? 3 : isIos ? 1 : 2;
+        // iOS: 2x Retina buffer — 1x was blurry; 3x caused Safari OOM reload loops.
+        // Login/download on other touch devices may use 3x when the pixel budget allows.
+        const maxScale = isIos ? 2 : isLoginLikeState ? 3 : 2;
         const targetScale = Math.min(dpr, maxScale);
 
         const safeCssWidth = Number.isFinite(cssWidth) ? Math.max(1, cssWidth) : 1;
         const safeCssHeight = Number.isFinite(cssHeight) ? Math.max(1, cssHeight) : 1;
-        const maxPixelCount = isTouchDevice ? 6_000_000 : 12_000_000;
-        const targetPixelCount = safeCssWidth * safeCssHeight * targetScale * targetScale;
-        if (targetPixelCount <= maxPixelCount) {
-            return targetScale;
+        const maxPixelCount = isIos ? 4_000_000 : isTouchDevice ? 6_000_000 : 12_000_000;
+        return this.finalizeCanvasResolutionScale(
+            targetScale,
+            safeCssWidth,
+            safeCssHeight,
+            maxPixelCount,
+            isLoginLikeState,
+        );
+    }
+
+    /**
+     * Mobile gameplay (root 601): buf/layout must be an integer ratio so NEAREST bitmap text
+     * is not scaled by fractional factors (e.g. DPR 2 ÷ uiScale 1.35).
+     */
+    private finalizeCanvasResolutionScale(
+        proposedScale: number,
+        cssWidth: number,
+        cssHeight: number,
+        maxPixelCount: number,
+        isLoginLikeState: boolean,
+    ): number {
+        let scale =
+            Number.isFinite(proposedScale) && proposedScale > 0 ? proposedScale : 1;
+        scale = this.applyCrispMobileGameplayResolutionScale(scale, isLoginLikeState, cssWidth, cssHeight);
+
+        const pixelCount = cssWidth * cssHeight * scale * scale;
+        if (pixelCount <= maxPixelCount) {
+            return Math.max(1, scale);
         }
 
-        const cappedScale = Math.sqrt(maxPixelCount / (safeCssWidth * safeCssHeight));
-        return Math.max(1, Math.min(targetScale, cappedScale));
+        const cappedScale = Math.sqrt(maxPixelCount / (cssWidth * cssHeight));
+        scale = Math.max(1, Math.min(scale, cappedScale));
+        scale = this.applyCrispMobileGameplayResolutionScale(
+            scale,
+            isLoginLikeState,
+            cssWidth,
+            cssHeight,
+            true,
+        );
+        if (cssWidth * cssHeight * scale * scale > maxPixelCount) {
+            const uiScale = this.getMobileGameplayUiScale(cssWidth, cssHeight, 1, 1);
+            const maxRatio = Math.max(1, Math.floor(Math.sqrt(maxPixelCount / (cssWidth * cssHeight)) / uiScale));
+            scale = Math.max(1, maxRatio * uiScale);
+        }
+        return Math.max(1, scale);
+    }
+
+    private applyCrispMobileGameplayResolutionScale(
+        scale: number,
+        isLoginLikeState: boolean,
+        cssWidth: number,
+        cssHeight: number,
+        useFloorRatio: boolean = false,
+    ): number {
+        if (!isMobileMode || isLoginLikeState) {
+            return scale;
+        }
+        const rootInterface = this.osrsClient.widgetManager?.rootInterface ?? -1;
+        if (rootInterface !== 601) {
+            return scale;
+        }
+
+        const uiScale = this.getMobileGameplayUiScale(cssWidth, cssHeight, 1, 1);
+        const ratio = scale / uiScale;
+        const integerRatio = useFloorRatio
+            ? Math.max(1, Math.floor(ratio + 1e-6))
+            : Math.max(1, Math.round(ratio));
+        return Math.max(1, integerRatio * uiScale);
     }
 
     private resolveBrowserQualityProfile(): BrowserQualityProfile {
@@ -5603,9 +5665,9 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             }
         }
         this._lastLoginLikeState = loginLikeState;
-        const desiredImageRendering = loginLikeState && isMobileMode ? "pixelated" : "";
-        if (this.canvas.style.imageRendering !== desiredImageRendering) {
-            this.canvas.style.imageRendering = desiredImageRendering;
+        // Avoid CSS "pixelated" upscale on mobile login — it makes bitmap fonts look chunky on Retina.
+        if (this.canvas.style.imageRendering) {
+            this.canvas.style.imageRendering = "";
         }
 
         // Reset frame accumulators

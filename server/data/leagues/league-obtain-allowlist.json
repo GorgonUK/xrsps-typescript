@@ -1,0 +1,275 @@
+{
+  "description": "Validation-only obtain paths for League collection equip/obtain tasks not represented in collection-log.json. Does not affect runtime gameplay.",
+  "entries": [
+    {
+      "sourceTaskId": 321,
+      "itemId": 11864,
+      "note": "Slayer helmet — crafted slayer gear",
+      "trigger": { "type": "item_equip", "itemIds": [11864] }
+    },
+    {
+      "sourceTaskId": 1531,
+      "itemId": 12899,
+      "note": "Trident of the swamp — kraken upgrade",
+      "trigger": { "type": "item_equip", "itemIds": [12899] }
+    },
+    {
+      "sourceTaskId": 1532,
+      "itemId": 12006,
+      "note": "Abyssal tentacle — whip + kraken tentacle",
+      "trigger": { "type": "item_equip", "itemIds": [12006] }
+    },
+    {
+      "sourceTaskId": 1542,
+      "itemId": 22325,
+      "note": "Scythe of vitur — ToB unique",
+      "trigger": { "type": "item_equip", "itemIds": [22325] }
+    },
+    {
+      "sourceTaskId": 1543,
+      "itemId": 22323,
+      "note": "Sanguinesti staff — ToB unique",
+      "trigger": { "type": "item_equip", "itemIds": [22323] }
+    },
+    {
+      "sourceTaskId": 1552,
+      "itemId": 25979,
+      "note": "Keris partisan — ToA",
+      "trigger": { "type": "item_equip", "itemIds": [25979] }
+    },
+    {
+      "sourceTaskId": 1586,
+      "itemId": 23995,
+      "note": "Blade of saeldor — crystal craft",
+      "trigger": { "type": "item_equip", "itemIds": [23995] }
+    },
+    {
+      "sourceTaskId": 1587,
+      "itemId": 25865,
+      "note": "Bow of faerdhinen — crystal craft",
+      "trigger": { "type": "item_equip", "itemIds": [25865] }
+    },
+    {
+      "sourceTaskId": 1598,
+      "itemId": 22978,
+      "note": "Dragon hunter lance",
+      "trigger": { "type": "item_equip", "itemIds": [22978] }
+    },
+    {
+      "sourceTaskId": 1599,
+      "itemId": 22975,
+      "note": "Brimstone ring",
+      "trigger": { "type": "item_equip", "itemIds": [22975] }
+    },
+    {
+      "sourceTaskId": 1602,
+      "itemId": 22981,
+      "note": "Ferocious gloves — hydra craft",
+      "trigger": { "type": "item_equip", "itemIds": [22981] }
+    },
+    {
+      "sourceTaskId": 1603,
+      "itemId": 20714,
+      "note": "Tome of fire",
+      "trigger": { "type": "item_equip", "itemIds": [20714] }
+    },
+    {
+      "sourceTaskId": 1604,
+      "itemId": 25574,
+      "note": "Tome of water",
+      "trigger": { "type": "item_equip", "itemIds": [25574] }
+    },
+    {
+      "sourceTaskId": 1620,
+      "itemId": 28922,
+      "note": "Tonalztics of ralos",
+      "trigger": { "type": "item_equip", "itemIds": [28922] }
+    },
+    {
+      "sourceTaskId": 1760,
+      "itemId": 3840,
+      "note": "Holy book — god book completion",
+      "trigger": { "type": "item_equip", "itemIds": [3840] }
+    },
+    {
+      "sourceTaskId": 1762,
+      "itemId": 3844,
+      "note": "Book of balance — god book completion",
+      "trigger": { "type": "item_equip", "itemIds": [3844] }
+    },
+    {
+      "sourceTaskId": 1763,
+      "itemId": 12608,
+      "note": "Book of war — god book completion",
+      "trigger": { "type": "item_equip", "itemIds": [12608] }
+    },
+    {
+      "sourceTaskId": 1764,
+      "itemId": 12610,
+      "note": "Book of law — god book completion",
+      "trigger": { "type": "item_equip", "itemIds": [12610] }
+    },
+    {
+      "sourceTaskId": 1765,
+      "itemId": 12612,
+      "note": "Book of darkness — god book completion",
+      "trigger": { "type": "item_equip", "itemIds": [12612] }
+    },
+    {
+      "sourceTaskId": 1503,
+      "itemId": 13239,
+      "note": "Primordial boots — canonical Cerberus boot base",
+      "trigger": { "type": "item_equip", "itemIds": [13239] }
+    },
+    {
+      "sourceTaskId": 1504,
+      "itemId": 13237,
+      "note": "Pegasian boots — canonical Cerberus boot base",
+      "trigger": { "type": "item_equip", "itemIds": [13237] }
+    },
+    {
+      "sourceTaskId": 1505,
+      "itemId": 13235,
+      "note": "Eternal boots — canonical Cerberus boot base",
+      "trigger": { "type": "item_equip", "itemIds": [13235] }
+    },
+    {
+      "sourceTaskId": 1579,
+      "itemId": 19547,
+      "note": "Necklace of anguish — canonical zenyte base",
+      "trigger": { "type": "item_equip", "itemIds": [19547] }
+    },
+    {
+      "sourceTaskId": 1580,
+      "itemId": 19544,
+      "note": "Tormented bracelet — canonical zenyte base",
+      "trigger": { "type": "item_equip", "itemIds": [19544] }
+    },
+    {
+      "sourceTaskId": 1581,
+      "itemId": 19550,
+      "note": "Ring of suffering — canonical zenyte base",
+      "trigger": { "type": "item_equip", "itemIds": [19550] }
+    },
+    {
+      "sourceTaskId": 1589,
+      "itemId": 23971,
+      "note": "Crystal helm — canonical armor base",
+      "trigger": { "type": "item_equip", "itemIds": [23971] }
+    },
+    {
+      "sourceTaskId": 1590,
+      "itemId": 23979,
+      "note": "Crystal legs — canonical armor base",
+      "trigger": { "type": "item_equip", "itemIds": [23979] }
+    },
+    {
+      "sourceTaskId": 1591,
+      "itemId": 23975,
+      "note": "Crystal body — canonical armor base",
+      "trigger": { "type": "item_equip", "itemIds": [23975] }
+    },
+    {
+      "sourceTaskId": 1596,
+      "itemId": 21006,
+      "note": "Kodai wand — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [21006] }
+    },
+    {
+      "sourceTaskId": 1498,
+      "itemId": 11806,
+      "note": "Saradomin godsword — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [11806] }
+    },
+    {
+      "sourceTaskId": 1499,
+      "itemId": 11808,
+      "note": "Zamorak godsword — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [11808] }
+    },
+    {
+      "sourceTaskId": 1500,
+      "itemId": 11802,
+      "note": "Armadyl godsword — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [11802] }
+    },
+    {
+      "sourceTaskId": 1501,
+      "itemId": 11804,
+      "note": "Bandos godsword — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [11804] }
+    },
+    {
+      "sourceTaskId": 1526,
+      "itemId": 13263,
+      "note": "Abyssal bludgeon — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [13263] }
+    },
+    {
+      "sourceTaskId": 478,
+      "itemId": 841,
+      "note": "Shortbow — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [841] }
+    },
+    {
+      "sourceTaskId": 479,
+      "itemId": 839,
+      "note": "Longbow — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [839] }
+    },
+    {
+      "sourceTaskId": 480,
+      "itemId": 837,
+      "note": "Crossbow — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [837] }
+    },
+    {
+      "sourceTaskId": 1517,
+      "itemId": 10828,
+      "note": "Helm of neitiznot — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [10828] }
+    },
+    {
+      "sourceTaskId": 1528,
+      "itemId": 8921,
+      "note": "Black mask — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [8921] }
+    },
+    {
+      "sourceTaskId": 1550,
+      "itemId": 4675,
+      "note": "Ancient staff — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [4675] }
+    },
+    {
+      "sourceTaskId": 1570,
+      "itemId": 3122,
+      "note": "Granite shield — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [3122] }
+    },
+    {
+      "sourceTaskId": 1573,
+      "itemId": 4087,
+      "note": "Dragon platelegs — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [4087] }
+    },
+    {
+      "sourceTaskId": 1574,
+      "itemId": 4585,
+      "note": "Dragon plateskirt — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [4585] }
+    },
+    {
+      "sourceTaskId": 1608,
+      "itemId": 13385,
+      "note": "Xerician hat — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [13385] }
+    },
+    {
+      "sourceTaskId": 1761,
+      "itemId": 3842,
+      "note": "Unholy book — canonical base",
+      "trigger": { "type": "item_equip", "itemIds": [3842] }
+    }
+  ]
+}

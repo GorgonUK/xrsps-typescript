@@ -20,6 +20,9 @@ import { getPhase4a2SpellTrigger } from "./phase4a2SpellTriggers";
 import { getPhase4a3AlchemyTrigger } from "./phase4a3AlchemyTriggers";
 import { getPhase4bCoreSpellTrigger } from "./phase4bCoreSpellTriggers";
 import { getPhase6bCollectionTrigger } from "./phase6bCollectionTriggers";
+import { getPhase7aCollectionTrigger } from "./phase7aCollectionTriggers";
+import { getPhase7bNpcTrigger } from "./phase7bNpcTriggers";
+import { getLeagueNpcKillAllowlistEntry } from "./leagueNpcKillAllowlist";
 import { getLeagueAreaDefinition } from "../../../src/game/leagues/AreaRegistry";
 import { getSpellData } from "../../../src/data/spells";
 import type { ValidationRegistries } from "./registries";
@@ -85,6 +88,7 @@ function checkNpcIds(
     reg: ValidationRegistries,
     npcIds: number[],
     requireSpawn: boolean,
+    opts?: { leagueNpcAllowlist?: boolean },
 ): { content: string; missing: string; status: TaskStatus } {
     if (!reg.cacheAvailable) {
         return {
@@ -109,8 +113,14 @@ function checkNpcIds(
     }
     const id = npcIds[0];
     const spawned = reg.spawnedNpcIds.has(id);
-    const content = `npc:${id} ${reg.getNpcName(id)}${spawned ? " spawned" : " not-spawned"}`;
+    let content = `npc:${id} ${reg.getNpcName(id)}${spawned ? " spawned" : " not-spawned"}`;
+    if (opts?.leagueNpcAllowlist) {
+        content += " league-npc-allowlist";
+    }
     if (requireSpawn && !spawned) {
+        if (opts?.leagueNpcAllowlist) {
+            return { content, missing: "", status: "ready" };
+        }
         return {
             content,
             missing: "npc not present in npc-spawns.json",
@@ -170,14 +180,16 @@ function checkItemIds(
     const name = reg.getItemName(id);
     const inLog = reg.collectionLogItemIds.has(id);
     const inManualDrops = reg.manualDropItemNames.has(reg.npcName(name));
-    const obtainable = inLog || inManualDrops;
+    const inLeagueAllowlist = reg.leagueObtainAllowlistItemIds.has(id);
+    const obtainable = inLog || inManualDrops || inLeagueAllowlist;
     let content = `${opts.itemLabel ?? "item"}:${id} ${name}`;
     if (inLog) content += " collection-log";
     if (inManualDrops) content += " manual-drop";
+    if (inLeagueAllowlist) content += " league-allowlist";
     if (opts.requireObtainable && !obtainable) {
         return {
             content,
-            missing: "no known obtain path (drop/collection-log)",
+            missing: "no known obtain path (drop/collection-log/allowlist)",
             status: "missing_content",
         };
     }
@@ -219,7 +231,11 @@ function validateWithTrigger(
     row: CsvTaskRow,
     batch: TaskBatch,
     trigger: TaskTrigger | undefined,
-    opts: { requireSpawn?: boolean; requireObtainable?: boolean },
+    opts: {
+        requireSpawn?: boolean;
+        requireObtainable?: boolean;
+        leagueNpcAllowlist?: boolean;
+    },
 ): ValidationRow {
     const hook = hookForTrigger(trigger);
     if (!trigger) {
@@ -249,7 +265,9 @@ function validateWithTrigger(
 
     switch (trigger.type) {
         case "npc_kill": {
-            const check = checkNpcIds(reg, trigger.npcIds, opts.requireSpawn ?? true);
+            const check = checkNpcIds(reg, trigger.npcIds, opts.requireSpawn ?? true, {
+                leagueNpcAllowlist: opts.leagueNpcAllowlist,
+            });
             const status = check.status === "ready" ? "ready" : check.status;
             return result(row, batch, status, check.content, hook, check.missing, suggest(check, row));
         }
@@ -773,6 +791,29 @@ export function validateTask(reg: ValidationRegistries, row: CsvTaskRow): Valida
         return validateWithTrigger(reg, row, batch, phase6bTrigger, {
             requireSpawn: false,
             requireObtainable: false,
+        });
+    }
+    const phase7aTrigger = getPhase7aCollectionTrigger(row.id);
+    if (phase7aTrigger) {
+        return validateWithTrigger(reg, row, batch, phase7aTrigger, {
+            requireSpawn: false,
+            requireObtainable: true,
+        });
+    }
+    const phase7bTrigger = getPhase7bNpcTrigger(row.id);
+    if (phase7bTrigger) {
+        const phase7bBatch = categorizeTask(row);
+        const allowlistEntry = getLeagueNpcKillAllowlistEntry(row.id);
+        const allowlisted =
+            allowlistEntry &&
+            phase7bTrigger.type === "npc_kill" &&
+            phase7bTrigger.npcIds.length === 1 &&
+            allowlistEntry.npcId === phase7bTrigger.npcIds[0];
+        const requireSpawn = phase7bBatch !== "bosses" && !allowlisted;
+        return validateWithTrigger(reg, row, phase7bBatch, phase7bTrigger, {
+            requireSpawn,
+            requireObtainable: false,
+            leagueNpcAllowlist: !!allowlisted,
         });
     }
     switch (batch) {

@@ -1,0 +1,207 @@
+{
+  "phase": "7B-2",
+  "slice": "1",
+  "generatedAt": "2026-06-02T23:55:00.000Z",
+  "baselineReady": 607,
+  "expectedReadyAfterImport": 626,
+  "expectedReadyGain": 19,
+  "note": "Strict rule: exactly one candidate npcId has spawns inside task-justified region bounds (npc-spawns.json). Target 635-645 requires Slice 2 (sub-chamber/plane splits) or npc-spawns.json backfill for zero-spawn clusters.",
+  "importList": [
+    {
+      "sourceTaskId": 661,
+      "name": "Defeat a Giant Rat in Edgeville Dungeon.",
+      "candidateNpcIds": [2510, 2511, 2512, 2856, 2857],
+      "chosenNpcId": 2856,
+      "spawnProof": "3091,9897,0 | 3102,9880,0 | 3121,9893,0 (3 spawns)",
+      "regionProof": "Edgeville Dungeon 3072-3135 x 9856-9919",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 662,
+      "name": "Defeat a Skeleton in Varrock Sewers.",
+      "candidateNpcIds": [70, 71, 72, 73, 74],
+      "chosenNpcId": 74,
+      "spawnProof": "3270,9914,0 | 3275,9909,0 | 3248,9914,0 (3 spawns)",
+      "regionProof": "Varrock Sewers 3150-3300 x 9850-9920",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 751,
+      "name": "Defeat a Monkey on Karamja.",
+      "candidateNpcIds": [23, 1038, 1469, 1817, 2848],
+      "chosenNpcId": 2848,
+      "spawnProof": "2755,3170,0 | 2758,3178,0 | 2783,3175,0 (45 spawns in Karamja)",
+      "regionProof": "Karamja league area 2688-2943 x 2688-3200",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 901,
+      "name": "Defeat a Basilisk in Fremennik.",
+      "candidateNpcIds": [417, 418, 9283, 9284, 9285],
+      "chosenNpcId": 417,
+      "spawnProof": "2738,10008,0 | 2740,10003,0 | 2740,10014,0 (8 spawns)",
+      "regionProof": "Fremennik Slayer Dungeon 2688-2815 x 9984-10111",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 977,
+      "name": "Defeat an Ogre in Kandarin.",
+      "candidateNpcIds": [136, 1153, 2095, 2096, 2233],
+      "chosenNpcId": 2095,
+      "spawnProof": "2554,3192,0 (1 spawn)",
+      "regionProof": "Tree Gnome Village ogre pen 2528-2559 x 3168-3199",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 978,
+      "name": "Defeat a Terrorbird in Kandarin.",
+      "candidateNpcIds": [2064, 2065, 2066],
+      "chosenNpcId": 2064,
+      "spawnProof": "2436,3434,0 | 2498,3141,0 | 2504,3140,0 (3 spawns)",
+      "regionProof": "Kandarin league area 2432-2815 x 3136-3519",
+      "confidence": "medium-high"
+    },
+    {
+      "sourceTaskId": 983,
+      "name": "Defeat a Wolf in Kandarin.",
+      "candidateNpcIds": [106, 110, 116, 117, 231],
+      "chosenNpcId": 106,
+      "spawnProof": "2462,3274,0 | 2465,3272,0 | 2465,3275,0 (15 spawns)",
+      "regionProof": "Kandarin league area 2432-2815 x 3136-3519",
+      "confidence": "medium-high"
+    },
+    {
+      "sourceTaskId": 1046,
+      "name": "Defeat a Desert Lizard in the Desert.",
+      "candidateNpcIds": [459, 460, 461, 12003],
+      "chosenNpcId": 459,
+      "spawnProof": "3384,3015,0 (1 spawn in tight cluster)",
+      "regionProof": "Desert lizard cluster 3382-3388 x 3010-3020",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1050,
+      "name": "Defeat a Dust Devil in the Desert.",
+      "candidateNpcIds": [423, 7249, 11238],
+      "chosenNpcId": 423,
+      "spawnProof": "Smoke Dungeon spawn cluster (unique vs 7249/11238 in region)",
+      "regionProof": "Smoke Dungeon 3200-3327 x 9344-9471",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1052,
+      "name": "Defeat a Kalphite Worker in the Desert.",
+      "candidateNpcIds": [955, 956, 961],
+      "chosenNpcId": 955,
+      "spawnProof": "3465,9502,2 | 3472,9516,2 (13 spawns)",
+      "regionProof": "Kalphite Lair 3456-3519 x 9472-9535",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1053,
+      "name": "Defeat a Kalphite Soldier in the Desert.",
+      "candidateNpcIds": [138, 957, 958],
+      "chosenNpcId": 957,
+      "spawnProof": "3463,9481,2 | 3465,9486,2 (7 spawns)",
+      "regionProof": "Kalphite Lair 3456-3519 x 9472-9535",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1055,
+      "name": "Defeat a Crocodile in the Desert.",
+      "candidateNpcIds": [4184, 11513, 11581, 11582, 11705],
+      "chosenNpcId": 4184,
+      "spawnProof": "3264,2886,0 | 3267,2891,0 | 3268,2881,0 (35 spawns in Nardah bank)",
+      "regionProof": "Nardah crocodile bank 3264-3280 x 2880-2900",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1120,
+      "name": "Defeat an Abyssal Demon in Morytania.",
+      "candidateNpcIds": [415, 416, 7241, 11239, 14174],
+      "chosenNpcId": 415,
+      "spawnProof": "3408,3573,2 | 3411,3564,2 (14 spawns)",
+      "regionProof": "Slayer Tower all floors 3392-3455 x 3520-9949",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1156,
+      "name": "Defeat a Giant Bat in Morytania.",
+      "candidateNpcIds": [2834, 4504, 4562, 5791, 6824],
+      "chosenNpcId": 2834,
+      "spawnProof": "Slayer Tower unique variant 2834",
+      "regionProof": "Slayer Tower all floors 3392-3455 x 3520-9949",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1228,
+      "name": "Defeat a Wolf in Tirannwn.",
+      "candidateNpcIds": [106, 110, 116, 117, 231],
+      "chosenNpcId": 106,
+      "spawnProof": "2379,3344,0 | 2395,3340,0 | 2398,3330,0 (4 spawns)",
+      "regionProof": "Tirannwn league area 2112-2431 x 3008-3391",
+      "confidence": "medium-high"
+    },
+    {
+      "sourceTaskId": 1271,
+      "name": "Defeat a Hellhound in the Wilderness.",
+      "candidateNpcIds": [104, 105, 135, 3133, 7256],
+      "chosenNpcId": 104,
+      "spawnProof": "3169,3956,0 | 3172,3944,0 | 3176,3950,0 (6 spawns)",
+      "regionProof": "Wilderness 2944-3391 x 3520-3966",
+      "confidence": "medium-high"
+    },
+    {
+      "sourceTaskId": 1273,
+      "name": "Defeat an Ice Warrior in the Wilderness.",
+      "candidateNpcIds": [2841, 2842, 2851, 13802],
+      "chosenNpcId": 2841,
+      "spawnProof": "2945,3866,0 | 2946,3857,0 | 2948,3878,0 (26 spawns)",
+      "regionProof": "Wilderness 2944-3391 x 3520-3966",
+      "confidence": "medium-high"
+    },
+    {
+      "sourceTaskId": 1281,
+      "name": "Defeat a Lava Dragon in the Wilderness.",
+      "candidateNpcIds": [6593, 12607, 12608],
+      "chosenNpcId": 6593,
+      "spawnProof": "3201,3814,0 | 3205,3834,0 | 3211,3809,0 (8 spawns)",
+      "regionProof": "Lava Maze 3192-3223 x 3800-3839",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1367,
+      "name": "Defeat a Dust Devil in Kourend.",
+      "candidateNpcIds": [423, 7249, 11238],
+      "chosenNpcId": 7249,
+      "spawnProof": "1708,10014,0 | 1709,10018,0 | 1711,10011,0 (13 spawns)",
+      "regionProof": "Catacombs of Kourend 1600-1727 x 9984-10111",
+      "confidence": "high"
+    }
+  ],
+  "csvIds": [661, 662, 751, 901, 977, 978, 983, 1046, 1050, 1052, 1053, 1055, 1120, 1156, 1228, 1271, 1273, 1281, 1367],
+  "duplicateNpcIdAudit": {
+    "sharedChosenIds": [
+      {
+        "npcId": 106,
+        "tasks": [
+          { "sourceTaskId": 983, "name": "Defeat a Wolf in Kandarin." },
+          { "sourceTaskId": 1228, "name": "Defeat a Wolf in Tirannwn." }
+        ],
+        "risk": "low",
+        "note": "Same npcId, different task rows and regions. npc_kill trigger is per-task; killing wolf 106 in either region completes only the matching task. Matrix must guard wrong-region kills do not cross-complete."
+      }
+    ],
+    "dustDevilPair": {
+      "npcIds": [423, 7249],
+      "tasks": [
+        { "sourceTaskId": 1050, "chosenNpcId": 423, "region": "Smoke Dungeon" },
+        { "sourceTaskId": 1367, "chosenNpcId": 7249, "region": "Catacombs" }
+      ],
+      "risk": "none",
+      "note": "Different chosen ids; regional split is the disambiguation proof."
+    },
+    "uniqueChosenIds": 17,
+    "totalTasks": 19
+  }
+}

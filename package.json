@@ -39,6 +39,7 @@
   },
   "scripts": {
     "start": "npx tsx scripts/ensure-cache.ts && craco start",
+    "startdev": "npx tsx scripts/ensure-cache.ts && cross-env REACT_APP_DEV_CONTROLS=true craco start",
     "ensure-cache": "npx tsx scripts/ensure-cache.ts",
     "build": "craco build",
     "lint": "prettier --write \"./**/*.{js,ts,jsx,tsx,css,md}\"",
@@ -139,6 +140,7 @@
     "@types/react-modal": "^3.16.0",
     "@types/webfontloader": "^1.6.35",
     "adm-zip": "^0.5.10",
+    "cross-env": "^7.0.3",
     "husky": "^8.0.3",
     "json-minimizer-webpack-plugin": "^4.0.0",
     "lint-staged": "^13.2.3",

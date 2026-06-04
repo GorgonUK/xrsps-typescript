@@ -25,6 +25,9 @@
 }
 
 .game-viewport-mobile {
+    /* Override desktop 765×503 minimum — it clips the bottom on phone landscape. */
+    min-width: 0;
+    min-height: 0;
     --mobile-safe-top: max(10px, env(safe-area-inset-top, 0px));
     --mobile-safe-right: max(12px, env(safe-area-inset-right, 0px));
     --mobile-safe-bottom: max(10px, env(safe-area-inset-bottom, 0px));
@@ -148,4 +151,12 @@
     left: 10px !important;
     right: auto !important;
     top: 36px !important; /* push down so it doesn't cover top-left preview */
+}
+
+/* Leva may portal to document.body; keep dev panel off handheld UI */
+.game-container-root:has(.game-viewport-mobile) .leva-left,
+.game-container-root:has(.game-viewport-mobile) ~ .leva-root,
+body:has(.game-viewport-mobile) .leva-root {
+    display: none !important;
+    pointer-events: none !important;
 }

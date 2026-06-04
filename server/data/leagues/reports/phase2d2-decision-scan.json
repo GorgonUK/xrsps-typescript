@@ -1,0 +1,339 @@
+{
+  "baseline": {
+    "ready": 585,
+    "skillsNeedHook": 381,
+    "skillsAmbiguous": 26
+  },
+  "skillingActionPool": 375,
+  "parserReadyNow": 0,
+  "locationTagged": 0,
+  "genericNoLocation": 0,
+  "unmappedByGap": {
+    "pickpocket-parser-gap": 24,
+    "mining-parser-gap": 15,
+    "wc-parser-gap": 10,
+    "fletch-parser-gap": 15,
+    "crafting-other-parser-gap": 152,
+    "fm-parser-gap": 14,
+    "content-missing": 2,
+    "fishing-parser-gap": 118,
+    "cooking-parser-gap": 16,
+    "slayer-parser-gap": 2,
+    "smith-parser-gap": 2
+  },
+  "unmappedTotal": 370,
+  "slice1": [],
+  "expectedReadyGain": 0,
+  "parserFiles": [
+    "server/scripts/leagues/plan-phase2c-batch2.ts (tryMapCandidate — add smith + arctic/mahogany burn patterns)",
+    "server/scripts/leagues/lib/phase2dSkillingTriggers.ts (loader — no logic change)",
+    "server/scripts/leagues/import-phase2d-slice2-tasks.ts (new import script mirroring slice1)",
+    "server/data/leagues/phase2d-skilling-tasks.json (manifest append)"
+  ],
+  "unmappedSamples": {
+    "content-missing": [
+      {
+        "id": 176,
+        "name": "Catch Anglerfish."
+      },
+      {
+        "id": 1334,
+        "name": "Fish Anglerfish in Kourend."
+      }
+    ],
+    "cooking-parser-gap": [
+      {
+        "id": 203,
+        "name": "Cook Bass."
+      },
+      {
+        "id": 208,
+        "name": "Cook Manta Rays."
+      },
+      {
+        "id": 209,
+        "name": "Cook 25 Fish."
+      },
+      {
+        "id": 210,
+        "name": "Cook 100 Fish."
+      },
+      {
+        "id": 211,
+        "name": "Cook 500 Fish."
+      },
+      {
+        "id": 212,
+        "name": "Cook 1,000 Fish."
+      },
+      {
+        "id": 213,
+        "name": "Cook 5,000 Fish."
+      },
+      {
+        "id": 214,
+        "name": "Cook Food on a Fire."
+      }
+    ],
+    "crafting-other-parser-gap": [
+      {
+        "id": 134,
+        "name": "String 100 Bows."
+      },
+      {
+        "id": 135,
+        "name": "String 500 Bows."
+      },
+      {
+        "id": 218,
+        "name": "Make Bread."
+      },
+      {
+        "id": 221,
+        "name": "Make Pizza."
+      },
+      {
+        "id": 225,
+        "name": "Plant a Seed."
+      },
+      {
+        "id": 226,
+        "name": "Harvest a Crop."
+      },
+      {
+        "id": 230,
+        "name": "Plant Potatoes."
+      },
+      {
+        "id": 231,
+        "name": "Plant Onions."
+      }
+    ],
+    "fishing-parser-gap": [
+      {
+        "id": 177,
+        "name": "Catch Manta Rays."
+      },
+      {
+        "id": 178,
+        "name": "Catch Dark Crabs."
+      },
+      {
+        "id": 179,
+        "name": "Catch 25 Fish."
+      },
+      {
+        "id": 180,
+        "name": "Catch 100 Fish."
+      },
+      {
+        "id": 181,
+        "name": "Catch 500 Fish."
+      },
+      {
+        "id": 182,
+        "name": "Catch 1,000 Fish."
+      },
+      {
+        "id": 183,
+        "name": "Catch 5,000 Fish."
+      },
+      {
+        "id": 184,
+        "name": "Catch Fish with a Small Net."
+      }
+    ],
+    "fletch-parser-gap": [
+      {
+        "id": 115,
+        "name": "Fletch Bronze Bolts."
+      },
+      {
+        "id": 116,
+        "name": "Fletch Steel Bolts."
+      },
+      {
+        "id": 117,
+        "name": "Fletch Mithril Bolts."
+      },
+      {
+        "id": 118,
+        "name": "Fletch Adamant Bolts."
+      },
+      {
+        "id": 119,
+        "name": "Fletch Rune Bolts."
+      },
+      {
+        "id": 137,
+        "name": "Fletch 100 Arrow Shafts."
+      },
+      {
+        "id": 138,
+        "name": "Fletch 1,000 Arrow Shafts."
+      },
+      {
+        "id": 139,
+        "name": "Fletch 10,000 Arrow Shafts."
+      }
+    ],
+    "fm-parser-gap": [
+      {
+        "id": 154,
+        "name": "Burn 500 Logs."
+      },
+      {
+        "id": 155,
+        "name": "Burn 1,000 Logs."
+      },
+      {
+        "id": 156,
+        "name": "Burn 5,000 Logs."
+      },
+      {
+        "id": 157,
+        "name": "Burn Regular Logs Without Failing."
+      },
+      {
+        "id": 158,
+        "name": "Burn Oak Logs Without Failing."
+      },
+      {
+        "id": 159,
+        "name": "Burn Willow Logs Without Failing."
+      },
+      {
+        "id": 160,
+        "name": "Burn Maple Logs Without Failing."
+      },
+      {
+        "id": 161,
+        "name": "Burn Yew Logs Without Failing."
+      }
+    ],
+    "mining-parser-gap": [
+      {
+        "id": 81,
+        "name": "Mine Rune Essence"
+      },
+      {
+        "id": 85,
+        "name": "Mine with a Steel pickaxe"
+      },
+      {
+        "id": 86,
+        "name": "Mine with a Rune pickaxe"
+      },
+      {
+        "id": 87,
+        "name": "Mine with a Dragon pickaxe"
+      },
+      {
+        "id": 852,
+        "name": "Mine Blurite Ore."
+      },
+      {
+        "id": 1019,
+        "name": "Mine Granite in the Desert."
+      },
+      {
+        "id": 1020,
+        "name": "Mine Sandstone in the Desert."
+      },
+      {
+        "id": 1094,
+        "name": "Mine Daeyalt Essence in Darkmeyer."
+      }
+    ],
+    "pickpocket-parser-gap": [
+      {
+        "id": 58,
+        "name": "Steal from a Vegetable stall"
+      },
+      {
+        "id": 59,
+        "name": "Steal from a Cake stall"
+      },
+      {
+        "id": 60,
+        "name": "Steal from a Tea stall"
+      },
+      {
+        "id": 61,
+        "name": "Steal from a Crafting stall"
+      },
+      {
+        "id": 62,
+        "name": "Steal from a Silk stall"
+      },
+      {
+        "id": 63,
+        "name": "Steal from a Wine stall"
+      },
+      {
+        "id": 64,
+        "name": "Steal from a Fruit stall"
+      },
+      {
+        "id": 65,
+        "name": "Steal from a Seed stall"
+      }
+    ],
+    "slayer-parser-gap": [
+      {
+        "id": 325,
+        "name": "Block a Slayer Task."
+      },
+      {
+        "id": 326,
+        "name": "Skip a Slayer Task."
+      }
+    ],
+    "smith-parser-gap": [
+      {
+        "id": 1358,
+        "name": "Smith Shayzien Armor in Kourend."
+      },
+      {
+        "id": 1359,
+        "name": "Smith Lovakite Bars in Kourend."
+      }
+    ],
+    "wc-parser-gap": [
+      {
+        "id": 100,
+        "name": "Chop a tree with a Steel axe"
+      },
+      {
+        "id": 101,
+        "name": "Chop a tree with a Rune axe"
+      },
+      {
+        "id": 102,
+        "name": "Chop a tree with a Dragon axe"
+      },
+      {
+        "id": 104,
+        "name": "Chop 25 Trees"
+      },
+      {
+        "id": 105,
+        "name": "Chop 100 Trees"
+      },
+      {
+        "id": 106,
+        "name": "Chop 500 Trees"
+      },
+      {
+        "id": 719,
+        "name": "Chop Jungle Trees."
+      },
+      {
+        "id": 1034,
+        "name": "Chop Dead Trees in the Desert."
+      }
+    ]
+  },
+  "allMapped": [],
+  "genericOnly": []
+}

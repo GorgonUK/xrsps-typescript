@@ -1,0 +1,29 @@
+{
+  "description": "Validation-only npc_kill paths for instance/phase bosses absent from npc-spawns.json. Applies only when paired with an explicit phase7b manifest row (sourceTaskId). Does not affect runtime gameplay.",
+  "entries": [
+    {
+      "sourceTaskId": 596,
+      "npcId": 2042,
+      "proofType": "instance_boss",
+      "note": "Zulrah green form — canonical id; boss script + DamageTracker registered on 2042",
+      "proof": "Runelite NpcID.ZULRAH=2042; server registerBossScript(2042); DamageTracker[2042]",
+      "trigger": { "type": "npc_kill", "npcIds": [2042] }
+    },
+    {
+      "sourceTaskId": 601,
+      "npcId": 494,
+      "proofType": "dynamic_spawn",
+      "note": "Kraken boss — primary kill-credit id (6640/6656 are phase variants)",
+      "proof": "Runelite NpcID.KRAKEN=494; DamageTracker[494]",
+      "trigger": { "type": "npc_kill", "npcIds": [494] }
+    },
+    {
+      "sourceTaskId": 638,
+      "npcId": 8583,
+      "proofType": "farming_boss",
+      "note": "Hespori — primary id (11192 is alternate/instance variant)",
+      "proof": "Runelite NpcID.HESPORI=8583; OSRS Wiki Hespori boss page",
+      "trigger": { "type": "npc_kill", "npcIds": [8583] }
+    }
+  ]
+}

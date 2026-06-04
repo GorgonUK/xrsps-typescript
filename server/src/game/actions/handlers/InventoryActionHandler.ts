@@ -546,28 +546,50 @@ export class InventoryActionHandler {
 
     /**
      * Execute scripted consume action.
+     *
+     * Script modules (consumables.ts, etc.) schedule `inventory.consume_script`
+     * actions with an inline `apply` callback that performs the actual eat/drink
+     * logic (heal, dose swap, messages). That callback must run here — the
+     * legacy executeScriptedConsume service hook is only a secondary extension
+     * point for host-level handlers.
      */
     executeScriptedConsumeAction(
         player: PlayerState,
         data: InventoryConsumeScriptActionData,
-        tick: number,
+        _tick: number,
     ): ActionExecutionResult {
         const slotIndex = Math.max(0, Math.min(INVENTORY_SLOT_COUNT - 1, data.slotIndex));
         const expectedItemId = data.itemId;
-        const option = data.option;
         const inv = this.services.getInventory(player);
         const slotEntry = inv[slotIndex];
         if (!slotEntry || slotEntry.quantity <= 0 || slotEntry.itemId !== expectedItemId) {
             return { ok: false, reason: "item_missing" };
         }
-        const consumedItemId = slotEntry.itemId;
+
+        if (typeof data.apply === "function") {
+            try {
+                data.apply();
+            } catch (err) {
+                this.services.log?.(
+                    "error",
+                    `[inventory] consume_script apply threw item=${expectedItemId} slot=${slotIndex}`,
+                    err,
+                );
+                return { ok: false, reason: "apply_failed" };
+            }
+            return {
+                ok: true,
+                cooldownTicks: 3,
+                effects: [{ type: "inventorySnapshot", playerId: player.id }],
+            };
+        }
 
         const result = this.services.executeScriptedConsume(
             player,
-            consumedItemId,
+            slotEntry.itemId,
             slotIndex,
-            option,
-            tick,
+            data.option,
+            _tick,
         );
 
         if (result.handled) {
@@ -578,7 +600,7 @@ export class InventoryActionHandler {
             };
         }
 
-        // Fallback to regular consume
+        // Last-resort fallback: strip the item without scripted effects.
         const consumed = this.services.consumeItem(player, slotIndex);
         if (!consumed) {
             return { ok: false, reason: "consume_failed" };

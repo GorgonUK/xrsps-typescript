@@ -23,7 +23,20 @@ export class LoginState {
     constructor() {
         // Load persisted settings from localStorage
         this.loadPersistedSettings();
+        this.applyRemoteHostServerDefault();
         this.loadPersistedLoginState();
+    }
+
+    /**
+     * When the web client is opened via a LAN/remote host (e.g. phone → 192.168.x.x:3000),
+     * default the game server to the same host instead of localhost (which would mean the phone).
+     */
+    private applyRemoteHostServerDefault(): void {
+        if (typeof window === "undefined") return;
+        const hostname = window.location.hostname;
+        if (!hostname || hostname === "localhost" || hostname === "127.0.0.1") return;
+        if (this.serverAddress !== "localhost:43594") return;
+        this.serverAddress = `${hostname}:43594`;
     }
 
     /** Load settings that should persist between sessions */

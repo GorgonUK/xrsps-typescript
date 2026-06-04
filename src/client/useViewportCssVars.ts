@@ -1,23 +1,6 @@
 import { useEffect } from "react";
 
-function readViewportCssSize(): { width: number; height: number } {
-    if (typeof window === "undefined") {
-        return { width: 0, height: 0 };
-    }
-
-    const viewport = window.visualViewport;
-    if (viewport) {
-        return {
-            width: Math.max(1, viewport.width),
-            height: Math.max(1, viewport.height),
-        };
-    }
-
-    return {
-        width: Math.max(1, window.innerWidth),
-        height: Math.max(1, window.innerHeight),
-    };
-}
+import { readAppViewportSize } from "../util/DeviceUtil";
 
 export function useViewportCssVars(): void {
     useEffect(() => {
@@ -29,7 +12,7 @@ export function useViewportCssVars(): void {
         let rafId: number | undefined;
 
         const applyViewportMetrics = () => {
-            const { width, height } = readViewportCssSize();
+            const { width, height } = readAppViewportSize();
             root.style.setProperty("--app-vw", `${width}px`);
             root.style.setProperty("--app-vh", `${height}px`);
         };

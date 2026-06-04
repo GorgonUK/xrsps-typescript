@@ -40,6 +40,8 @@ export type SkillingActionTrigger = {
     skill: string;
     action: string;
     targetIds: number[];
+    /** When set, the action must occur inside one of these AreaRegistry keys. */
+    areaKeys?: string[];
     count?: number;
 };
 

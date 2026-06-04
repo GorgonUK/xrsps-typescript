@@ -1,0 +1,157 @@
+{
+  "generatedAt": "2026-06-02T21:30:51.101Z",
+  "description": "Phase 7A-2 Slice 4b alternate candidate audit trail.",
+  "entries": [
+    {
+      "sourceTaskId": 478,
+      "taskName": "Equip a Shortbow.",
+      "chosenItemId": 841,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        841,
+        842,
+        14559
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 479,
+      "taskName": "Equip a Longbow.",
+      "chosenItemId": 839,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        839,
+        840,
+        14558
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 480,
+      "taskName": "Equip a Crossbow.",
+      "chosenItemId": 837,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        837,
+        838,
+        14500
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1517,
+      "taskName": "Equip a Helm of Neitiznot.",
+      "chosenItemId": 10828,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        10828,
+        10843,
+        17668,
+        23591,
+        23592
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1528,
+      "taskName": "Equip a Black Mask.",
+      "chosenItemId": 8921,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        8921,
+        8922,
+        18758
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1550,
+      "taskName": "Equip an Ancient Staff.",
+      "chosenItemId": 4675,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        4675,
+        4676,
+        16476,
+        20431
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1551,
+      "taskName": "Equip a Dragon Chainbody.",
+      "chosenItemId": 3140,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        2513,
+        3140,
+        3141,
+        14099,
+        20428
+      ],
+      "tier": "B-4b-reg"
+    },
+    {
+      "sourceTaskId": 1570,
+      "taskName": "Equip Granite Shield.",
+      "chosenItemId": 3122,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3122,
+        3134,
+        14130
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1573,
+      "taskName": "Equip a Dragon Platelegs.",
+      "chosenItemId": 4087,
+      "alternateCandidateCount": 4,
+      "candidateItemIds": [
+        4087,
+        4088,
+        4180,
+        14175,
+        20429
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1574,
+      "taskName": "Equip a Dragon Plateskirt.",
+      "chosenItemId": 4585,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        4585,
+        4586,
+        14183
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1608,
+      "taskName": "Equip a Xerician Hat.",
+      "chosenItemId": 13385,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        13385,
+        13386,
+        18461
+      ],
+      "tier": "B-4b"
+    },
+    {
+      "sourceTaskId": 1761,
+      "taskName": "Equip an Unholy Book.",
+      "chosenItemId": 3842,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3842,
+        14407,
+        27191
+      ],
+      "tier": "B-4b"
+    }
+  ]
+}

@@ -80,6 +80,17 @@ export interface ItemDefinition {
     examine?: string;
     groundActions?: Array<string | null | undefined>;
     stackable?: boolean;
+    /** Cache ObjType stackability enum (0=sometimes, 1=always, 2=never). */
+    stackability?: number;
+}
+
+/** OSRS ObjStackability.ALWAYS — cache obj types use this instead of `stackable`. */
+const OBJ_STACKABILITY_ALWAYS = 1;
+
+function isGroundItemStackable(def: ItemDefinition | undefined): boolean {
+    if (!def) return false;
+    if (def.stackable === true) return true;
+    return def.stackability === OBJ_STACKABILITY_ALWAYS;
 }
 
 /** Services required by GroundItemHandler */
@@ -217,7 +228,7 @@ export class GroundItemHandler {
     private getInventoryInsertCapacity(player: PlayerState, itemId: number): number {
         const inventory = player.getInventoryEntries();
         const itemDef = this.services.getItemDefinition(itemId);
-        const stackable = itemDef?.stackable === true;
+        const stackable = isGroundItemStackable(itemDef);
 
         if (stackable) {
             for (const entry of inventory) {
@@ -472,8 +483,6 @@ export class GroundItemHandler {
             return;
         }
 
-        const qty = requestedQuantity !== undefined ? Math.max(1, requestedQuantity) : 2147483647;
-
         const nowTick = this.services.getCurrentTick();
         const groundItems = this.services.getGroundItems();
         const targetStack = groundItems
@@ -488,6 +497,13 @@ export class GroundItemHandler {
             });
             return;
         }
+
+        const stackable = isGroundItemStackable(this.services.getItemDefinition(itemId));
+        // OSRS: Take on a stackable ground pile picks up the whole stack (capped by inventory space).
+        const qty =
+            stackable || requestedQuantity === undefined
+                ? 2147483647
+                : Math.max(1, requestedQuantity);
 
         const inventoryCapacity = this.getInventoryInsertCapacity(player, itemId);
         if (inventoryCapacity <= 0) {

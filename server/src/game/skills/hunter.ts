@@ -282,6 +282,10 @@ export const getCreatureDefinitionByNpcTypeId = (
     npcTypeId: number,
 ): HunterCreatureDefinition | undefined => CREATURE_BY_NPC_TYPE_ID.get(npcTypeId);
 
+/** League skilling_action hunter/catch target id (creature NPC type id). */
+export const getLeagueHunterCatchTargetId = (creature: HunterCreatureDefinition): number =>
+    creature.creatureNpcTypeIds[0] ?? 0;
+
 export const getCreaturesForTrapType = (
     trapType: HunterTrapType,
 ): readonly HunterCreatureDefinition[] =>

@@ -1,0 +1,828 @@
+{
+  "tierA": [
+    {
+      "sourceTaskId": 809,
+      "name": "Defeat a Black Knight.",
+      "candidateNpcIds": [
+        516,
+        517,
+        1545,
+        4331,
+        4934
+      ],
+      "chosenNpcId": 4331,
+      "bounds": {
+        "minX": 3014,
+        "minY": 3514,
+        "maxX": 3018,
+        "maxY": 3518,
+        "plane": 0,
+        "label": "Black Knights Fortress elite spawn"
+      },
+      "spawnProof": "3016,3516,0",
+      "confidence": "high"
+    },
+    {
+      "sourceTaskId": 1118,
+      "name": "Defeat a Gargoyle in Morytania.",
+      "candidateNpcIds": [
+        412,
+        413,
+        1543
+      ],
+      "chosenNpcId": 412,
+      "bounds": {
+        "minX": 3425,
+        "minY": 3535,
+        "maxX": 3440,
+        "maxY": 3555,
+        "plane": 2,
+        "label": "Slayer Tower gargoyle floor 2"
+      },
+      "spawnProof": "3432,3540,2 | 3435,3548,2 | 3437,3537,2",
+      "confidence": "high"
+    }
+  ],
+  "failed": [
+    {
+      "sourceTaskId": 311,
+      "name": "Kill Bloodveld.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 570,
+      "name": "Defeat a Troll.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 644,
+      "name": "Defeat Calvar'ion.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 659,
+      "name": "Defeat a Goblin near Lumbridge.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 663,
+      "name": "Defeat a Moss Giant in Varrock Sewers.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Varrock Sewers moss giant room",
+        "spawnedIn": [
+          {
+            "id": 2090,
+            "count": 2,
+            "sample": "3156,9906,0 | 3158,9898,0"
+          },
+          {
+            "id": 2091,
+            "count": 2,
+            "sample": "3158,9895,0 | 3158,9904,0"
+          },
+          {
+            "id": 2092,
+            "count": 1,
+            "sample": "3155,9903,0"
+          },
+          {
+            "id": 2093,
+            "count": 1,
+            "sample": "3159,9901,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 693,
+      "name": "Defeat Count Draynor.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 752,
+      "name": "Defeat a Lesser Demon in Karamja Volcano.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 753,
+      "name": "Defeat a Fire Giant in Brimhaven Dungeon.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Brimhaven fire giant plane 2 vine",
+        "spawnedIn": [
+          {
+            "id": 2078,
+            "count": 2,
+            "sample": "2632,9585,2 | 2635,9557,2"
+          },
+          {
+            "id": 2079,
+            "count": 3,
+            "sample": "2628,9543,2 | 2634,9577,2 | 2635,9562,2"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 755,
+      "name": "Defeat a Black Demon in Brimhaven Dungeon.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Brimhaven black demon room",
+        "spawnedIn": [
+          {
+            "id": 2048,
+            "count": 2,
+            "sample": "2703,9483,0 | 2715,9482,0"
+          },
+          {
+            "id": 2049,
+            "count": 1,
+            "sample": "2709,9479,0"
+          },
+          {
+            "id": 2050,
+            "count": 1,
+            "sample": "2700,9489,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 756,
+      "name": "Defeat a Red Dragon in Brimhaven Dungeon.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Brimhaven metal dragon chamber",
+        "spawnedIn": [
+          {
+            "id": 247,
+            "count": 3,
+            "sample": "2712,9543,0 | 2702,9504,0 | 2724,9516,0"
+          },
+          {
+            "id": 248,
+            "count": 5,
+            "sample": "2711,9550,0 | 2703,9532,0 | 2711,9500,0"
+          },
+          {
+            "id": 249,
+            "count": 3,
+            "sample": "2704,9546,0 | 2703,9522,0 | 2717,9516,0"
+          },
+          {
+            "id": 250,
+            "count": 2,
+            "sample": "2704,9539,0 | 2706,9516,0"
+          },
+          {
+            "id": 251,
+            "count": 3,
+            "sample": "2711,9537,0 | 2697,9506,0 | 2708,9508,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 811,
+      "name": "Defeat a Blue Dragon in Taverley Dungeon.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Taverley blue dragon room",
+        "spawnedIn": [
+          {
+            "id": 265,
+            "count": 2,
+            "sample": "2920,9784,0 | 2899,9802,0"
+          },
+          {
+            "id": 266,
+            "count": 1,
+            "sample": "2912,9779,0"
+          },
+          {
+            "id": 267,
+            "count": 3,
+            "sample": "2906,9774,0 | 2911,9787,0 | 2897,9797,0"
+          },
+          {
+            "id": 268,
+            "count": 2,
+            "sample": "2903,9780,0 | 2904,9802,0"
+          },
+          {
+            "id": 269,
+            "count": 1,
+            "sample": "2903,9786,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 812,
+      "name": "Defeat a Black Dragon in Taverley Dungeon.",
+      "reason": "zero-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Taverley Dungeon full",
+        "candidateIds": [
+          252,
+          253,
+          254,
+          255,
+          256
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 813,
+      "name": "Defeat a Hellhound in Taverley Dungeon.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 814,
+      "name": "Defeat a Lesser Demon in Taverley Dungeon.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Taverley lesser demon room",
+        "spawnedIn": [
+          {
+            "id": 2005,
+            "count": 1,
+            "sample": "2931,9807,0"
+          },
+          {
+            "id": 2006,
+            "count": 1,
+            "sample": "2932,9810,0"
+          },
+          {
+            "id": 2007,
+            "count": 1,
+            "sample": "2926,9802,0"
+          },
+          {
+            "id": 2008,
+            "count": 1,
+            "sample": "2931,9798,0"
+          },
+          {
+            "id": 2018,
+            "count": 1,
+            "sample": "2936,9793,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 815,
+      "name": "Defeat a Greater Demon in Taverley Dungeon.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 898,
+      "name": "Defeat a Dagannoth in Fremennik.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 900,
+      "name": "Defeat an Ice Troll in Fremennik.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 902,
+      "name": "Defeat a Turoth in Fremennik.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Fremennik turoth east room",
+        "spawnedIn": [
+          {
+            "id": 427,
+            "count": 1,
+            "sample": "2718,10006,0"
+          },
+          {
+            "id": 428,
+            "count": 3,
+            "sample": "2721,10003,0 | 2722,10008,0 | 2723,9994,0"
+          },
+          {
+            "id": 429,
+            "count": 9,
+            "sample": "2717,10007,0 | 2718,10008,0 | 2720,10003,0"
+          },
+          {
+            "id": 430,
+            "count": 9,
+            "sample": "2719,10011,0 | 2724,10013,0 | 2725,10012,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 903,
+      "name": "Defeat a Kurask in Fremennik.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Fremennik kurask room",
+        "spawnedIn": [
+          {
+            "id": 410,
+            "count": 4,
+            "sample": "2694,9995,0 | 2698,9992,0 | 2699,10001,0"
+          },
+          {
+            "id": 411,
+            "count": 1,
+            "sample": "2694,9999,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 976,
+      "name": "Defeat a Guard in Kandarin.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 979,
+      "name": "Defeat a Blue Dragon in Kandarin.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 980,
+      "name": "Defeat a Black Demon in Kandarin.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 981,
+      "name": "Defeat a Fire Giant in Kandarin.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 982,
+      "name": "Defeat a Poison Spider in Kandarin.",
+      "reason": "zero-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Yanille poison spider dungeon",
+        "candidateIds": [
+          3023,
+          5373,
+          11990,
+          11999
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1047,
+      "name": "Defeat a Bandit in the Desert.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Desert Bandit Camp",
+        "spawnedIn": [
+          {
+            "id": 690,
+            "count": 10,
+            "sample": "3158,2977,0 | 3158,2987,0 | 3159,2979,0"
+          },
+          {
+            "id": 691,
+            "count": 2,
+            "sample": "3157,2989,0 | 3162,2989,0"
+          },
+          {
+            "id": 692,
+            "count": 2,
+            "sample": "3157,2986,0 | 3162,2987,0"
+          },
+          {
+            "id": 693,
+            "count": 1,
+            "sample": "3159,2977,0"
+          },
+          {
+            "id": 694,
+            "count": 4,
+            "sample": "3161,2977,0 | 3161,2981,0 | 3161,2982,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1048,
+      "name": "Defeat a Menaphite Thug in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1049,
+      "name": "Defeat a Scarab Mage in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1051,
+      "name": "Defeat a Smoke Devil in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1054,
+      "name": "Defeat a Kalphite Guardian in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1057,
+      "name": "Defeat a Locust Rider in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1077,
+      "name": "Defeat a Skeleton in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1078,
+      "name": "Defeat a Zombie in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1079,
+      "name": "Defeat a Locust in the Desert.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1116,
+      "name": "Defeat a Bloodveld in Morytania.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Slayer Tower bloodveld floor 3",
+        "spawnedIn": [
+          {
+            "id": 486,
+            "count": 5,
+            "sample": "3409,9939,3 | 3416,9942,3 | 3417,9931,3"
+          },
+          {
+            "id": 487,
+            "count": 6,
+            "sample": "3403,9934,3 | 3404,9940,3 | 3406,9949,3"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1117,
+      "name": "Defeat an Aberrant Spectre in Morytania.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Slayer Tower spectre floor 1 west",
+        "spawnedIn": [
+          {
+            "id": 2,
+            "count": 2,
+            "sample": "3413,3550,1 | 3424,3551,1"
+          },
+          {
+            "id": 4,
+            "count": 2,
+            "sample": "3411,3534,1 | 3423,3542,1"
+          },
+          {
+            "id": 5,
+            "count": 2,
+            "sample": "3413,3545,1 | 3420,3537,1"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1121,
+      "name": "Defeat a Cave Horror in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1122,
+      "name": "Defeat a Werewolf in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1123,
+      "name": "Defeat a Shade in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1125,
+      "name": "Defeat a Pyrefiend in Morytania.",
+      "reason": "zero-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Slayer Tower floor 1",
+        "candidateIds": [
+          433,
+          434,
+          435,
+          436,
+          3139
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1126,
+      "name": "Defeat a Jelly in Morytania.",
+      "reason": "zero-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Slayer Tower floor 1",
+        "candidateIds": [
+          437,
+          438,
+          439,
+          440,
+          441
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1127,
+      "name": "Defeat a Basilisk in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1128,
+      "name": "Defeat a Kurask in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1154,
+      "name": "Defeat a Vyrewatch Sentinel in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1155,
+      "name": "Defeat a Flesh Crawler in Morytania.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1197,
+      "name": "Defeat a Moss Giant in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1199,
+      "name": "Defeat a Fire Giant in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1200,
+      "name": "Defeat a Greater Demon in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1204,
+      "name": "Defeat a Mourner in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1205,
+      "name": "Defeat a Kurask in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1226,
+      "name": "Defeat a Rabbit in Tirannwn.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1266,
+      "name": "Defeat a Skeleton in the Wilderness.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Forgotten Cemetery",
+        "spawnedIn": [
+          {
+            "id": 70,
+            "count": 3,
+            "sample": "3011,3590,0 | 3016,3596,0 | 3022,3586,0"
+          },
+          {
+            "id": 71,
+            "count": 3,
+            "sample": "3008,3595,0 | 3018,3584,0 | 3022,3595,0"
+          },
+          {
+            "id": 72,
+            "count": 3,
+            "sample": "3013,3586,0 | 3013,3602,0 | 3025,3597,0"
+          },
+          {
+            "id": 73,
+            "count": 4,
+            "sample": "3012,3597,0 | 3018,3592,0 | 3018,3599,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1267,
+      "name": "Defeat a Zombie in the Wilderness.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1268,
+      "name": "Defeat a Green Dragon in the Wilderness.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Wilderness green dragon west",
+        "spawnedIn": [
+          {
+            "id": 260,
+            "count": 3,
+            "sample": "3338,3676,0 | 3339,3694,0 | 3346,3707,0"
+          },
+          {
+            "id": 261,
+            "count": 2,
+            "sample": "3333,3685,0 | 3337,3701,0"
+          },
+          {
+            "id": 262,
+            "count": 2,
+            "sample": "3333,3699,0 | 3348,3685,0"
+          },
+          {
+            "id": 263,
+            "count": 2,
+            "sample": "3332,3693,0 | 3339,3683,0"
+          },
+          {
+            "id": 264,
+            "count": 2,
+            "sample": "3331,3672,0 | 3347,3694,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1269,
+      "name": "Defeat a Greater Demon in the Wilderness.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Wilderness greater demon ruins",
+        "spawnedIn": [
+          {
+            "id": 2026,
+            "count": 1,
+            "sample": "3304,3886,0"
+          },
+          {
+            "id": 2027,
+            "count": 1,
+            "sample": "3296,3872,0"
+          },
+          {
+            "id": 2028,
+            "count": 1,
+            "sample": "3282,3880,0"
+          },
+          {
+            "id": 2029,
+            "count": 1,
+            "sample": "3287,3894,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1270,
+      "name": "Defeat a Black Demon in the Wilderness.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1272,
+      "name": "Defeat an Ice Giant in the Wilderness.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Wilderness ice giant west plateau",
+        "spawnedIn": [
+          {
+            "id": 2085,
+            "count": 2,
+            "sample": "2952,3902,0 | 2953,3889,0"
+          },
+          {
+            "id": 2086,
+            "count": 1,
+            "sample": "2954,3894,0"
+          },
+          {
+            "id": 2087,
+            "count": 2,
+            "sample": "2947,3895,0 | 2958,3898,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1279,
+      "name": "Defeat a Bandit in the Wilderness.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1282,
+      "name": "Defeat a Dark Warrior in the Wilderness.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Dark Warriors Fortress",
+        "spawnedIn": [
+          {
+            "id": 531,
+            "count": 5,
+            "sample": "3022,3624,0 | 3022,3639,0 | 3029,3638,0"
+          },
+          {
+            "id": 6606,
+            "count": 12,
+            "sample": "3021,3638,0 | 3022,3626,0 | 3023,3629,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1360,
+      "name": "Defeat a Sand Crab in Kourend.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1361,
+      "name": "Defeat a Lizardman in Kourend.",
+      "reason": "multi-spawn in sub-chamber",
+      "detail": {
+        "bounds": "Lizardman Canyon",
+        "spawnedIn": [
+          {
+            "id": 6914,
+            "count": 2,
+            "sample": "1486,3719,0 | 1503,3717,0"
+          },
+          {
+            "id": 6915,
+            "count": 4,
+            "sample": "1480,3719,0 | 1491,3715,0 | 1511,3714,0"
+          },
+          {
+            "id": 6916,
+            "count": 2,
+            "sample": "1482,3715,0 | 1506,3716,0"
+          },
+          {
+            "id": 6917,
+            "count": 5,
+            "sample": "1487,3721,0 | 1493,3718,0 | 1498,3721,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1365,
+      "name": "Defeat a Drake in Kourend.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1368,
+      "name": "Defeat a Greater Demon in Kourend.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1369,
+      "name": "Defeat a Fire Giant in Kourend.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1370,
+      "name": "Defeat a Hill Giant in Kourend.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1435,
+      "name": "Defeat a Frost Nagua in Varlamore.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1436,
+      "name": "Defeat a Sulphur Nagua in Varlamore.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1438,
+      "name": "Defeat a Minotaur in Varlamore.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1439,
+      "name": "Defeat a Snake in Varlamore.",
+      "reason": "no slice2a bounds defined"
+    },
+    {
+      "sourceTaskId": 1440,
+      "name": "Defeat a Jaguar Warrior in Varlamore.",
+      "reason": "no slice2a bounds defined"
+    }
+  ],
+  "generatedAt": "2026-06-03T00:03:32.654Z"
+}

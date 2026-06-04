@@ -11,6 +11,7 @@ export const SKILLING_ACTION_SKILLS = {
     smithing: "smithing",
     crafting: "crafting",
     thieving: "thieving",
+    hunter: "hunter",
 } as const;
 
 export type SkillingActionSkill = (typeof SKILLING_ACTION_SKILLS)[keyof typeof SKILLING_ACTION_SKILLS];

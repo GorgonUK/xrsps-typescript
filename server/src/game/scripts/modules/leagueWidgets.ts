@@ -57,6 +57,7 @@ import {
     getLeaguePackedVarpsForPlayer,
     syncLeaguePackedVarps,
 } from "../../leagues/leaguePackedVarps";
+import { refreshLeagueSidePanelProgress as refreshLeagueSidePanelProgressShared } from "../../leagues/leagueUiRefresh";
 import { type ScriptModule, type WidgetActionEvent } from "../types";
 
 export type LeagueWsUiPlayer = {
@@ -1100,21 +1101,7 @@ function refreshLeagueSidePanelProgress(
         varbits?: Record<number, number>;
     },
 ): void {
-    // Refresh the Leagues side panel (inside the Quest tab) so the "tasks/points until next unlock" messaging
-    // updates immediately after unlock actions.
-    // OSRS parity: the side panel uses league_*_side_panel_update_bar to update both the bar and text.
-    const leagueType = opts?.leagueType ?? player.getVarbitValue?.(VARBIT_LEAGUE_TYPE) ?? 0;
-    const isL3 = leagueType === 3;
-    const panelGroupId = isL3 ? 736 : 656;
-    const fillChildId = isL3 ? 10 : 23; // league_3_side_panel:fill / league_side_panel:fill
-    const fillUid = ((panelGroupId & 0xffff) << 16) | (fillChildId & 0xffff);
-    services.queueWidgetEvent?.(player.id, {
-        action: "run_script",
-        scriptId: isL3 ? 5800 : 3226, // league_3_side_panel_update_bar / league_side_panel_update_bar
-        args: [fillUid, -1],
-        varps: opts?.varps ?? getLeagueVarpsForPlayer(player),
-        varbits: opts?.varbits ?? getLeagueVarbits(player),
-    });
+    refreshLeagueSidePanelProgressShared(player.id | 0, player, services, opts);
 }
 
 function syncLeagueGeneralVarpAndQueue(player: any, services: any): void {

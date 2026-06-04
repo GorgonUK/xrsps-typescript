@@ -229,10 +229,9 @@ function createEmptyInventory(): InventoryEntry[] {
     return Array.from({ length: INVENTORY_SLOT_COUNT }, () => ({ itemId: -1, quantity: 0 }));
 }
 
+// OSRS parity: new accounts start at level 1 in every skill except Hitpoints (level 10 / 10 HP).
 const DEFAULT_SKILL_XP: Partial<Record<SkillId, number>> = {
-    [SkillId.Hitpoints]: getXpForLevel(99),
-    [SkillId.Magic]: getXpForLevel(99),
-    [SkillId.Prayer]: getXpForLevel(99),
+    [SkillId.Hitpoints]: getXpForLevel(10),
 };
 
 /** Default XP for a new player skill — used for league "first level up" checks */

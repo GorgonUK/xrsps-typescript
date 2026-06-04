@@ -29,7 +29,10 @@ export function playerMatchesSkillProgressTrigger(
                 const excluded = new Set(trigger.excludedSkillIds ?? []);
                 for (const id of SKILL_IDS) {
                     if (excluded.has(id)) continue;
-                    if (player.getSkill(id).baseLevel >= trigger.level) return true;
+                    const base = player.getSkill(id).baseLevel;
+                    const start = getLevelForXp(getDefaultSkillXpForPlayer(id), { virtual: false });
+                    // OSRS parity: starting HP 10 must not satisfy "first level N" milestones.
+                    if (base >= trigger.level && base > start) return true;
                 }
                 return false;
             }

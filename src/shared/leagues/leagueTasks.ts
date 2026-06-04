@@ -9,6 +9,7 @@ import type { LeagueTaskRow } from "./leagueTypes";
 
 const tasksByTaskId = new Map<number, LeagueTaskRow>();
 const tasksByStructId = new Map<number, LeagueTaskRow>();
+const tasksByName = new Map<string, LeagueTaskRow>();
 
 for (const row of LEAGUE_TASKS) {
     const taskId = row.taskId | 0;
@@ -19,6 +20,10 @@ for (const row of LEAGUE_TASKS) {
     if (structId >= 0 && !tasksByStructId.has(structId)) {
         tasksByStructId.set(structId, row);
     }
+    const name = row.name?.trim();
+    if (name && !tasksByName.has(name)) {
+        tasksByName.set(name, row);
+    }
 }
 
 export function getLeagueTaskByTaskId(taskId: number): LeagueTaskRow | undefined {
@@ -27,6 +32,12 @@ export function getLeagueTaskByTaskId(taskId: number): LeagueTaskRow | undefined
 
 export function getLeagueTaskByStructId(structId: number): LeagueTaskRow | undefined {
     return tasksByStructId.get(structId | 0);
+}
+
+/** Resolve a live task id by exact display name (used for tutorial/UI awards). */
+export function getLeagueTaskIdByName(name: string): number | undefined {
+    const row = tasksByName.get(name.trim());
+    return row ? row.taskId | 0 : undefined;
 }
 
 /**

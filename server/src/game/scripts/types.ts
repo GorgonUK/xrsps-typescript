@@ -788,4 +788,12 @@ export interface ScriptServices {
             teleportName?: string;
         },
     ) => void;
+    /** League task hook for hunter trap catch success (creature NPC type id as target). */
+    onLeagueSkillingAction?: (
+        playerId: number,
+        skill: string,
+        action: string,
+        targetId: number,
+        count?: number,
+    ) => void;
 }

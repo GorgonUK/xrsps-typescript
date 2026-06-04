@@ -24,13 +24,29 @@ import {
 } from "../collectionlog";
 import { isInsideLeagueArea } from "./AreaRegistry";
 import { getNewlyCompleteCategoriesForItem } from "./collectionLogLeague";
-import type { SpellCastTrigger } from "./triggers/TriggerTypes";
+import { refreshLeagueUiAfterTaskComplete } from "./leagueUiRefresh";
+import type { SkillingActionTrigger, SpellCastTrigger } from "./triggers/TriggerTypes";
+import type { WidgetAction } from "../../widgets/WidgetManager";
+
+function playerInsideLeagueAreas(
+    player: { tileX?: number; tileY?: number; level?: number },
+    areaKeys: string[],
+): boolean {
+    if (areaKeys.length === 0) {
+        return true;
+    }
+    const x = player.tileX | 0;
+    const y = player.tileY | 0;
+    const plane = player.level | 0;
+    return areaKeys.some((key) => isInsideLeagueArea(key, x, y, plane));
+}
 
 export interface TaskManagerServices {
     getPlayer: (playerId: number) => LeagueTaskPlayer | undefined;
     queueVarp: (playerId: number, varpId: number, value: number) => void;
     queueVarbit: (playerId: number, varbitId: number, value: number) => void;
     queueNotification: (playerId: number, notification: unknown) => void;
+    queueWidgetEvent?: (playerId: number, action: WidgetAction) => void;
 }
 
 function normalizeProgressIncrement(value: number, fallback: number = 1): number {
@@ -301,9 +317,19 @@ export class LeagueTaskManager {
         if (increment <= 0) {
             return;
         }
+        const ps = player as PlayerState;
         for (const task of tasks) {
+            if (task.trigger.type !== "skilling_action") continue;
+            if (!this.matchesSkillingActionArea(task.trigger, ps)) continue;
             this.tryCompleteTask(player, playerId, task, increment);
         }
+    }
+
+    private matchesSkillingActionArea(
+        trigger: SkillingActionTrigger,
+        player: PlayerState,
+    ): boolean {
+        return playerInsideLeagueAreas(player, trigger.areaKeys ?? []);
     }
 
     onAreaEnter(playerId: number, areaKey: string, regionId?: number): void {
@@ -363,15 +389,8 @@ export class LeagueTaskManager {
         },
         player: PlayerState,
     ): boolean {
-        const areaKeys = trigger.areaKeys ?? [];
-        if (areaKeys.length > 0) {
-            const x = player.tileX | 0;
-            const y = player.tileY | 0;
-            const plane = player.level | 0;
-            const inside = areaKeys.some((key) => isInsideLeagueArea(key, x, y, plane));
-            if (!inside) {
-                return false;
-            }
+        if (!playerInsideLeagueAreas(player, trigger.areaKeys ?? [])) {
+            return false;
         }
 
         if (trigger.anySpell) {
@@ -562,6 +581,8 @@ export class LeagueTaskManager {
                 this.services.queueNotification(playerId, result.notification);
             }
 
+            refreshLeagueUiAfterTaskComplete(playerId, player, this.services);
+
             logger.info(
                 `[LeagueTaskManager] Completed task ${task.taskId} "${task.row.name}" for player ${playerId}`,
             );
@@ -599,6 +620,8 @@ export class LeagueTaskManager {
             if (result.notification) {
                 this.services.queueNotification(playerId, result.notification);
             }
+
+            refreshLeagueUiAfterTaskComplete(playerId, player, this.services);
 
             logger.info(
                 `[LeagueTaskManager] Completed custom task ${customTask.customIndex} "${customTask.name}" for player ${playerId}`,

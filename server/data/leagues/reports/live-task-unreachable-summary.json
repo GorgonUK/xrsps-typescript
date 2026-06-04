@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-06-03T10:00:25.979Z",
+  "flagged": [
+    {
+      "taskId": 48,
+      "sourceCsvId": 267,
+      "name": "Catch a Desert Lizard.",
+      "triggerType": "item_obtain",
+      "targetIds": [
+        6695
+      ],
+      "triggerDetail": "itemIds=[6695]",
+      "expectedGameplaySource": "Item added to inventory (loot, gather reward, receive)",
+      "emitFile": "server/src/network/wsServer.ts",
+      "emitFunction": "addItemToInventory → leagueTaskManager.onItemObtain",
+      "classification": "likely_unreachable",
+      "confidence": "high",
+      "issue": "item_obtain 6695 is not a valid item; hunter trap gives feathers (314), no hunter skilling emit",
+      "recommendedFix": "Add hunter skilling emit + correct item, or remove task until hunter parity exists",
+      "sharedTriggerKey": "item_obtain:6695",
+      "sharedWithTaskIds": []
+    }
+  ],
+  "needsManualTestCount": 18,
+  "summary": {
+    "natural_gameplay_confirmed": 448,
+    "admin_sim_only": 0,
+    "likely_unreachable": 1,
+    "missing_emit": 0,
+    "missing_content": 0,
+    "needs_manual_test": 18,
+    "duplicate_shared_trigger": 184
+  }
+}

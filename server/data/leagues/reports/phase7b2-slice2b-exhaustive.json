@@ -1,0 +1,75 @@
+[
+  {
+    "sourceTaskId": 659,
+    "name": "Defeat a Goblin near Lumbridge.",
+    "chosenNpcId": 659,
+    "candidateNpcIds": [
+      655,
+      656,
+      657,
+      658,
+      659
+    ],
+    "boundsProof": "2949-2953 x 3481-3485 plane=0",
+    "spawnProof": "2951,3483,0",
+    "parentNote": "Edgeville goblin cluster"
+  },
+  {
+    "sourceTaskId": 752,
+    "name": "Defeat a Lesser Demon in Karamja Volcano.",
+    "chosenNpcId": 2008,
+    "candidateNpcIds": [
+      2005,
+      2006,
+      2007,
+      2008,
+      2018
+    ],
+    "boundsProof": "2834-2838 x 9556-9560 plane=0",
+    "spawnProof": "2836,9558,0",
+    "parentNote": "Karamja Volcano dungeon"
+  },
+  {
+    "sourceTaskId": 979,
+    "name": "Defeat a Blue Dragon in Kandarin.",
+    "chosenNpcId": 268,
+    "candidateNpcIds": [
+      265,
+      266,
+      267,
+      268,
+      269
+    ],
+    "boundsProof": "2901-2905 x 9778-9782 plane=0",
+    "spawnProof": "2903,9780,0",
+    "parentNote": "Taverley Dungeon"
+  },
+  {
+    "sourceTaskId": 1054,
+    "name": "Defeat a Kalphite Guardian in the Desert.",
+    "chosenNpcId": 962,
+    "candidateNpcIds": [
+      959,
+      960,
+      962
+    ],
+    "boundsProof": "3493-3497 x 9487-9491 plane=0",
+    "spawnProof": "3495,9489,0",
+    "parentNote": "Kalphite Lair"
+  },
+  {
+    "sourceTaskId": 1121,
+    "name": "Defeat a Cave Horror in Morytania.",
+    "chosenNpcId": 1050,
+    "candidateNpcIds": [
+      1047,
+      1048,
+      1049,
+      1050,
+      1051
+    ],
+    "boundsProof": "3777-3781 x 9436-9440 plane=0",
+    "spawnProof": "3779,9438,0",
+    "parentNote": "Mos LeHarmless cave horrors"
+  }
+]

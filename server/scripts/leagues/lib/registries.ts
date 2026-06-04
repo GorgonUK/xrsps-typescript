@@ -8,6 +8,8 @@ import {
 } from "../../../src/game/leagues/triggers/TriggerParser";
 import { initCacheEnv } from "../../../src/world/CacheEnv";
 import collectionLogData from "../../../../src/shared/collectionlog/collection-log.json";
+import { loadLeagueObtainAllowlistItemIds } from "./leagueObtainAllowlist";
+import { loadLeagueNpcKillAllowlistSourceIds } from "./leagueNpcKillAllowlist";
 
 export type ValidationRegistries = {
     loaders: TriggerParserLoaders;
@@ -21,6 +23,8 @@ export type ValidationRegistries = {
     pickpocketNpcIds: Set<number>;
     pickpocketDisplayNames: string[];
     manualDropItemNames: Set<string>;
+    leagueObtainAllowlistItemIds: Set<number>;
+    leagueNpcKillAllowlistSourceIds: Set<number>;
     cacheAvailable: boolean;
 };
 
@@ -131,6 +135,8 @@ export function buildRegistries(repoRoot: string): ValidationRegistries {
         pickpocketNpcIds: pickpocket.npcIds,
         pickpocketDisplayNames: pickpocket.displayNames,
         manualDropItemNames: loadManualDropItemNames(repoRoot),
+        leagueObtainAllowlistItemIds: loadLeagueObtainAllowlistItemIds(),
+        leagueNpcKillAllowlistSourceIds: loadLeagueNpcKillAllowlistSourceIds(),
         cacheAvailable,
     };
 }

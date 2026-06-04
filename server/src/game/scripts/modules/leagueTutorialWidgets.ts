@@ -11,7 +11,10 @@ import {
     VARP_SIDE_JOURNAL_STATE,
 } from "../../../../../src/shared/vars";
 import { getViewportTrackerFrontUid } from "../../../widgets/viewport";
-import { LeagueTaskService } from "../../leagues/LeagueTaskService";
+import {
+    completeLeagueTaskByName,
+    LEAGUE_TUTORIAL_TASK_COMPLETE,
+} from "../../leagues/leagueTutorialTasks";
 import { syncLeagueGeneralVarp } from "../../leagues/leagueGeneral";
 import { type ScriptModule } from "../types";
 
@@ -101,10 +104,10 @@ export const leagueTutorialWidgetModule: ScriptModule = {
                 // During the tutorial, only the Quest tab was visible.
                 services.openRemainingTabs?.(player);
 
-                // League task: "Complete the Leagues Tutorial" (taskId=190)
+                // League task: "Complete the Leagues Tutorial" (resolve by name — ids shift per import)
                 try {
-                    const res = LeagueTaskService.completeTask(player, 190);
-                    if (res.changed) {
+                    const res = completeLeagueTaskByName(player, LEAGUE_TUTORIAL_TASK_COMPLETE);
+                    if (res?.changed) {
                         for (const v of res.varpUpdates) {
                             services.queueVarp?.(player.id, v.id, v.value);
                         }

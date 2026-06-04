@@ -1,0 +1,461 @@
+[
+  {
+    "sourceTaskId": 663,
+    "name": "Defeat a Moss Giant in Varrock Sewers.",
+    "candidateNpcIds": [
+      2090,
+      2091,
+      2092,
+      2093,
+      3851
+    ],
+    "chosenNpcId": 2092,
+    "bounds": {
+      "minX": 3153,
+      "minY": 9901,
+      "maxX": 3157,
+      "maxY": 9905,
+      "plane": 0
+    },
+    "boundsProof": "3153-3157 x 9901-9905 plane=0",
+    "spawnProof": "3155,9903,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 753,
+    "name": "Defeat a Fire Giant in Brimhaven Dungeon.",
+    "candidateNpcIds": [
+      2075,
+      2076,
+      2077,
+      2078,
+      2079
+    ],
+    "chosenNpcId": 2079,
+    "bounds": {
+      "minX": 2626,
+      "minY": 9541,
+      "maxX": 2630,
+      "maxY": 9545,
+      "plane": 2
+    },
+    "boundsProof": "2626-2630 x 9541-9545 plane=2",
+    "spawnProof": "2628,9543,2",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 755,
+    "name": "Defeat a Black Demon in Brimhaven Dungeon.",
+    "candidateNpcIds": [
+      240,
+      1432,
+      2048,
+      2049,
+      2050
+    ],
+    "chosenNpcId": 2050,
+    "bounds": {
+      "minX": 2698,
+      "minY": 9487,
+      "maxX": 2702,
+      "maxY": 9491,
+      "plane": 0
+    },
+    "boundsProof": "2698-2702 x 9487-9491 plane=0",
+    "spawnProof": "2700,9489,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 756,
+    "name": "Defeat a Red Dragon in Brimhaven Dungeon.",
+    "candidateNpcIds": [
+      247,
+      248,
+      249,
+      250,
+      251
+    ],
+    "chosenNpcId": 250,
+    "bounds": {
+      "minX": 2702,
+      "minY": 9537,
+      "maxX": 2706,
+      "maxY": 9541,
+      "plane": 0
+    },
+    "boundsProof": "2702-2706 x 9537-9541 plane=0",
+    "spawnProof": "2704,9539,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 809,
+    "name": "Defeat a Black Knight.",
+    "candidateNpcIds": [
+      516,
+      517,
+      1545,
+      4331,
+      4934
+    ],
+    "chosenNpcId": 4331,
+    "bounds": {
+      "minX": 3014,
+      "minY": 3514,
+      "maxX": 3018,
+      "maxY": 3518,
+      "plane": 0
+    },
+    "boundsProof": "3014-3018 x 3514-3518 plane=0",
+    "spawnProof": "3016,3516,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 811,
+    "name": "Defeat a Blue Dragon in Taverley Dungeon.",
+    "candidateNpcIds": [
+      265,
+      266,
+      267,
+      268,
+      269
+    ],
+    "chosenNpcId": 268,
+    "bounds": {
+      "minX": 2901,
+      "minY": 9778,
+      "maxX": 2905,
+      "maxY": 9782,
+      "plane": 0
+    },
+    "boundsProof": "2901-2905 x 9778-9782 plane=0",
+    "spawnProof": "2903,9780,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 814,
+    "name": "Defeat a Lesser Demon in Taverley Dungeon.",
+    "candidateNpcIds": [
+      2005,
+      2006,
+      2007,
+      2008,
+      2018
+    ],
+    "chosenNpcId": 2007,
+    "bounds": {
+      "minX": 2924,
+      "minY": 9800,
+      "maxX": 2928,
+      "maxY": 9804,
+      "plane": 0
+    },
+    "boundsProof": "2924-2928 x 9800-9804 plane=0",
+    "spawnProof": "2926,9802,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 902,
+    "name": "Defeat a Turoth in Fremennik.",
+    "candidateNpcIds": [
+      426,
+      427,
+      428,
+      429,
+      430
+    ],
+    "chosenNpcId": 429,
+    "bounds": {
+      "minX": 2719,
+      "minY": 10012,
+      "maxX": 2723,
+      "maxY": 10016,
+      "plane": 0
+    },
+    "boundsProof": "2719-2723 x 10012-10016 plane=0",
+    "spawnProof": "2721,10014,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 903,
+    "name": "Defeat a Kurask in Fremennik.",
+    "candidateNpcIds": [
+      410,
+      411,
+      14172,
+      14173
+    ],
+    "chosenNpcId": 410,
+    "bounds": {
+      "minX": 2692,
+      "minY": 9993,
+      "maxX": 2696,
+      "maxY": 9997,
+      "plane": 0
+    },
+    "boundsProof": "2692-2696 x 9993-9997 plane=0",
+    "spawnProof": "2694,9995,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1047,
+    "name": "Defeat a Bandit in the Desert.",
+    "candidateNpcIds": [
+      690,
+      691,
+      692,
+      693,
+      694
+    ],
+    "chosenNpcId": 690,
+    "bounds": {
+      "minX": 3162,
+      "minY": 2982,
+      "maxX": 3166,
+      "maxY": 2986,
+      "plane": 0
+    },
+    "boundsProof": "3162-3166 x 2982-2986 plane=0",
+    "spawnProof": "3163,2982,0 | 3163,2986,0 | 3164,2984,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1116,
+    "name": "Defeat a Bloodveld in Morytania.",
+    "candidateNpcIds": [
+      484,
+      485,
+      486,
+      487,
+      3138
+    ],
+    "chosenNpcId": 487,
+    "bounds": {
+      "minX": 3401,
+      "minY": 9932,
+      "maxX": 3405,
+      "maxY": 9936,
+      "plane": 3
+    },
+    "boundsProof": "3401-3405 x 9932-9936 plane=3",
+    "spawnProof": "3403,9934,3",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1117,
+    "name": "Defeat an Aberrant Spectre in Morytania.",
+    "candidateNpcIds": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "chosenNpcId": 4,
+    "bounds": {
+      "minX": 3409,
+      "minY": 3532,
+      "maxX": 3413,
+      "maxY": 3536,
+      "plane": 1
+    },
+    "boundsProof": "3409-3413 x 3532-3536 plane=1",
+    "spawnProof": "3411,3534,1",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1118,
+    "name": "Defeat a Gargoyle in Morytania.",
+    "candidateNpcIds": [
+      412,
+      413,
+      1543
+    ],
+    "chosenNpcId": 1543,
+    "bounds": {
+      "minX": 3425,
+      "minY": 9941,
+      "maxX": 3429,
+      "maxY": 9945,
+      "plane": 3
+    },
+    "boundsProof": "3425-3429 x 9941-9945 plane=3",
+    "spawnProof": "3427,9943,3",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1226,
+    "name": "Defeat a Rabbit in Tirannwn.",
+    "candidateNpcIds": [
+      1852,
+      1853,
+      3420,
+      3421,
+      3422
+    ],
+    "chosenNpcId": 3420,
+    "bounds": {
+      "minX": 2277,
+      "minY": 3217,
+      "maxX": 2281,
+      "maxY": 3221,
+      "plane": 0
+    },
+    "boundsProof": "2277-2281 x 3217-3221 plane=0",
+    "spawnProof": "2279,3219,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1266,
+    "name": "Defeat a Skeleton in the Wilderness.",
+    "candidateNpcIds": [
+      70,
+      71,
+      72,
+      73,
+      74
+    ],
+    "chosenNpcId": 71,
+    "bounds": {
+      "minX": 3006,
+      "minY": 3593,
+      "maxX": 3010,
+      "maxY": 3597,
+      "plane": 0
+    },
+    "boundsProof": "3006-3010 x 3593-3597 plane=0",
+    "spawnProof": "3008,3595,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1268,
+    "name": "Defeat a Green Dragon in the Wilderness.",
+    "candidateNpcIds": [
+      260,
+      261,
+      262,
+      263,
+      264
+    ],
+    "chosenNpcId": 264,
+    "bounds": {
+      "minX": 3329,
+      "minY": 3670,
+      "maxX": 3333,
+      "maxY": 3674,
+      "plane": 0
+    },
+    "boundsProof": "3329-3333 x 3670-3674 plane=0",
+    "spawnProof": "3331,3672,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1269,
+    "name": "Defeat a Greater Demon in the Wilderness.",
+    "candidateNpcIds": [
+      2025,
+      2026,
+      2027,
+      2028,
+      2029
+    ],
+    "chosenNpcId": 2028,
+    "bounds": {
+      "minX": 3280,
+      "minY": 3878,
+      "maxX": 3284,
+      "maxY": 3882,
+      "plane": 0
+    },
+    "boundsProof": "3280-3284 x 3878-3882 plane=0",
+    "spawnProof": "3282,3880,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1272,
+    "name": "Defeat an Ice Giant in the Wilderness.",
+    "candidateNpcIds": [
+      2085,
+      2086,
+      2087,
+      2088,
+      2089
+    ],
+    "chosenNpcId": 2087,
+    "bounds": {
+      "minX": 2945,
+      "minY": 3893,
+      "maxX": 2949,
+      "maxY": 3897,
+      "plane": 0
+    },
+    "boundsProof": "2945-2949 x 3893-3897 plane=0",
+    "spawnProof": "2947,3895,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1282,
+    "name": "Defeat a Dark Warrior in the Wilderness.",
+    "candidateNpcIds": [
+      531,
+      6606,
+      11109,
+      11110,
+      11111
+    ],
+    "chosenNpcId": 6606,
+    "bounds": {
+      "minX": 3021,
+      "minY": 3627,
+      "maxX": 3025,
+      "maxY": 3631,
+      "plane": 0
+    },
+    "boundsProof": "3021-3025 x 3627-3631 plane=0",
+    "spawnProof": "3023,3629,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1361,
+    "name": "Defeat a Lizardman in Kourend.",
+    "candidateNpcIds": [
+      6914,
+      6915,
+      6916,
+      6917,
+      8563
+    ],
+    "chosenNpcId": 8563,
+    "bounds": {
+      "minX": 1361,
+      "minY": 3712,
+      "maxX": 1365,
+      "maxY": 3716,
+      "plane": 0
+    },
+    "boundsProof": "1361-1365 x 3712-3716 plane=0",
+    "spawnProof": "1363,3714,0 | 1365,3716,0",
+    "confidence": "high"
+  },
+  {
+    "sourceTaskId": 1370,
+    "name": "Defeat a Hill Giant in Kourend.",
+    "candidateNpcIds": [
+      2098,
+      2099,
+      2100,
+      2101,
+      2102
+    ],
+    "chosenNpcId": 2100,
+    "bounds": {
+      "minX": 1437,
+      "minY": 3608,
+      "maxX": 1441,
+      "maxY": 3612,
+      "plane": 0
+    },
+    "boundsProof": "1437-1441 x 3608-3612 plane=0",
+    "spawnProof": "1439,3610,0",
+    "confidence": "high"
+  }
+]

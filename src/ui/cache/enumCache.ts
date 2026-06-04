@@ -50,7 +50,10 @@ export function loadEnumCached(
     return loaded;
 }
 
-function loadEnumFromCacheSystem(cacheSystem: CacheSystem, enumId: number): EnumData | undefined {
+export function loadEnumFromCacheSystem(
+    cacheSystem: CacheSystem,
+    enumId: number,
+): EnumData | undefined {
     try {
         if (cacheSystem.indexExists(IndexType.RS2.enums)) {
             const enumsIndex = cacheSystem.getIndex(IndexType.RS2.enums);

@@ -1,0 +1,823 @@
+{
+  "generatedAt": "2026-06-02T21:17:09.703Z",
+  "description": "Phase 7A-2 Slice 4a alternate candidate audit trail.",
+  "entries": [
+    {
+      "sourceTaskId": 1558,
+      "taskName": "Equip a Dragon 2h Sword.",
+      "chosenItemId": 7158,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        7158,
+        7407,
+        15285,
+        20559
+      ]
+    },
+    {
+      "sourceTaskId": 1561,
+      "taskName": "Equip Infinity Boots.",
+      "chosenItemId": 6920,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        6920,
+        6921,
+        18601,
+        27170
+      ]
+    },
+    {
+      "sourceTaskId": 1565,
+      "taskName": "Equip Ranger Boots.",
+      "chosenItemId": 2577,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2577,
+        2578,
+        15756
+      ]
+    },
+    {
+      "sourceTaskId": 1566,
+      "taskName": "Equip Robin Hood Hat.",
+      "chosenItemId": 2581,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2581,
+        2582,
+        15758
+      ]
+    },
+    {
+      "sourceTaskId": 1567,
+      "taskName": "Equip a Seercull.",
+      "chosenItemId": 6724,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6724,
+        6725,
+        14571
+      ]
+    },
+    {
+      "sourceTaskId": 1568,
+      "taskName": "Equip Granite Legs.",
+      "chosenItemId": 6809,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6809,
+        6813,
+        14091
+      ]
+    },
+    {
+      "sourceTaskId": 1571,
+      "taskName": "Equip a Mystic Hat (Dark).",
+      "chosenItemId": 4099,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        4099,
+        4100,
+        14158
+      ]
+    },
+    {
+      "sourceTaskId": 1613,
+      "taskName": "Equip Dual Macuahuitl.",
+      "chosenItemId": 28997,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        28997,
+        28998,
+        28999,
+        29850
+      ]
+    },
+    {
+      "sourceTaskId": 1622,
+      "taskName": "Equip an Obsidian Cape.",
+      "chosenItemId": 6568,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6568,
+        6569,
+        18243
+      ]
+    },
+    {
+      "sourceTaskId": 1625,
+      "taskName": "Equip Toktz-xil-ak.",
+      "chosenItemId": 6523,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        6523,
+        6535,
+        18254,
+        20554
+      ]
+    },
+    {
+      "sourceTaskId": 1626,
+      "taskName": "Equip Toktz-ket-xil.",
+      "chosenItemId": 6524,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6524,
+        6536,
+        18255
+      ]
+    },
+    {
+      "sourceTaskId": 1630,
+      "taskName": "Equip a Toktz-mej-tal.",
+      "chosenItemId": 6526,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6526,
+        6538,
+        18257
+      ]
+    },
+    {
+      "sourceTaskId": 1636,
+      "taskName": "Equip Ranger Gloves.",
+      "chosenItemId": 19994,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        19994,
+        19995,
+        19996
+      ]
+    },
+    {
+      "sourceTaskId": 1637,
+      "taskName": "Equip Holy Sandals.",
+      "chosenItemId": 12598,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12598,
+        12599,
+        16007
+      ]
+    },
+    {
+      "sourceTaskId": 1638,
+      "taskName": "Equip Wizard Boots.",
+      "chosenItemId": 2579,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        2579,
+        2580,
+        15757,
+        27162
+      ]
+    },
+    {
+      "sourceTaskId": 1648,
+      "taskName": "Equip a Robin Hood Hat.",
+      "chosenItemId": 2581,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2581,
+        2582,
+        15758
+      ]
+    },
+    {
+      "sourceTaskId": 1652,
+      "taskName": "Equip a Black Elegant Shirt.",
+      "chosenItemId": 10400,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10400,
+        10401,
+        16110
+      ]
+    },
+    {
+      "sourceTaskId": 1653,
+      "taskName": "Equip Black Elegant Legs.",
+      "chosenItemId": 10402,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10402,
+        10403,
+        16111
+      ]
+    },
+    {
+      "sourceTaskId": 1654,
+      "taskName": "Equip a Red Elegant Shirt.",
+      "chosenItemId": 10404,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10404,
+        10405,
+        16112
+      ]
+    },
+    {
+      "sourceTaskId": 1655,
+      "taskName": "Equip Red Elegant Legs.",
+      "chosenItemId": 10406,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10406,
+        10407,
+        16113
+      ]
+    },
+    {
+      "sourceTaskId": 1656,
+      "taskName": "Equip a Green Elegant Shirt.",
+      "chosenItemId": 10412,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10412,
+        10413,
+        16116
+      ]
+    },
+    {
+      "sourceTaskId": 1657,
+      "taskName": "Equip Green Elegant Legs.",
+      "chosenItemId": 10414,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10414,
+        10415,
+        16117
+      ]
+    },
+    {
+      "sourceTaskId": 1658,
+      "taskName": "Equip a Blue Elegant Shirt.",
+      "chosenItemId": 10408,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10408,
+        10409,
+        16114
+      ]
+    },
+    {
+      "sourceTaskId": 1659,
+      "taskName": "Equip Blue Elegant Legs.",
+      "chosenItemId": 10410,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10410,
+        10411,
+        16115
+      ]
+    },
+    {
+      "sourceTaskId": 1660,
+      "taskName": "Equip a Zamorak Platebody.",
+      "chosenItemId": 2653,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2653,
+        2654,
+        15800
+      ]
+    },
+    {
+      "sourceTaskId": 1661,
+      "taskName": "Equip a Saradomin Platebody.",
+      "chosenItemId": 2661,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2661,
+        2662,
+        15805
+      ]
+    },
+    {
+      "sourceTaskId": 1662,
+      "taskName": "Equip a Guthix Platebody.",
+      "chosenItemId": 2669,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2669,
+        2670,
+        15810
+      ]
+    },
+    {
+      "sourceTaskId": 1663,
+      "taskName": "Equip a Zamorak Full Helm.",
+      "chosenItemId": 2657,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2657,
+        2658,
+        15803
+      ]
+    },
+    {
+      "sourceTaskId": 1664,
+      "taskName": "Equip a Saradomin Full Helm.",
+      "chosenItemId": 2665,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2665,
+        2666,
+        15808
+      ]
+    },
+    {
+      "sourceTaskId": 1665,
+      "taskName": "Equip a Guthix Full Helm.",
+      "chosenItemId": 2673,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2673,
+        2674,
+        15813
+      ]
+    },
+    {
+      "sourceTaskId": 1666,
+      "taskName": "Equip Zamorak Platelegs.",
+      "chosenItemId": 2655,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2655,
+        2656,
+        15801
+      ]
+    },
+    {
+      "sourceTaskId": 1667,
+      "taskName": "Equip Saradomin Platelegs.",
+      "chosenItemId": 2663,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2663,
+        2664,
+        15806
+      ]
+    },
+    {
+      "sourceTaskId": 1668,
+      "taskName": "Equip Guthix Platelegs.",
+      "chosenItemId": 2671,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2671,
+        2672,
+        15811
+      ]
+    },
+    {
+      "sourceTaskId": 1669,
+      "taskName": "Equip a Zamorak Kiteshield.",
+      "chosenItemId": 2659,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2659,
+        2660,
+        15804
+      ]
+    },
+    {
+      "sourceTaskId": 1670,
+      "taskName": "Equip a Saradomin Kiteshield.",
+      "chosenItemId": 2667,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2667,
+        2668,
+        15809
+      ]
+    },
+    {
+      "sourceTaskId": 1671,
+      "taskName": "Equip a Guthix Kiteshield.",
+      "chosenItemId": 2675,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2675,
+        2676,
+        15814
+      ]
+    },
+    {
+      "sourceTaskId": 1672,
+      "taskName": "Equip a Zamorak Crozier.",
+      "chosenItemId": 10444,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10444,
+        10445,
+        16132
+      ]
+    },
+    {
+      "sourceTaskId": 1673,
+      "taskName": "Equip a Saradomin Crozier.",
+      "chosenItemId": 10440,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10440,
+        10441,
+        16130
+      ]
+    },
+    {
+      "sourceTaskId": 1674,
+      "taskName": "Equip a Guthix Crozier.",
+      "chosenItemId": 10442,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10442,
+        10443,
+        16131
+      ]
+    },
+    {
+      "sourceTaskId": 1675,
+      "taskName": "Equip a Bandos Crozier.",
+      "chosenItemId": 12275,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12275,
+        12276,
+        15878
+      ]
+    },
+    {
+      "sourceTaskId": 1676,
+      "taskName": "Equip an Armadyl Crozier.",
+      "chosenItemId": 12263,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12263,
+        12264,
+        15872
+      ]
+    },
+    {
+      "sourceTaskId": 1677,
+      "taskName": "Equip a Gilded Full Helm.",
+      "chosenItemId": 3486,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3486,
+        3487,
+        15833
+      ]
+    },
+    {
+      "sourceTaskId": 1678,
+      "taskName": "Equip a Gilded Platebody.",
+      "chosenItemId": 3481,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3481,
+        3482,
+        15830
+      ]
+    },
+    {
+      "sourceTaskId": 1679,
+      "taskName": "Equip Gilded Platelegs.",
+      "chosenItemId": 3483,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3483,
+        3484,
+        15831
+      ]
+    },
+    {
+      "sourceTaskId": 1680,
+      "taskName": "Equip Gilded Boots.",
+      "chosenItemId": 12391,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12391,
+        12392,
+        15836
+      ]
+    },
+    {
+      "sourceTaskId": 1682,
+      "taskName": "Equip a Gilded Kiteshield.",
+      "chosenItemId": 3488,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        3488,
+        3489,
+        15834
+      ]
+    },
+    {
+      "sourceTaskId": 1687,
+      "taskName": "Equip an Infinity Hat.",
+      "chosenItemId": 6918,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        6918,
+        6919,
+        18600
+      ]
+    },
+    {
+      "sourceTaskId": 1688,
+      "taskName": "Equip an Infinity Top.",
+      "chosenItemId": 6916,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        6916,
+        6917,
+        18599,
+        20574
+      ]
+    },
+    {
+      "sourceTaskId": 1689,
+      "taskName": "Equip Infinity Bottoms.",
+      "chosenItemId": 6924,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        6924,
+        6925,
+        18603,
+        20575
+      ]
+    },
+    {
+      "sourceTaskId": 1692,
+      "taskName": "Equip a Master Wand.",
+      "chosenItemId": 6914,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        6914,
+        6915,
+        18598,
+        20560
+      ]
+    },
+    {
+      "sourceTaskId": 1693,
+      "taskName": "Equip a Dragon Cane.",
+      "chosenItemId": 12373,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12373,
+        12374,
+        15927
+      ]
+    },
+    {
+      "sourceTaskId": 1694,
+      "taskName": "Equip a Black Cavalier.",
+      "chosenItemId": 2643,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2643,
+        2644,
+        15785
+      ]
+    },
+    {
+      "sourceTaskId": 1695,
+      "taskName": "Equip a Red Cavalier.",
+      "chosenItemId": 12323,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12323,
+        12324,
+        15902
+      ]
+    },
+    {
+      "sourceTaskId": 1696,
+      "taskName": "Equip a White Cavalier.",
+      "chosenItemId": 12321,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12321,
+        12322,
+        15901
+      ]
+    },
+    {
+      "sourceTaskId": 1701,
+      "taskName": "Equip a 3rd Age Range Coif.",
+      "chosenItemId": 10334,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        10334,
+        10335,
+        16081,
+        27201
+      ]
+    },
+    {
+      "sourceTaskId": 1702,
+      "taskName": "Equip 3rd Age Range Top.",
+      "chosenItemId": 10330,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        10330,
+        10331,
+        16079,
+        27199
+      ]
+    },
+    {
+      "sourceTaskId": 1703,
+      "taskName": "Equip 3rd Age Range Legs.",
+      "chosenItemId": 10332,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        10332,
+        10333,
+        16080,
+        27200
+      ]
+    },
+    {
+      "sourceTaskId": 1704,
+      "taskName": "Equip a 3rd Age Bow.",
+      "chosenItemId": 12424,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12424,
+        12425,
+        15960
+      ]
+    },
+    {
+      "sourceTaskId": 1705,
+      "taskName": "Equip a 3rd Age Cloak.",
+      "chosenItemId": 12437,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12437,
+        12438,
+        15967
+      ]
+    },
+    {
+      "sourceTaskId": 1706,
+      "taskName": "Equip 3rd Age Vambraces.",
+      "chosenItemId": 10336,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10336,
+        10337,
+        16082
+      ]
+    },
+    {
+      "sourceTaskId": 1707,
+      "taskName": "Equip 3rd Age Mage Hat.",
+      "chosenItemId": 10342,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        10342,
+        10343,
+        16085,
+        27183
+      ]
+    },
+    {
+      "sourceTaskId": 1708,
+      "taskName": "Equip 3rd Age Robe Top.",
+      "chosenItemId": 10338,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        10338,
+        10339,
+        16083,
+        20576
+      ]
+    },
+    {
+      "sourceTaskId": 1710,
+      "taskName": "Equip a 3rd Age Amulet.",
+      "chosenItemId": 10344,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10344,
+        10345,
+        16086
+      ]
+    },
+    {
+      "sourceTaskId": 1711,
+      "taskName": "Equip a 3rd Age Wand.",
+      "chosenItemId": 12422,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12422,
+        12423,
+        15959
+      ]
+    },
+    {
+      "sourceTaskId": 1713,
+      "taskName": "Equip 3rd Age Full Helmet.",
+      "chosenItemId": 10350,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10350,
+        10351,
+        16089
+      ]
+    },
+    {
+      "sourceTaskId": 1714,
+      "taskName": "Equip 3rd Age Platebody.",
+      "chosenItemId": 10348,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10348,
+        10349,
+        16088
+      ]
+    },
+    {
+      "sourceTaskId": 1715,
+      "taskName": "Equip 3rd Age Platelegs.",
+      "chosenItemId": 10346,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10346,
+        10347,
+        16087
+      ]
+    },
+    {
+      "sourceTaskId": 1716,
+      "taskName": "Equip a 3rd Age Kiteshield.",
+      "chosenItemId": 10352,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10352,
+        10353,
+        16090
+      ]
+    },
+    {
+      "sourceTaskId": 1717,
+      "taskName": "Equip a 3rd Age Longsword.",
+      "chosenItemId": 12426,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12426,
+        12427,
+        15961
+      ]
+    },
+    {
+      "sourceTaskId": 1730,
+      "taskName": "Equip a Briefcase.",
+      "chosenItemId": 12335,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        12335,
+        12336,
+        15908
+      ]
+    },
+    {
+      "sourceTaskId": 1732,
+      "taskName": "Equip a Fremennik Kilt.",
+      "chosenItemId": 23246,
+      "alternateCandidateCount": 3,
+      "candidateItemIds": [
+        23246,
+        23247,
+        23248,
+        27177
+      ]
+    },
+    {
+      "sourceTaskId": 1733,
+      "taskName": "Equip a Sleeping Cap.",
+      "chosenItemId": 10398,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        10398,
+        10399,
+        16109
+      ]
+    },
+    {
+      "sourceTaskId": 1735,
+      "taskName": "Equip a Highwayman Mask.",
+      "chosenItemId": 2631,
+      "alternateCandidateCount": 2,
+      "candidateItemIds": [
+        2631,
+        2632,
+        15779
+      ]
+    }
+  ]
+}

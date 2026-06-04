@@ -185,19 +185,18 @@ export class LoginOverlay implements Overlay {
                 : height;
         const cssLayoutWidth = Math.max(1, Math.round(rawCssWidth));
         const cssLayoutHeight = Math.max(1, Math.round(rawCssHeight));
-        // Login input is mapped in CSS/layout space before being projected into the backing
-        // store. The cached title texture must use that same space on desktop and mobile or
-        // button hitboxes drift away from the rendered positions on HiDPI displays.
-        const renderLayoutWidth = cssLayoutWidth;
-        const renderLayoutHeight = cssLayoutHeight;
+        // Viewport (layout/hitboxes) stays in CSS space; the login bitmap is drawn at the canvas
+        // backing-store size so the GL fullscreen quad does not bilinear-upscale a 1x texture.
+        const surfaceWidth = Math.max(1, Math.round(width));
+        const surfaceHeight = Math.max(1, Math.round(height));
 
-        this.layoutWidth = renderLayoutWidth;
-        this.layoutHeight = renderLayoutHeight;
+        this.layoutWidth = cssLayoutWidth;
+        this.layoutHeight = cssLayoutHeight;
 
         const keyboardFocused =
             (this.osrsClient.renderer as any)?.isMobileLoginInputActive?.() === true;
         loginRenderer.syncMobileViewportState(loginState, keyboardFocused);
-        loginRenderer.updateLayout(cssLayoutWidth, cssLayoutHeight, width, height);
+        loginRenderer.updateLayout(cssLayoutWidth, cssLayoutHeight, surfaceWidth, surfaceHeight);
 
         // Update mouse position for hover detection in world select
         const mouseX = inputManager?.mouseX ?? 0;
@@ -219,24 +218,15 @@ export class LoginOverlay implements Overlay {
             }
         }
 
-        // The cached login UI and separate fire overlay are authored in CSS/layout space, then
-        // the fullscreen quad scales that texture to the canvas backing store.
-        loginRenderer.updateLayout(
-            renderLayoutWidth,
-            renderLayoutHeight,
-            renderLayoutWidth,
-            renderLayoutHeight,
-        );
-
         // Performance: compute state hash to detect changes
         const cursorBlink = loginRenderer.cycle % 40 < 20;
         const stateHash = this.computeStateHash(
             loginState,
             loginRenderer,
-            width,
-            height,
-            renderLayoutWidth,
-            renderLayoutHeight,
+            surfaceWidth,
+            surfaceHeight,
+            cssLayoutWidth,
+            cssLayoutHeight,
         );
 
         // Performance: Only check hover changes, not every mouse pixel movement
@@ -280,18 +270,18 @@ export class LoginOverlay implements Overlay {
             if (this.gameState === GameState.DOWNLOADING) {
                 loginRenderer.drawDownload(
                     loginState,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
+                    surfaceWidth,
+                    surfaceHeight,
+                    cssLayoutWidth,
+                    cssLayoutHeight,
                 );
             } else if (this.gameState === GameState.LOADING) {
                 loginRenderer.drawInitial(
                     loginState,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
+                    surfaceWidth,
+                    surfaceHeight,
+                    cssLayoutWidth,
+                    cssLayoutHeight,
                 );
             } else {
                 // Fast path: only hover changed, use cached title + hover overlay
@@ -299,18 +289,18 @@ export class LoginOverlay implements Overlay {
                 loginRenderer.drawTitle(
                     loginState,
                     this.gameState,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
+                    surfaceWidth,
+                    surfaceHeight,
                     true,
                     hoverOnlyChange,
-                    renderLayoutWidth,
-                    renderLayoutHeight,
+                    cssLayoutWidth,
+                    cssLayoutHeight,
                 );
             }
 
             // Update UI texture
-            const loginCanvas = loginRenderer.getCanvas(renderLayoutWidth, renderLayoutHeight);
-            this.updateUITexture(loginCanvas, renderLayoutWidth, renderLayoutHeight);
+            const loginCanvas = loginRenderer.getCanvas(surfaceWidth, surfaceHeight);
+            this.updateUITexture(loginCanvas, surfaceWidth, surfaceHeight);
             this.uiNeedsRedraw = false;
         }
 

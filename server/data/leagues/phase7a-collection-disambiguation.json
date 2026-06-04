@@ -1,0 +1,3080 @@
+{
+  "description": "Phase 7A: collection ambiguous disambiguation (Slice 1 Tier A + Slice 1b allowlist + Slice 2 Tier B-1 + Slice 2 Tier B-2 + Slice 3 Tier B-3 + Slice 4 Tier B-4a + Slice 4 Tier B-4b).",
+  "tier": "A",
+  "tasks": [
+    {
+      "sourceTaskId": 699,
+      "tier": "A",
+      "chosenItemId": 20754,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          20754
+        ]
+      },
+      "mvpTaskId": 323
+    },
+    {
+      "sourceTaskId": 700,
+      "tier": "A",
+      "chosenItemId": 22374,
+      "trigger": {
+        "type": "item_obtain",
+        "itemIds": [
+          22374
+        ]
+      },
+      "mvpTaskId": 324
+    },
+    {
+      "sourceTaskId": 1480,
+      "tier": "A",
+      "chosenItemId": 20756,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20756
+        ]
+      },
+      "mvpTaskId": 325
+    },
+    {
+      "sourceTaskId": 1489,
+      "tier": "A",
+      "chosenItemId": 22557,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22557
+        ]
+      },
+      "mvpTaskId": 326
+    },
+    {
+      "sourceTaskId": 1506,
+      "tier": "A",
+      "chosenItemId": 21739,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21739
+        ]
+      },
+      "mvpTaskId": 327
+    },
+    {
+      "sourceTaskId": 1507,
+      "tier": "A",
+      "chosenItemId": 21742,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21742
+        ]
+      },
+      "mvpTaskId": 328
+    },
+    {
+      "sourceTaskId": 1508,
+      "tier": "A",
+      "chosenItemId": 21730,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21730
+        ]
+      },
+      "mvpTaskId": 329
+    },
+    {
+      "sourceTaskId": 1515,
+      "tier": "A",
+      "chosenItemId": 20727,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20727
+        ]
+      },
+      "mvpTaskId": 330
+    },
+    {
+      "sourceTaskId": 1518,
+      "tier": "A",
+      "chosenItemId": 24268,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          24268
+        ]
+      },
+      "mvpTaskId": 331
+    },
+    {
+      "sourceTaskId": 1519,
+      "tier": "A",
+      "chosenItemId": 22111,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22111
+        ]
+      },
+      "mvpTaskId": 332
+    },
+    {
+      "sourceTaskId": 1521,
+      "tier": "A",
+      "chosenItemId": 22006,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22006
+        ]
+      },
+      "mvpTaskId": 333
+    },
+    {
+      "sourceTaskId": 1523,
+      "tier": "A",
+      "chosenItemId": 22106,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22106
+        ]
+      },
+      "mvpTaskId": 334
+    },
+    {
+      "sourceTaskId": 1527,
+      "tier": "A",
+      "chosenItemId": 21736,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21736
+        ]
+      },
+      "mvpTaskId": 335
+    },
+    {
+      "sourceTaskId": 1541,
+      "tier": "A",
+      "chosenItemId": 22326,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22326
+        ]
+      },
+      "mvpTaskId": 336
+    },
+    {
+      "sourceTaskId": 1545,
+      "tier": "A",
+      "chosenItemId": 22477,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22477
+        ]
+      },
+      "mvpTaskId": 337
+    },
+    {
+      "sourceTaskId": 1546,
+      "tier": "A",
+      "chosenItemId": 24422,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          24422
+        ]
+      },
+      "mvpTaskId": 338
+    },
+    {
+      "sourceTaskId": 1569,
+      "tier": "A",
+      "chosenItemId": 21643,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21643
+        ]
+      },
+      "mvpTaskId": 339
+    },
+    {
+      "sourceTaskId": 1588,
+      "tier": "A",
+      "chosenItemId": 23953,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23953
+        ]
+      },
+      "mvpTaskId": 340
+    },
+    {
+      "sourceTaskId": 1595,
+      "tier": "A",
+      "chosenItemId": 20997,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20997
+        ]
+      },
+      "mvpTaskId": 341
+    },
+    {
+      "sourceTaskId": 1597,
+      "tier": "A",
+      "chosenItemId": 21012,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21012
+        ]
+      },
+      "mvpTaskId": 342
+    },
+    {
+      "sourceTaskId": 1601,
+      "tier": "A",
+      "chosenItemId": 22983,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22983
+        ]
+      },
+      "mvpTaskId": 343
+    },
+    {
+      "sourceTaskId": 1618,
+      "tier": "A",
+      "chosenItemId": 27021,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          27021
+        ]
+      },
+      "mvpTaskId": 344
+    },
+    {
+      "sourceTaskId": 1621,
+      "tier": "A",
+      "chosenItemId": 29889,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          29889
+        ]
+      },
+      "mvpTaskId": 345
+    },
+    {
+      "sourceTaskId": 1629,
+      "tier": "A",
+      "chosenItemId": 21028,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21028
+        ]
+      },
+      "mvpTaskId": 346
+    },
+    {
+      "sourceTaskId": 1683,
+      "tier": "A",
+      "chosenItemId": 20146,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20146
+        ]
+      },
+      "mvpTaskId": 347
+    },
+    {
+      "sourceTaskId": 1684,
+      "tier": "A",
+      "chosenItemId": 20149,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20149
+        ]
+      },
+      "mvpTaskId": 348
+    },
+    {
+      "sourceTaskId": 1685,
+      "tier": "A",
+      "chosenItemId": 20152,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20152
+        ]
+      },
+      "mvpTaskId": 349
+    },
+    {
+      "sourceTaskId": 1686,
+      "tier": "A",
+      "chosenItemId": 20155,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20155
+        ]
+      },
+      "mvpTaskId": 350
+    },
+    {
+      "sourceTaskId": 1718,
+      "tier": "A",
+      "chosenItemId": 20011,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20011
+        ]
+      },
+      "mvpTaskId": 351
+    },
+    {
+      "sourceTaskId": 1719,
+      "tier": "A",
+      "chosenItemId": 20014,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20014
+        ]
+      },
+      "mvpTaskId": 352
+    },
+    {
+      "sourceTaskId": 1720,
+      "tier": "A",
+      "chosenItemId": 23345,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23345
+        ]
+      },
+      "mvpTaskId": 353
+    },
+    {
+      "sourceTaskId": 1721,
+      "tier": "A",
+      "chosenItemId": 23336,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23336
+        ]
+      },
+      "mvpTaskId": 354
+    },
+    {
+      "sourceTaskId": 1722,
+      "tier": "A",
+      "chosenItemId": 23339,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23339
+        ]
+      },
+      "mvpTaskId": 355
+    },
+    {
+      "sourceTaskId": 1723,
+      "tier": "A",
+      "chosenItemId": 23342,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23342
+        ]
+      },
+      "mvpTaskId": 356
+    },
+    {
+      "sourceTaskId": 1725,
+      "tier": "A",
+      "chosenItemId": 10326,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10326
+        ]
+      },
+      "mvpTaskId": 357
+    },
+    {
+      "sourceTaskId": 1726,
+      "tier": "A",
+      "chosenItemId": 7329,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          7329
+        ]
+      },
+      "mvpTaskId": 358
+    },
+    {
+      "sourceTaskId": 1727,
+      "tier": "A",
+      "chosenItemId": 10327,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10327
+        ]
+      },
+      "mvpTaskId": 359
+    },
+    {
+      "sourceTaskId": 1728,
+      "tier": "A",
+      "chosenItemId": 7330,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          7330
+        ]
+      },
+      "mvpTaskId": 360
+    },
+    {
+      "sourceTaskId": 1729,
+      "tier": "A",
+      "chosenItemId": 7331,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          7331
+        ]
+      },
+      "mvpTaskId": 361
+    },
+    {
+      "sourceTaskId": 321,
+      "tier": "A-1b",
+      "chosenItemId": 11864,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11864
+        ]
+      },
+      "mvpTaskId": 362,
+      "allowlistNote": "Slayer helmet — crafted slayer gear"
+    },
+    {
+      "sourceTaskId": 1531,
+      "tier": "A-1b",
+      "chosenItemId": 12899,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12899
+        ]
+      },
+      "mvpTaskId": 363,
+      "allowlistNote": "Trident of the swamp — kraken upgrade"
+    },
+    {
+      "sourceTaskId": 1532,
+      "tier": "A-1b",
+      "chosenItemId": 12006,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12006
+        ]
+      },
+      "mvpTaskId": 364,
+      "allowlistNote": "Abyssal tentacle — whip + kraken tentacle"
+    },
+    {
+      "sourceTaskId": 1542,
+      "tier": "A-1b",
+      "chosenItemId": 22325,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22325
+        ]
+      },
+      "mvpTaskId": 365,
+      "allowlistNote": "Scythe of vitur — ToB unique"
+    },
+    {
+      "sourceTaskId": 1543,
+      "tier": "A-1b",
+      "chosenItemId": 22323,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22323
+        ]
+      },
+      "mvpTaskId": 366,
+      "allowlistNote": "Sanguinesti staff — ToB unique"
+    },
+    {
+      "sourceTaskId": 1552,
+      "tier": "A-1b",
+      "chosenItemId": 25979,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          25979
+        ]
+      },
+      "mvpTaskId": 367,
+      "allowlistNote": "Keris partisan — ToA"
+    },
+    {
+      "sourceTaskId": 1586,
+      "tier": "A-1b",
+      "chosenItemId": 23995,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23995
+        ]
+      },
+      "mvpTaskId": 368,
+      "allowlistNote": "Blade of saeldor — crystal craft"
+    },
+    {
+      "sourceTaskId": 1587,
+      "tier": "A-1b",
+      "chosenItemId": 25865,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          25865
+        ]
+      },
+      "mvpTaskId": 369,
+      "allowlistNote": "Bow of faerdhinen — crystal craft"
+    },
+    {
+      "sourceTaskId": 1598,
+      "tier": "A-1b",
+      "chosenItemId": 22978,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22978
+        ]
+      },
+      "mvpTaskId": 370,
+      "allowlistNote": "Dragon hunter lance"
+    },
+    {
+      "sourceTaskId": 1599,
+      "tier": "A-1b",
+      "chosenItemId": 22975,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22975
+        ]
+      },
+      "mvpTaskId": 371,
+      "allowlistNote": "Brimstone ring"
+    },
+    {
+      "sourceTaskId": 1602,
+      "tier": "A-1b",
+      "chosenItemId": 22981,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22981
+        ]
+      },
+      "mvpTaskId": 372,
+      "allowlistNote": "Ferocious gloves — hydra craft"
+    },
+    {
+      "sourceTaskId": 1603,
+      "tier": "A-1b",
+      "chosenItemId": 20714,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          20714
+        ]
+      },
+      "mvpTaskId": 373,
+      "allowlistNote": "Tome of fire"
+    },
+    {
+      "sourceTaskId": 1604,
+      "tier": "A-1b",
+      "chosenItemId": 25574,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          25574
+        ]
+      },
+      "mvpTaskId": 374,
+      "allowlistNote": "Tome of water"
+    },
+    {
+      "sourceTaskId": 1620,
+      "tier": "A-1b",
+      "chosenItemId": 28922,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          28922
+        ]
+      },
+      "mvpTaskId": 375,
+      "allowlistNote": "Tonalztics of ralos"
+    },
+    {
+      "sourceTaskId": 1760,
+      "tier": "A-1b",
+      "chosenItemId": 3840,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3840
+        ]
+      },
+      "mvpTaskId": 376,
+      "allowlistNote": "Holy book — god book completion"
+    },
+    {
+      "sourceTaskId": 1762,
+      "tier": "A-1b",
+      "chosenItemId": 3844,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3844
+        ]
+      },
+      "mvpTaskId": 377,
+      "allowlistNote": "Book of balance — god book completion"
+    },
+    {
+      "sourceTaskId": 1763,
+      "tier": "A-1b",
+      "chosenItemId": 12608,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12608
+        ]
+      },
+      "mvpTaskId": 378,
+      "allowlistNote": "Book of war — god book completion"
+    },
+    {
+      "sourceTaskId": 1764,
+      "tier": "A-1b",
+      "chosenItemId": 12610,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12610
+        ]
+      },
+      "mvpTaskId": 379,
+      "allowlistNote": "Book of law — god book completion"
+    },
+    {
+      "sourceTaskId": 1765,
+      "tier": "A-1b",
+      "chosenItemId": 12612,
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12612
+        ]
+      },
+      "mvpTaskId": 380,
+      "allowlistNote": "Book of darkness — god book completion"
+    },
+    {
+      "sourceTaskId": 1482,
+      "tier": "B-1",
+      "chosenItemId": 11920,
+      "candidateItemIds": [
+        11920,
+        11921,
+        12797,
+        14766,
+        14767
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11920
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 457
+    },
+    {
+      "sourceTaskId": 1483,
+      "tier": "B-1",
+      "chosenItemId": 12603,
+      "candidateItemIds": [
+        12603,
+        12604,
+        18280
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12603
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 458
+    },
+    {
+      "sourceTaskId": 1484,
+      "tier": "B-1",
+      "chosenItemId": 12605,
+      "candidateItemIds": [
+        12605,
+        12606,
+        18282
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12605
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 459
+    },
+    {
+      "sourceTaskId": 1485,
+      "tier": "B-1",
+      "chosenItemId": 12601,
+      "candidateItemIds": [
+        12601,
+        12602,
+        18278
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12601
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 460
+    },
+    {
+      "sourceTaskId": 1491,
+      "tier": "B-1",
+      "chosenItemId": 11838,
+      "candidateItemIds": [
+        11838,
+        11839,
+        18358
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11838
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 461
+    },
+    {
+      "sourceTaskId": 1492,
+      "tier": "B-1",
+      "chosenItemId": 11824,
+      "candidateItemIds": [
+        11824,
+        11825,
+        18350
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11824
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 462
+    },
+    {
+      "sourceTaskId": 1493,
+      "tier": "B-1",
+      "chosenItemId": 11785,
+      "candidateItemIds": [
+        11785,
+        11786,
+        14508,
+        23611,
+        23612
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11785
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 463
+    },
+    {
+      "sourceTaskId": 1494,
+      "tier": "B-1",
+      "chosenItemId": 11834,
+      "candidateItemIds": [
+        11834,
+        11835,
+        18356,
+        23646,
+        23647
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11834
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 464
+    },
+    {
+      "sourceTaskId": 1495,
+      "tier": "B-1",
+      "chosenItemId": 11832,
+      "candidateItemIds": [
+        11832,
+        11833,
+        18355
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11832
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 465
+    },
+    {
+      "sourceTaskId": 1496,
+      "tier": "B-1",
+      "chosenItemId": 11828,
+      "candidateItemIds": [
+        11828,
+        11829,
+        18353
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11828
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 466
+    },
+    {
+      "sourceTaskId": 1497,
+      "tier": "B-1",
+      "chosenItemId": 11830,
+      "candidateItemIds": [
+        11830,
+        11831,
+        18354
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11830
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 467
+    },
+    {
+      "sourceTaskId": 1502,
+      "tier": "B-1",
+      "chosenItemId": 11840,
+      "candidateItemIds": [
+        11840,
+        11841,
+        18361
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11840
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 468
+    },
+    {
+      "sourceTaskId": 1509,
+      "tier": "B-1",
+      "chosenItemId": 6737,
+      "candidateItemIds": [
+        6737,
+        6738,
+        18398,
+        23595,
+        23596
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6737
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 469
+    },
+    {
+      "sourceTaskId": 1511,
+      "tier": "B-1",
+      "chosenItemId": 6731,
+      "candidateItemIds": [
+        6731,
+        6732,
+        18392
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6731
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 470
+    },
+    {
+      "sourceTaskId": 1512,
+      "tier": "B-1",
+      "chosenItemId": 6735,
+      "candidateItemIds": [
+        6735,
+        6736,
+        18396
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6735
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 471
+    },
+    {
+      "sourceTaskId": 1513,
+      "tier": "B-1",
+      "chosenItemId": 6739,
+      "candidateItemIds": [
+        6739,
+        6740,
+        14711
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6739
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 472
+    },
+    {
+      "sourceTaskId": 1514,
+      "tier": "B-1",
+      "chosenItemId": 6562,
+      "candidateItemIds": [
+        6562,
+        6726,
+        14695
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6562
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 473
+    },
+    {
+      "sourceTaskId": 1522,
+      "tier": "B-1",
+      "chosenItemId": 11286,
+      "candidateItemIds": [
+        11286,
+        11287,
+        16834
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11286
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 474
+    },
+    {
+      "sourceTaskId": 1524,
+      "tier": "B-1",
+      "chosenItemId": 4151,
+      "candidateItemIds": [
+        4151,
+        4152,
+        4178,
+        14032,
+        20405
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          4151
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 475
+    },
+    {
+      "sourceTaskId": 1525,
+      "tier": "B-1",
+      "chosenItemId": 13265,
+      "candidateItemIds": [
+        13265,
+        13266,
+        18629
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13265
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 476
+    },
+    {
+      "sourceTaskId": 1529,
+      "tier": "B-1",
+      "chosenItemId": 12002,
+      "candidateItemIds": [
+        12002,
+        12003,
+        14004,
+        23654
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12002
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 477
+    },
+    {
+      "sourceTaskId": 1533,
+      "tier": "B-1",
+      "chosenItemId": 12004,
+      "candidateItemIds": [
+        12004,
+        12005,
+        14005
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12004
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 478
+    },
+    {
+      "sourceTaskId": 1544,
+      "tier": "B-1",
+      "chosenItemId": 22324,
+      "candidateItemIds": [
+        22324,
+        22483,
+        22484,
+        23628,
+        23629
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          22324
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 479
+    },
+    {
+      "sourceTaskId": 1557,
+      "tier": "B-1",
+      "chosenItemId": 25975,
+      "candidateItemIds": [
+        25975,
+        25976,
+        27244,
+        27870
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          25975
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 480
+    },
+    {
+      "sourceTaskId": 1564,
+      "tier": "B-1",
+      "chosenItemId": 13576,
+      "candidateItemIds": [
+        13576,
+        13577,
+        14728,
+        20785
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13576
+        ]
+      },
+      "note": "single canonical collection-log candidate",
+      "mvpTaskId": 481
+    },
+    {
+      "sourceTaskId": 1503,
+      "tier": "B-2",
+      "chosenItemId": 13239,
+      "candidateItemIds": [
+        13239,
+        13240,
+        14027
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13239
+        ]
+      },
+      "note": "Primordial boots — canonical Cerberus boot base",
+      "mvpTaskId": 482
+    },
+    {
+      "sourceTaskId": 1504,
+      "tier": "B-2",
+      "chosenItemId": 13237,
+      "candidateItemIds": [
+        13237,
+        13238,
+        14026
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13237
+        ]
+      },
+      "note": "Pegasian boots — canonical Cerberus boot base",
+      "mvpTaskId": 483
+    },
+    {
+      "sourceTaskId": 1505,
+      "tier": "B-2",
+      "chosenItemId": 13235,
+      "candidateItemIds": [
+        13235,
+        13236,
+        14025,
+        23644,
+        23645
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13235
+        ]
+      },
+      "note": "Eternal boots — canonical Cerberus boot base",
+      "mvpTaskId": 484
+    },
+    {
+      "sourceTaskId": 1579,
+      "tier": "B-2",
+      "chosenItemId": 19547,
+      "candidateItemIds": [
+        19547,
+        19548,
+        19549,
+        27172
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          19547
+        ]
+      },
+      "note": "Necklace of anguish — canonical zenyte base",
+      "mvpTaskId": 485
+    },
+    {
+      "sourceTaskId": 1580,
+      "tier": "B-2",
+      "chosenItemId": 19544,
+      "candidateItemIds": [
+        19544,
+        19545,
+        19546,
+        27171
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          19544
+        ]
+      },
+      "note": "Tormented bracelet — canonical zenyte base",
+      "mvpTaskId": 486
+    },
+    {
+      "sourceTaskId": 1581,
+      "tier": "B-2",
+      "chosenItemId": 19550,
+      "candidateItemIds": [
+        19550,
+        19551,
+        19552
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          19550
+        ]
+      },
+      "note": "Ring of suffering — canonical zenyte base",
+      "mvpTaskId": 487
+    },
+    {
+      "sourceTaskId": 1589,
+      "tier": "B-2",
+      "chosenItemId": 23971,
+      "candidateItemIds": [
+        23971,
+        23972,
+        27705,
+        27706,
+        27717
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23971
+        ]
+      },
+      "note": "Crystal helm — canonical armor base",
+      "mvpTaskId": 488
+    },
+    {
+      "sourceTaskId": 1590,
+      "tier": "B-2",
+      "chosenItemId": 23979,
+      "candidateItemIds": [
+        23979,
+        23980,
+        27701,
+        27702,
+        27713
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23979
+        ]
+      },
+      "note": "Crystal legs — canonical armor base",
+      "mvpTaskId": 489
+    },
+    {
+      "sourceTaskId": 1591,
+      "tier": "B-2",
+      "chosenItemId": 23975,
+      "candidateItemIds": [
+        23975,
+        23976,
+        27697,
+        27698,
+        27709
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23975
+        ]
+      },
+      "note": "Crystal body — canonical armor base",
+      "mvpTaskId": 490
+    },
+    {
+      "sourceTaskId": 1596,
+      "tier": "B-2",
+      "chosenItemId": 21006,
+      "candidateItemIds": [
+        21006,
+        21007,
+        21008,
+        23626,
+        23627
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21006
+        ]
+      },
+      "note": "Kodai wand — canonical base",
+      "mvpTaskId": 491
+    },
+    {
+      "sourceTaskId": 1592,
+      "tier": "B-3",
+      "chosenItemId": 13652,
+      "candidateItemIds": [
+        13652,
+        15597,
+        20784,
+        20848
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13652
+        ]
+      },
+      "note": "registry canonical base",
+      "mvpTaskId": 492
+    },
+    {
+      "sourceTaskId": 1627,
+      "tier": "B-3",
+      "chosenItemId": 6570,
+      "candidateItemIds": [
+        6570,
+        10566,
+        18244
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6570
+        ]
+      },
+      "note": "registry canonical base",
+      "mvpTaskId": 493
+    },
+    {
+      "sourceTaskId": 1628,
+      "tier": "B-3",
+      "chosenItemId": 21295,
+      "candidateItemIds": [
+        21295,
+        21296,
+        21297,
+        23622,
+        23623
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          21295
+        ]
+      },
+      "note": "registry canonical base",
+      "mvpTaskId": 494
+    },
+    {
+      "sourceTaskId": 1498,
+      "tier": "B-3",
+      "chosenItemId": 11806,
+      "candidateItemIds": [
+        11806,
+        11807,
+        18344
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11806
+        ]
+      },
+      "note": "allowlist canonical base (Saradomin godsword — canonical base)",
+      "mvpTaskId": 495
+    },
+    {
+      "sourceTaskId": 1499,
+      "tier": "B-3",
+      "chosenItemId": 11808,
+      "candidateItemIds": [
+        11808,
+        11809,
+        18345
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11808
+        ]
+      },
+      "note": "allowlist canonical base (Zamorak godsword — canonical base)",
+      "mvpTaskId": 496
+    },
+    {
+      "sourceTaskId": 1500,
+      "tier": "B-3",
+      "chosenItemId": 11802,
+      "candidateItemIds": [
+        11802,
+        11803,
+        18342,
+        20593,
+        22665
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11802
+        ]
+      },
+      "note": "allowlist canonical base (Armadyl godsword — canonical base)",
+      "mvpTaskId": 497
+    },
+    {
+      "sourceTaskId": 1501,
+      "tier": "B-3",
+      "chosenItemId": 11804,
+      "candidateItemIds": [
+        11804,
+        11805,
+        18343,
+        20782,
+        21060
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          11804
+        ]
+      },
+      "note": "allowlist canonical base (Bandos godsword — canonical base)",
+      "mvpTaskId": 498
+    },
+    {
+      "sourceTaskId": 1526,
+      "tier": "B-3",
+      "chosenItemId": 13263,
+      "candidateItemIds": [
+        13263,
+        13264,
+        18628
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13263
+        ]
+      },
+      "note": "allowlist canonical base (Abyssal bludgeon — canonical base)",
+      "mvpTaskId": 499
+    },
+    {
+      "sourceTaskId": 1558,
+      "tier": "B-4a",
+      "chosenItemId": 7158,
+      "candidateItemIds": [
+        7158,
+        7407,
+        15285,
+        20559
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          7158
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 500
+    },
+    {
+      "sourceTaskId": 1561,
+      "tier": "B-4a",
+      "chosenItemId": 6920,
+      "candidateItemIds": [
+        6920,
+        6921,
+        18601,
+        27170
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6920
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 501
+    },
+    {
+      "sourceTaskId": 1565,
+      "tier": "B-4a",
+      "chosenItemId": 2577,
+      "candidateItemIds": [
+        2577,
+        2578,
+        15756
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2577
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 502
+    },
+    {
+      "sourceTaskId": 1566,
+      "tier": "B-4a",
+      "chosenItemId": 2581,
+      "candidateItemIds": [
+        2581,
+        2582,
+        15758
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2581
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 503
+    },
+    {
+      "sourceTaskId": 1567,
+      "tier": "B-4a",
+      "chosenItemId": 6724,
+      "candidateItemIds": [
+        6724,
+        6725,
+        14571
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6724
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 504
+    },
+    {
+      "sourceTaskId": 1568,
+      "tier": "B-4a",
+      "chosenItemId": 6809,
+      "candidateItemIds": [
+        6809,
+        6813,
+        14091
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6809
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 505
+    },
+    {
+      "sourceTaskId": 1571,
+      "tier": "B-4a",
+      "chosenItemId": 4099,
+      "candidateItemIds": [
+        4099,
+        4100,
+        14158
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          4099
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 506
+    },
+    {
+      "sourceTaskId": 1613,
+      "tier": "B-4a",
+      "chosenItemId": 28997,
+      "candidateItemIds": [
+        28997,
+        28998,
+        28999,
+        29850
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          28997
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 507
+    },
+    {
+      "sourceTaskId": 1622,
+      "tier": "B-4a",
+      "chosenItemId": 6568,
+      "candidateItemIds": [
+        6568,
+        6569,
+        18243
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6568
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 508
+    },
+    {
+      "sourceTaskId": 1625,
+      "tier": "B-4a",
+      "chosenItemId": 6523,
+      "candidateItemIds": [
+        6523,
+        6535,
+        18254,
+        20554
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6523
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 509
+    },
+    {
+      "sourceTaskId": 1626,
+      "tier": "B-4a",
+      "chosenItemId": 6524,
+      "candidateItemIds": [
+        6524,
+        6536,
+        18255
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6524
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 510
+    },
+    {
+      "sourceTaskId": 1630,
+      "tier": "B-4a",
+      "chosenItemId": 6526,
+      "candidateItemIds": [
+        6526,
+        6538,
+        18257
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6526
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 511
+    },
+    {
+      "sourceTaskId": 1636,
+      "tier": "B-4a",
+      "chosenItemId": 19994,
+      "candidateItemIds": [
+        19994,
+        19995,
+        19996
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          19994
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 512
+    },
+    {
+      "sourceTaskId": 1637,
+      "tier": "B-4a",
+      "chosenItemId": 12598,
+      "candidateItemIds": [
+        12598,
+        12599,
+        16007
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12598
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 513
+    },
+    {
+      "sourceTaskId": 1638,
+      "tier": "B-4a",
+      "chosenItemId": 2579,
+      "candidateItemIds": [
+        2579,
+        2580,
+        15757,
+        27162
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2579
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 514
+    },
+    {
+      "sourceTaskId": 1648,
+      "tier": "B-4a",
+      "chosenItemId": 2581,
+      "candidateItemIds": [
+        2581,
+        2582,
+        15758
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2581
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 515
+    },
+    {
+      "sourceTaskId": 1652,
+      "tier": "B-4a",
+      "chosenItemId": 10400,
+      "candidateItemIds": [
+        10400,
+        10401,
+        16110
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10400
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 516
+    },
+    {
+      "sourceTaskId": 1653,
+      "tier": "B-4a",
+      "chosenItemId": 10402,
+      "candidateItemIds": [
+        10402,
+        10403,
+        16111
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10402
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 517
+    },
+    {
+      "sourceTaskId": 1654,
+      "tier": "B-4a",
+      "chosenItemId": 10404,
+      "candidateItemIds": [
+        10404,
+        10405,
+        16112
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10404
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 518
+    },
+    {
+      "sourceTaskId": 1655,
+      "tier": "B-4a",
+      "chosenItemId": 10406,
+      "candidateItemIds": [
+        10406,
+        10407,
+        16113
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10406
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 519
+    },
+    {
+      "sourceTaskId": 1656,
+      "tier": "B-4a",
+      "chosenItemId": 10412,
+      "candidateItemIds": [
+        10412,
+        10413,
+        16116
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10412
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 520
+    },
+    {
+      "sourceTaskId": 1657,
+      "tier": "B-4a",
+      "chosenItemId": 10414,
+      "candidateItemIds": [
+        10414,
+        10415,
+        16117
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10414
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 521
+    },
+    {
+      "sourceTaskId": 1658,
+      "tier": "B-4a",
+      "chosenItemId": 10408,
+      "candidateItemIds": [
+        10408,
+        10409,
+        16114
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10408
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 522
+    },
+    {
+      "sourceTaskId": 1659,
+      "tier": "B-4a",
+      "chosenItemId": 10410,
+      "candidateItemIds": [
+        10410,
+        10411,
+        16115
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10410
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 523
+    },
+    {
+      "sourceTaskId": 1660,
+      "tier": "B-4a",
+      "chosenItemId": 2653,
+      "candidateItemIds": [
+        2653,
+        2654,
+        15800
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2653
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 524
+    },
+    {
+      "sourceTaskId": 1661,
+      "tier": "B-4a",
+      "chosenItemId": 2661,
+      "candidateItemIds": [
+        2661,
+        2662,
+        15805
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2661
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 525
+    },
+    {
+      "sourceTaskId": 1662,
+      "tier": "B-4a",
+      "chosenItemId": 2669,
+      "candidateItemIds": [
+        2669,
+        2670,
+        15810
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2669
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 526
+    },
+    {
+      "sourceTaskId": 1663,
+      "tier": "B-4a",
+      "chosenItemId": 2657,
+      "candidateItemIds": [
+        2657,
+        2658,
+        15803
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2657
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 527
+    },
+    {
+      "sourceTaskId": 1664,
+      "tier": "B-4a",
+      "chosenItemId": 2665,
+      "candidateItemIds": [
+        2665,
+        2666,
+        15808
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2665
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 528
+    },
+    {
+      "sourceTaskId": 1665,
+      "tier": "B-4a",
+      "chosenItemId": 2673,
+      "candidateItemIds": [
+        2673,
+        2674,
+        15813
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2673
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 529
+    },
+    {
+      "sourceTaskId": 1666,
+      "tier": "B-4a",
+      "chosenItemId": 2655,
+      "candidateItemIds": [
+        2655,
+        2656,
+        15801
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2655
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 530
+    },
+    {
+      "sourceTaskId": 1667,
+      "tier": "B-4a",
+      "chosenItemId": 2663,
+      "candidateItemIds": [
+        2663,
+        2664,
+        15806
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2663
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 531
+    },
+    {
+      "sourceTaskId": 1668,
+      "tier": "B-4a",
+      "chosenItemId": 2671,
+      "candidateItemIds": [
+        2671,
+        2672,
+        15811
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2671
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 532
+    },
+    {
+      "sourceTaskId": 1669,
+      "tier": "B-4a",
+      "chosenItemId": 2659,
+      "candidateItemIds": [
+        2659,
+        2660,
+        15804
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2659
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 533
+    },
+    {
+      "sourceTaskId": 1670,
+      "tier": "B-4a",
+      "chosenItemId": 2667,
+      "candidateItemIds": [
+        2667,
+        2668,
+        15809
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2667
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 534
+    },
+    {
+      "sourceTaskId": 1671,
+      "tier": "B-4a",
+      "chosenItemId": 2675,
+      "candidateItemIds": [
+        2675,
+        2676,
+        15814
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2675
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 535
+    },
+    {
+      "sourceTaskId": 1672,
+      "tier": "B-4a",
+      "chosenItemId": 10444,
+      "candidateItemIds": [
+        10444,
+        10445,
+        16132
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10444
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 536
+    },
+    {
+      "sourceTaskId": 1673,
+      "tier": "B-4a",
+      "chosenItemId": 10440,
+      "candidateItemIds": [
+        10440,
+        10441,
+        16130
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10440
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 537
+    },
+    {
+      "sourceTaskId": 1674,
+      "tier": "B-4a",
+      "chosenItemId": 10442,
+      "candidateItemIds": [
+        10442,
+        10443,
+        16131
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10442
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 538
+    },
+    {
+      "sourceTaskId": 1675,
+      "tier": "B-4a",
+      "chosenItemId": 12275,
+      "candidateItemIds": [
+        12275,
+        12276,
+        15878
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12275
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 539
+    },
+    {
+      "sourceTaskId": 1676,
+      "tier": "B-4a",
+      "chosenItemId": 12263,
+      "candidateItemIds": [
+        12263,
+        12264,
+        15872
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12263
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 540
+    },
+    {
+      "sourceTaskId": 1677,
+      "tier": "B-4a",
+      "chosenItemId": 3486,
+      "candidateItemIds": [
+        3486,
+        3487,
+        15833
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3486
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 541
+    },
+    {
+      "sourceTaskId": 1678,
+      "tier": "B-4a",
+      "chosenItemId": 3481,
+      "candidateItemIds": [
+        3481,
+        3482,
+        15830
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3481
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 542
+    },
+    {
+      "sourceTaskId": 1679,
+      "tier": "B-4a",
+      "chosenItemId": 3483,
+      "candidateItemIds": [
+        3483,
+        3484,
+        15831
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3483
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 543
+    },
+    {
+      "sourceTaskId": 1680,
+      "tier": "B-4a",
+      "chosenItemId": 12391,
+      "candidateItemIds": [
+        12391,
+        12392,
+        15836
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12391
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 544
+    },
+    {
+      "sourceTaskId": 1682,
+      "tier": "B-4a",
+      "chosenItemId": 3488,
+      "candidateItemIds": [
+        3488,
+        3489,
+        15834
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3488
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 545
+    },
+    {
+      "sourceTaskId": 1687,
+      "tier": "B-4a",
+      "chosenItemId": 6918,
+      "candidateItemIds": [
+        6918,
+        6919,
+        18600
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6918
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 546
+    },
+    {
+      "sourceTaskId": 1688,
+      "tier": "B-4a",
+      "chosenItemId": 6916,
+      "candidateItemIds": [
+        6916,
+        6917,
+        18599,
+        20574
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6916
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 547
+    },
+    {
+      "sourceTaskId": 1689,
+      "tier": "B-4a",
+      "chosenItemId": 6924,
+      "candidateItemIds": [
+        6924,
+        6925,
+        18603,
+        20575
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6924
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 548
+    },
+    {
+      "sourceTaskId": 1692,
+      "tier": "B-4a",
+      "chosenItemId": 6914,
+      "candidateItemIds": [
+        6914,
+        6915,
+        18598,
+        20560
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          6914
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 549
+    },
+    {
+      "sourceTaskId": 1693,
+      "tier": "B-4a",
+      "chosenItemId": 12373,
+      "candidateItemIds": [
+        12373,
+        12374,
+        15927
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12373
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 550
+    },
+    {
+      "sourceTaskId": 1694,
+      "tier": "B-4a",
+      "chosenItemId": 2643,
+      "candidateItemIds": [
+        2643,
+        2644,
+        15785
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2643
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 551
+    },
+    {
+      "sourceTaskId": 1695,
+      "tier": "B-4a",
+      "chosenItemId": 12323,
+      "candidateItemIds": [
+        12323,
+        12324,
+        15902
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12323
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 552
+    },
+    {
+      "sourceTaskId": 1696,
+      "tier": "B-4a",
+      "chosenItemId": 12321,
+      "candidateItemIds": [
+        12321,
+        12322,
+        15901
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12321
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 553
+    },
+    {
+      "sourceTaskId": 1701,
+      "tier": "B-4a",
+      "chosenItemId": 10334,
+      "candidateItemIds": [
+        10334,
+        10335,
+        16081,
+        27201
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10334
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 554
+    },
+    {
+      "sourceTaskId": 1702,
+      "tier": "B-4a",
+      "chosenItemId": 10330,
+      "candidateItemIds": [
+        10330,
+        10331,
+        16079,
+        27199
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10330
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 555
+    },
+    {
+      "sourceTaskId": 1703,
+      "tier": "B-4a",
+      "chosenItemId": 10332,
+      "candidateItemIds": [
+        10332,
+        10333,
+        16080,
+        27200
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10332
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 556
+    },
+    {
+      "sourceTaskId": 1704,
+      "tier": "B-4a",
+      "chosenItemId": 12424,
+      "candidateItemIds": [
+        12424,
+        12425,
+        15960
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12424
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 557
+    },
+    {
+      "sourceTaskId": 1705,
+      "tier": "B-4a",
+      "chosenItemId": 12437,
+      "candidateItemIds": [
+        12437,
+        12438,
+        15967
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12437
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 558
+    },
+    {
+      "sourceTaskId": 1706,
+      "tier": "B-4a",
+      "chosenItemId": 10336,
+      "candidateItemIds": [
+        10336,
+        10337,
+        16082
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10336
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 559
+    },
+    {
+      "sourceTaskId": 1707,
+      "tier": "B-4a",
+      "chosenItemId": 10342,
+      "candidateItemIds": [
+        10342,
+        10343,
+        16085,
+        27183
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10342
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 560
+    },
+    {
+      "sourceTaskId": 1708,
+      "tier": "B-4a",
+      "chosenItemId": 10338,
+      "candidateItemIds": [
+        10338,
+        10339,
+        16083,
+        20576
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10338
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 561
+    },
+    {
+      "sourceTaskId": 1710,
+      "tier": "B-4a",
+      "chosenItemId": 10344,
+      "candidateItemIds": [
+        10344,
+        10345,
+        16086
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10344
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 562
+    },
+    {
+      "sourceTaskId": 1711,
+      "tier": "B-4a",
+      "chosenItemId": 12422,
+      "candidateItemIds": [
+        12422,
+        12423,
+        15959
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12422
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 563
+    },
+    {
+      "sourceTaskId": 1713,
+      "tier": "B-4a",
+      "chosenItemId": 10350,
+      "candidateItemIds": [
+        10350,
+        10351,
+        16089
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10350
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 564
+    },
+    {
+      "sourceTaskId": 1714,
+      "tier": "B-4a",
+      "chosenItemId": 10348,
+      "candidateItemIds": [
+        10348,
+        10349,
+        16088
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10348
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 565
+    },
+    {
+      "sourceTaskId": 1715,
+      "tier": "B-4a",
+      "chosenItemId": 10346,
+      "candidateItemIds": [
+        10346,
+        10347,
+        16087
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10346
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 566
+    },
+    {
+      "sourceTaskId": 1716,
+      "tier": "B-4a",
+      "chosenItemId": 10352,
+      "candidateItemIds": [
+        10352,
+        10353,
+        16090
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10352
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 567
+    },
+    {
+      "sourceTaskId": 1717,
+      "tier": "B-4a",
+      "chosenItemId": 12426,
+      "candidateItemIds": [
+        12426,
+        12427,
+        15961
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12426
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 568
+    },
+    {
+      "sourceTaskId": 1730,
+      "tier": "B-4a",
+      "chosenItemId": 12335,
+      "candidateItemIds": [
+        12335,
+        12336,
+        15908
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          12335
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 569
+    },
+    {
+      "sourceTaskId": 1732,
+      "tier": "B-4a",
+      "chosenItemId": 23246,
+      "candidateItemIds": [
+        23246,
+        23247,
+        23248,
+        27177
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          23246
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 570
+    },
+    {
+      "sourceTaskId": 1733,
+      "tier": "B-4a",
+      "chosenItemId": 10398,
+      "candidateItemIds": [
+        10398,
+        10399,
+        16109
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10398
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 571
+    },
+    {
+      "sourceTaskId": 1735,
+      "tier": "B-4a",
+      "chosenItemId": 2631,
+      "candidateItemIds": [
+        2631,
+        2632,
+        15779
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          2631
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 572
+    },
+    {
+      "sourceTaskId": 478,
+      "tier": "B-4b",
+      "chosenItemId": 841,
+      "candidateItemIds": [
+        841,
+        842,
+        14559
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          841
+        ]
+      },
+      "note": "allowlist canonical base (Shortbow — canonical base)",
+      "mvpTaskId": 573
+    },
+    {
+      "sourceTaskId": 479,
+      "tier": "B-4b",
+      "chosenItemId": 839,
+      "candidateItemIds": [
+        839,
+        840,
+        14558
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          839
+        ]
+      },
+      "note": "allowlist canonical base (Longbow — canonical base)",
+      "mvpTaskId": 574
+    },
+    {
+      "sourceTaskId": 480,
+      "tier": "B-4b",
+      "chosenItemId": 837,
+      "candidateItemIds": [
+        837,
+        838,
+        14500
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          837
+        ]
+      },
+      "note": "allowlist canonical base (Crossbow — canonical base)",
+      "mvpTaskId": 575
+    },
+    {
+      "sourceTaskId": 1517,
+      "tier": "B-4b",
+      "chosenItemId": 10828,
+      "candidateItemIds": [
+        10828,
+        10843,
+        17668,
+        23591,
+        23592
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          10828
+        ]
+      },
+      "note": "allowlist canonical base (Helm of neitiznot — canonical base)",
+      "mvpTaskId": 576
+    },
+    {
+      "sourceTaskId": 1528,
+      "tier": "B-4b",
+      "chosenItemId": 8921,
+      "candidateItemIds": [
+        8921,
+        8922,
+        18758
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          8921
+        ]
+      },
+      "note": "allowlist canonical base (Black mask — canonical base)",
+      "mvpTaskId": 577
+    },
+    {
+      "sourceTaskId": 1550,
+      "tier": "B-4b",
+      "chosenItemId": 4675,
+      "candidateItemIds": [
+        4675,
+        4676,
+        16476,
+        20431
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          4675
+        ]
+      },
+      "note": "allowlist canonical base (Ancient staff — canonical base)",
+      "mvpTaskId": 578
+    },
+    {
+      "sourceTaskId": 1551,
+      "tier": "B-4b-reg",
+      "chosenItemId": 3140,
+      "candidateItemIds": [
+        2513,
+        3140,
+        3141,
+        14099,
+        20428
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3140
+        ]
+      },
+      "note": "registry-only canonical base (collectionLogItemIds)",
+      "mvpTaskId": 579
+    },
+    {
+      "sourceTaskId": 1570,
+      "tier": "B-4b",
+      "chosenItemId": 3122,
+      "candidateItemIds": [
+        3122,
+        3134,
+        14130
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3122
+        ]
+      },
+      "note": "allowlist canonical base (Granite shield — canonical base)",
+      "mvpTaskId": 580
+    },
+    {
+      "sourceTaskId": 1573,
+      "tier": "B-4b",
+      "chosenItemId": 4087,
+      "candidateItemIds": [
+        4087,
+        4088,
+        4180,
+        14175,
+        20429
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          4087
+        ]
+      },
+      "note": "allowlist canonical base (Dragon platelegs — canonical base)",
+      "mvpTaskId": 581
+    },
+    {
+      "sourceTaskId": 1574,
+      "tier": "B-4b",
+      "chosenItemId": 4585,
+      "candidateItemIds": [
+        4585,
+        4586,
+        14183
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          4585
+        ]
+      },
+      "note": "allowlist canonical base (Dragon plateskirt — canonical base)",
+      "mvpTaskId": 582
+    },
+    {
+      "sourceTaskId": 1608,
+      "tier": "B-4b",
+      "chosenItemId": 13385,
+      "candidateItemIds": [
+        13385,
+        13386,
+        18461
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          13385
+        ]
+      },
+      "note": "allowlist canonical base (Xerician hat — canonical base)",
+      "mvpTaskId": 583
+    },
+    {
+      "sourceTaskId": 1761,
+      "tier": "B-4b",
+      "chosenItemId": 3842,
+      "candidateItemIds": [
+        3842,
+        14407,
+        27191
+      ],
+      "trigger": {
+        "type": "item_equip",
+        "itemIds": [
+          3842
+        ]
+      },
+      "note": "allowlist canonical base (Unholy book — canonical base)",
+      "mvpTaskId": 584
+    }
+  ]
+}

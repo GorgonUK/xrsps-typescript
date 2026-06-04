@@ -1,0 +1,19 @@
+{
+  "phase": "7B-2 Slice 2B",
+  "importedAt": "2026-06-03",
+  "taskCount": 4,
+  "sourceTaskIds": [659, 752, 1054, 1121],
+  "rejectedFromScan": [
+    {
+      "sourceTaskId": 979,
+      "name": "Defeat a Blue Dragon in Kandarin.",
+      "reason": "scan resolved to Taverley Dungeon (Asgarnia coords); no blue dragon spawns in Kandarin league bounds — region mismatch"
+    }
+  ],
+  "method": "monster-route hints + sub-chamber spawn-cluster proof",
+  "confidence": "high",
+  "runtimeChanges": false,
+  "validation": "PASS",
+  "matrices": "PASS",
+  "spawnGapReport": "server/data/leagues/reports/phase7b2-slice2b-spawn-gaps.json"
+}

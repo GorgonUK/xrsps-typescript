@@ -1,0 +1,825 @@
+{
+  "tierA": [],
+  "deferred": [
+    {
+      "sourceTaskId": 311,
+      "name": "Kill Bloodveld.",
+      "reason": "no region resolved",
+      "detail": {
+        "area": "General"
+      }
+    },
+    {
+      "sourceTaskId": 570,
+      "name": "Defeat a Troll.",
+      "reason": "no region resolved",
+      "detail": {
+        "area": "General"
+      }
+    },
+    {
+      "sourceTaskId": 588,
+      "name": "Defeat King Black Dragon.",
+      "reason": "boss instance excluded"
+    },
+    {
+      "sourceTaskId": 608,
+      "name": "Defeat Nex.",
+      "reason": "boss instance excluded"
+    },
+    {
+      "sourceTaskId": 610,
+      "name": "Defeat Phosani's Nightmare.",
+      "reason": "boss instance excluded"
+    },
+    {
+      "sourceTaskId": 621,
+      "name": "Defeat Kephri.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 622,
+      "name": "Defeat Zebak.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 623,
+      "name": "Defeat Ba-Ba.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 624,
+      "name": "Defeat Akkha.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 626,
+      "name": "Defeat Sotetseg.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 627,
+      "name": "Defeat Xarpus.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 629,
+      "name": "Defeat Tekton.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 630,
+      "name": "Defeat Vasa Nistirio.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 631,
+      "name": "Defeat Vespula.",
+      "reason": "raid boss excluded"
+    },
+    {
+      "sourceTaskId": 644,
+      "name": "Defeat Calvar'ion.",
+      "reason": "no region resolved",
+      "detail": {
+        "area": "General"
+      }
+    },
+    {
+      "sourceTaskId": 659,
+      "name": "Defeat a Goblin near Lumbridge.",
+      "reason": "multi-spawn ambiguity",
+      "detail": {
+        "region": "Edgeville Goblins",
+        "candidateIds": [
+          655,
+          656,
+          657,
+          658,
+          659
+        ],
+        "spawnedIn": [
+          {
+            "id": 655,
+            "count": 2,
+            "sample": "2955,3507,0 | 2964,3511,0"
+          },
+          {
+            "id": 656,
+            "count": 1,
+            "sample": "2969,3489,0"
+          },
+          {
+            "id": 657,
+            "count": 3,
+            "sample": "2954,3500,0 | 2962,3503,0 | 2965,3494,0"
+          },
+          {
+            "id": 658,
+            "count": 2,
+            "sample": "2951,3501,0 | 2952,3507,0"
+          },
+          {
+            "id": 659,
+            "count": 4,
+            "sample": "2951,3483,0 | 2953,3487,0 | 2957,3492,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 693,
+      "name": "Defeat Count Draynor.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Misthalin",
+        "candidateIds": [
+          3481,
+          3482,
+          6393
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 752,
+      "name": "Defeat a Lesser Demon in Karamja Volcano.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Karamja",
+        "candidateIds": [
+          2005,
+          2006,
+          2007,
+          2008,
+          2018
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 812,
+      "name": "Defeat a Black Dragon in Taverley Dungeon.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Taverley Dungeon",
+        "candidateIds": [
+          252,
+          253,
+          254,
+          255,
+          256
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 813,
+      "name": "Defeat a Hellhound in Taverley Dungeon.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Taverley Dungeon",
+        "candidateIds": [
+          104,
+          105,
+          135,
+          3133,
+          7256
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 815,
+      "name": "Defeat a Greater Demon in Taverley Dungeon.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Taverley Dungeon",
+        "candidateIds": [
+          2025,
+          2026,
+          2027,
+          2028,
+          2029
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 898,
+      "name": "Defeat a Dagannoth in Fremennik.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Waterbirth Island Dungeon",
+        "candidateIds": [
+          140,
+          970,
+          971,
+          972,
+          973
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 900,
+      "name": "Defeat an Ice Troll in Fremennik.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Rellekka Ice Trolls",
+        "candidateIds": [
+          648,
+          649,
+          650,
+          651,
+          652
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 976,
+      "name": "Defeat a Guard in Kandarin.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Ardougne Guard",
+        "candidateIds": [
+          397,
+          398,
+          399,
+          400,
+          995
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 979,
+      "name": "Defeat a Blue Dragon in Kandarin.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Kandarin",
+        "candidateIds": [
+          265,
+          266,
+          267,
+          268,
+          269
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 980,
+      "name": "Defeat a Black Demon in Kandarin.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Kandarin",
+        "candidateIds": [
+          240,
+          1432,
+          2048,
+          2049,
+          2050
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 981,
+      "name": "Defeat a Fire Giant in Kandarin.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Kandarin",
+        "candidateIds": [
+          2075,
+          2076,
+          2077,
+          2078,
+          2079
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 982,
+      "name": "Defeat a Poison Spider in Kandarin.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Yanille Poison Spider",
+        "candidateIds": [
+          3023,
+          5373,
+          11990,
+          11999
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1048,
+      "name": "Defeat a Menaphite Thug in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Pollnivneach Menaphites",
+        "candidateIds": [
+          3549,
+          3550
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1049,
+      "name": "Defeat a Scarab Mage in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Sophanem Scarabs",
+        "candidateIds": [
+          794,
+          799,
+          11508,
+          11510,
+          11511
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1051,
+      "name": "Defeat a Smoke Devil in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Smoke Dungeon",
+        "candidateIds": [
+          498,
+          6639,
+          6655,
+          8482,
+          8483
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1054,
+      "name": "Defeat a Kalphite Guardian in the Desert.",
+      "reason": "multi-spawn ambiguity",
+      "detail": {
+        "region": "Kalphite Lair",
+        "candidateIds": [
+          959,
+          960,
+          962
+        ],
+        "spawnedIn": [
+          {
+            "id": 959,
+            "count": 2,
+            "sample": "3505,9493,2 | 3511,9499,2"
+          },
+          {
+            "id": 962,
+            "count": 2,
+            "sample": "3495,9489,0 | 3496,9502,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1057,
+      "name": "Defeat a Locust Rider in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Bandit Camp Desert",
+        "candidateIds": [
+          795,
+          796,
+          800,
+          801
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1077,
+      "name": "Defeat a Skeleton in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Bandit Camp Desert",
+        "candidateIds": [
+          70,
+          71,
+          72,
+          73,
+          74
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1078,
+      "name": "Defeat a Zombie in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Bandit Camp Desert",
+        "candidateIds": [
+          26,
+          27,
+          28,
+          29,
+          30
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1079,
+      "name": "Defeat a Locust in the Desert.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Bandit Camp Desert",
+        "candidateIds": [
+          11584,
+          11585
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1121,
+      "name": "Defeat a Cave Horror in Morytania.",
+      "reason": "multi-spawn ambiguity",
+      "detail": {
+        "region": "Mos LeHarmless Cave",
+        "candidateIds": [
+          1047,
+          1048,
+          1049,
+          1050,
+          1051
+        ],
+        "spawnedIn": [
+          {
+            "id": 1048,
+            "count": 10,
+            "sample": "3784,9464,0 | 3788,9451,0 | 3791,9433,0"
+          },
+          {
+            "id": 1049,
+            "count": 6,
+            "sample": "3780,9460,0 | 3794,9429,0 | 3800,9438,0"
+          },
+          {
+            "id": 1050,
+            "count": 12,
+            "sample": "3779,9438,0 | 3785,9460,0 | 3786,9416,0"
+          },
+          {
+            "id": 1051,
+            "count": 2,
+            "sample": "3777,9449,0 | 3792,9422,0"
+          }
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1122,
+      "name": "Defeat a Werewolf in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Canifis",
+        "candidateIds": [
+          2593,
+          2594,
+          2595,
+          2596,
+          2597
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1123,
+      "name": "Defeat a Shade in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Shades Mortton",
+        "candidateIds": [
+          5633,
+          6740,
+          7258
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1125,
+      "name": "Defeat a Pyrefiend in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Slayer Tower",
+        "candidateIds": [
+          433,
+          434,
+          435,
+          436,
+          3139
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1126,
+      "name": "Defeat a Jelly in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Slayer Tower",
+        "candidateIds": [
+          437,
+          438,
+          439,
+          440,
+          441
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1127,
+      "name": "Defeat a Basilisk in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Slayer Tower",
+        "candidateIds": [
+          417,
+          418,
+          9283,
+          9284,
+          9285
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1128,
+      "name": "Defeat a Kurask in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Slayer Tower",
+        "candidateIds": [
+          410,
+          411,
+          14172,
+          14173
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1154,
+      "name": "Defeat a Vyrewatch Sentinel in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Morytania",
+        "candidateIds": [
+          9599,
+          9600,
+          9601,
+          9602,
+          9603
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1155,
+      "name": "Defeat a Flesh Crawler in Morytania.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Slayer Tower",
+        "candidateIds": [
+          2498,
+          2499,
+          2500
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1197,
+      "name": "Defeat a Moss Giant in Tirannwn.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Tirannwn",
+        "candidateIds": [
+          2090,
+          2091,
+          2092,
+          2093,
+          3851
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1199,
+      "name": "Defeat a Fire Giant in Tirannwn.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Tirannwn",
+        "candidateIds": [
+          2075,
+          2076,
+          2077,
+          2078,
+          2079
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1200,
+      "name": "Defeat a Greater Demon in Tirannwn.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Tirannwn",
+        "candidateIds": [
+          2025,
+          2026,
+          2027,
+          2028,
+          2029
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1204,
+      "name": "Defeat a Mourner in Tirannwn.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Lletya",
+        "candidateIds": [
+          8771,
+          8844,
+          8845,
+          8846,
+          8970
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1205,
+      "name": "Defeat a Kurask in Tirannwn.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Iorwerth Dungeon",
+        "candidateIds": [
+          410,
+          411,
+          14172,
+          14173
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1267,
+      "name": "Defeat a Zombie in the Wilderness.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Graveyard of Shadows",
+        "candidateIds": [
+          26,
+          27,
+          28,
+          29,
+          30
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1270,
+      "name": "Defeat a Black Demon in the Wilderness.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Chaos Temple Wilderness",
+        "candidateIds": [
+          240,
+          1432,
+          2048,
+          2049,
+          2050
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1279,
+      "name": "Defeat a Bandit in the Wilderness.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Chaos Temple Wilderness",
+        "candidateIds": [
+          690,
+          691,
+          692,
+          693,
+          694
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1360,
+      "name": "Defeat a Sand Crab in Kourend.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Hosidius Coast",
+        "candidateIds": [
+          5935,
+          7206
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1365,
+      "name": "Defeat a Drake in Kourend.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Catacombs of Kourend",
+        "candidateIds": [
+          2004,
+          8612,
+          8613
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1368,
+      "name": "Defeat a Greater Demon in Kourend.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Catacombs of Kourend",
+        "candidateIds": [
+          2025,
+          2026,
+          2027,
+          2028,
+          2029
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1369,
+      "name": "Defeat a Fire Giant in Kourend.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Catacombs of Kourend",
+        "candidateIds": [
+          2075,
+          2076,
+          2077,
+          2078,
+          2079
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1435,
+      "name": "Defeat a Frost Nagua in Varlamore.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Varlamore",
+        "candidateIds": [
+          13728,
+          13787,
+          13788
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1436,
+      "name": "Defeat a Sulphur Nagua in Varlamore.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Varlamore",
+        "candidateIds": [
+          12879,
+          13033
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1438,
+      "name": "Defeat a Minotaur in Varlamore.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Varlamore",
+        "candidateIds": [
+          2481,
+          2482,
+          2483,
+          12812,
+          12813
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1439,
+      "name": "Defeat a Snake in Varlamore.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Varlamore",
+        "candidateIds": [
+          1037,
+          2845,
+          3544,
+          3545,
+          5244
+        ]
+      }
+    },
+    {
+      "sourceTaskId": 1440,
+      "name": "Defeat a Jaguar Warrior in Varlamore.",
+      "reason": "zero-spawn in region",
+      "detail": {
+        "region": "Varlamore",
+        "candidateIds": [
+          12810,
+          13660
+        ]
+      }
+    }
+  ],
+  "generatedAt": "2026-06-03T00:08:38.852Z"
+}
