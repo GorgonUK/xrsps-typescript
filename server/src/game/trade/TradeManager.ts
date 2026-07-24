@@ -8,6 +8,9 @@ import {
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import { type InventoryEntry, PlayerState } from "../player";
+import { getGamemodeDataDir } from "../gamemodes/GamemodeRegistry";
+import { buildPlayerSaveKey } from "../state/PlayerSessionKeys";
+import { getSqliteDatabase, type SqliteDatabase } from "../state/SqliteDatabase";
 
 type TradeOfferState = {
     itemId: number;
@@ -40,9 +43,55 @@ export class TradeManager {
     private readonly requests = new Map<string, TradeRequestState>();
     private readonly sessions = new Map<string, TradeSession>();
     private readonly sessionByPlayer = new Map<number, TradeSession>();
+    private readonly database: SqliteDatabase;
     private sessionCounter = 1;
 
-    constructor(private readonly svc: ServerServices) {}
+    constructor(private readonly svc: ServerServices, database?: SqliteDatabase) {
+        this.database =
+            database ??
+            getSqliteDatabase({
+                dataDir: getGamemodeDataDir(svc.gamemode.id),
+            });
+    }
+
+    /**
+     * Return durable trade refunds as soon as the player has inventory space.
+     * Any remaining entries stay in SQLite and will be retried next login.
+     */
+    restorePendingRefunds(player: PlayerState): void {
+        const accountName = this.getPlayerSaveKey(player);
+        const refunds = this.database.connection
+            .prepare(
+                `SELECT id, item_id AS itemId, quantity
+                 FROM pending_trade_refunds
+                 WHERE account_name = ?
+                 ORDER BY id ASC`,
+            )
+            .all(accountName) as Array<{ id: number; itemId: number; quantity: number }>;
+        if (refunds.length === 0) return;
+
+        let returnedCount = 0;
+        for (const refund of refunds) {
+            if (!this.addItemsToInventory(player, refund.itemId, refund.quantity)) continue;
+            this.database.connection
+                .prepare("DELETE FROM pending_trade_refunds WHERE id = ?")
+                .run(refund.id);
+            returnedCount++;
+        }
+
+        if (returnedCount > 0) {
+            this.svc.messagingService.sendGameMessageToPlayer(
+                player,
+                `Returned ${returnedCount} pending trade item stack${returnedCount === 1 ? "" : "s"}.`,
+            );
+        }
+        if (returnedCount < refunds.length) {
+            this.svc.messagingService.sendGameMessageToPlayer(
+                player,
+                "Some returned trade items are still waiting for inventory space.",
+            );
+        }
+    }
 
     private queueInventorySnapshot(player: PlayerState): void {
         const sock = this.svc.players?.getSocketByPlayerId(player.id);
@@ -197,23 +246,19 @@ export class TradeManager {
     }
 
     private closeSession(session: TradeSession, reason: string, blamedId?: number): void {
-        const partiesWithoutSpace = session.parties.filter(
-            (party) => !this.canReceiveItems(party.player, party.offers),
-        );
-        if (partiesWithoutSpace.length > 0) {
-            for (const party of partiesWithoutSpace) {
+        for (const party of session.parties) {
+            if (this.returnOffers(party)) continue;
+            try {
+                this.deferOffersForSafeReturn(party);
                 this.svc.messagingService.sendGameMessageToPlayer(
                     party.player,
-                    "You need enough inventory space to return your offered items.",
+                    "Your offered trade items are waiting safely until you have inventory space.",
                 );
+            } catch (err) {
+                logger.error("[trade] failed to preserve offered items for safe return", err);
+                this.broadcastSession(session);
+                return;
             }
-            this.broadcastSession(session);
-            return;
-        }
-        if (!this.returnOffers(session.parties[0]) || !this.returnOffers(session.parties[1])) {
-            logger.error("[trade] failed to return offered items; keeping trade session open");
-            this.broadcastSession(session);
-            return;
         }
         for (const party of session.parties) {
             try {
@@ -461,6 +506,41 @@ export class TradeManager {
         }
         party.offers = [];
         return true;
+    }
+
+    private deferOffersForSafeReturn(party: TradePartyState): void {
+        const offers = party.offers.filter((offer) => offer.quantity > 0);
+        if (offers.length === 0) {
+            party.offers = [];
+            return;
+        }
+
+        const accountName = this.getPlayerSaveKey(party.player);
+        const createdAt = new Date().toISOString();
+        this.database.connection.exec("BEGIN IMMEDIATE");
+        try {
+            const insertRefund = this.database.connection.prepare(
+                `INSERT INTO pending_trade_refunds (account_name, item_id, quantity, created_at)
+                 VALUES (?, ?, ?, ?)`,
+            );
+            for (const offer of offers) {
+                insertRefund.run(accountName, offer.itemId, offer.quantity, createdAt);
+            }
+            this.database.connection.exec("COMMIT");
+        } catch (err) {
+            try {
+                this.database.connection.exec("ROLLBACK");
+            } catch {
+                // Preserve the original storage error for diagnostics.
+            }
+            throw err;
+        }
+
+        party.offers = [];
+    }
+
+    private getPlayerSaveKey(player: PlayerState): string {
+        return player.__saveKey ?? buildPlayerSaveKey(player.name, player.id);
     }
 
     private snapshotInventory(player: PlayerState): InventoryEntry[] {

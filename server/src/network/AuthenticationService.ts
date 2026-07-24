@@ -29,6 +29,7 @@ export interface PlayerLookup {
 export interface AuthenticationOptions {
     accountStore: AccountStore;
     allowAccountRegistration?: boolean;
+    allowLegacyAccountClaim?: boolean;
 }
 
 export type CredentialAuthenticationResult =
@@ -86,6 +87,7 @@ export class AuthenticationService {
     authenticateCredentials(
         username: string | undefined,
         password: string | undefined,
+        hasLegacyPlayerState: boolean,
     ): CredentialAuthenticationResult {
         const accountName = normalizeAccountName(username);
         if (!accountName) return { ok: false, reason: "invalid_credentials" };
@@ -93,7 +95,9 @@ export class AuthenticationService {
             return { ok: false, reason: "password_too_short" };
         }
 
-        const allowRegistration = this.options.allowAccountRegistration !== false;
+        const allowRegistration =
+            this.options.allowAccountRegistration !== false &&
+            (!hasLegacyPlayerState || this.options.allowLegacyAccountClaim === true);
         const authentication = this.options.accountStore.authenticate(
             username,
             password,

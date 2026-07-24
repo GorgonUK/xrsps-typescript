@@ -346,6 +346,10 @@ export class WSServer {
     constructor(opts: WSServerOptions) {
         this.options = opts;
         this.gamemode = opts.gamemode;
+        // Some game systems are constructed before the full service context is
+        // populated. TradeManager needs this value immediately to locate its
+        // gamemode-specific persistent storage.
+        Object.assign(this.svc, { gamemode: this.gamemode });
         this.initBroadcasters();
         this.initWebSocketServer(opts);
         this.initAutosave();
@@ -1069,6 +1073,8 @@ export class WSServer {
                 accountStore: new AccountStore({ dataDir: gamemodeDataDir }),
                 allowAccountRegistration:
                     (process.env.ALLOW_ACCOUNT_REGISTRATION ?? "true").toLowerCase() !== "false",
+                allowLegacyAccountClaim:
+                    (process.env.ALLOW_LEGACY_ACCOUNT_CLAIM ?? "false").toLowerCase() === "true",
             },
         );
         this.gameContext = new GameContext({

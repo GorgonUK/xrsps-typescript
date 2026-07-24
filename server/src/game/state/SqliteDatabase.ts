@@ -2,7 +2,42 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "fs";
 import path from "path";
 
+import { logger } from "../../utils/logger";
+
 const DEFAULT_DATABASE_FILENAME = "game.sqlite";
+const LEGACY_ACCOUNTS_MIGRATION = "legacy-accounts-json-v1";
+const LEGACY_PLAYER_STATES_MIGRATION = "legacy-player-states-json-v1";
+
+type JsonRecord = Record<string, unknown>;
+
+type LegacyAccount = {
+    passwordAlgorithm: "scrypt";
+    passwordSalt: string;
+    passwordHash: string;
+    createdAt: string;
+    passwordChangedAt: string;
+};
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeLegacyAccountName(name: string): string | undefined {
+    const normalized = name.trim().toLowerCase();
+    if (normalized.length < 1 || normalized.length > 12) return undefined;
+    return /^[a-z0-9 _-]+$/.test(normalized) ? normalized : undefined;
+}
+
+function isLegacyAccount(value: unknown): value is LegacyAccount {
+    if (!isJsonRecord(value)) return false;
+    return (
+        value.passwordAlgorithm === "scrypt" &&
+        typeof value.passwordSalt === "string" &&
+        typeof value.passwordHash === "string" &&
+        typeof value.createdAt === "string" &&
+        typeof value.passwordChangedAt === "string"
+    );
+}
 
 export interface SqliteDatabaseOptions {
     dataDir: string;
@@ -48,8 +83,157 @@ export class SqliteDatabase {
                 updated_at TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                migration_id TEXT PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS pending_trade_refunds (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_name TEXT NOT NULL,
+                item_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_pending_trade_refunds_account
+                ON pending_trade_refunds (account_name, id);
+
             PRAGMA user_version = 1;
         `);
+        this.migrateLegacyJsonFiles(options.dataDir);
+    }
+
+    /**
+     * Imports the pre-SQLite account and character files once, preserving the
+     * JSON sources as a rollback backup. SQLite always wins on key conflicts.
+     */
+    private migrateLegacyJsonFiles(dataDir: string): void {
+        this.migrateLegacyAccounts(path.resolve(dataDir, "accounts.json"));
+        this.migrateLegacyPlayerStates(path.resolve(dataDir, "player-state.json"));
+    }
+
+    private migrateLegacyAccounts(filePath: string): void {
+        if (this.isMigrationApplied(LEGACY_ACCOUNTS_MIGRATION) || !fs.existsSync(filePath)) {
+            return;
+        }
+
+        const parsed = this.readLegacyJson(filePath);
+        if (!isJsonRecord(parsed) || parsed.version !== 1 || !isJsonRecord(parsed.accounts)) {
+            throw new Error(`Invalid legacy account store: ${filePath}`);
+        }
+
+        let imported = 0;
+        this.connection.exec("BEGIN IMMEDIATE");
+        try {
+            const insertAccount = this.connection.prepare(
+                `INSERT INTO accounts (
+                    username,
+                    password_algorithm,
+                    password_salt,
+                    password_hash,
+                    created_at,
+                    password_changed_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(username) DO NOTHING`,
+            );
+            for (const [rawName, rawAccount] of Object.entries(parsed.accounts)) {
+                const accountName = normalizeLegacyAccountName(rawName);
+                if (!accountName || !isLegacyAccount(rawAccount)) continue;
+                const result = insertAccount.run(
+                    accountName,
+                    rawAccount.passwordAlgorithm,
+                    rawAccount.passwordSalt,
+                    rawAccount.passwordHash,
+                    rawAccount.createdAt,
+                    rawAccount.passwordChangedAt,
+                ) as { changes?: number };
+                if (result.changes === 1) imported++;
+            }
+            this.recordMigration(LEGACY_ACCOUNTS_MIGRATION);
+            this.connection.exec("COMMIT");
+        } catch (err) {
+            this.rollbackMigration();
+            throw err;
+        }
+
+        logger.info(`[persistence] Imported ${imported} legacy account record(s) from accounts.json`);
+    }
+
+    private migrateLegacyPlayerStates(filePath: string): void {
+        if (
+            this.isMigrationApplied(LEGACY_PLAYER_STATES_MIGRATION) ||
+            !fs.existsSync(filePath)
+        ) {
+            return;
+        }
+
+        const parsed = this.readLegacyJson(filePath);
+        if (!isJsonRecord(parsed)) {
+            throw new Error(`Invalid legacy player state store: ${filePath}`);
+        }
+
+        let imported = 0;
+        const updatedAt = new Date().toISOString();
+        this.connection.exec("BEGIN IMMEDIATE");
+        try {
+            const insertState = this.connection.prepare(
+                `INSERT INTO player_states (account_name, state_json, updated_at)
+                 VALUES (?, ?, ?)
+                 ON CONFLICT(account_name) DO NOTHING`,
+            );
+            for (const [rawName, state] of Object.entries(parsed)) {
+                const accountName = normalizeLegacyAccountName(rawName);
+                if (!accountName || !isJsonRecord(state)) continue;
+                const result = insertState.run(accountName, JSON.stringify(state), updatedAt) as {
+                    changes?: number;
+                };
+                if (result.changes === 1) imported++;
+            }
+            this.recordMigration(LEGACY_PLAYER_STATES_MIGRATION);
+            this.connection.exec("COMMIT");
+        } catch (err) {
+            this.rollbackMigration();
+            throw err;
+        }
+
+        logger.info(
+            `[persistence] Imported ${imported} legacy player state record(s) from player-state.json`,
+        );
+    }
+
+    private readLegacyJson(filePath: string): unknown {
+        try {
+            return JSON.parse(fs.readFileSync(filePath, "utf8")) as unknown;
+        } catch (err) {
+            throw new Error(
+                `Could not read legacy JSON file ${filePath}: ${
+                    err instanceof Error ? err.message : String(err)
+                }`,
+            );
+        }
+    }
+
+    private isMigrationApplied(migrationId: string): boolean {
+        return (
+            this.connection
+                .prepare("SELECT 1 FROM schema_migrations WHERE migration_id = ?")
+                .get(migrationId) !== undefined
+        );
+    }
+
+    private recordMigration(migrationId: string): void {
+        this.connection
+            .prepare("INSERT INTO schema_migrations (migration_id, applied_at) VALUES (?, ?)")
+            .run(migrationId, new Date().toISOString());
+    }
+
+    private rollbackMigration(): void {
+        try {
+            this.connection.exec("ROLLBACK");
+        } catch {
+            // The migration error is more useful to callers than a rollback error.
+        }
     }
 }
 

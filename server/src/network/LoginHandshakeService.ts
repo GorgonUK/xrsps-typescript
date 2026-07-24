@@ -188,7 +188,13 @@ export class LoginHandshakeService {
         }
 
         // 6. Verify an existing password hash or register a new account.
-        const authentication = this.svc.authService.authenticateCredentials(username, password);
+        // Imported pre-password character saves require the temporary legacy
+        // claim switch before a new password can be assigned to their name.
+        const authentication = this.svc.authService.authenticateCredentials(
+            username,
+            password,
+            this.svc.playerPersistence.hasKey(normalizedUsername),
+        );
         if (!authentication.ok) {
             sendLoginError(
                 3,
@@ -229,7 +235,16 @@ export class LoginHandshakeService {
         const parsed = { type: "handshake" as const, payload };
         try {
             const pendingLoginName = this.consumePendingLoginName(ws);
-            const name = pendingLoginName || parsed.payload.name?.slice(0, 12) || undefined;
+            if (!pendingLoginName) {
+                logger.warn("[handshake] rejected unauthenticated handshake");
+                try {
+                    ws.close(1008, "login_required");
+                } catch (err) {
+                    logger.warn("[handshake] failed to close unauthenticated client", err);
+                }
+                return;
+            }
+            const name = pendingLoginName;
 
             const preliminarySaveKey = normalizePlayerAccountName(name);
             let p: PlayerState | undefined;
@@ -324,6 +339,11 @@ export class LoginHandshakeService {
                         this.svc.equipmentService.refreshCombatWeaponCategory(p);
                     } catch (err) {
                         logger.warn("[player] failed to refresh appearance after persist", err);
+                    }
+                    try {
+                        this.svc.tradeManager?.restorePendingRefunds(p);
+                    } catch (err) {
+                        logger.warn("[trade] failed to restore pending trade refunds", err);
                     }
                 } else {
                     logger.info(`[handshake] Resuming player ${name} at (${p.tileX}, ${p.tileY})`);
