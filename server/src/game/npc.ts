@@ -1,6 +1,5 @@
 import { Actor } from "./actor";
 import { EntityType } from "./collision/EntityCollisionService";
-import type { InteractionTargetType } from "./interactionIndex";
 import type { AttackType } from "./combat/AttackType";
 import {
     DEFAULT_DISEASE_INTERVAL_TICKS,
@@ -14,6 +13,7 @@ import {
     StatusHitsplat,
 } from "./combat/HitEffects";
 import { AGGRESSION_TIMER_TICKS, TARGET_SEARCH_INTERVAL } from "./combat/NpcCombatAI";
+import type { InteractionTargetType } from "./interactionIndex";
 
 /**
  * RSMod parity: NPC random walk timer range.
@@ -430,7 +430,8 @@ export class NpcState extends Actor {
         const field = NPC_COMBAT_STAT_FIELD[stat];
         const current = Math.max(0, Math.floor(this.combat[field]));
         const fraction = Math.min(1, Math.max(0, fractionRaw));
-        const next = Math.max(0, Math.floor(current * (1 - fraction)));
+        const amount = Math.floor(current * fraction);
+        const next = Math.max(0, current - amount);
         this.combat[field] = next;
         return current - next;
     }

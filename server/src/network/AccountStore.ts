@@ -1,10 +1,14 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
-import { MIN_PASSWORD_LENGTH } from "../../../src/shared/authentication";
-import { getSqliteDatabase, type SqliteDatabase } from "../game/state/SqliteDatabase";
+import {
+    ACCOUNT_NAME_PATTERN,
+    MAX_ACCOUNT_NAME_LENGTH,
+    MAX_PASSWORD_LENGTH,
+    MIN_PASSWORD_LENGTH,
+} from "../../../src/shared/authentication";
+import { type SqliteDatabase, getSqliteDatabase } from "../game/state/SqliteDatabase";
 
 const PASSWORD_KEY_LENGTH = 64;
-const MAX_PASSWORD_LENGTH = 20;
 const SCRYPT_OPTIONS = {
     cost: 1 << 14,
     blockSize: 8,
@@ -35,8 +39,8 @@ export interface AccountStoreOptions {
  */
 export function normalizeAccountName(name: string | undefined): string | undefined {
     const normalized = (name ?? "").trim().toLowerCase();
-    if (normalized.length < 1 || normalized.length > 12) return undefined;
-    if (!/^[a-z0-9 _-]+$/.test(normalized)) return undefined;
+    if (normalized.length < 1 || normalized.length > MAX_ACCOUNT_NAME_LENGTH) return undefined;
+    if (!ACCOUNT_NAME_PATTERN.test(normalized)) return undefined;
     return normalized;
 }
 

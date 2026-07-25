@@ -13,6 +13,7 @@ export interface SpecialAttackEffect {
     prayerFraction?: number;
     drainDefence?: number;
     drainDefenceByDamage?: number;
+    drainDefenceOnlyByDamage?: number;
     drainMagicByDamage?: boolean;
     drainCombatStatByDamage?: boolean;
     drainAttack?: number;

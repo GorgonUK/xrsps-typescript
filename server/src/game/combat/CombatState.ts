@@ -338,6 +338,8 @@ export interface SpecialAttackEffects {
     drainDefence?: number;
     /** Drain combat stats, beginning with Defence, by this multiple of the damage dealt. */
     drainDefenceByDamage?: number;
+    /** Drain only Defence by this multiple of the damage dealt. */
+    drainDefenceOnlyByDamage?: number;
     /** Reduce target Attack by this fraction on a successful hit. */
     drainAttack?: number;
     /** Reduce target Strength by this fraction on a successful hit. */

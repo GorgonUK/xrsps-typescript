@@ -91,7 +91,19 @@ The server and client run as separate processes. You need both running at the sa
 
 ## You're In
 
-Log in with any username. You should spawn into the game world.
+Log in with a username and a password of 8 to 20 characters. The first successful login registers that username; later logins must use the same password.
+
+### Account registration and legacy characters
+
+New account registration is enabled by default. Set `ALLOW_ACCOUNT_REGISTRATION=false` when you want to stop new usernames from being registered.
+
+When upgrading a server that already has `player-state.json` character saves but no account passwords, temporarily start the server with:
+
+```bash
+ALLOW_LEGACY_ACCOUNT_CLAIM=true yarn server:start
+```
+
+This lets each legacy username assign a password on its next login. Disable the option again after the migration window so another person cannot claim an unclaimed character name. Existing `accounts.json` password hashes are imported automatically and do not require this option.
 
 ---
 

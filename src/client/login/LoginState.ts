@@ -1,5 +1,10 @@
+import {
+    ACCOUNT_NAME_PATTERN,
+    MAX_ACCOUNT_NAME_LENGTH,
+    MAX_PASSWORD_LENGTH,
+    MIN_PASSWORD_LENGTH,
+} from "../../shared/authentication";
 import { isIosStandalonePwa } from "../../util/DeviceUtil";
-import { MIN_PASSWORD_LENGTH } from "../../shared/authentication";
 import { LoginIndex } from "./GameState";
 
 const STORAGE_KEY_TITLE_MUSIC_DISABLED = "osrs:titleMusicDisabled";
@@ -135,7 +140,7 @@ export class LoginState {
 
     // ========== Credentials ==========
 
-    /** Username/email input */
+    /** Player account name input */
     username: string = "";
 
     /** Password input */
@@ -384,13 +389,23 @@ export class LoginState {
     /** Get the client-side validation error for the current login credentials. */
     getCredentialValidationMessage(): string | undefined {
         if (this.username.trim().length === 0) {
-            return "Please enter your username/email address.";
+            return "Please enter your username.";
+        }
+        const accountName = this.username.trim().toLowerCase();
+        if (
+            accountName.length > MAX_ACCOUNT_NAME_LENGTH ||
+            !ACCOUNT_NAME_PATTERN.test(accountName)
+        ) {
+            return `Username must be 1-${MAX_ACCOUNT_NAME_LENGTH} characters using letters, numbers, spaces, _ or -.`;
         }
         if (this.password.length === 0) {
             return "Please enter your password.";
         }
         if (this.password.length < MIN_PASSWORD_LENGTH) {
             return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+        }
+        if (this.password.length > MAX_PASSWORD_LENGTH) {
+            return `Password must be no more than ${MAX_PASSWORD_LENGTH} characters.`;
         }
         return undefined;
     }

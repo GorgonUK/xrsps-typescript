@@ -50,6 +50,7 @@ import {
 import { decodeClientPacket } from "./packet/ClientBinaryDecoder";
 
 const NPC_STREAM_RADIUS_TILES = 15;
+export const PENDING_LOGIN_RESERVATION_MS = 60_000;
 const DEBUG_NPC_STREAM =
     (process?.env?.DEBUG_NPC_STREAM ?? "").toString().toLowerCase() === "1" ||
     (process?.env?.DEBUG_NPC_STREAM ?? "").toString().toLowerCase() === "true";
@@ -62,6 +63,13 @@ interface HandshakeAppearance {
     colors?: number[];
 }
 
+type PendingLoginReservation = {
+    name: string;
+    accountName?: string;
+    expiresAt: number;
+    socket: WebSocket;
+};
+
 /**
  * Manages the login validation, handshake negotiation, and WebSocket
  * connection lifecycle (message routing + disconnect cleanup).
@@ -70,52 +78,59 @@ interface HandshakeAppearance {
  * keeping the deeply-coupled handshake flow intact.
  */
 export class LoginHandshakeService {
-    private readonly pendingLoginNames = new WeakMap<WebSocket, string>();
+    private readonly pendingLoginNames = new WeakMap<WebSocket, PendingLoginReservation>();
     /**
      * A successful login response precedes the handshake that creates the
      * PlayerState. Keep a short-lived reservation for that gap so two sockets
      * cannot authenticate the same account and both enter the world.
      */
-    private readonly pendingLoginSockets = new Map<string, WebSocket>();
+    private readonly pendingLoginSockets = new Map<string, PendingLoginReservation>();
 
-    constructor(private readonly svc: ServerServices) {}
+    constructor(
+        private readonly svc: ServerServices,
+        private readonly now: () => number = Date.now,
+    ) {}
 
     setPendingLoginName(ws: WebSocket, name: string): void {
-        const previousName = this.pendingLoginNames.get(ws);
-        if (previousName) {
-            const previousKey = normalizePlayerAccountName(previousName);
-            if (previousKey && this.pendingLoginSockets.get(previousKey) === ws) {
-                this.pendingLoginSockets.delete(previousKey);
-            }
-        }
-        this.pendingLoginNames.set(ws, name);
+        this.clearPendingLoginName(ws);
         const accountName = normalizePlayerAccountName(name);
-        if (accountName) this.pendingLoginSockets.set(accountName, ws);
+        const reservation: PendingLoginReservation = {
+            name,
+            accountName,
+            expiresAt: this.now() + PENDING_LOGIN_RESERVATION_MS,
+            socket: ws,
+        };
+        this.pendingLoginNames.set(ws, reservation);
+        if (accountName) this.pendingLoginSockets.set(accountName, reservation);
     }
 
     consumePendingLoginName(ws: WebSocket): string | undefined {
-        const name = this.pendingLoginNames.get(ws);
-        this.pendingLoginNames.delete(ws);
-        const accountName = name ? normalizePlayerAccountName(name) : undefined;
-        if (accountName && this.pendingLoginSockets.get(accountName) === ws) {
-            this.pendingLoginSockets.delete(accountName);
-        }
-        return name;
+        const reservation = this.pendingLoginNames.get(ws);
+        this.clearPendingLoginName(ws);
+        if (!reservation || reservation.expiresAt <= this.now()) return undefined;
+        return reservation.name;
     }
 
     private isLoginPendingForAnotherSocket(ws: WebSocket, username: string): boolean {
         const accountName = normalizePlayerAccountName(username);
         if (!accountName) return false;
-        const pendingSocket = this.pendingLoginSockets.get(accountName);
-        return pendingSocket !== undefined && pendingSocket !== ws;
+        const reservation = this.pendingLoginSockets.get(accountName);
+        if (!reservation) return false;
+        if (reservation.expiresAt <= this.now()) {
+            this.clearPendingLoginName(reservation.socket);
+            return false;
+        }
+        return reservation.socket !== ws;
     }
 
     private clearPendingLoginName(ws: WebSocket): void {
-        const name = this.pendingLoginNames.get(ws);
+        const reservation = this.pendingLoginNames.get(ws);
         this.pendingLoginNames.delete(ws);
-        const accountName = name ? normalizePlayerAccountName(name) : undefined;
-        if (accountName && this.pendingLoginSockets.get(accountName) === ws) {
-            this.pendingLoginSockets.delete(accountName);
+        if (
+            reservation?.accountName &&
+            this.pendingLoginSockets.get(reservation.accountName) === reservation
+        ) {
+            this.pendingLoginSockets.delete(reservation.accountName);
         }
     }
 

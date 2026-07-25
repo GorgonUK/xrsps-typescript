@@ -86,9 +86,9 @@ All player actions flow through the **ActionScheduler**:
 
 ## Persistence
 
-Player state is stored through a **`PersistenceProvider`** interface (`server/src/game/state/PersistenceProvider.ts`). This decouples storage from game logic — the server doesn't care whether data lives in a JSON file, SQLite, or Postgres.
+Player state is stored through a **`PersistenceProvider`** interface (`server/src/game/state/PersistenceProvider.ts`). This decouples storage from game logic — the server doesn't care whether data lives in SQLite, Postgres, or another backend.
 
-The default implementation is `PlayerPersistence` — a JSON flat file provider that stores all players in a single `player-state.json` per gamemode under `server/data/gamemodes/{id}/`.
+The default implementation is `PlayerPersistence`, backed by `game.sqlite` in each gamemode directory under `server/data/gamemodes/{id}/`. The same database stores password hashes and durable trade escrow/refund records. Existing `player-state.json` and `accounts.json` files are imported once and retained as rollback backups.
 
 ### Save triggers
 

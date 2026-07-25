@@ -481,12 +481,12 @@ export class CombatEffectApplicator {
             }
         }
 
-        // Percentage-based drains are applied on a successful hit, even when
-        // that hit rolls zero damage (for example, dragon warhammer).
-        this.applyNpcFractionalStatDrains(target, effects);
-
         // Only apply damage-based effects if damage was dealt
         if (damageDealt > 0) {
+            // A successful stat-draining hit must still deal damage. Percentage
+            // drains use the target's current level and round the drain down.
+            this.applyNpcFractionalStatDrains(target, effects);
+
             // Heal on damage (e.g., Saradomin Godsword, Blood spells)
             if (effects.healFraction !== undefined) {
                 const healFraction = effects.healFraction;
@@ -540,10 +540,12 @@ export class CombatEffectApplicator {
         damageDealt: number,
         tick: number,
     ): void {
+        if (effects.drainDefenceOnlyByDamage !== undefined) {
+            const amount = Math.floor(damageDealt * Math.max(0, effects.drainDefenceOnlyByDamage));
+            target.drainCombatStat("defence", amount);
+        }
         if (effects.drainDefenceByDamage !== undefined) {
-            let remaining = Math.floor(
-                damageDealt * Math.max(0, effects.drainDefenceByDamage),
-            );
+            let remaining = Math.floor(damageDealt * Math.max(0, effects.drainDefenceByDamage));
             // Bandos godsword drains Defence first, then applies any excess to
             // Strength, Attack, Magic, and Ranged in that order.
             for (const stat of ["defence", "strength", "attack", "magic", "ranged"] as const) {
