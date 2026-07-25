@@ -92,6 +92,7 @@ export interface MessageHandlerServices {
         payload: MessagePayload<"trade_action">,
         tick: number,
     ) => void;
+    handleTradeWidgetClose: (player: PlayerState, groupId: number) => boolean;
 
     // Movement
     setPendingWalkCommand: (

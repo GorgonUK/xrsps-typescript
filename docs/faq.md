@@ -34,7 +34,7 @@ Yes. Import the provider create functions directly from `server/gamemodes/vanill
 
 ### Where does gamemode-specific player data get stored?
 
-Each gamemode gets its own directory under `server/data/gamemodes/{id}/`. Player state is saved to `player-state.json` in that directory.
+Each gamemode gets its own directory under `server/data/gamemodes/{id}/`. Player state, account credentials, and durable trade recovery data are stored in `game.sqlite` in that directory. Legacy `player-state.json` and `accounts.json` files are imported automatically and left in place as backups.
 
 ## Extrascripts
 

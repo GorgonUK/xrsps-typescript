@@ -63,6 +63,9 @@ export function createWidgetHandler(services: MessageHandlerServices): MessageHa
             } else if (action === "close") {
                 logger.info(`[widget-close] player=${p.id} group=${groupId}`);
                 services.noteWidgetEventForLedger(p.id, { action: "close", groupId });
+                if (services.handleTradeWidgetClose(p, groupId)) {
+                    return;
+                }
                 services.handleCs2ModalCloseState(p, groupId);
                 services.handleDialogCloseState(p, groupId);
                 const interfaceService = services.getInterfaceService();

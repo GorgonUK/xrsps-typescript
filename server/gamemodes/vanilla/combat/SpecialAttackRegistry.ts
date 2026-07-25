@@ -665,7 +665,9 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
             damageMultiplier: 1.0,
             hitCount: 1,
             effects: {
-                drainDefence: 1.0,
+                // Backstab reduces Defence by the damage dealt, rather than
+                // spilling into other combat stats like a Bandos godsword.
+                drainDefenceOnlyByDamage: 1.0,
             },
             animationId: 4198,
             graphicId: 704,

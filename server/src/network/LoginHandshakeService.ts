@@ -50,6 +50,7 @@ import {
 import { decodeClientPacket } from "./packet/ClientBinaryDecoder";
 
 const NPC_STREAM_RADIUS_TILES = 15;
+export const PENDING_LOGIN_RESERVATION_MS = 60_000;
 const DEBUG_NPC_STREAM =
     (process?.env?.DEBUG_NPC_STREAM ?? "").toString().toLowerCase() === "1" ||
     (process?.env?.DEBUG_NPC_STREAM ?? "").toString().toLowerCase() === "true";
@@ -62,6 +63,13 @@ interface HandshakeAppearance {
     colors?: number[];
 }
 
+type PendingLoginReservation = {
+    name: string;
+    accountName?: string;
+    expiresAt: number;
+    socket: WebSocket;
+};
+
 /**
  * Manages the login validation, handshake negotiation, and WebSocket
  * connection lifecycle (message routing + disconnect cleanup).
@@ -70,18 +78,60 @@ interface HandshakeAppearance {
  * keeping the deeply-coupled handshake flow intact.
  */
 export class LoginHandshakeService {
-    private readonly pendingLoginNames = new WeakMap<WebSocket, string>();
+    private readonly pendingLoginNames = new WeakMap<WebSocket, PendingLoginReservation>();
+    /**
+     * A successful login response precedes the handshake that creates the
+     * PlayerState. Keep a short-lived reservation for that gap so two sockets
+     * cannot authenticate the same account and both enter the world.
+     */
+    private readonly pendingLoginSockets = new Map<string, PendingLoginReservation>();
 
-    constructor(private readonly svc: ServerServices) {}
+    constructor(
+        private readonly svc: ServerServices,
+        private readonly now: () => number = Date.now,
+    ) {}
 
     setPendingLoginName(ws: WebSocket, name: string): void {
-        this.pendingLoginNames.set(ws, name);
+        this.clearPendingLoginName(ws);
+        const accountName = normalizePlayerAccountName(name);
+        const reservation: PendingLoginReservation = {
+            name,
+            accountName,
+            expiresAt: this.now() + PENDING_LOGIN_RESERVATION_MS,
+            socket: ws,
+        };
+        this.pendingLoginNames.set(ws, reservation);
+        if (accountName) this.pendingLoginSockets.set(accountName, reservation);
     }
 
     consumePendingLoginName(ws: WebSocket): string | undefined {
-        const name = this.pendingLoginNames.get(ws);
+        const reservation = this.pendingLoginNames.get(ws);
+        this.clearPendingLoginName(ws);
+        if (!reservation || reservation.expiresAt <= this.now()) return undefined;
+        return reservation.name;
+    }
+
+    private isLoginPendingForAnotherSocket(ws: WebSocket, username: string): boolean {
+        const accountName = normalizePlayerAccountName(username);
+        if (!accountName) return false;
+        const reservation = this.pendingLoginSockets.get(accountName);
+        if (!reservation) return false;
+        if (reservation.expiresAt <= this.now()) {
+            this.clearPendingLoginName(reservation.socket);
+            return false;
+        }
+        return reservation.socket !== ws;
+    }
+
+    private clearPendingLoginName(ws: WebSocket): void {
+        const reservation = this.pendingLoginNames.get(ws);
         this.pendingLoginNames.delete(ws);
-        return name;
+        if (
+            reservation?.accountName &&
+            this.pendingLoginSockets.get(reservation.accountName) === reservation
+        ) {
+            this.pendingLoginSockets.delete(reservation.accountName);
+        }
     }
 
     getSocketRemoteAddress(ws: WebSocket): string | undefined {
@@ -131,7 +181,7 @@ export class LoginHandshakeService {
         payload: { username?: string; password?: string; revision?: number },
     ): void {
         const { username, password, revision } = payload;
-        const normalizedUsername = (username || "").trim().toLowerCase();
+        const normalizedUsername = this.svc.authService.normalizePlayerNameForAuth(username);
 
         const sendLoginError = (errorCode: number, error: string) => {
             this.svc.networkLayer.withDirectSendBypass("login_response", () =>
@@ -182,13 +232,34 @@ export class LoginHandshakeService {
         }
 
         // 5. Check if already logged in
-        if (this.svc.authService.isPlayerAlreadyLoggedIn(normalizedUsername)) {
+        if (
+            this.svc.authService.isPlayerAlreadyLoggedIn(normalizedUsername) ||
+            this.isLoginPendingForAnotherSocket(ws, normalizedUsername)
+        ) {
             sendLoginError(5, "Your account is already logged in. Try again in 60 seconds.");
             return;
         }
 
+        // 6. Verify an existing password hash or register a new account.
+        // Imported pre-password character saves require the temporary legacy
+        // claim switch before a new password can be assigned to their name.
+        const authentication = this.svc.authService.authenticateCredentials(
+            username,
+            password,
+            this.svc.playerPersistence.hasKey(normalizedUsername),
+        );
+        if (!authentication.ok) {
+            sendLoginError(
+                3,
+                authentication.reason === "password_too_short"
+                    ? "Password must be at least 8 characters."
+                    : "Invalid username or password.",
+            );
+            return;
+        }
+
         // All checks passed - login successful
-        const displayName = (username ?? "").slice(0, 12);
+        const displayName = (username ?? "").trim().slice(0, 12);
         this.setPendingLoginName(ws, displayName);
         this.svc.networkLayer.withDirectSendBypass("login_response", () =>
             this.svc.networkLayer.sendWithGuard(
@@ -203,7 +274,11 @@ export class LoginHandshakeService {
                 "login_response",
             ),
         );
-        logger.info(`Login successful: ${username}`);
+        logger.info(
+            `Login successful: ${authentication.accountName}${
+                authentication.created ? " (new account)" : ""
+            }`,
+        );
     }
 
     handleHandshakeMessage(
@@ -213,7 +288,16 @@ export class LoginHandshakeService {
         const parsed = { type: "handshake" as const, payload };
         try {
             const pendingLoginName = this.consumePendingLoginName(ws);
-            const name = pendingLoginName || parsed.payload.name?.slice(0, 12) || undefined;
+            if (!pendingLoginName) {
+                logger.warn("[handshake] rejected unauthenticated handshake");
+                try {
+                    ws.close(1008, "login_required");
+                } catch (err) {
+                    logger.warn("[handshake] failed to close unauthenticated client", err);
+                }
+                return;
+            }
+            const name = pendingLoginName;
 
             const preliminarySaveKey = normalizePlayerAccountName(name);
             let p: PlayerState | undefined;
@@ -308,6 +392,11 @@ export class LoginHandshakeService {
                         this.svc.equipmentService.refreshCombatWeaponCategory(p);
                     } catch (err) {
                         logger.warn("[player] failed to refresh appearance after persist", err);
+                    }
+                    try {
+                        this.svc.tradeManager?.restorePendingRefunds(p);
+                    } catch (err) {
+                        logger.warn("[trade] failed to restore pending trade refunds", err);
                     }
                 } else {
                     logger.info(`[handshake] Resuming player ${name} at (${p.tileX}, ${p.tileY})`);
@@ -964,6 +1053,7 @@ export class LoginHandshakeService {
 
         ws.on("close", () => {
             this.svc.clientInputService.removeConnection(ws);
+            this.clearPendingLoginName(ws);
             try {
                 this.svc.movementService.getPendingWalkCommands().delete(ws);
                 const player = this.svc.players?.get(ws);

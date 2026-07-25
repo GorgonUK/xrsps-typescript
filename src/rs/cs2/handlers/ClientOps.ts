@@ -80,8 +80,7 @@ export function registerClientOps(handlers: HandlerMap): void {
     // 93 = Backpack (inventory)
     // 94 = Equipment (worn items)
     // 95 = Bank
-    // 149 = Trade (your offer)
-    // 150 = Trade (their offer)
+    // 90 = Trade offer (INVOTHER uses 90 + 32768 for the counterparty)
     // 516 = Shop
     // etc.
     handlers.set(Opcodes.INV_GETOBJ, (ctx) => {
@@ -131,8 +130,7 @@ export function registerClientOps(handlers: HandlerMap): void {
                 93: 28, // Backpack
                 94: 14, // Equipment (11 slots but indexed 0-13)
                 95: 1410, // Bank (bankmain_build uses 1410 indexed slots)
-                149: 28, // Trade (your offer)
-                150: 28, // Trade (their offer)
+                90: 28, // Trade offer
                 516: 40, // Shop
             };
             size = defaultSizes[invId] ?? 0;

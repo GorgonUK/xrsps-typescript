@@ -463,7 +463,6 @@ export class CombatEffectApplicator {
      * - prayerFraction: Restore prayer by % of damage (e.g., SGS)
      *
      * Note: Some effects (siphonRunEnergyPercent, prayerDisableTicks) are PvP-only.
-     * Note: Stat drain effects require NPC stat tracking (not implemented).
      */
     applySpecialEffects(
         attacker: PlayerState,
@@ -484,6 +483,10 @@ export class CombatEffectApplicator {
 
         // Only apply damage-based effects if damage was dealt
         if (damageDealt > 0) {
+            // A successful stat-draining hit must still deal damage. Percentage
+            // drains use the target's current level and round the drain down.
+            this.applyNpcFractionalStatDrains(target, effects);
+
             // Heal on damage (e.g., Saradomin Godsword, Blood spells)
             if (effects.healFraction !== undefined) {
                 const healFraction = effects.healFraction;
@@ -508,13 +511,61 @@ export class CombatEffectApplicator {
                     }
                 }
             }
+
+            this.applyNpcDamageStatDrains(target, effects, damageDealt, tick);
         }
 
         // Note: The following effects are tracked but not fully implemented:
         // - siphonRunEnergyPercent: PvP only (target must be player)
         // - prayerDisableTicks: PvP only
-        // - drainMagicByDamage: Requires NPC stat tracking
-        // - drainCombatStatByDamage: Requires NPC stat tracking
+    }
+
+    private applyNpcFractionalStatDrains(target: NpcState, effects: SpecialAttackEffects): void {
+        const drains: Array<["attack" | "strength" | "defence" | "ranged", number | undefined]> = [
+            ["attack", effects.drainAttack],
+            ["strength", effects.drainStrength],
+            ["defence", effects.drainDefence],
+            ["ranged", effects.drainRanged],
+        ];
+        for (const [stat, fraction] of drains) {
+            if (fraction !== undefined) {
+                target.drainCombatStatByFraction(stat, fraction);
+            }
+        }
+    }
+
+    private applyNpcDamageStatDrains(
+        target: NpcState,
+        effects: SpecialAttackEffects,
+        damageDealt: number,
+        tick: number,
+    ): void {
+        if (effects.drainDefenceOnlyByDamage !== undefined) {
+            const amount = Math.floor(damageDealt * Math.max(0, effects.drainDefenceOnlyByDamage));
+            target.drainCombatStat("defence", amount);
+        }
+        if (effects.drainDefenceByDamage !== undefined) {
+            let remaining = Math.floor(damageDealt * Math.max(0, effects.drainDefenceByDamage));
+            // Bandos godsword drains Defence first, then applies any excess to
+            // Strength, Attack, Magic, and Ranged in that order.
+            for (const stat of ["defence", "strength", "attack", "magic", "ranged"] as const) {
+                if (remaining <= 0) break;
+                remaining -= target.drainCombatStat(stat, remaining);
+            }
+        }
+        if (effects.drainMagicByDamage) {
+            target.drainCombatStat("magic", damageDealt);
+        }
+        if (effects.drainAllCombatByDamage) {
+            for (const stat of ["attack", "strength", "defence", "magic", "ranged"] as const) {
+                target.drainCombatStat(stat, damageDealt);
+            }
+        }
+        if (effects.drainCombatStatByDamage) {
+            const stats = ["attack", "strength", "defence", "magic", "ranged"] as const;
+            const index = Math.abs((target.id * 31 + tick * 17 + damageDealt) % stats.length);
+            target.drainCombatStat(stats[index], damageDealt);
+        }
     }
 }
 

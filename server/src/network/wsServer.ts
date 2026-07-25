@@ -123,6 +123,7 @@ import { DynamicLocStateStore } from "../world/DynamicLocStateStore";
 import { LocTileLookupService } from "../world/LocTileLookupService";
 import { locCanResolveToId } from "../world/LocTransforms";
 import { MapCollisionService } from "../world/MapCollisionService";
+import { AccountStore } from "./AccountStore";
 import { AuthenticationService } from "./AuthenticationService";
 import { BroadcastService } from "./BroadcastService";
 import { LoginHandshakeService } from "./LoginHandshakeService";
@@ -345,6 +346,10 @@ export class WSServer {
     constructor(opts: WSServerOptions) {
         this.options = opts;
         this.gamemode = opts.gamemode;
+        // Some game systems are constructed before the full service context is
+        // populated. TradeManager needs this value immediately to locate its
+        // gamemode-specific persistent storage.
+        Object.assign(this.svc, { gamemode: this.gamemode });
         this.initBroadcasters();
         this.initWebSocketServer(opts);
         this.initAutosave();
@@ -824,6 +829,8 @@ export class WSServer {
             skipMusicTrack: (player) => this.soundManager?.skipTrackForPlayer(player) ?? false,
             queueCombatSnapshot: (...args: Parameters<typeof this.queueCombatSnapshot>) =>
                 this.queueCombatSnapshot(...args),
+            queueClientScript: (playerId, scriptId, ...args) =>
+                this.broadcastService.queueClientScript(playerId, scriptId, ...args),
             queueWidgetEvent: (pid, evt) => this.queueWidgetEvent(pid, evt),
             queueSmithingInterfaceMessage: (pid, p) =>
                 this.broadcastService.queueSmithingInterfaceMessage(pid, p as any),
@@ -1055,12 +1062,20 @@ export class WSServer {
     }
 
     private initDeferredDeps(opts: WSServerOptions): void {
+        const gamemodeDataDir = getGamemodeDataDir(this.gamemode.id);
         this.authService = new AuthenticationService(
             {
                 hasConnectedPlayer: (u) => this.players?.hasConnectedPlayer(u) ?? false,
                 getTotalPlayerCount: () => this.players?.getTotalPlayerCount() ?? 0,
             },
             this.gamemode,
+            {
+                accountStore: new AccountStore({ dataDir: gamemodeDataDir }),
+                allowAccountRegistration:
+                    (process.env.ALLOW_ACCOUNT_REGISTRATION ?? "true").toLowerCase() !== "false",
+                allowLegacyAccountClaim:
+                    (process.env.ALLOW_LEGACY_ACCOUNT_CLAIM ?? "false").toLowerCase() === "true",
+            },
         );
         this.gameContext = new GameContext({
             ticker: opts.ticker,
@@ -1560,6 +1575,7 @@ export class WSServer {
             queueChatMessage: (msg) => this.messagingService.queueChatMessage(msg),
             closeInterruptibleInterfaces: (player) =>
                 this.interfaceManager.closeInterruptibleInterfaces(player),
+            isPlayerTrading: (player) => this.svc.tradeManager?.isPlayerTrading(player) ?? false,
             encodeMessage: encodeMessage,
         };
 

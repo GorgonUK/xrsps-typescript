@@ -9,6 +9,18 @@ export type SdMapLoaderInput = {
 
     minimizeDrawCalls: boolean;
 
+    /**
+     * Rebuild only door geometry and the scene data required to interact with
+     * it. Used for open/close updates on an already loaded map square.
+     */
+    doorOnly?: boolean;
+
+    /**
+     * Rebuild only non-door location geometry and the scene data required to
+     * interact with it. Used for ordinary LOC_ADD_CHANGE updates.
+     */
+    locOnly?: boolean;
+
     loadedTextureIds: Set<number>;
 
     // Dynamic loc overrides: Map<"x,y,level,oldId", {newId,newRotation?,moveToX?,moveToY?,seqId?,seqRandomStart?,matchType?,matchRotation?}>
@@ -81,5 +93,4 @@ export type SdMapLoaderInput = {
         x: number;
         y: number;
     };
-
 };

@@ -2734,7 +2734,6 @@ export class PlayerEcs {
     // Interaction API
     setInteractionIndex(i: number, index: number | undefined): void {
         if (!this.interactionIndex) return;
-        const prev = this.interactionIndex[i] | 0;
         const next = typeof index === "number" && index >= 0 ? index | 0 : NO_INTERACTION;
         this.interactionIndex[i] = next;
     }
