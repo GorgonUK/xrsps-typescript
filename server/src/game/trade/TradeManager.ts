@@ -8,6 +8,9 @@ import {
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import { type InventoryEntry, PlayerState } from "../player";
+import { getGamemodeDataDir } from "../gamemodes/GamemodeRegistry";
+import { buildPlayerSaveKey } from "../state/PlayerSessionKeys";
+import { getSqliteDatabase, type SqliteDatabase } from "../state/SqliteDatabase";
 
 type TradeOfferState = {
     itemId: number;
@@ -34,14 +37,61 @@ type TradeRequestState = {
 };
 
 const REQUEST_TIMEOUT_TICKS = 64; // ~38.4 seconds at 600ms ticks
+const MAX_ITEM_STACK_QUANTITY = 2_147_483_647;
 
 export class TradeManager {
     private readonly requests = new Map<string, TradeRequestState>();
     private readonly sessions = new Map<string, TradeSession>();
     private readonly sessionByPlayer = new Map<number, TradeSession>();
+    private readonly database: SqliteDatabase;
     private sessionCounter = 1;
 
-    constructor(private readonly svc: ServerServices) {}
+    constructor(private readonly svc: ServerServices, database?: SqliteDatabase) {
+        this.database =
+            database ??
+            getSqliteDatabase({
+                dataDir: getGamemodeDataDir(svc.gamemode.id),
+            });
+    }
+
+    /**
+     * Return durable trade refunds as soon as the player has inventory space.
+     * Any remaining entries stay in SQLite and will be retried next login.
+     */
+    restorePendingRefunds(player: PlayerState): void {
+        const accountName = this.getPlayerSaveKey(player);
+        const refunds = this.database.connection
+            .prepare(
+                `SELECT id, item_id AS itemId, quantity
+                 FROM pending_trade_refunds
+                 WHERE account_name = ?
+                 ORDER BY id ASC`,
+            )
+            .all(accountName) as Array<{ id: number; itemId: number; quantity: number }>;
+        if (refunds.length === 0) return;
+
+        let returnedCount = 0;
+        for (const refund of refunds) {
+            if (!this.addItemsToInventory(player, refund.itemId, refund.quantity)) continue;
+            this.database.connection
+                .prepare("DELETE FROM pending_trade_refunds WHERE id = ?")
+                .run(refund.id);
+            returnedCount++;
+        }
+
+        if (returnedCount > 0) {
+            this.svc.messagingService.sendGameMessageToPlayer(
+                player,
+                `Returned ${returnedCount} pending trade item stack${returnedCount === 1 ? "" : "s"}.`,
+            );
+        }
+        if (returnedCount < refunds.length) {
+            this.svc.messagingService.sendGameMessageToPlayer(
+                player,
+                "Some returned trade items are still waiting for inventory space.",
+            );
+        }
+    }
 
     private queueInventorySnapshot(player: PlayerState): void {
         const sock = this.svc.players?.getSocketByPlayerId(player.id);
@@ -196,8 +246,20 @@ export class TradeManager {
     }
 
     private closeSession(session: TradeSession, reason: string, blamedId?: number): void {
-        this.returnOffers(session.parties[0]);
-        this.returnOffers(session.parties[1]);
+        for (const party of session.parties) {
+            if (this.returnOffers(party)) continue;
+            try {
+                this.deferOffersForSafeReturn(party);
+                this.svc.messagingService.sendGameMessageToPlayer(
+                    party.player,
+                    "Your offered trade items are waiting safely until you have inventory space.",
+                );
+            } catch (err) {
+                logger.error("[trade] failed to preserve offered items for safe return", err);
+                this.broadcastSession(session);
+                return;
+            }
+        }
         for (const party of session.parties) {
             try {
                 this.closeTradeWidget(party.player);
@@ -359,49 +421,49 @@ export class TradeManager {
 
     private finalizeTrade(session: TradeSession): void {
         const [a, b] = session.parties;
-        if (!this.transferOffers(a, b)) {
+        if (!this.canReceiveItems(b.player, a.offers)) {
+            this.notifyInsufficientTradeSpace(a, b);
             session.stage = TradeStage.Offer;
             this.resetAcceptances(session);
             this.broadcastSession(session);
             return;
         }
-        if (!this.transferOffers(b, a)) {
+        if (!this.canReceiveItems(a.player, b.offers)) {
+            this.notifyInsufficientTradeSpace(b, a);
             session.stage = TradeStage.Offer;
             this.resetAcceptances(session);
             this.broadcastSession(session);
             return;
         }
+
+        const aInventory = this.snapshotInventory(a.player);
+        const bInventory = this.snapshotInventory(b.player);
+        const aOffers = a.offers.map((offer) => ({ ...offer }));
+        const bOffers = b.offers.map((offer) => ({ ...offer }));
+        if (!this.transferOffers(a, b) || !this.transferOffers(b, a)) {
+            this.restoreInventory(a.player, aInventory);
+            this.restoreInventory(b.player, bInventory);
+            a.offers = aOffers;
+            b.offers = bOffers;
+            logger.error("[trade] failed to transfer offers after capacity preflight");
+            session.stage = TradeStage.Offer;
+            this.resetAcceptances(session);
+            this.broadcastSession(session);
+            return;
+        }
+        a.offers = [];
+        b.offers = [];
         this.queueInventorySnapshot(a.player);
         this.queueInventorySnapshot(b.player);
         this.closeSession(session, "Trade completed.");
     }
 
     private transferOffers(from: TradePartyState, to: TradePartyState): boolean {
-        if (!this.canReceiveItems(to.player, from.offers)) {
-            this.svc.messagingService.sendGameMessageToPlayer(
-                from.player,
-                "Other player doesn't have enough space.",
-            );
-            this.svc.messagingService.sendGameMessageToPlayer(
-                to.player,
-                "You don't have enough space in your inventory.",
-            );
-            return false;
-        }
         for (const offer of from.offers) {
             if (!this.addItemsToInventory(to.player, offer.itemId, offer.quantity)) {
-                this.svc.messagingService.sendGameMessageToPlayer(
-                    from.player,
-                    "Other player doesn't have enough space.",
-                );
-                this.svc.messagingService.sendGameMessageToPlayer(
-                    to.player,
-                    "You don't have enough space in your inventory.",
-                );
                 return false;
             }
         }
-        from.offers = [];
         return true;
     }
 
@@ -426,33 +488,82 @@ export class TradeManager {
     }
 
     private addItemsToInventory(player: PlayerState, itemId: number, quantity: number): boolean {
-        const def = getItemDefinition(itemId);
-        const isStackable = !!def?.stackable;
-        if (isStackable) {
-            return this.svc.inventoryService.addItemToInventory(player, itemId, quantity).added > 0;
-        }
-        for (let i = 0; i < quantity; i++) {
-            const result = this.svc.inventoryService.addItemToInventory(player, itemId, 1);
-            if (result.added <= 0) {
-                return false;
-            }
-        }
-        return true;
+        return (
+            this.svc.inventoryService.addItemToInventory(player, itemId, quantity).added ===
+            quantity
+        );
     }
 
-    private returnOffers(party: TradePartyState): void {
-        if (party.offers.length === 0) return;
+    private returnOffers(party: TradePartyState): boolean {
+        if (party.offers.length === 0) return true;
+        const inventory = this.snapshotInventory(party.player);
         for (const offer of party.offers) {
             if (offer.quantity <= 0) continue;
             if (!this.addItemsToInventory(party.player, offer.itemId, offer.quantity)) {
-                // As a fallback, drop the items on the ground? For now, just log and discard.
-                this.svc.messagingService.sendGameMessageToPlayer(
-                    party.player,
-                    "Could not return some traded items due to lack of space.",
-                );
+                this.restoreInventory(party.player, inventory);
+                return false;
             }
         }
         party.offers = [];
+        return true;
+    }
+
+    private deferOffersForSafeReturn(party: TradePartyState): void {
+        const offers = party.offers.filter((offer) => offer.quantity > 0);
+        if (offers.length === 0) {
+            party.offers = [];
+            return;
+        }
+
+        const accountName = this.getPlayerSaveKey(party.player);
+        const createdAt = new Date().toISOString();
+        this.database.connection.exec("BEGIN IMMEDIATE");
+        try {
+            const insertRefund = this.database.connection.prepare(
+                `INSERT INTO pending_trade_refunds (account_name, item_id, quantity, created_at)
+                 VALUES (?, ?, ?, ?)`,
+            );
+            for (const offer of offers) {
+                insertRefund.run(accountName, offer.itemId, offer.quantity, createdAt);
+            }
+            this.database.connection.exec("COMMIT");
+        } catch (err) {
+            try {
+                this.database.connection.exec("ROLLBACK");
+            } catch {
+                // Preserve the original storage error for diagnostics.
+            }
+            throw err;
+        }
+
+        party.offers = [];
+    }
+
+    private getPlayerSaveKey(player: PlayerState): string {
+        return player.__saveKey ?? buildPlayerSaveKey(player.name, player.id);
+    }
+
+    private snapshotInventory(player: PlayerState): InventoryEntry[] {
+        return this.svc.inventoryService
+            .getInventory(player)
+            .map((entry: InventoryEntry) => ({ ...entry }));
+    }
+
+    private restoreInventory(player: PlayerState, inventory: InventoryEntry[]): void {
+        for (const [slot, entry] of inventory.entries()) {
+            this.svc.inventoryService.setInventorySlot(player, slot, entry.itemId, entry.quantity);
+        }
+    }
+
+    private notifyInsufficientTradeSpace(from: TradePartyState, to: TradePartyState): void {
+        this.svc.messagingService.sendGameMessageToPlayer(
+            from.player,
+            "Other player doesn't have enough space.",
+        );
+        this.svc.messagingService.sendGameMessageToPlayer(
+            to.player,
+            "You don't have enough space in your inventory.",
+        );
     }
 
     private canReceiveItems(player: PlayerState, offers: TradeOfferState[]): boolean {
@@ -467,8 +578,10 @@ export class TradeManager {
             const stackable = !!def?.stackable;
             if (stackable) {
                 const existing = clone.find((slot) => slot.itemId === offer.itemId);
-                if (existing) existing.quantity += offer.quantity;
-                else {
+                if (existing) {
+                    if (existing.quantity > MAX_ITEM_STACK_QUANTITY - offer.quantity) return false;
+                    existing.quantity += offer.quantity;
+                } else {
                     const free = findFreeSlot();
                     if (!free) return false;
                     free.itemId = offer.itemId;

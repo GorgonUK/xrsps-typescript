@@ -168,6 +168,7 @@ import { buildGroundItemGeometry } from "./ground/GroundItemMeshBuilder";
 import { type MinimapIcon, SdMapData } from "./loader/SdMapData";
 import { SdMapDataLoader } from "./loader/SdMapDataLoader";
 import { SdMapLoaderInput } from "./loader/SdMapLoaderInput";
+import { isDoorLocType } from "./loc/SceneLocs";
 import {
     DynamicNpcAnimLoader,
     DynamicNpcFrameGeometry,
@@ -560,6 +561,13 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     private gamemodeWorldLocSpawnKeys: Set<string> = new Set();
     private gamemodeWorldTerrainOverrideKeys: Set<string> = new Set();
     private pendingLocUpdates: Set<number> = new Set();
+    // Ordinary objects are in their own GPU mesh, so their changes can avoid
+    // rebuilding terrain, NPCs, minimap data, or door geometry.
+    private pendingLocGeometryUpdates: Set<number> = new Set();
+    // Doors have their own GPU geometry.  Keep these separate from general loc
+    // updates so opening one does not recreate terrain and every static model
+    // in its map square.
+    private pendingDoorLocUpdates: Set<number> = new Set();
     private pendingLocReloadMaps: Map<number, { mapX: number; mapY: number }> = new Map();
     private pendingLocReloadFlushTimer?: ReturnType<typeof setTimeout>;
     private nextLocReloadBatchId: number = 1;
@@ -1655,6 +1663,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     this.osrsClient.loadedCache?.info?.revision ?? 0,
                 );
             } else {
+                state.showCredentialValidationError();
                 this.osrsClient.handleLoginKeyInput("Enter", "");
                 this.syncMobileLoginInput(true);
             }
@@ -5739,6 +5748,17 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         this.applyGamemodeWorldLocs();
 
+        const mapId = getMapSquareId(mapX, mapY);
+        const doorOnly =
+            typeof locReloadBatchId === "number" &&
+            !this.pendingLocUpdates.has(mapId) &&
+            !this.pendingLocGeometryUpdates.has(mapId) &&
+            this.pendingDoorLocUpdates.has(mapId);
+        const locOnly =
+            typeof locReloadBatchId === "number" &&
+            !this.pendingLocUpdates.has(mapId) &&
+            !this.pendingDoorLocUpdates.has(mapId) &&
+            this.pendingLocGeometryUpdates.has(mapId);
         const input: SdMapLoaderInput = {
             mapX,
             mapY,
@@ -5746,6 +5766,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             loadNpcs: this.loadNpcs,
             smoothTerrain: this.smoothTerrain,
             minimizeDrawCalls: !this.hasMultiDraw,
+            doorOnly,
+            locOnly,
             loadedTextureIds: this.loadedTextureIds,
             locOverrides: this.locOverrides,
             extraLocs: this.getExtraLocsForMap(mapX, mapY),
@@ -5759,7 +5781,6 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             SdMapDataLoader
         >(this.dataLoader, input);
 
-        const mapId = getMapSquareId(mapX, mapY);
         if (mapData && this.isValidMapData(mapData)) {
             if (typeof locReloadBatchId === "number") {
                 this.resolveLocReloadBatchMap(locReloadBatchId, mapId, mapData);
@@ -5773,6 +5794,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                 this.mapManager.loadingMapIds.delete(mapId);
             }
             this.pendingLocUpdates.delete(mapId);
+            this.pendingLocGeometryUpdates.delete(mapId);
+            this.pendingDoorLocUpdates.delete(mapId);
             this.queuedLocReloadBatchByMap.delete(mapId);
             if (typeof locReloadBatchId === "number") {
                 this.resolveLocReloadBatchMap(locReloadBatchId, mapId, undefined);
@@ -6322,28 +6345,83 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         const mapId = getMapSquareId(mapX, mapY);
         const existing = this.mapManager.getMap(mapX, mapY);
         const isLocUpdate = this.pendingLocUpdates.has(mapId);
+        const isLocGeometryUpdate = !isLocUpdate && this.pendingLocGeometryUpdates.has(mapId);
+        const isDoorOnlyUpdate =
+            !isLocUpdate && !isLocGeometryUpdate && this.pendingDoorLocUpdates.has(mapId);
 
-        if (isLocUpdate && existing instanceof WebGLMapSquare) {
-            existing.refreshSceneGeometry(
-                this.osrsClient.seqTypeLoader,
-                this.osrsClient.seqFrameLoader,
-                this.app,
-                mainProgram,
-                mainAlphaProgram,
-                textureArray,
-                textureMaterials,
-                waterTextures,
-                sceneUniformBuffer,
-                mapData,
-                getClientCycle() | 0,
-                existing.timeLoaded,
-            );
+        // A door-only payload is valid only while the original map square is
+        // still resident and no broader loc update has superseded it.
+        if (mapData.doorOnly && (!isDoorOnlyUpdate || !(existing instanceof WebGLMapSquare))) {
+            this.pendingDoorLocUpdates.delete(mapId);
+            this.pendingLocUpdates.add(mapId);
+            void this.queueLoadMap(mapX, mapY);
+            return;
+        }
+        if (mapData.locOnly && (!isLocGeometryUpdate || !(existing instanceof WebGLMapSquare))) {
+            this.pendingLocGeometryUpdates.delete(mapId);
+            this.pendingLocUpdates.add(mapId);
+            void this.queueLoadMap(mapX, mapY);
+            return;
+        }
 
-            this.registerMinimapData(mapData);
+        if (
+            (isLocUpdate || isLocGeometryUpdate || isDoorOnlyUpdate) &&
+            existing instanceof WebGLMapSquare
+        ) {
+            if (isDoorOnlyUpdate && mapData.doorOnly) {
+                existing.refreshDoorGeometry(
+                    this.app,
+                    mainProgram,
+                    mainAlphaProgram,
+                    textureArray,
+                    textureMaterials,
+                    waterTextures,
+                    sceneUniformBuffer,
+                    mapData,
+                    existing.timeLoaded,
+                );
+            } else if (isLocGeometryUpdate && mapData.locOnly) {
+                existing.refreshLocGeometry(
+                    this.osrsClient.seqTypeLoader,
+                    this.app,
+                    mainProgram,
+                    mainAlphaProgram,
+                    textureArray,
+                    textureMaterials,
+                    waterTextures,
+                    sceneUniformBuffer,
+                    mapData,
+                    getClientCycle() | 0,
+                    existing.timeLoaded,
+                );
+            } else {
+                existing.refreshSceneGeometry(
+                    this.osrsClient.seqTypeLoader,
+                    this.osrsClient.seqFrameLoader,
+                    this.app,
+                    mainProgram,
+                    mainAlphaProgram,
+                    textureArray,
+                    textureMaterials,
+                    waterTextures,
+                    sceneUniformBuffer,
+                    mapData,
+                    getClientCycle() | 0,
+                    existing.timeLoaded,
+                );
+            }
+
+            if (!mapData.doorOnly) {
+                this.registerMinimapData(mapData);
+            }
 
             this.mapManager.addMap(mapX, mapY, existing);
-            this.rebuildGroundItemsForMap(existing, this.groundItemStacks.get(mapId));
+            if (!mapData.doorOnly && !mapData.locOnly) {
+                this.rebuildGroundItemsForMap(existing, this.groundItemStacks.get(mapId));
+            }
             this.pendingLocUpdates.delete(mapId);
+            this.pendingLocGeometryUpdates.delete(mapId);
+            this.pendingDoorLocUpdates.delete(mapId);
             this.updateTextureArray(mapData.loadedTextures);
             return;
         }
@@ -6397,6 +6475,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         this.updateTextureArray(mapData.loadedTextures);
 
         this.pendingLocUpdates.delete(mapId);
+        this.pendingLocGeometryUpdates.delete(mapId);
+        this.pendingDoorLocUpdates.delete(mapId);
     }
 
     isValidMapData(mapData: SdMapData): boolean {
@@ -6407,7 +6487,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         );
     }
 
-    clearMaps(): void {
+    override clearMaps(): void {
         this.mapManager.cleanUp();
         this.mapsToLoad.clear();
         this.pendingStreamMapsByGeneration.clear();
@@ -6416,6 +6496,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         this.activeStreamGeneration = 0;
         this.activeStreamExpectedMapIds.clear();
         this.pendingLocUpdates.clear();
+        this.pendingLocGeometryUpdates.clear();
+        this.pendingDoorLocUpdates.clear();
         this.pendingLocReloadMaps.clear();
         this.pendingLocReloadBatches.clear();
         this.queuedLocReloadBatchByMap.clear();
@@ -6774,6 +6856,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                                 this.osrsClient.loadedCache?.info?.revision ?? 0,
                             );
                         } else {
+                            loginState.showCredentialValidationError();
                             this.osrsClient.handleLoginKeyInput("Enter", "");
                         }
                     } else if (keyEvent.code === "Backspace") {
@@ -12414,16 +12497,34 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
             drawCall.uniform("u_worldEntityTransform", weTransform);
             drawCall.uniform("u_worldEntityOpacity", 1.0);
-            this.updateAnimatedDrawRanges(
-                map,
-                drawCall,
-                drawRanges,
-                transparent,
-                isInteract,
-                isLod,
-            );
 
             this.drawWithRoofPlaneFilter(drawCall, drawRanges, drawRangePlanes, roofPlaneLimit);
+
+            const locBatch = map.getLocDrawCall(transparent, isInteract, isLod);
+            if (locBatch) {
+                const locDrawRangePlanes = map.getLocDrawRangesPlanes(
+                    transparent,
+                    isInteract,
+                    isLod,
+                );
+                locBatch.drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
+                locBatch.drawCall.uniform("u_worldEntityTransform", weTransform);
+                locBatch.drawCall.uniform("u_worldEntityOpacity", 1.0);
+                this.updateAnimatedDrawRanges(
+                    map,
+                    locBatch.drawCall,
+                    locBatch.drawRanges,
+                    transparent,
+                    isInteract,
+                    isLod,
+                );
+                this.drawWithRoofPlaneFilter(
+                    locBatch.drawCall,
+                    locBatch.drawRanges,
+                    locDrawRangePlanes,
+                    roofPlaneLimit,
+                );
+            }
 
             const groundBatch = map.getGroundItemDrawCall(transparent, isInteract, isLod);
             if (groundBatch) {
@@ -14618,6 +14719,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         this.activeStreamGeneration = 0;
         this.activeStreamExpectedMapIds.clear();
         this.pendingLocUpdates.clear();
+        this.pendingLocGeometryUpdates.clear();
+        this.pendingDoorLocUpdates.clear();
         this.pendingLocReloadMaps.clear();
         this.pendingLocReloadBatches.clear();
         this.queuedLocReloadBatchByMap.clear();
@@ -14769,6 +14872,24 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
             const oldTile = opts?.oldTile ?? tile;
             const newTile = opts?.newTile;
+            const oldLocType =
+                (oldId | 0) > 0 ? this.osrsClient.locTypeLoader.load(oldId | 0) : undefined;
+            const newLocType =
+                (newId | 0) > 0 ? this.osrsClient.locTypeLoader.load(newId | 0) : undefined;
+            const hasUnknownLocType =
+                ((oldId | 0) > 0 && oldLocType === undefined) ||
+                ((newId | 0) > 0 && newLocType === undefined);
+            const oldIsDoor = oldLocType !== undefined && isDoorLocType(oldLocType);
+            const newIsDoor = newLocType !== undefined && isDoorLocType(newLocType);
+            // Keeping doors and ordinary locs in separate GPU groups lets us
+            // match the game's partial loc-update behaviour. A change that
+            // crosses those groups retains the conservative full rebuild.
+            const isDoorOnlyUpdate =
+                !hasUnknownLocType &&
+                (oldId <= 0 || oldIsDoor) &&
+                (newId <= 0 || newIsDoor) &&
+                (oldIsDoor || newIsDoor);
+            const isLocOnlyUpdate = !hasUnknownLocType && !oldIsDoor && !newIsDoor;
             const matchesChangedTile = (target: {
                 tileX: number;
                 tileY: number;
@@ -14875,7 +14996,23 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                 const mx = Number(mxRaw) | 0;
                 const my = Number(myRaw) | 0;
                 const mapId = getMapSquareId(mx, my);
-                this.pendingLocUpdates.add(mapId);
+                if (
+                    isDoorOnlyUpdate &&
+                    !this.pendingLocUpdates.has(mapId) &&
+                    !this.pendingLocGeometryUpdates.has(mapId)
+                ) {
+                    this.pendingDoorLocUpdates.add(mapId);
+                } else if (
+                    isLocOnlyUpdate &&
+                    !this.pendingLocUpdates.has(mapId) &&
+                    !this.pendingDoorLocUpdates.has(mapId)
+                ) {
+                    this.pendingLocGeometryUpdates.add(mapId);
+                } else {
+                    this.pendingLocUpdates.add(mapId);
+                    this.pendingLocGeometryUpdates.delete(mapId);
+                    this.pendingDoorLocUpdates.delete(mapId);
+                }
                 this.scheduleLocReload(mx, my);
             }
 
@@ -14932,6 +15069,32 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         return locs.length > 0 ? locs : undefined;
     }
 
+    private scheduleLocGeometryUpdate(
+        mapX: number,
+        mapY: number,
+        group: "loc" | "door" | "full",
+    ): void {
+        const mapId = getMapSquareId(mapX, mapY);
+        if (
+            group === "door" &&
+            !this.pendingLocUpdates.has(mapId) &&
+            !this.pendingLocGeometryUpdates.has(mapId)
+        ) {
+            this.pendingDoorLocUpdates.add(mapId);
+        } else if (
+            group === "loc" &&
+            !this.pendingLocUpdates.has(mapId) &&
+            !this.pendingDoorLocUpdates.has(mapId)
+        ) {
+            this.pendingLocGeometryUpdates.add(mapId);
+        } else {
+            this.pendingLocUpdates.add(mapId);
+            this.pendingLocGeometryUpdates.delete(mapId);
+            this.pendingDoorLocUpdates.delete(mapId);
+        }
+        this.scheduleLocReload(mapX, mapY);
+    }
+
     onLocAddChange(
         locId: number,
         tile: { x: number; y: number },
@@ -14945,14 +15108,17 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
             const mapX = Math.floor(tile.x / 64);
             const mapY = Math.floor(tile.y / 64);
-            const mapId = getMapSquareId(mapX, mapY);
             if (this.instanceActive) {
                 // In instance mode, schedule a deferred instance scene rebuild
                 // that includes the new loc via extraLocs.
                 this.scheduleInstanceLocRebuild();
             } else {
-                this.pendingLocUpdates.add(mapId);
-                this.scheduleLocReload(mapX, mapY);
+                const locType = this.osrsClient.locTypeLoader.load(locId | 0);
+                this.scheduleLocGeometryUpdate(
+                    mapX,
+                    mapY,
+                    locType && isDoorLocType(locType) ? "door" : "loc",
+                );
             }
             console.log(
                 `[WebGLRenderer] Loc add: ${locId} at (${tile.x}, ${tile.y}, ${level}) shape=${shape} -> map (${mapX}, ${mapY})`,
@@ -14969,9 +15135,26 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
             const mapX = Math.floor(tile.x / 64);
             const mapY = Math.floor(tile.y / 64);
-            const mapId = getMapSquareId(mapX, mapY);
-            this.pendingLocUpdates.add(mapId);
-            this.scheduleLocReload(mapX, mapY);
+            // LOC_DEL does not carry an object id. Resolve it from the current
+            // per-tile loc index so deletes can stay on the same partial path.
+            const deletedLoc = this.getLocIdsAtTileAllLevels(tile.x, tile.y).find((loc) => {
+                if ((loc.level | 0) !== (level | 0)) return false;
+                const typeRot = loc.typeRot;
+                return (
+                    typeRot !== undefined &&
+                    ((typeRot | 0) & 0x3f) === ((shape | 0) & 0x3f) &&
+                    ((typeRot >> 6) & 0x3) === ((rotation | 0) & 0x3)
+                );
+            });
+            const locType =
+                deletedLoc && (deletedLoc.id | 0) > 0
+                    ? this.osrsClient.locTypeLoader.load(deletedLoc.id | 0)
+                    : undefined;
+            this.scheduleLocGeometryUpdate(
+                mapX,
+                mapY,
+                locType ? (isDoorLocType(locType) ? "door" : "loc") : "full",
+            );
         } catch (err) {
             console.warn("onLocDel error", err);
         }
@@ -15028,7 +15211,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                 matchType: shape as LocModelType,
                 matchRotation: rotation & 0x3,
             });
-            this.reloadLocAnimationTile(tile);
+            this.reloadLocAnimationTile(tile, locId);
 
             const durationMs = this.getLocAnimationDurationMs(animId);
             const timer = setTimeout(() => {
@@ -15046,7 +15229,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     this.locAnimTimers.delete(key);
                 }
                 if (changed) {
-                    this.reloadLocAnimationTile(tile);
+                    this.reloadLocAnimationTile(tile, locId);
                 }
             }, durationMs);
             this.locAnimTimers.set(exactKey, timer);
@@ -15056,16 +15239,19 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         }
     }
 
-    private reloadLocAnimationTile(tile: { x: number; y: number }): void {
+    private reloadLocAnimationTile(tile: { x: number; y: number }, locId: number): void {
         const mapX = Math.floor((tile.x | 0) / 64);
         const mapY = Math.floor((tile.y | 0) / 64);
         if (this.instanceActive) {
             this.scheduleInstanceLocRebuild();
             return;
         }
-        const mapId = getMapSquareId(mapX, mapY);
-        this.pendingLocUpdates.add(mapId);
-        this.scheduleLocReload(mapX, mapY);
+        const locType = this.osrsClient.locTypeLoader.load(locId | 0);
+        this.scheduleLocGeometryUpdate(
+            mapX,
+            mapY,
+            locType && isDoorLocType(locType) ? "door" : "loc",
+        );
     }
 
     private getLocAnimationDurationMs(seqId: number): number {

@@ -1210,7 +1210,12 @@ export class WorldMapArchiveRenderer {
             if (!canvas) return colors;
             canvas.width = width;
             canvas.height = height;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            // Canvas and OffscreenCanvas expose different getContext overloads.
+            // Keeping the calls separate preserves their shared 2D context type.
+            const ctx =
+                typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas
+                    ? canvas.getContext("2d", { willReadFrequently: true })
+                    : (canvas as HTMLCanvasElement).getContext("2d", { willReadFrequently: true });
             if (!ctx) return colors;
             ctx.drawImage(image, 0, 0, width, height);
             const imageData = ctx.getImageData(0, 0, width, height).data;

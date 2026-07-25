@@ -10152,16 +10152,7 @@ export class OsrsClient {
                 }
                 // Validate credentials
                 if (!this.loginState.canAttemptLogin()) {
-                    if (this.loginState.username.trim().length === 0) {
-                        this.loginState.setResponse(
-                            "",
-                            "Please enter your username/email address.",
-                            "",
-                            "",
-                        );
-                    } else {
-                        this.loginState.setResponse("", "Please enter your password.", "", "");
-                    }
+                    this.loginState.showCredentialValidationError();
                     return undefined;
                 }
                 // Start connecting
@@ -10350,6 +10341,10 @@ export class OsrsClient {
             this.loginState.username = username;
             this.loginState.password = password;
             this.loginState.loginIndex = LoginIndex.LOGIN_FORM;
+            if (!this.loginState.canAttemptLogin()) {
+                this.loginState.showCredentialValidationError();
+                return;
+            }
             this.loginState.savePersistedLoginState();
             this.updateGameState(GameState.CONNECTING);
             sendLogin(username.trim(), password, this.loadedCache?.info?.revision ?? 0);
@@ -12766,9 +12761,9 @@ export class OsrsClient {
         }
 
         try {
-            this.renderer?.mapManager?.clearMaps?.();
+            this.renderer?.clearMaps();
         } catch (err) {
-            console.warn("[OsrsClient] MapManager clearMaps error:", err);
+            console.warn("[OsrsClient] Renderer clearMaps error:", err);
         }
 
         // Clear projectiles

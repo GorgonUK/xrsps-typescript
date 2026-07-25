@@ -131,7 +131,7 @@ export class LoginHandshakeService {
         payload: { username?: string; password?: string; revision?: number },
     ): void {
         const { username, password, revision } = payload;
-        const normalizedUsername = (username || "").trim().toLowerCase();
+        const normalizedUsername = this.svc.authService.normalizePlayerNameForAuth(username);
 
         const sendLoginError = (errorCode: number, error: string) => {
             this.svc.networkLayer.withDirectSendBypass("login_response", () =>
@@ -187,8 +187,26 @@ export class LoginHandshakeService {
             return;
         }
 
+        // 6. Verify an existing password hash or register a new account.
+        // Imported pre-password character saves require the temporary legacy
+        // claim switch before a new password can be assigned to their name.
+        const authentication = this.svc.authService.authenticateCredentials(
+            username,
+            password,
+            this.svc.playerPersistence.hasKey(normalizedUsername),
+        );
+        if (!authentication.ok) {
+            sendLoginError(
+                3,
+                authentication.reason === "password_too_short"
+                    ? "Password must be at least 8 characters."
+                    : "Invalid username or password.",
+            );
+            return;
+        }
+
         // All checks passed - login successful
-        const displayName = (username ?? "").slice(0, 12);
+        const displayName = (username ?? "").trim().slice(0, 12);
         this.setPendingLoginName(ws, displayName);
         this.svc.networkLayer.withDirectSendBypass("login_response", () =>
             this.svc.networkLayer.sendWithGuard(
@@ -203,7 +221,11 @@ export class LoginHandshakeService {
                 "login_response",
             ),
         );
-        logger.info(`Login successful: ${username}`);
+        logger.info(
+            `Login successful: ${authentication.accountName}${
+                authentication.created ? " (new account)" : ""
+            }`,
+        );
     }
 
     handleHandshakeMessage(
@@ -213,7 +235,16 @@ export class LoginHandshakeService {
         const parsed = { type: "handshake" as const, payload };
         try {
             const pendingLoginName = this.consumePendingLoginName(ws);
-            const name = pendingLoginName || parsed.payload.name?.slice(0, 12) || undefined;
+            if (!pendingLoginName) {
+                logger.warn("[handshake] rejected unauthenticated handshake");
+                try {
+                    ws.close(1008, "login_required");
+                } catch (err) {
+                    logger.warn("[handshake] failed to close unauthenticated client", err);
+                }
+                return;
+            }
+            const name = pendingLoginName;
 
             const preliminarySaveKey = normalizePlayerAccountName(name);
             let p: PlayerState | undefined;
@@ -308,6 +339,11 @@ export class LoginHandshakeService {
                         this.svc.equipmentService.refreshCombatWeaponCategory(p);
                     } catch (err) {
                         logger.warn("[player] failed to refresh appearance after persist", err);
+                    }
+                    try {
+                        this.svc.tradeManager?.restorePendingRefunds(p);
+                    } catch (err) {
+                        logger.warn("[trade] failed to restore pending trade refunds", err);
                     }
                 } else {
                     logger.info(`[handshake] Resuming player ${name} at (${p.tileX}, ${p.tileY})`);
