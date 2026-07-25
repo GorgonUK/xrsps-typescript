@@ -49,6 +49,8 @@ export function registerMessageHandlers(svc: ServerServices, router: MessageRout
         handleTradeAction: (player, payload, tick) => {
             svc.tradeManager?.handleAction(player, payload, tick);
         },
+        handleTradeWidgetClose: (player, groupId) =>
+            svc.tradeManager?.handleWidgetClosed(player, groupId) ?? false,
 
         // Movement
         setPendingWalkCommand: (ws, command) =>

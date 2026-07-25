@@ -1,5 +1,5 @@
-import { DatabaseSync } from "node:sqlite";
 import fs from "fs";
+import { DatabaseSync } from "node:sqlite";
 import path from "path";
 
 import { logger } from "../../utils/logger";
@@ -99,6 +99,54 @@ export class SqliteDatabase {
             CREATE INDEX IF NOT EXISTS idx_pending_trade_refunds_account
                 ON pending_trade_refunds (account_name, id);
 
+            CREATE TABLE IF NOT EXISTS active_trade_escrows (
+                session_id TEXT NOT NULL,
+                account_name TEXT NOT NULL,
+                item_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (session_id, account_name, item_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_active_trade_escrows_account
+                ON active_trade_escrows (account_name, session_id);
+
+            CREATE TRIGGER IF NOT EXISTS validate_pending_trade_refund_insert
+            BEFORE INSERT ON pending_trade_refunds
+            WHEN NEW.item_id <= 0
+                OR NEW.quantity <= 0
+                OR NEW.quantity > 2147483647
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid pending trade refund');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS validate_pending_trade_refund_update
+            BEFORE UPDATE OF item_id, quantity ON pending_trade_refunds
+            WHEN NEW.item_id <= 0
+                OR NEW.quantity <= 0
+                OR NEW.quantity > 2147483647
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid pending trade refund');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS validate_active_trade_escrow_insert
+            BEFORE INSERT ON active_trade_escrows
+            WHEN NEW.item_id <= 0
+                OR NEW.quantity <= 0
+                OR NEW.quantity > 2147483647
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid active trade escrow');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS validate_active_trade_escrow_update
+            BEFORE UPDATE OF item_id, quantity ON active_trade_escrows
+            WHEN NEW.item_id <= 0
+                OR NEW.quantity <= 0
+                OR NEW.quantity > 2147483647
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid active trade escrow');
+            END;
+
             PRAGMA user_version = 1;
         `);
         this.migrateLegacyJsonFiles(options.dataDir);
@@ -157,14 +205,13 @@ export class SqliteDatabase {
             throw err;
         }
 
-        logger.info(`[persistence] Imported ${imported} legacy account record(s) from accounts.json`);
+        logger.info(
+            `[persistence] Imported ${imported} legacy account record(s) from accounts.json`,
+        );
     }
 
     private migrateLegacyPlayerStates(filePath: string): void {
-        if (
-            this.isMigrationApplied(LEGACY_PLAYER_STATES_MIGRATION) ||
-            !fs.existsSync(filePath)
-        ) {
+        if (this.isMigrationApplied(LEGACY_PLAYER_STATES_MIGRATION) || !fs.existsSync(filePath)) {
             return;
         }
 

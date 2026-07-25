@@ -564,7 +564,10 @@ export function decodeClientPacket(data: Uint8Array | ArrayBuffer): DecodedClien
                 "confirm_accept",
                 "confirm_decline",
             ] as const;
-            const action: TradeActionClientPayload["action"] = actions[actionVal] ?? "offer";
+            const action = actions[actionVal];
+            // Never reinterpret an unknown action as an offer. A malformed
+            // packet must be ignored rather than mutating the player's items.
+            if (!action) return null;
             const slot = reader.readShort();
             const quantity = reader.readInt();
             const itemIdRaw = reader.readSignedShort();

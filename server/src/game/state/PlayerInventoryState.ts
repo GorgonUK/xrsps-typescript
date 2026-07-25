@@ -143,7 +143,10 @@ export class PlayerInventoryState {
             if (existingSlot >= 0) {
                 const currentQty = inv[existingSlot].quantity;
                 // Check for overflow
-                if (currentQty >= MAX_ITEM_STACK_QUANTITY - amount) {
+                // Reaching the signed-int stack limit is valid; only values
+                // above it must be rejected. This keeps the insertion rule in
+                // sync with trade capacity checks.
+                if (currentQty > MAX_ITEM_STACK_QUANTITY - amount) {
                     if (assureFullInsertion) {
                         return { requested: amount, completed: 0, slots: [] };
                     }

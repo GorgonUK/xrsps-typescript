@@ -21,6 +21,7 @@ import {
     collectWidgetsAtPointAcrossRoots as UI_collectWidgetsAtPointAcrossRoots,
     deriveMenuEntriesForWidget as UI_deriveMenuEntriesForWidget,
     findBlockingWidgetInHits as UI_findBlockingWidgetInHits,
+    hasContextMenuOption as UI_hasContextMenuOption,
 } from "../widgets/menu/utils";
 import { MinimapRenderer } from "./MinimapRenderer";
 import { drawChooseOptionMenu } from "./choose-option";
@@ -1473,19 +1474,7 @@ export function renderWidgetTreeGL(glr: GLRenderer, root: Widget, opts: GLRender
                                 // would reverse widget ops (e.g., minimap orbs).
                                 candEntries = ([] as any[]).concat(candEntries, base);
                             } catch {}
-                            const real = Array.isArray(candEntries)
-                                ? candEntries.some((e: any) => {
-                                      const lower = String(e?.option ?? "")
-                                          .trim()
-                                          .toLowerCase();
-                                      return (
-                                          !!lower &&
-                                          lower !== "cancel" &&
-                                          lower !== "examine" &&
-                                          lower !== "inspect"
-                                      );
-                                  })
-                                : false;
+                            const real = UI_hasContextMenuOption(candEntries);
                             if (real) {
                                 ui.mouseX = x | 0;
                                 ui.mouseY = y | 0;
@@ -1641,19 +1630,7 @@ export function renderWidgetTreeGL(glr: GLRenderer, root: Widget, opts: GLRender
                     }
                 }
 
-                const real = Array.isArray(candEntries)
-                    ? candEntries.some((e: any) => {
-                          const lower = String(e?.option ?? "")
-                              .trim()
-                              .toLowerCase();
-                          return (
-                              !!lower &&
-                              lower !== "cancel" &&
-                              lower !== "examine" &&
-                              lower !== "inspect"
-                          );
-                      })
-                    : false;
+                const real = UI_hasContextMenuOption(candEntries);
                 if (real) {
                     chosen = candidate;
                     entries = candEntries;

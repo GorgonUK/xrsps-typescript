@@ -71,17 +71,52 @@ interface HandshakeAppearance {
  */
 export class LoginHandshakeService {
     private readonly pendingLoginNames = new WeakMap<WebSocket, string>();
+    /**
+     * A successful login response precedes the handshake that creates the
+     * PlayerState. Keep a short-lived reservation for that gap so two sockets
+     * cannot authenticate the same account and both enter the world.
+     */
+    private readonly pendingLoginSockets = new Map<string, WebSocket>();
 
     constructor(private readonly svc: ServerServices) {}
 
     setPendingLoginName(ws: WebSocket, name: string): void {
+        const previousName = this.pendingLoginNames.get(ws);
+        if (previousName) {
+            const previousKey = normalizePlayerAccountName(previousName);
+            if (previousKey && this.pendingLoginSockets.get(previousKey) === ws) {
+                this.pendingLoginSockets.delete(previousKey);
+            }
+        }
         this.pendingLoginNames.set(ws, name);
+        const accountName = normalizePlayerAccountName(name);
+        if (accountName) this.pendingLoginSockets.set(accountName, ws);
     }
 
     consumePendingLoginName(ws: WebSocket): string | undefined {
         const name = this.pendingLoginNames.get(ws);
         this.pendingLoginNames.delete(ws);
+        const accountName = name ? normalizePlayerAccountName(name) : undefined;
+        if (accountName && this.pendingLoginSockets.get(accountName) === ws) {
+            this.pendingLoginSockets.delete(accountName);
+        }
         return name;
+    }
+
+    private isLoginPendingForAnotherSocket(ws: WebSocket, username: string): boolean {
+        const accountName = normalizePlayerAccountName(username);
+        if (!accountName) return false;
+        const pendingSocket = this.pendingLoginSockets.get(accountName);
+        return pendingSocket !== undefined && pendingSocket !== ws;
+    }
+
+    private clearPendingLoginName(ws: WebSocket): void {
+        const name = this.pendingLoginNames.get(ws);
+        this.pendingLoginNames.delete(ws);
+        const accountName = name ? normalizePlayerAccountName(name) : undefined;
+        if (accountName && this.pendingLoginSockets.get(accountName) === ws) {
+            this.pendingLoginSockets.delete(accountName);
+        }
     }
 
     getSocketRemoteAddress(ws: WebSocket): string | undefined {
@@ -182,7 +217,10 @@ export class LoginHandshakeService {
         }
 
         // 5. Check if already logged in
-        if (this.svc.authService.isPlayerAlreadyLoggedIn(normalizedUsername)) {
+        if (
+            this.svc.authService.isPlayerAlreadyLoggedIn(normalizedUsername) ||
+            this.isLoginPendingForAnotherSocket(ws, normalizedUsername)
+        ) {
             sendLoginError(5, "Your account is already logged in. Try again in 60 seconds.");
             return;
         }
@@ -1000,6 +1038,7 @@ export class LoginHandshakeService {
 
         ws.on("close", () => {
             this.svc.clientInputService.removeConnection(ws);
+            this.clearPendingLoginName(ws);
             try {
                 this.svc.movementService.getPendingWalkCommands().delete(ws);
                 const player = this.svc.players?.get(ws);
