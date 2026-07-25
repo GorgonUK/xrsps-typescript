@@ -13,6 +13,7 @@ import {
 } from "../../pathfinding/legacy/pathfinder/RouteStrategy";
 import { logger } from "../../utils/logger";
 import { Actor } from "../actor";
+import { LockStateChecks } from "../model/LockState";
 import { PlayerState } from "../player";
 import type { PlayerRepository } from "./PlayerInteractionSystem";
 import { FollowInteractionKind, FollowInteractionState, PlayerInteractionState } from "./types";
@@ -100,8 +101,11 @@ export class FollowingHandler {
         if (!target) return { ok: false, message: "target not found" };
 
         // Block interactions during tutorial
-        if (!me.canInteract()) {
+        if (!me.canInteract() || !LockStateChecks.canPlayerInteract(me.lock)) {
             return { ok: false, message: "interaction_blocked" };
+        }
+        if (me.level !== target.level) {
+            return { ok: false, message: "target_not_reachable" };
         }
 
         this.replaceInteractionState(ws, me);
@@ -150,6 +154,15 @@ export class FollowingHandler {
             }
             if (!target) {
                 me.clearInteraction();
+                continue;
+            }
+            if (
+                me.level !== target.level ||
+                !LockStateChecks.canPlayerInteract(me.lock)
+            ) {
+                this.interactions.delete(ws);
+                me.clearInteraction();
+                me.clearPath();
                 continue;
             }
             const px = me.tileX;
@@ -307,7 +320,11 @@ export class FollowingHandler {
                 }
             } else {
                 candidates = this.getTradePositions(tx, ty);
-                enforceSingleStep = true;
+                candidates.sort(
+                    (a, b) =>
+                        Math.max(Math.abs(a.x - px), Math.abs(a.y - py)) -
+                        Math.max(Math.abs(b.x - px), Math.abs(b.y - py)),
+                );
             }
 
             const wantsRun = this.resolveRunMode(me, st.modifierFlags);
@@ -356,10 +373,16 @@ export class FollowingHandler {
                 // Check if we're currently on the target's tile
                 const onTargetTile = px === tx && py === ty;
 
-                const strategy = new RectAdjacentRouteStrategy(tile.x, tile.y, 1, 1);
+                const strategy: RouteStrategy =
+                    st.kind === FollowInteractionKind.Trade
+                        ? this.createExactRouteStrategy(tile)
+                        : new RectAdjacentRouteStrategy(tile.x, tile.y, 1, 1);
                 // CRITICAL: If we're on the target's tile, force movement even if "arrived"
                 // Don't use hasArrived check because it returns true for adjacent positions
                 if (!onTargetTile && strategy.hasArrived(px, py, me.level)) {
+                    if (st.kind === FollowInteractionKind.Trade && !edgeReachable) {
+                        continue;
+                    }
                     st.slotX = tile.x;
                     st.slotY = tile.y;
                     routed = true;
@@ -482,6 +505,15 @@ export class FollowingHandler {
             { dx: 1, dy: -1 },
         ];
         return map[sector];
+    }
+
+    private createExactRouteStrategy(tile: { x: number; y: number }): ExactRouteStrategy {
+        const strategy = new ExactRouteStrategy();
+        strategy.approxDestX = tile.x;
+        strategy.approxDestY = tile.y;
+        strategy.destSizeX = 1;
+        strategy.destSizeY = 1;
+        return strategy;
     }
 
     public rotToSector(rot: number): number {

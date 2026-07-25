@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RenderStatsOverlay } from "../components/renderer/RenderStatsOverlay";
 import { OsrsLoadingBar } from "../components/rs/loading/OsrsLoadingBar";
 // Legacy CSS menu and React minimap/orbs removed in favor of widget-based rendering
-import { subscribeHandshake, subscribeChatMessages } from "../network/ServerConnection";
+import { subscribeChatMessages, subscribeHandshake } from "../network/ServerConnection";
 import { DownloadProgress } from "../rs/cache/CacheFiles";
 import { Canvas } from "../ui/Canvas";
 import { formatBytes } from "../util/BytesUtil";
@@ -44,6 +44,10 @@ type WidgetMenuProvider = {
 
 type WidgetLookupInput = {
     groupId?: number;
+
+    childIndex?: number;
+
+    itemId?: number;
 };
 
 type CanvasUiBridgeState = {
@@ -52,6 +56,8 @@ type CanvasUiBridgeState = {
     mouseY?: number;
 
     onWidgetAction?: (event: WidgetActionBridgeEvent) => void;
+
+    onWidgetExamine?: (widget: WidgetLookupInput | undefined) => void;
 
     getWidgetMenuEntries?: (
         widget: WidgetLookupInput | undefined,
@@ -172,6 +178,10 @@ export function GameContainer({ osrsClient }: OsrsContainerProps): JSX.Element {
 
                     cursorY,
                 });
+            };
+
+            uiState.onWidgetExamine = (widget: WidgetLookupInput | undefined) => {
+                osrsClient.examineWidgetItem(widget);
             };
 
             // Provide dynamic widget menu entries for special UIs (e.g., mobile viewport icons)

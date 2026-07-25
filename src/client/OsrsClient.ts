@@ -45,6 +45,7 @@ import {
     subscribeSpellResults,
     subscribeSpot,
     subscribeTick,
+    subscribeTrade,
     subscribeWelcome,
     subscribeWidgetEvents,
     subscribeWorldEntityInfo,
@@ -58,6 +59,7 @@ import type {
     ShopWindowState,
     SpellResultPayload,
     SpotAnimationPayload,
+    TradeWindowState,
     WidgetActionClientPayload,
 } from "../network/ServerConnection";
 import {
@@ -67,6 +69,12 @@ import {
     sendLogout,
     sendResumeNameDialog,
     sendResumeStringDialog,
+    sendTradeAccept,
+    sendTradeConfirmAccept,
+    sendTradeConfirmDecline,
+    sendTradeDecline,
+    sendTradeOffer,
+    sendTradeRemove,
     subscribeLogoutResponse,
     suppressReconnection,
 } from "../network/ServerConnection";
@@ -313,6 +321,7 @@ import { initPlayerSyncHuffman } from "./sync/HuffmanProvider";
 import { NpcUpdateDecoder } from "./sync/NpcUpdateDecoder";
 import { PlayerSyncManager } from "./sync/PlayerSyncManager";
 import type { PlayerSpotAnimationEvent } from "./sync/PlayerSyncTypes";
+import { resolveTradeActionQuantity } from "./trade/TradeActionQuantity";
 import { clampPlane } from "./utils/PlaneUtil";
 import { WebGLMapSquare } from "./webgl/WebGLMapSquare";
 import type { MinimapIcon } from "./webgl/loader/SdMapData";
@@ -869,6 +878,11 @@ export class OsrsClient {
     collectionInventory: Inventory = new Inventory(2048);
     /** Shop stock inventory (ID 516) - stores shop items for CS2 inv queries */
     shopInventory: Inventory = new Inventory(40);
+    /** Your offered trade items (inventory ID 90 in the cache scripts). */
+    tradeOfferInventory: Inventory = new Inventory(28);
+    /** The other player's offered items use OSRS's inventory-other offset. */
+    tradeOtherOfferInventory: Inventory = new Inventory(28);
+    private tradeState?: TradeWindowState;
     private inventorySeededFromServer: boolean = false;
 
     // Track last layout dimensions to avoid re-running layout every frame
@@ -1334,6 +1348,8 @@ export class OsrsClient {
         inventoriesMap.set(93, this.inventory); // Backpack
         inventoriesMap.set(94, this.equipment); // Equipment
         inventoriesMap.set(95, this.bankInventory); // Bank
+        inventoriesMap.set(90, this.tradeOfferInventory); // Your trade offer
+        inventoriesMap.set(90 + 32768, this.tradeOtherOfferInventory); // Other trade offer
         inventoriesMap.set(516, this.shopInventory); // Shop stock
         inventoriesMap.set(620, this.collectionInventory); // collection_transmit
 
@@ -2120,8 +2136,7 @@ export class OsrsClient {
             this.resolvePlayerPlane,
             this.npcEcs,
             this.seqTypeLoader,
-            (plane: number, x: number, y: number) =>
-                this.renderer.getCollisionFlagAt(plane, x, y),
+            (plane: number, x: number, y: number) => this.renderer.getCollisionFlagAt(plane, x, y),
         );
         this.playerSyncManager = new PlayerSyncManager({
             ecs: this.playerEcs,
@@ -3344,6 +3359,13 @@ export class OsrsClient {
                     console.warn("shop update dispatch failed", err);
                 }
             });
+            subscribeTrade((state) => {
+                try {
+                    this.handleTradeServerUpdate(state);
+                } catch (err) {
+                    console.warn("trade update dispatch failed", err);
+                }
+            });
             this.unsubscribeGroundItems = subscribeGroundItems((payload) => {
                 try {
                     this.groundItems.update(payload);
@@ -4505,6 +4527,10 @@ export class OsrsClient {
             }
         }
 
+        if (this.handleTradeWidgetAction(w, event, groupId | 0, childId | 0)) {
+            return;
+        }
+
         if (w) {
             const uid = typeof w.uid === "number" ? w.uid | 0 : undefined;
             const logGroupId = uid !== undefined ? (uid >>> 16) & 0xffff : (groupId as number);
@@ -4880,9 +4906,7 @@ export class OsrsClient {
                         ClientState.selectedSpellName
                     }", group=${(spellSelection.widgetId >>> 16) & 0xffff}, child=${
                         spellSelection.childIndex
-                    }, targetMask=0x${ClientState.selectedSpellTargetMask.toString(
-                        16,
-                    )}`,
+                    }, targetMask=0x${ClientState.selectedSpellTargetMask.toString(16)}`,
                 );
 
                 // Fire onTargetEnter on the source widget ( - use widget child ID, not hardcoded spell ID)
@@ -7283,6 +7307,30 @@ export class OsrsClient {
                         // should reflect what was clicked pre-mutation.
                         const primaryAction = getPrimaryWidgetAction(w);
 
+                        // Trade item slots are draggable and reach handleWidgetAction on mouse-up,
+                        // but the native Accept/Decline buttons are not. Route these primary button
+                        // clicks through the same authoritative trade protocol before their cache
+                        // onOp handlers can consume the click as a generic widget action.
+                        const primaryWidgetGroupId =
+                            (typeof w.groupId === "number" ? w.groupId : w.uid >>> 16) | 0;
+                        const primaryWidgetChildId =
+                            (typeof w.fileId === "number" && w.fileId >= 0
+                                ? w.fileId
+                                : typeof w.childIndex === "number"
+                                  ? w.childIndex
+                                  : w.uid & 0xffff) | 0;
+                        if (
+                            this.handleTradeWidgetAction(
+                                w,
+                                primaryAction,
+                                primaryWidgetGroupId,
+                                primaryWidgetChildId,
+                            )
+                        ) {
+                            this.clickedWidgetHandled = true;
+                            break;
+                        }
+
                         // If the GL widgets layer is active, defer primary click handling to it.
                         // Primary left-click handling is driven by the game loop
                         // (clickedWidget + menuAction semantics), not by the GL widget click registry.
@@ -8215,7 +8263,7 @@ export class OsrsClient {
                 : (fallbackItemId | 0) > 0
                   ? fallbackItemId | 0
                   : (this.resolveWidgetItemId(fallbackWidgetId | 0, fallbackChildIndex | 0) ??
-                    (fallbackItemId | 0));
+                    fallbackItemId | 0);
         const componentHash = this.resolveSpellButtonComponentFromObject(itemId);
         if (componentHash !== undefined) {
             return {
@@ -8746,10 +8794,7 @@ export class OsrsClient {
             if (explicitOp >= 1 && explicitOp <= 5) return explicitOp;
         }
 
-        if (
-            typeof actionIndex === "number" &&
-            Number.isFinite(actionIndex)
-        ) {
+        if (typeof actionIndex === "number" && Number.isFinite(actionIndex)) {
             const explicitIndex = actionIndex | 0;
             if (explicitIndex >= 0 && explicitIndex <= 4) return explicitIndex + 1;
         }
@@ -10935,6 +10980,7 @@ export class OsrsClient {
         // Mark inv cycle with specific inventory ID - handlers fire during processWidgetTransmits()
         // Inventory ID 93 is the player inventory in OSRS
         markInvTransmit(93);
+        this.rebuildTradeInventoryWidget();
     }
 
     /**
@@ -11050,6 +11096,152 @@ export class OsrsClient {
 
         // Mark inv cycle for shop (516) - handlers fire during processWidgetTransmits()
         markInvTransmit(516);
+    }
+
+    /**
+     * Populate the cache trade containers so the native trade widget's CS2
+     * scripts render the server-authoritative offers.
+     */
+    private handleTradeServerUpdate(state: TradeWindowState): void {
+        this.tradeState = state;
+
+        const toSlots = (offers: NonNullable<TradeWindowState["self"]>["offers"] | undefined) =>
+            (offers ?? []).map((entry) => ({
+                slot: Math.max(0, Math.min(Inventory.SLOT_COUNT - 1, entry.slot | 0)),
+                itemId: entry.itemId | 0,
+                quantity: Math.max(0, entry.quantity | 0),
+            }));
+
+        if (state.open) {
+            this.tradeOfferInventory.setSnapshot(toSlots(state.self?.offers), {
+                selectedSlot: null,
+            });
+            this.tradeOtherOfferInventory.setSnapshot(toSlots(state.other?.offers), {
+                selectedSlot: null,
+            });
+        } else {
+            this.tradeOfferInventory.clear();
+            this.tradeOtherOfferInventory.clear();
+        }
+
+        // The cache trade scripts use inventory 90 and INVOTHER operations
+        // (90 + 32768) for the counterparty.
+        markInvTransmit(90);
+        markInvTransmit(90 + 32768);
+        for (const groupId of [334, 335, 336]) {
+            if (
+                this.widgetManager &&
+                (this.widgetManager.rootInterface === groupId ||
+                    this.widgetManager.getInterfaceParentContainerUid(groupId) !== undefined)
+            ) {
+                this.triggerInvTransmitForGroup(groupId);
+            }
+        }
+    }
+
+    private rebuildTradeInventoryWidget(): void {
+        if (
+            !this.tradeState?.open ||
+            this.tradeState.stage !== "offer" ||
+            !this.cs2Vm ||
+            !this.widgetManager ||
+            this.widgetManager.getInterfaceParentContainerUid(336) === undefined
+        ) {
+            return;
+        }
+
+        const script = this.cs2Vm.context.loadScript(3619);
+        if (!script) return;
+        const previousActiveWidget = this.cs2Vm.activeWidget;
+        const previousDotWidget = this.cs2Vm.dotWidget;
+        this.cs2Vm.activeWidget = null;
+        this.cs2Vm.dotWidget = null;
+        try {
+            this.cs2Vm.run(script, [336 << 16, this.inventory.capacity], []);
+        } catch (err) {
+            console.warn("[trade] failed to rebuild trade inventory", err);
+        } finally {
+            this.cs2Vm.activeWidget = previousActiveWidget;
+            this.cs2Vm.dotWidget = previousDotWidget;
+        }
+    }
+
+    /** Display an item's cache-defined Examine text in game chat. */
+    examineWidgetItem(widget: { itemId?: number } | null | undefined): boolean {
+        const itemId = widget?.itemId ?? -1;
+        if (!(itemId > 0)) return false;
+        try {
+            const examine = this.objTypeLoader?.load?.(itemId)?.examine;
+            if (typeof examine !== "string" || examine.length === 0 || examine === "null") {
+                return false;
+            }
+            chatHistory.addMessage("game", examine);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /** Route the native trade widget's actions into the dedicated trade protocol. */
+    private handleTradeWidgetAction(
+        widget: any,
+        event: {
+            option?: string;
+            slot?: number;
+            itemId?: number;
+        },
+        groupId: number,
+        childId: number,
+    ): boolean {
+        if (![334, 335, 336].includes(groupId) || !this.tradeState?.open) return false;
+
+        const option = String(event.option ?? "").trim();
+        const optionKey = option.toLowerCase().replace(/[ _-]+/g, "");
+        if (optionKey === "accept") {
+            if (this.tradeState.stage === "confirm") sendTradeConfirmAccept();
+            else sendTradeAccept();
+            return true;
+        }
+        if (optionKey === "decline") {
+            if (this.tradeState.stage === "confirm") sendTradeConfirmDecline();
+            else sendTradeDecline();
+            return true;
+        }
+        if (optionKey === "close") {
+            if (this.tradeState.stage === "confirm") sendTradeConfirmDecline();
+            else sendTradeDecline();
+            return true;
+        }
+        if (optionKey === "examine") {
+            this.examineWidgetItem({
+                itemId: event.itemId ?? widget?.itemId,
+            });
+            return true;
+        }
+
+        const isOffer = optionKey.startsWith("offer");
+        const isRemove = optionKey.startsWith("remove");
+        if (!isOffer && !isRemove) return false;
+        if ((isOffer && groupId !== 336) || (isRemove && groupId !== 335)) return false;
+
+        const slot = event.slot ?? widget?.childIndex ?? childId;
+        if (!Number.isInteger(slot) || slot < 0 || slot >= Inventory.SLOT_COUNT) return true;
+
+        const source = isOffer ? this.inventory : this.tradeOfferInventory;
+        const entry = source.getSlot(slot);
+        const itemId =
+            entry && entry.itemId > 0 ? entry.itemId : (event.itemId ?? widget?.itemId ?? -1);
+        const available = isOffer ? this.inventory.count(itemId) : (entry?.quantity ?? 0);
+        const quantity = resolveTradeActionQuantity(optionKey, available);
+        if (!quantity || quantity <= 0) return true;
+
+        if (isOffer) {
+            if (!(itemId > 0)) return true;
+            sendTradeOffer(slot, itemId, quantity);
+        } else {
+            sendTradeRemove(slot, quantity);
+        }
+        return true;
     }
 
     private findNpcServerId(

@@ -332,6 +332,25 @@ export function deriveMenuEntriesForWidget(
     return entries;
 }
 
+/**
+ * Whether a right-click menu contains anything worth opening.
+ *
+ * Examine-only item widgets are valid context menus. Treating Examine as a
+ * non-action makes read-only item containers, such as the other player's
+ * trade offer, fall through to a Cancel-only menu.
+ */
+export function hasContextMenuOption(
+    entries: readonly { option?: unknown }[] | null | undefined,
+): boolean {
+    if (!Array.isArray(entries)) return false;
+    return entries.some((entry) => {
+        const option = String(entry?.option ?? "")
+            .trim()
+            .toLowerCase();
+        return option.length > 0 && option !== "cancel";
+    });
+}
+
 // Clip bounds for hit testing - matches rendering scissor logic
 interface HitClip {
     x0: number;

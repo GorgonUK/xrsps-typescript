@@ -123,8 +123,8 @@ import { DynamicLocStateStore } from "../world/DynamicLocStateStore";
 import { LocTileLookupService } from "../world/LocTileLookupService";
 import { locCanResolveToId } from "../world/LocTransforms";
 import { MapCollisionService } from "../world/MapCollisionService";
-import { AuthenticationService } from "./AuthenticationService";
 import { AccountStore } from "./AccountStore";
+import { AuthenticationService } from "./AuthenticationService";
 import { BroadcastService } from "./BroadcastService";
 import { LoginHandshakeService } from "./LoginHandshakeService";
 import { MessageRouter, type MessageRouterServices } from "./MessageRouter";
@@ -1575,6 +1575,7 @@ export class WSServer {
             queueChatMessage: (msg) => this.messagingService.queueChatMessage(msg),
             closeInterruptibleInterfaces: (player) =>
                 this.interfaceManager.closeInterruptibleInterfaces(player),
+            isPlayerTrading: (player) => this.svc.tradeManager?.isPlayerTrading(player) ?? false,
             encodeMessage: encodeMessage,
         };
 

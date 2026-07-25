@@ -85,6 +85,7 @@ export interface MessageRouterServices {
 
     // Interface management
     closeInterruptibleInterfaces: (player: PlayerState) => void;
+    isPlayerTrading: (player: PlayerState) => boolean;
 
     // Message encoding
     encodeMessage: (msg: ServerToClient) => Uint8Array;
@@ -173,6 +174,11 @@ export class MessageRouter {
         // Pre-processing: Close interruptible interfaces for certain actions
         if (INTERFACE_CLOSING_ACTIONS.has(parsed.type)) {
             if (player) {
+                // A trade is a locked modal interaction. Ignore world actions
+                // until the player accepts or closes the trade.
+                if (this.services.isPlayerTrading(player)) {
+                    return true;
+                }
                 // Don't close interfaces for walk if player can't move
                 if (parsed.type === "walk" && !player.canMove()) {
                     // Skip interface closing - movement will be blocked
