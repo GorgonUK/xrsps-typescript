@@ -15,6 +15,7 @@ import { resolveSelectedSpellPayload } from "../../../../../src/shared/spells/se
 import { SPELL_BUTTON_PARAM_ID } from "../../../data/spellWidgetLoader";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
+import { hasProjectileLineOfSightToNpc } from "../../combat/CombatAction";
 import { HITMARK_BLOCK, HITMARK_DAMAGE } from "../../combat/HitEffects";
 import { getSpellBaseXp } from "../../combat/SpellXpProvider";
 import type { ProjectileParams as CachedProjectileParams } from "../../data/ProjectileParamsProvider";
@@ -37,6 +38,9 @@ import {
 import { CombatEngine } from "../../systems/combat/CombatEngine";
 import { TEST_HIT_FORCE, testRandFloat } from "../../testing/TestRng";
 import type { ActionRequest } from "../types";
+
+/** Standard spellbook combat spells have a fixed five-tick cast cadence. */
+const MANUAL_COMBAT_SPELL_DELAY_TICKS = 5;
 
 // ============================================================================
 // Types
@@ -421,6 +425,30 @@ export class SpellActionHandler {
         this.svc.playerCombatManager?.stopAutoAttack(player.id);
     }
 
+    /**
+     * Execute a manual combat spell that was clicked while another combat
+     * action held the shared action timer. The pending click is one-shot: its
+     * target and resources are validated again at execution time.
+     */
+    processPendingManualCombatSpell(
+        player: PlayerState,
+        tick: number,
+    ): SpellResultPayload | undefined {
+        const pending = player.combat.pendingManualCombatSpell;
+        if (!pending || !player.combat.isAttackReady(tick)) return undefined;
+
+        player.combat.pendingManualCombatSpell = undefined;
+        return this.processSpellCastRequest(
+            player,
+            {
+                spellId: pending.spellId,
+                modifiers: { castMode: "manual", queued: true },
+                target: pending.target,
+            },
+            tick,
+        );
+    }
+
     // ========================================================================
     // Public Methods
     // ========================================================================
@@ -436,6 +464,9 @@ export class SpellActionHandler {
         tick: number;
     }): boolean {
         const { player, npc, plan, tick } = opts;
+        if (npc.getHitpoints() <= 0 || npc.isDead(tick)) {
+            return false;
+        }
         const spellId = player.combat.spellId ?? -1;
         if (!(spellId > 0)) return true;
         if (!player.combat.autocastEnabled) return true;
@@ -639,28 +670,27 @@ export class SpellActionHandler {
             endHeight: targetEndHeight,
         });
 
-        const totalHitDelay = timing ? timing.startDelay + timing.travelTime : undefined;
+        const impactDelay = this.magicHitDelayTicks(player, npc);
 
         // Broadcast cast spot, cast sound, and delayed impact effects.
         try {
-            if (timing) {
-                this.queueMagicCastSpot(player, spellData);
-                this.playSpellCastSound(player, spellId);
-                this.queueMagicImpactEffects({
-                    player,
-                    spellData,
-                    targetNpc: npc,
-                    landed: !!(plan as PlayerAttackPlan & { hitLanded?: boolean }).hitLanded,
-                    delayTicks: timing.hitDelay,
-                });
-            }
+            this.queueMagicCastSpot(player, spellData);
+            this.playSpellCastSound(player, spellId);
+            this.queueMagicImpactEffects({
+                player,
+                spellData,
+                targetNpc: npc,
+                landed: !!(plan as PlayerAttackPlan & { hitLanded?: boolean }).hitLanded,
+                delayTicks: impactDelay,
+            });
         } catch (err) {
             logger.warn("[spell] failed to queue autocast sound", err);
         }
 
-        if (Number.isFinite(totalHitDelay as number) && (totalHitDelay as number) > plan.hitDelay) {
-            plan.hitDelay = totalHitDelay as number;
-        }
+        // Player-vs-NPC magic impacts one tick after the projectile's client
+        // travel duration. Use the shared tick formula for both the hitsplat
+        // and visuals instead of the client-cycle estimate.
+        plan.hitDelay = impactDelay;
 
         return true;
     }
@@ -922,6 +952,10 @@ export class SpellActionHandler {
                 base.reason = "invalid_target";
                 return base;
             }
+            if (npc.getHitpoints() <= 0 || npc.isDead(tick)) {
+                base.reason = "invalid_target";
+                return base;
+            }
             if (npc.level !== player.level) {
                 base.reason = "out_of_range";
                 return base;
@@ -949,6 +983,10 @@ export class SpellActionHandler {
                 base.reason = "out_of_range";
                 return base;
             }
+            if (opponent.skillSystem.getHitpointsCurrent() <= 0) {
+                base.reason = "invalid_target";
+                return base;
+            }
             targetPlayer = opponent;
             targetTile = {
                 x: opponent.tileX,
@@ -970,6 +1008,72 @@ export class SpellActionHandler {
             player.combat.autocastEnabled &&
             player.combat.spellId === spellId;
         const isAutocast = explicitAutocast || implicitAutocast;
+
+        const pathService = this.svc.pathService;
+        if (!pathService) {
+            base.reason = "server_error";
+            return base;
+        }
+
+        const spellData = getSpellData(spellId);
+        if (!spellData) {
+            base.reason = "invalid_spell";
+            return base;
+        }
+        const spellRange = SpellCaster.getSpellRange(spellData);
+        if (
+            !targetTile ||
+            !SpellCaster.isTargetInRange(
+                player.tileX,
+                player.tileY,
+                targetTile.x,
+                targetTile.y,
+                spellRange,
+            )
+        ) {
+            base.reason = "out_of_range";
+            return base;
+        }
+        if (targetNpc && !hasProjectileLineOfSightToNpc(
+            player.tileX,
+            player.tileY,
+            player.level,
+            targetNpc,
+            pathService,
+        )) {
+            base.reason = "line_of_sight";
+            return base;
+        }
+        if (targetPlayer) {
+            const ray = pathService.projectileRaycast(
+                { x: player.tileX, y: player.tileY, plane: player.level },
+                { x: targetPlayer.tileX, y: targetPlayer.tileY },
+            );
+            if (!ray.clear) {
+                base.reason = "line_of_sight";
+                return base;
+            }
+        }
+
+        // Match the shared action-delay model: retain the latest valid manual
+        // combat click until the current melee/ranged/magic action completes.
+        // This prevents a spell click from being lost during fallback melee.
+        if (!isAutocast && !player.combat.isAttackReady(tick)) {
+            if (targetNpc) {
+                player.combat.pendingManualCombatSpell = {
+                    spellId,
+                    target: { type: "npc", npcId: targetNpc.id },
+                };
+            } else if (targetPlayer) {
+                player.combat.pendingManualCombatSpell = {
+                    spellId,
+                    target: { type: "player", playerId: targetPlayer.id },
+                };
+            }
+            base.outcome = "success";
+            base.reason = "queued";
+            return base;
+        }
 
         const castContext: SpellCastContext = {
             player,
@@ -994,12 +1098,6 @@ export class SpellActionHandler {
             return base;
         }
 
-        const spellData = getSpellData(spellId);
-        if (!spellData) {
-            base.reason = "invalid_spell";
-            return base;
-        }
-
         const execution = SpellCaster.execute(castContext, validation);
 
         // Award base Magic XP
@@ -1020,6 +1118,10 @@ export class SpellActionHandler {
         }
 
         player.combat.lastSpellCastTick = tick;
+        if (!isAutocast) {
+            player.combat.attackDelay = MANUAL_COMBAT_SPELL_DELAY_TICKS;
+            player.combat.delayNextAttack(tick + MANUAL_COMBAT_SPELL_DELAY_TICKS);
+        }
 
         const sock = this.svc.players?.getSocketByPlayerId(player.id);
         if (!sock) {
@@ -1111,8 +1213,9 @@ export class SpellActionHandler {
             projectileDefaults,
             spellData,
         });
+        const impactDelay = this.magicHitDelayTicks(player, targetNpc, targetPlayer);
         base.maxHit = spellData.baseMaxHit;
-        base.hitDelay = timing ? timing.startDelay + timing.travelTime : undefined;
+        base.hitDelay = impactDelay;
 
         // Queue projectile for viewers
         if (spellData.projectileId !== undefined) {
@@ -1134,15 +1237,12 @@ export class SpellActionHandler {
             });
         }
 
-        if (timing) {
-            this.queueMagicCastSpot(player, spellData);
-            this.playSpellCastSound(player, spellId);
-        }
+        this.queueMagicCastSpot(player, spellData);
+        this.playSpellCastSound(player, spellId);
 
         // Schedule damage for NPC target. The hit tick comes from the OSRS magic
         // hit-delay formula; the projectile visuals run on their own cycle timing.
-        if (targetNpc && timing) {
-            const impactDelay = this.magicHitDelayTicks(player, targetNpc);
+        if (targetNpc) {
             const currentTick = deliveryTick;
             let outcome: { landed: boolean; maxHit: number; damage: number };
             if (TEST_HIT_FORCE !== undefined && TEST_HIT_FORCE >= 0) {
@@ -1173,7 +1273,7 @@ export class SpellActionHandler {
                 spellData,
                 targetNpc,
                 landed: !!outcome.landed,
-                delayTicks: timing.hitDelay,
+                delayTicks: impactDelay,
             });
             try {
                 this.svc.actionScheduler.requestAction(
@@ -1215,7 +1315,7 @@ export class SpellActionHandler {
 
         // Schedule player damage if targeting a player
         const pendingDamage = player.combat.pendingPlayerSpellDamage;
-        if (pendingDamage && targetPlayer && timing) {
+        if (pendingDamage && targetPlayer) {
             player.combat.pendingPlayerSpellDamage = undefined;
             const currentTick = deliveryTick;
             targetPlayer.refreshActiveCombatTimer();
@@ -1232,14 +1332,14 @@ export class SpellActionHandler {
                 outcome = { landed: dmg > 0, maxHit: spellData.baseMaxHit ?? 0, damage: dmg };
             }
 
-            const hitDelayTicks = this.magicHitDelayTicks(player, undefined, targetPlayer);
+            const hitDelayTicks = impactDelay;
             const expectedHitTick = currentTick + hitDelayTicks;
             this.queueMagicImpactEffects({
                 player,
                 spellData,
                 targetPlayer,
                 landed: !!outcome.landed,
-                delayTicks: timing.hitDelay,
+                delayTicks: hitDelayTicks,
             });
             this.svc.actionScheduler.requestAction(
                 player.id,

@@ -201,10 +201,11 @@ export class TickPhaseService {
                 frame.npcEffectEvents = npcTickResult.statusEvents;
 
                 for (const aggroEvent of npcTickResult.aggressionEvents) {
-                    this.scheduleNpcAggressionAttack(
+                    this.executeNpcAggressionAttack(
                         aggroEvent.npcId,
                         aggroEvent.targetPlayerId,
                         frame.tick,
+                        frame,
                     );
                 }
 
@@ -664,6 +665,34 @@ export class TickPhaseService {
     runCombatPhase(frame: TickFrame): void {
         const { players, playerCombatManager, npcManager } = this.svc;
         if (!players || !playerCombatManager) return;
+
+        // A manual spell click made during another attack's shared delay is
+        // executed at the first legal combat tick, before fallback melee can
+        // schedule another swing.
+        players.forEach((_client, player) => {
+            const outcome = this.svc.spellActionHandler?.processPendingManualCombatSpell(
+                player,
+                frame.tick,
+            );
+            if (outcome) {
+                this.svc.broadcastService.queueSpellResult(player.id, outcome);
+            }
+        });
+
+        // NPC swings must be selected after the movement phase. A player can
+        // step onto an NPC's old tile during movement, which makes a swing
+        // selected earlier in the tick invalid by the time it executes.
+        if (npcManager) {
+            const npcAttackEvents = npcManager.collectCombatAttackEvents(
+                frame.tick,
+                (playerId) =>
+                    players.getById(playerId) as import("../npcManager").CombatTargetPlayer | undefined,
+            );
+            for (const event of npcAttackEvents) {
+                this.executeNpcAggressionAttack(event.npcId, event.targetPlayerId, frame.tick, frame);
+            }
+        }
+
         const combatResult = playerCombatManager.processTick({
             tick: frame.tick,
             npcLookup: (npcId) => npcManager?.getById(npcId),
@@ -693,7 +722,7 @@ export class TickPhaseService {
                 logger.warn("Failed to finish NPC combat engagement", err);
             }
         }
-        frame.actionEffects = combatResult.effects;
+        frame.actionEffects.push(...combatResult.effects);
         this.refreshInteractionFacing(frame);
         this.processGamemodeTickCallbacks(frame);
     }
@@ -849,10 +878,16 @@ export class TickPhaseService {
 
     // --- Private helpers ---
 
-    private scheduleNpcAggressionAttack(
+    /**
+     * NPC swings are executed by the NPC tick, not queued behind player-owned
+     * actions. This mirrors the reference server's NPC queue and prevents a
+     * manual walk from dropping a ready NPC swing.
+     */
+    private executeNpcAggressionAttack(
         npcId: number,
         targetPlayerId: number,
         currentTick: number,
+        frame: TickFrame,
     ): void {
         const player = this.svc.players?.getById(targetPlayerId);
         if (!player) return;
@@ -860,26 +895,23 @@ export class TickPhaseService {
         const npc = this.svc.npcManager?.getById(npcId);
         if (!npc || npc.isDead?.(currentTick)) return;
 
-        const result = this.svc.actionScheduler.requestAction(
-            player.id,
+        const result = this.svc.combatActionHandler?.executeCombatNpcRetaliateAction(
+            player,
             {
-                kind: "combat.npcRetaliate",
-                data: {
-                    npcId: npc.id,
-                    phase: "swing",
-                    isAggression: true,
-                },
-                groups: ["combat.npcAggro"],
-                cooldownTicks: 0,
-                delayTicks: 0,
+                npcId: npc.id,
+                phase: "swing",
+                isAggression: true,
             },
             currentTick,
         );
-
-        if (!result.ok) {
+        if (!result?.ok) {
             logger.info(
-                `[aggression] failed to schedule NPC attack (npc=${npcId}, player=${targetPlayerId}): ${result.reason}`,
+                `[aggression] NPC attack rejected (npc=${npcId}, player=${targetPlayerId}): ${result?.reason ?? "combat handler unavailable"}`,
             );
+            return;
+        }
+        if (result.effects?.length) {
+            frame.actionEffects.push(...result.effects);
         }
     }
 
