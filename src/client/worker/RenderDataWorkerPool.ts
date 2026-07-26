@@ -7,12 +7,12 @@ import { LoadedCache } from "../Caches";
 import { NpcGeometryData } from "../webgl/loader/NpcGeometryData";
 import type { NpcInstance } from "../webgl/npc/NpcRenderTemplate";
 import { RenderDataLoader } from "./RenderDataLoader";
-import { RenderDataWorker } from "./RenderDataWorker";
+import type { RenderDataWorker } from "./RenderDataWorker";
 
 type RenderDataWorkerThread = ModuleThread<RenderDataWorker>;
 
 function spawnWorker(): Promise<RenderDataWorkerThread> {
-    const worker = new Worker(new URL("./RenderDataWorker", import.meta.url));
+    const worker = new Worker(new URL("./RenderDataWorker.ts", import.meta.url));
     return spawn<RenderDataWorker>(worker);
 }
 
