@@ -5,10 +5,12 @@ import {
     MIN_PASSWORD_LENGTH,
 } from "../../shared/authentication";
 import { isIosStandalonePwa } from "../../util/DeviceUtil";
+import {
+    getClientPreference,
+    setClientPreference,
+} from "../preferences/ClientPreferences";
 import { LoginIndex } from "./GameState";
 
-const STORAGE_KEY_TITLE_MUSIC_DISABLED = "osrs:titleMusicDisabled";
-const STORAGE_KEY_LAST_SERVER = "osrs:lastServer";
 const STORAGE_KEY_IOS_PWA_LOGIN_STATE = "osrs:iosPwaLoginState";
 const IOS_PWA_LOGIN_STATE_VERSION = 2;
 
@@ -32,30 +34,18 @@ export class LoginState {
 
     /** Load settings that should persist between sessions */
     private loadPersistedSettings(): void {
-        try {
-            const musicDisabled = localStorage.getItem(STORAGE_KEY_TITLE_MUSIC_DISABLED);
-            if (musicDisabled !== null) {
-                this.titleMusicDisabled = musicDisabled === "true";
-            }
-        } catch {}
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY_LAST_SERVER);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (typeof parsed.name === "string") this.serverName = parsed.name;
-                if (typeof parsed.address === "string") this.serverAddress = parsed.address;
-                if (typeof parsed.secure === "boolean") this.serverSecure = parsed.secure;
-            }
-        } catch {}
+        this.titleMusicDisabled = getClientPreference("titleMusicDisabled");
+        const lastServer = getClientPreference("lastServer");
+        if (lastServer) {
+            this.serverName = lastServer.name;
+            this.serverAddress = lastServer.address;
+            this.serverSecure = lastServer.secure;
+        }
     }
 
     /** Save title music disabled setting to localStorage */
     saveTitleMusicSetting(): void {
-        try {
-            localStorage.setItem(STORAGE_KEY_TITLE_MUSIC_DISABLED, String(this.titleMusicDisabled));
-        } catch {
-            // localStorage not available
-        }
+        setClientPreference("titleMusicDisabled", this.titleMusicDisabled);
     }
 
     private supportsPersistedLoginState(): boolean {
@@ -225,16 +215,11 @@ export class LoginState {
 
     /** Persist the last selected server to localStorage */
     saveLastServer(): void {
-        try {
-            localStorage.setItem(
-                STORAGE_KEY_LAST_SERVER,
-                JSON.stringify({
-                    name: this.serverName,
-                    address: this.serverAddress,
-                    secure: this.serverSecure,
-                }),
-            );
-        } catch {}
+        setClientPreference("lastServer", {
+            name: this.serverName,
+            address: this.serverAddress,
+            secure: this.serverSecure,
+        });
     }
 
     // ========== World Select ==========

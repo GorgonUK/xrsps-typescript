@@ -945,37 +945,76 @@ export class LoginRenderer {
         this.containerHeight = layoutHeight;
         this.containerX = 0;
 
-        // Classic login UI is authored for 765×503. Scale it down when the viewport is
-        // smaller (portrait / short landscape) and center it above the bottom controls.
+        // Classic login UI is authored for 765×503. Scale it to fit when the viewport
+        // is smaller, then on mobile bias upward so the titlebox stays readable
+        // (full-scene fit alone leaves the 360px panel too small on short phones).
         const padX = 8;
         const padTop = 8;
         const padBottom = this.BOTTOM_CONTROLS_RESERVE;
         const availableW = Math.max(1, layoutWidth - padX * 2);
         const availableH = Math.max(1, layoutHeight - padTop - padBottom);
-        const fitScale = Math.min(
+        const sceneFit = Math.min(
             1,
             availableW / this.SCENE_WIDTH,
             availableH / this.SCENE_HEIGHT,
         );
-        this.contentScale =
-            Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1;
+        let contentScale =
+            Number.isFinite(sceneFit) && sceneFit > 0 ? sceneFit : 1;
+
+        if (isMobileMode) {
+            const titleboxW =
+                this.titleboxSprite?.subWidth || this.TITLEBOX_FALLBACK_WIDTH;
+            const titleboxH =
+                this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+            // Aim for the panel to use most of the short axis without covering
+            // bottom server/mute controls. Side margins of the classic 765 band
+            // may clip — that is empty art space around the centered box.
+            const titleboxFit = Math.min(
+                availableW / (titleboxW + 32),
+                availableH / (titleboxH + 72),
+            );
+            if (Number.isFinite(titleboxFit) && titleboxFit > contentScale) {
+                contentScale = Math.min(titleboxFit, contentScale * 1.28);
+            }
+        }
+
+        this.contentScale = contentScale;
 
         const scaledW = this.SCENE_WIDTH * this.contentScale;
         const scaledH = this.SCENE_HEIGHT * this.contentScale;
         this.contentOriginX = Math.floor((layoutWidth - scaledW) / 2);
 
-        // Prefer centering the titlebox (what players look at) rather than the full
-        // 503px band — otherwise portrait leaves a huge empty floor under a high box.
-        const titleboxMid =
-            this.TITLEBOX_Y +
-            (this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT) / 2;
-        const availableMidY = padTop + availableH / 2;
-        const preferredOriginY = availableMidY - titleboxMid * this.contentScale;
-        const minOriginY = padTop;
-        const maxOriginY = padTop + availableH - scaledH;
-        this.contentOriginY = Math.floor(
-            Math.max(minOriginY, Math.min(preferredOriginY, maxOriginY)),
-        );
+        const titleboxH =
+            this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+        const titleboxMid = this.TITLEBOX_Y + titleboxH / 2;
+
+        if (isMobileMode) {
+            // Center the titlebox on the full viewport (not the band above the
+            // bottom-control reserve). That reserve only clamps so the panel
+            // doesn't cover server/mute — it must not bias the panel upward.
+            const preferredOriginY =
+                layoutHeight / 2 - titleboxMid * this.contentScale;
+            const minOriginY = padTop - this.TITLEBOX_Y * this.contentScale;
+            const maxOriginY =
+                layoutHeight -
+                padBottom -
+                (this.TITLEBOX_Y + titleboxH) * this.contentScale;
+            this.contentOriginY = Math.floor(
+                maxOriginY < minOriginY
+                    ? (minOriginY + maxOriginY) / 2
+                    : Math.max(minOriginY, Math.min(preferredOriginY, maxOriginY)),
+            );
+        } else {
+            // Desktop: center titlebox within the content band above bottom controls.
+            const availableMidY = padTop + availableH / 2;
+            const preferredOriginY =
+                availableMidY - titleboxMid * this.contentScale;
+            const minOriginY = padTop;
+            const maxOriginY = padTop + availableH - scaledH;
+            this.contentOriginY = Math.floor(
+                Math.max(minOriginY, Math.min(preferredOriginY, maxOriginY)),
+            );
+        }
         this.xPadding = this.contentOriginX;
 
         // Draw/hit-test login panels in classic coordinates; the content transform maps them.

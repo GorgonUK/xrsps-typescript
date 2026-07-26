@@ -150,6 +150,8 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
     handleInput(deltaTime: number) {
         // OSRS frame start: transfer click state (clickMode1 -> clickMode3)
         this.osrsClient.inputManager.onFrameStart();
+        // Orbit only in-world; login keeps one-finger drag for list scrolling.
+        this.osrsClient.inputManager.setTouchCameraOrbitEnabled(this.osrsClient.isLoggedIn());
 
         this.handleKeyInput(deltaTime);
         this.handleControllerInput(deltaTime);
@@ -304,8 +306,8 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
 
         // Scroll wheel zoom.
         // Follow-camera zoom is driven by widget onScroll handlers on the main viewport root.
-        // Combine wheel and pinch inputs (pinchZoomDelta is scaled similarly to wheel)
-        const zoomDelta = inputManager.wheelDeltaY + inputManager.pinchZoomDelta;
+        // Pinch is merged into wheelDeltaY in InputManager (same path as mouse wheel).
+        const zoomDelta = inputManager.wheelDeltaY;
         if (zoomDelta !== 0) {
             if (
                 !this.osrsClient.followPlayerCamera &&
