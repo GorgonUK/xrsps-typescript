@@ -131,9 +131,8 @@ export class NpcCombatInteractionHandler {
 
         state.modifierFlags = this.normalizeModifierFlags(state.modifierFlags);
 
-        // Do not force NPC to face/engage on click.
-        // NPC retaliation/engagement begins when the first hit actually lands (confirmHitLanded),
-        // not when the player clicks "Attack" or starts pathing.
+        // Do not force NPC to face/engage on click or while the player is
+        // merely pathing. Retaliation begins when a valid player swing starts.
 
         // RSMod parity: Set combat target on player (COMBAT_TARGET_FOCUS_ATTR)
         me.combat.setCombatTarget(npc);

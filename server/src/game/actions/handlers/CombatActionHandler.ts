@@ -945,6 +945,19 @@ export class CombatActionHandler {
             }
         }
 
+        // Start NPC retaliation when the player's swing is accepted, rather
+        // than waiting for the delayed hitsplat to land.  A player can walk
+        // immediately after a melee swing; waiting for impact left the NPC
+        // idle, allowing both actors to occupy the same tile and preventing
+        // the NPC from chasing to a legal attack position.
+        const isNewRetaliationTarget =
+            !npc.isInCombat(tick) || npc.getCombatTargetPlayerId() !== player.id;
+        if (isNewRetaliationTarget) {
+            npc.engageCombat(player.id, tick);
+            const initialRetaliationDelay = Math.floor(Math.max(1, npc.attackSpeed) / 2) + 1;
+            npc.setNextAttackTick(tick + initialRetaliationDelay);
+        }
+
         // Face the target
         const faceTile = this.svc.playerCombatService!.pickNpcFaceTile(player, npc);
         const targetX = (faceTile.x << 7) + 64;
