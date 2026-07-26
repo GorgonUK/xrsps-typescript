@@ -1,5 +1,5 @@
 {
-    "serverName": "Your Server Name",
+    "serverName": "Local Development",
     "maxPlayers": 2047,
     "gamemode": "leagues-v"
 }

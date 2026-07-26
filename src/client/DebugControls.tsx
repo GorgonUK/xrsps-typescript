@@ -58,6 +58,7 @@ export const DebugControls = memo(
         const [varType, setVarType] = useState<VarType>(VarType.VARBIT);
         const [varId, setVarId] = useState(0);
         const [varValue, setVarValue] = useState(0);
+        const [levaCollapsed, setLevaCollapsed] = useState(true);
 
         const ensureResidentBudgetForRadius = (mapRadius: number): void => {
             // Budget enough to keep the full (2r+1)^2 grid resident with some slack for backtracking.
@@ -611,10 +612,13 @@ export const DebugControls = memo(
         );
 
         return (
-            <div className="leva-left">
+            <div className={`leva-left${levaCollapsed ? " leva-collapsed" : ""}`}>
                 <Leva
                     titleBar={{ filter: false }}
-                    collapsed={true}
+                    collapsed={{
+                        collapsed: levaCollapsed,
+                        onChange: setLevaCollapsed,
+                    }}
                     hideCopyButton={true}
                     hidden={hidden}
                 />

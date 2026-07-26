@@ -38,9 +38,10 @@ function readViewportSize(): { width: number; height: number } {
 export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscapeLockState {
     const [rotated, setRotated] = useState(false);
     const isPhone = checkMobile();
+    const active = enabled && isPhone;
 
     useEffect(() => {
-        if (!enabled || !isPhone || typeof window === "undefined" || typeof document === "undefined") {
+        if (!active || typeof window === "undefined" || typeof document === "undefined") {
             setRotated(false);
             return;
         }
@@ -117,10 +118,10 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
             delete root.dataset.iosSafariForceLandscape;
             delete root.dataset.iosSafariForceLandscapeRotated;
         };
-    }, [enabled, isPhone]);
+    }, [active]);
 
     return {
-        enabled: enabled && isPhone,
+        enabled: active,
         rotated,
     };
 }
