@@ -16,7 +16,12 @@ import {
     removeCacheManifestEntry,
     writeCacheManifestEntry,
 } from "../util/CacheManifest";
-import { isIos, isStandaloneDisplayMode, isTouchDevice } from "../util/DeviceUtil";
+import {
+    checkMobile,
+    isIos,
+    isStandaloneDisplayMode,
+    isTouchDevice,
+} from "../util/DeviceUtil";
 import {
     describeStorageShortfall,
     ensurePersistentStorage,
@@ -95,8 +100,9 @@ function OsrsClientApp() {
     const [showIosInstallHint, setShowIosInstallHint] = useState(false);
     const loginUnsubscribers = useMemo<Array<LoginUnsubscriber>>(() => [], []);
     useViewportCssVars();
-    const shouldEnableSafariLandscapeLock = osrsClient?.isLoggedIn() ?? false;
-    const safariLandscapeLock = useSafariLandscapeLock(shouldEnableSafariLandscapeLock);
+    // Phones only (not iPad): CSS-rotate when portrait + try orientation.lock.
+    // Enabled from login onward — portrait layout is unusable for the classic UI.
+    const safariLandscapeLock = useSafariLandscapeLock(checkMobile());
 
     const addStorageWarning = useCallback((message: string) => {
         setStorageWarnings((prev) => {
