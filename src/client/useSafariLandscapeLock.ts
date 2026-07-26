@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { isIosSafari } from "../util/DeviceUtil";
+import { checkMobile } from "../util/DeviceUtil";
 
-interface SafariLandscapeLockState {
+interface MobileLandscapeLockState {
     enabled: boolean;
     rotated: boolean;
 }
@@ -26,16 +26,21 @@ function readViewportSize(): { width: number; height: number } {
     };
 }
 
-export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscapeLockState {
+/**
+ * Force a landscape layout on phones (iPhone + Android).
+ * When the device is physically portrait, CSS-rotates the app 90° and remaps
+ * input (via documentElement dataset flags). Also tries Screen Orientation lock
+ * when the browser allows it (often after a user gesture / in installed PWAs).
+ *
+ * Dataset attribute names keep the historical `iosSafariForceLandscape*` keys
+ * so InputManager / DeviceUtil continue to work unchanged.
+ */
+export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscapeLockState {
     const [rotated, setRotated] = useState(false);
+    const isPhone = checkMobile();
 
     useEffect(() => {
-        if (
-            !enabled ||
-            !isIosSafari ||
-            typeof window === "undefined" ||
-            typeof document === "undefined"
-        ) {
+        if (!enabled || !isPhone || typeof window === "undefined" || typeof document === "undefined") {
             setRotated(false);
             return;
         }
@@ -87,6 +92,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
         window.addEventListener("pageshow", scheduleApply);
         document.addEventListener("visibilitychange", scheduleApply);
         window.addEventListener("touchstart", tryLockLandscape, { passive: true });
+        window.addEventListener("click", tryLockLandscape);
 
         const viewport = window.visualViewport;
         viewport?.addEventListener("resize", scheduleApply);
@@ -98,6 +104,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
             window.removeEventListener("pageshow", scheduleApply);
             document.removeEventListener("visibilitychange", scheduleApply);
             window.removeEventListener("touchstart", tryLockLandscape);
+            window.removeEventListener("click", tryLockLandscape);
             viewport?.removeEventListener("resize", scheduleApply);
             viewport?.removeEventListener("scroll", scheduleApply);
             if (rafId !== undefined) {
@@ -110,10 +117,10 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
             delete root.dataset.iosSafariForceLandscape;
             delete root.dataset.iosSafariForceLandscapeRotated;
         };
-    }, [enabled]);
+    }, [enabled, isPhone]);
 
     return {
-        enabled: enabled && isIosSafari,
+        enabled: enabled && isPhone,
         rotated,
     };
 }

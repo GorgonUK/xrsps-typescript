@@ -474,7 +474,8 @@ export class LoginOverlay implements Overlay {
 
             const { loginRenderer } = this.osrsClient;
             const firePos = loginRenderer.getFirePositions();
-            const fireScale = loginRenderer.getRenderScale();
+            // firePos.scale already includes login renderScale and background cover-fit scale.
+            const fireScale = firePos.scale;
             // Use the same snapped layout→device scale as the UI texture quad so the
             // fire overlay stays registered with the title sprites behind it.
             const layoutScaleX = this.deviceScaleX;
