@@ -38,6 +38,9 @@ import { CombatEngine } from "../../systems/combat/CombatEngine";
 import { TEST_HIT_FORCE, testRandFloat } from "../../testing/TestRng";
 import type { ActionRequest } from "../types";
 
+/** Standard spellbook combat spells have a fixed five-tick cast cadence. */
+const MANUAL_COMBAT_SPELL_DELAY_TICKS = 5;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -971,6 +974,14 @@ export class SpellActionHandler {
             player.combat.spellId === spellId;
         const isAutocast = explicitAutocast || implicitAutocast;
 
+        // Manual spellbook casts use the actor-global combat timer just like
+        // weapon attacks. Without this gate, repeated click packets could cast
+        // a spell every tick because lastSpellCastTick is informational only.
+        if (!isAutocast && !player.combat.isAttackReady(tick)) {
+            base.reason = "cooldown";
+            return base;
+        }
+
         const castContext: SpellCastContext = {
             player,
             spellId,
@@ -1020,6 +1031,10 @@ export class SpellActionHandler {
         }
 
         player.combat.lastSpellCastTick = tick;
+        if (!isAutocast) {
+            player.combat.attackDelay = MANUAL_COMBAT_SPELL_DELAY_TICKS;
+            player.combat.delayNextAttack(tick + MANUAL_COMBAT_SPELL_DELAY_TICKS);
+        }
 
         const sock = this.svc.players?.getSocketByPlayerId(player.id);
         if (!sock) {
