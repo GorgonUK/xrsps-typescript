@@ -666,6 +666,19 @@ export class TickPhaseService {
         const { players, playerCombatManager, npcManager } = this.svc;
         if (!players || !playerCombatManager) return;
 
+        // A manual spell click made during another attack's shared delay is
+        // executed at the first legal combat tick, before fallback melee can
+        // schedule another swing.
+        players.forEach((_client, player) => {
+            const outcome = this.svc.spellActionHandler?.processPendingManualCombatSpell(
+                player,
+                frame.tick,
+            );
+            if (outcome) {
+                this.svc.broadcastService.queueSpellResult(player.id, outcome);
+            }
+        });
+
         // NPC swings must be selected after the movement phase. A player can
         // step onto an NPC's old tile during movement, which makes a swing
         // selected earlier in the tick invalid by the time it executes.

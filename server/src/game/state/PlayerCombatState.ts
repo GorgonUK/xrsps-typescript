@@ -26,6 +26,11 @@ export class PlayerCombatState {
     pendingAutocastDefensive?: boolean;
     pendingAutocastWeaponId?: number;
     lastSpellCastTick: number = Number.MIN_SAFE_INTEGER;
+    /** Latest manual combat spell click waiting for the shared action timer. */
+    pendingManualCombatSpell?: {
+        spellId: number;
+        target: { type: "npc"; npcId: number } | { type: "player"; playerId: number };
+    };
     pendingPlayerSpellDamage?: { targetId: number };
 
     slayerTask?: {
