@@ -1016,7 +1016,8 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
         // currentTime is the time at the START of this block
         const blockStartTime = currentTime;
         const secondsPerSample = 1 / sampleRate;
-        const queue = this.eventQueue;
+        // Must be 'let': stopAll replaces this.eventQueue with a new array.
+        let queue = this.eventQueue;
         let readIndex = this.eventQueueReadIndex;
 
         for (let i = 0; i < blockSize; i++) {
@@ -1024,6 +1025,13 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             const sampleTime = blockStartTime + (i * secondsPerSample);
             while (readIndex < queue.length && queue[readIndex].time <= sampleTime) {
                 this.dispatchMessage(queue[readIndex++]);
+                // stopAll clears + replaces this.eventQueue. If we kept walking the
+                // old local array, later noteOns in the same block would restart notes.
+                if (this.eventQueue !== queue) {
+                    queue = this.eventQueue;
+                    readIndex = this.eventQueueReadIndex;
+                    break;
+                }
             }
 
             // B6: Global tick boundary - update all notes on the same tick
@@ -1090,17 +1098,20 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             right[i] = mixR / 32768;
         }
 
-        // Compact consumed event queue entries once per block
-        if (readIndex > 0) {
-            if (readIndex >= queue.length) {
-                queue.length = 0;
-                readIndex = 0;
-            } else if (readIndex > 32) {
-                queue.splice(0, readIndex);
-                readIndex = 0;
+        // Compact consumed event queue entries once per block (live queue only).
+        // If stopAll replaced the queue, keep the reset from dispatchMessage.
+        if (this.eventQueue === queue) {
+            if (readIndex > 0) {
+                if (readIndex >= queue.length) {
+                    queue.length = 0;
+                    readIndex = 0;
+                } else if (readIndex > 32) {
+                    queue.splice(0, readIndex);
+                    readIndex = 0;
+                }
             }
+            this.eventQueueReadIndex = readIndex;
         }
-        this.eventQueueReadIndex = readIndex;
 
         return true;
     }
