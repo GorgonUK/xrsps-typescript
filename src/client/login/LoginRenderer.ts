@@ -152,7 +152,12 @@ const FALLBACK_SERVERS: ServerListEntry[] = [
     },
 ];
 
-const SERVER_LIST_URL = "https://xrsps.com/servers.json";
+// Prefer same-origin list (Vercel hosts public/servers.json). Fall back to the
+// community docs list when developing against a host that doesn't ship one.
+const SERVER_LIST_URL =
+    typeof window !== "undefined"
+        ? `${window.location.origin}/servers.json`
+        : "https://xrsps.com/servers.json";
 
 /**
  * Login screen renderer.
