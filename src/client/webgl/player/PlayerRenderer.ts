@@ -1880,7 +1880,12 @@ export class PlayerRenderer {
             .texture("u_heightMap", map.heightMapTexture)
             .uniform("u_sceneBorderSize", map.borderSize);
 
-        r.app.disable(PicoGL.CULL_FACE);
+        // Player models use the same winding as terrain/NPC geometry. Respect
+        // the renderer's culling setting here; rendering both sides exposes
+        // internal leg faces as dark triangles when a player is lifted above
+        // the floor.
+        if (r.cullBackFace) r.app.enable(PicoGL.CULL_FACE);
+        else r.app.disable(PicoGL.CULL_FACE);
 
         // Process each batch group
         for (const [batchKey, group] of this.batchGroups) {

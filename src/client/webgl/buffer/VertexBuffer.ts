@@ -5,7 +5,10 @@ import { DataBuffer } from "../../buffer/DataBuffer";
 export class VertexBuffer extends DataBuffer {
     static readonly STRIDE = 12;
 
-    vertexIndices: Map<number, number>;
+    // The complete packed vertex is the cache identity. A numeric hash based
+    // on multiplying its fields loses precision in JavaScript and can merge
+    // unrelated vertices, creating stray stretched triangles in the scene.
+    vertexIndices: Map<string, number>;
 
     constructor(count: number) {
         super(VertexBuffer.STRIDE, count);
@@ -66,14 +69,12 @@ export class VertexBuffer extends DataBuffer {
             (uPacked >> 6);
 
         if (reuseVertex) {
-            const hash = v0 * v1 * v2;
-            // const hash = BigInt(v0) << 64n | BigInt(v1) << 32n | BigInt(v2);
-            // const hash = Hasher.hash(this.byteArray.subarray(vertexBufIndex, vertexBufIndex + VertexBuffer.VERTEX_STRIDE));
-            const cachedIndex = this.vertexIndices.get(hash);
+            const key = `${v0 >>> 0}:${v1 >>> 0}:${v2 >>> 0}`;
+            const cachedIndex = this.vertexIndices.get(key);
             if (cachedIndex !== undefined) {
                 return cachedIndex;
             } else {
-                this.vertexIndices.set(hash, this.offset);
+                this.vertexIndices.set(key, this.offset);
             }
         }
         this.ensureSize(1);
