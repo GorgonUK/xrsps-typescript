@@ -5,6 +5,7 @@ import {
     addAudioContextResumeListeners,
     getAudioContextConstructor,
     registerManagedAudioContext,
+    resumeAudioContextIfNeeded,
     unregisterManagedAudioContext,
 } from "./audioContext";
 import { resampleToSampleRate, smoothLowPass } from "./resample";
@@ -177,10 +178,8 @@ export class SoundEffectSystem {
     private ensureContext(): AudioContext | undefined {
         if (typeof window === "undefined") return undefined;
         if (this.context) {
-            // Resume suspended context on subsequent calls (after user gesture)
-            if (this.context.state === "suspended") {
-                this.context.resume().catch(() => {});
-            }
+            // Resume suspended/interrupted context on subsequent calls (after user gesture)
+            resumeAudioContextIfNeeded(this.context);
             return this.context;
         }
         const AudioCtx = getAudioContextConstructor();
@@ -201,11 +200,11 @@ export class SoundEffectSystem {
         ambientGain.connect(ctx.destination);
         this.ambientGainNode = ambientGain;
 
-        // Auto-resume on user interaction (required by browser autoplay policy)
+        // Auto-resume on user interaction (required by browser autoplay policy).
+        // Listeners stay armed for the lifetime of the context because iOS re-locks
+        // audio after app switches; they are removed in dispose().
         if (!this.contextResumeCleanup) {
-            this.contextResumeCleanup = addAudioContextResumeListeners(ctx, () => {
-                this.contextResumeCleanup = null;
-            });
+            this.contextResumeCleanup = addAudioContextResumeListeners(ctx);
         }
 
         return ctx;
@@ -366,9 +365,7 @@ export class SoundEffectSystem {
         const ctx = this.ensureContext();
         if (!ctx || !this.loader.available()) return;
 
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
-        }
+        resumeAudioContextIfNeeded(ctx);
 
         const decoded = this.decode(soundId);
         if (!decoded) return;
@@ -578,9 +575,7 @@ export class SoundEffectSystem {
         const ctx = this.ensureContext();
         if (!ctx || !this.loader.available()) return;
 
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
-        }
+        resumeAudioContextIfNeeded(ctx);
 
         const now = ctx.currentTime;
         const dt =

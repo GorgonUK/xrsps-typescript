@@ -5,7 +5,7 @@
 import { CacheSystem } from "../../../../rs/cache/CacheSystem";
 import { IndexType } from "../../../../rs/cache/IndexType";
 import { ByteBuffer } from "../../../../rs/io/ByteBuffer";
-import { ensureSharedMusicWorklet } from "../../audioContext";
+import { ensureSharedMusicWorklet, resumeAudioContextIfNeeded } from "../../audioContext";
 import { MusicPatch } from "../patch/MusicPatch";
 import { MusicTrack } from "../patch/MusicTrack";
 import { SoundCache } from "../patch/SoundCache";
@@ -1722,9 +1722,7 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
     play(): void {
         if (!this.workletReady || !this.context || this.events.length === 0) return;
 
-        if (this.context.state === "suspended") {
-            this.context.resume();
-        }
+        resumeAudioContextIfNeeded(this.context);
 
         if (this.isPaused) {
             // FIX A5: Resume from pause using stored pausedTick

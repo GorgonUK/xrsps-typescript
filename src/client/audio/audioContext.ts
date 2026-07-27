@@ -2,7 +2,38 @@ type AudioContextConstructor = {
     new (contextOptions?: AudioContextOptions): AudioContext;
 };
 
-const AUDIO_CONTEXT_RESUME_EVENTS: (keyof DocumentEventMap)[] = ["click", "keydown", "touchstart"];
+/**
+ * Events that can unlock/resume an AudioContext. On iOS WebKit only "activation-triggering"
+ * events grant the user activation required by autoplay policy: keydown, mousedown,
+ * pointerup (non-mouse) and touchend. Notably `touchstart` does NOT qualify, and `click`
+ * never fires when a canvas handler calls preventDefault() on the touch events (as the
+ * mobile login screen does). `touchstart`/`click` are kept for browsers where they work.
+ */
+const AUDIO_CONTEXT_RESUME_EVENTS: (keyof DocumentEventMap)[] = [
+    "click",
+    "keydown",
+    "mousedown",
+    "pointerup",
+    "touchend",
+    "touchstart",
+];
+
+/**
+ * iOS WebKit reports a non-standard "interrupted" state when the system takes the audio
+ * session away (app switch, phone call, Siri, screen lock). Such contexts must be resumed
+ * exactly like suspended ones, and doing so requires a fresh user gesture.
+ */
+export function isAudioContextResumable(ctx: AudioContext): boolean {
+    const state = ctx.state as string;
+    return state === "suspended" || state === "interrupted";
+}
+
+/** Resume a context if it is suspended or (iOS) interrupted. Errors are ignored. */
+export function resumeAudioContextIfNeeded(ctx: AudioContext): void {
+    if (isAudioContextResumable(ctx)) {
+        ctx.resume().catch(() => {});
+    }
+}
 
 /** One shared music graph — avoids N AudioContexts + forced 44.1→48 kHz resampling. */
 let sharedMusicContext: AudioContext | null = null;
@@ -25,7 +56,10 @@ let audioLifecycleListenersInstalled = false;
 
 function suspendManagedAudioContexts(): void {
     for (const ctx of managedAudioContexts) {
-        if (ctx.state === "running") {
+        const state = ctx.state as string;
+        // suspend() on an iOS "interrupted" context transitions it to "suspended",
+        // which keeps our bookkeeping consistent with what WebKit reports.
+        if (state === "running" || state === "interrupted") {
             autoSuspendedAudioContexts.add(ctx);
             ctx.suspend().catch(() => {});
         }
@@ -35,10 +69,10 @@ function suspendManagedAudioContexts(): void {
 function resumeAutoSuspendedAudioContexts(): void {
     for (const ctx of Array.from(autoSuspendedAudioContexts)) {
         autoSuspendedAudioContexts.delete(ctx);
-        if (managedAudioContexts.has(ctx) && ctx.state === "suspended") {
-            // Best effort: some browsers require a user gesture to resume. When resume is
-            // rejected, the per-context interaction listeners added elsewhere recover on the
-            // next tap/click.
+        if (managedAudioContexts.has(ctx) && isAudioContextResumable(ctx)) {
+            // Best effort: some browsers (iOS WebKit in particular) require a fresh user
+            // gesture to resume. When resume is rejected, the persistent interaction
+            // listeners added via addAudioContextResumeListeners recover on the next tap.
             ctx.resume().catch(() => {});
         }
     }
@@ -88,6 +122,19 @@ export function getAudioContextConstructor(): AudioContextConstructor | undefine
     return window.AudioContext ?? window.webkitAudioContext;
 }
 
+/**
+ * Install persistent user-gesture listeners that resume the given context.
+ *
+ * The listeners intentionally stay armed after the first successful resume: iOS WebKit
+ * re-locks contexts (state "interrupted"/"suspended") whenever the user switches apps,
+ * takes a call, or locks the screen, and each recovery needs a fresh gesture. They are
+ * registered in the capture phase because game canvas handlers (e.g. the mobile login
+ * screen) call preventDefault()/stopImmediatePropagation() on touch events, which would
+ * otherwise starve bubble-phase document listeners and suppress synthetic clicks.
+ *
+ * `onRunning` is invoked once, the first time the context reaches "running".
+ * The returned cleanup removes the listeners; call it when the context is disposed.
+ */
 export function addAudioContextResumeListeners(
     ctx: AudioContext,
     onRunning?: () => void,
@@ -97,6 +144,7 @@ export function addAudioContextResumeListeners(
     }
 
     let active = true;
+    let notifiedRunning = false;
 
     function cleanup(): void {
         if (!active) {
@@ -104,22 +152,39 @@ export function addAudioContextResumeListeners(
         }
         active = false;
         for (const eventType of AUDIO_CONTEXT_RESUME_EVENTS) {
-            document.removeEventListener(eventType, listener);
+            document.removeEventListener(eventType, listener, true);
         }
+    }
+
+    function notifyRunningOnce(): void {
+        if (!active || notifiedRunning) {
+            return;
+        }
+        if ((ctx.state as string) !== "running") {
+            return;
+        }
+        notifiedRunning = true;
+        onRunning?.();
     }
 
     function listener(): void {
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
+        if (!active) {
+            return;
         }
-        if (ctx.state === "running") {
+        if ((ctx.state as string) === "closed") {
             cleanup();
-            onRunning?.();
+            return;
         }
+        if (isAudioContextResumable(ctx)) {
+            // resume() must be called synchronously within the gesture handler for the
+            // user activation to count (iOS WebKit rejects it from deferred callbacks).
+            ctx.resume().then(notifyRunningOnce, () => {});
+        }
+        notifyRunningOnce();
     }
 
     for (const eventType of AUDIO_CONTEXT_RESUME_EVENTS) {
-        document.addEventListener(eventType, listener);
+        document.addEventListener(eventType, listener, true);
     }
 
     return cleanup;
@@ -146,9 +211,7 @@ export function getSharedMusicAudioContext(): AudioContext | null {
         registerManagedAudioContext(sharedMusicContext);
     }
 
-    if (sharedMusicContext.state === "suspended") {
-        sharedMusicContext.resume().catch(() => {});
-    }
+    resumeAudioContextIfNeeded(sharedMusicContext);
 
     return sharedMusicContext;
 }

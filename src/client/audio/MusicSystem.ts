@@ -9,7 +9,9 @@ import { decodeOggVorbisToAudioBuffer, isOggVorbis } from "./VorbisWasm";
 import {
     addAudioContextResumeListeners,
     getAudioContextConstructor,
+    isAudioContextResumable,
     registerManagedAudioContext,
+    resumeAudioContextIfNeeded,
     unregisterManagedAudioContext,
 } from "./audioContext";
 import { RealtimeMidiSynth } from "./music/realtime/RealtimeMidiSynth";
@@ -253,10 +255,8 @@ export class MusicSystem {
         if (typeof window === "undefined") return;
         const existingContext = this.context;
         if (existingContext) {
-            // Resume suspended context on subsequent calls
-            if (existingContext.state === "suspended") {
-                existingContext.resume().catch(() => {});
-            }
+            // Resume suspended/interrupted context on subsequent calls
+            resumeAudioContextIfNeeded(existingContext);
             return;
         }
         const AudioCtx = getAudioContextConstructor();
@@ -271,11 +271,11 @@ export class MusicSystem {
             // playing after the tab is hidden or closed (notably on iOS WebKit).
             registerManagedAudioContext(ctx);
 
-            // Auto-resume on user interaction (required by browser autoplay policy)
+            // Auto-resume on user interaction (required by browser autoplay policy).
+            // Listeners stay armed for the lifetime of the context because iOS re-locks
+            // audio after app switches; they are removed in dispose().
             if (!this.contextResumeCleanup) {
-                this.contextResumeCleanup = addAudioContextResumeListeners(ctx, () => {
-                    this.contextResumeCleanup = null;
-                });
+                this.contextResumeCleanup = addAudioContextResumeListeners(ctx);
             }
         }
     }
@@ -670,7 +670,7 @@ export class MusicSystem {
             this.currentTrackId = -1;
             return false;
         }
-        if (this.context.state === "suspended") {
+        if (isAudioContextResumable(this.context)) {
             try {
                 await this.context.resume();
             } catch (e) {
