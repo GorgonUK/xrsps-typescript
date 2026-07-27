@@ -1097,8 +1097,12 @@ export class Cs2Vm {
 
             // Input manager for keyboard state queries (KEYHELD, KEYPRESSED)
             inputManager: vm.context.inputManager,
-            showMobileKeyboard: vm.context.showMobileKeyboard,
-            hideMobileKeyboard: vm.context.hideMobileKeyboard,
+            get showMobileKeyboard() {
+                return vm.context.showMobileKeyboard;
+            },
+            get hideMobileKeyboard() {
+                return vm.context.hideMobileKeyboard;
+            },
 
             // Audio playback
             playSong: vm.context.playSong,

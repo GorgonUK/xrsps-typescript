@@ -252,6 +252,12 @@ export class InputManager {
     // === Touch/Pointer State ===
     isTouch: boolean = false;
 
+    /**
+     * Optional hook fired from the real touchstart gesture (canvas coords).
+     * Used to open the soft keyboard within the user-activation window (iOS/Android).
+     */
+    onCanvasTouchStart?: (x: number, y: number) => void;
+
     // === Delta tracking for camera ===
     lastMouseX: number = -1;
     lastMouseY: number = -1;
@@ -841,6 +847,10 @@ export class InputManager {
         this.prevTouchTime = performance.now();
         this.touchScrollVelocityY = 0;
         this.isTouchScrolling = false;
+        // Soft-keyboard open must happen inside this gesture (focus after touchend is rejected).
+        try {
+            this.onCanvasTouchStart?.(x, y);
+        } catch {}
         this.touchAdapter.onFingerDown(x, y, this.lastInputTimeMs);
         event.preventDefault();
     };
