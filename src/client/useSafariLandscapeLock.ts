@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { checkMobile } from "../util/DeviceUtil";
+import { checkMobile, shouldFreezeViewportForVirtualKeyboard } from "../util/DeviceUtil";
 
 interface MobileLandscapeLockState {
     enabled: boolean;
@@ -48,9 +48,18 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
 
         const root = document.documentElement;
         let rafId: number | undefined;
+        let lastApplied: { width: number; height: number } | undefined;
 
         const applyViewportMetrics = () => {
             const { width, height } = readViewportSize();
+            // While the on-screen keyboard is open the visual viewport only reflects the
+            // sliver above the keyboard. Recomputing the forced-landscape size (and the
+            // rotation flag) from it collapses the app and can un-rotate it mid-typing,
+            // so keep the pre-keyboard metrics until the keyboard closes.
+            if (shouldFreezeViewportForVirtualKeyboard(lastApplied, { width, height })) {
+                return;
+            }
+            lastApplied = { width, height };
             root.style.setProperty("--ios-safari-vw", `${width}px`);
             root.style.setProperty("--ios-safari-vh", `${height}px`);
             root.style.setProperty("--ios-safari-landscape-w", `${Math.max(width, height)}px`);
@@ -92,6 +101,8 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
         window.addEventListener("orientationchange", scheduleApply);
         window.addEventListener("pageshow", scheduleApply);
         document.addEventListener("visibilitychange", scheduleApply);
+        // Re-evaluate when focus leaves an editable element (keyboard closing).
+        document.addEventListener("focusout", scheduleApply);
         window.addEventListener("touchstart", tryLockLandscape, { passive: true });
         window.addEventListener("click", tryLockLandscape);
 
@@ -104,6 +115,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
             window.removeEventListener("orientationchange", scheduleApply);
             window.removeEventListener("pageshow", scheduleApply);
             document.removeEventListener("visibilitychange", scheduleApply);
+            document.removeEventListener("focusout", scheduleApply);
             window.removeEventListener("touchstart", tryLockLandscape);
             window.removeEventListener("click", tryLockLandscape);
             viewport?.removeEventListener("resize", scheduleApply);
