@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import { shouldFreezeViewportForVirtualKeyboard } from "../util/DeviceUtil";
+
 function readViewportCssSize(): { width: number; height: number } {
     if (typeof window === "undefined") {
         return { width: 0, height: 0 };
@@ -27,9 +29,17 @@ export function useViewportCssVars(): void {
 
         const root = document.documentElement;
         let rafId: number | undefined;
+        let lastApplied: { width: number; height: number } | undefined;
 
         const applyViewportMetrics = () => {
             const { width, height } = readViewportCssSize();
+            // Keep the app at its pre-keyboard size while the on-screen keyboard is open;
+            // otherwise the whole layout (and the canvas-rendered login panel) collapses
+            // into the sliver of viewport left above the keyboard.
+            if (shouldFreezeViewportForVirtualKeyboard(lastApplied, { width, height })) {
+                return;
+            }
+            lastApplied = { width, height };
             root.style.setProperty("--app-vw", `${width}px`);
             root.style.setProperty("--app-vh", `${height}px`);
         };
@@ -50,6 +60,8 @@ export function useViewportCssVars(): void {
         window.addEventListener("orientationchange", scheduleApply);
         window.addEventListener("pageshow", scheduleApply);
         document.addEventListener("visibilitychange", scheduleApply);
+        // Re-evaluate when focus leaves an editable element (keyboard closing).
+        document.addEventListener("focusout", scheduleApply);
 
         const viewport = window.visualViewport;
         viewport?.addEventListener("resize", scheduleApply);
@@ -60,6 +72,7 @@ export function useViewportCssVars(): void {
             window.removeEventListener("orientationchange", scheduleApply);
             window.removeEventListener("pageshow", scheduleApply);
             document.removeEventListener("visibilitychange", scheduleApply);
+            document.removeEventListener("focusout", scheduleApply);
             viewport?.removeEventListener("resize", scheduleApply);
             viewport?.removeEventListener("scroll", scheduleApply);
             if (rafId !== undefined) {

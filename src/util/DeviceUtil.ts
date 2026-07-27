@@ -82,6 +82,35 @@ function getForcedLandscapeViewportSize():
     };
 }
 
+/** True when the focused element can summon an on-screen keyboard (input/textarea/etc). */
+export function isEditableElementFocused(): boolean {
+    if (typeof document === "undefined") return false;
+    const el = document.activeElement as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    return (
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable === true
+    );
+}
+
+/**
+ * Decide whether a new viewport measurement should be ignored because it only reflects
+ * the on-screen keyboard shrinking the visual viewport (iOS/Android). Resizing the app
+ * to the keyboard-shrunk viewport collapses the whole layout (the login panel becomes
+ * unreadably small and forced-landscape mode can even un-rotate), so viewport-derived
+ * CSS variables are frozen at their pre-keyboard values while an editable element is
+ * focused. Rotations/real resizes change the width and are applied normally.
+ */
+export function shouldFreezeViewportForVirtualKeyboard(
+    prev: { width: number; height: number } | undefined,
+    next: { width: number; height: number },
+): boolean {
+    if (!prev || prev.width <= 0 || prev.height <= 0) return false;
+    if (!isEditableElementFocused()) return false;
+    const widthUnchanged = Math.abs(next.width - prev.width) <= 40;
+    return widthUnchanged && next.height < prev.height - 30;
+}
+
 // Actual touch device detection - osm_simulate varbit (6352) can override this for testing
 export const isTouchDevice = !!(touchPoints || (!!docElement && "ontouchstart" in docElement));
 
