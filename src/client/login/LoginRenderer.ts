@@ -252,6 +252,12 @@ export class LoginRenderer {
     /** Active login field while mobile keyboard framing is active */
     private mobileKeyboardFocusField: number = 0;
 
+    /** Draw-surface ratio (0..1) where the focused login field is placed horizontally */
+    private mobileKeyboardFocusTargetX: number = 0.5;
+
+    /** Draw-surface ratio (0..1) where the focused login field is placed vertically */
+    private mobileKeyboardFocusTargetY: number = 0.46;
+
     /** Computed login box X */
     loginBoxX: number = 202;
 
@@ -572,19 +578,29 @@ export class LoginRenderer {
         }`;
     }
 
-    syncMobileViewportState(state: LoginState, keyboardFocused: boolean = false): void {
+    syncMobileViewportState(
+        state: LoginState,
+        keyboardFocused: boolean = false,
+        focusTarget?: { x: number; y: number },
+    ): void {
         this.mobileKeyboardFocusActive =
             state.loginIndex === LoginIndex.LOGIN_FORM &&
             state.onMobile &&
             state.virtualKeyboardVisible &&
             keyboardFocused;
         this.mobileKeyboardFocusField = state.currentLoginField === 1 ? 1 : 0;
+        this.mobileKeyboardFocusTargetX =
+            focusTarget && Number.isFinite(focusTarget.x) ? focusTarget.x : 0.5;
+        this.mobileKeyboardFocusTargetY =
+            focusTarget && Number.isFinite(focusTarget.y) ? focusTarget.y : 0.46;
     }
 
     getViewportTransformStateHash(): string {
         return `${this.mobileKeyboardFocusActive ? 1 : 0}|${this.mobileKeyboardFocusField}|${
-            this.renderScale
-        }|${this.renderOffsetX}|${this.renderOffsetY}`;
+            this.mobileKeyboardFocusTargetX
+        }|${this.mobileKeyboardFocusTargetY}|${this.renderScale}|${this.renderOffsetX}|${
+            this.renderOffsetY
+        }`;
     }
 
     private clampFocusedOffset(
@@ -630,14 +646,14 @@ export class LoginRenderer {
         const renderScale = focusedScale * safeSurfaceScale;
         const scaledSceneWidth = viewportWidth * renderScale;
         const scaledSceneHeight = viewportHeight * renderScale;
-        const focusX =
-            this.contentOriginX + this.LOGIN_BOX_CENTER * this.contentScale;
+        const focusX = this.contentOriginX + this.LOGIN_BOX_CENTER * this.contentScale;
         const focusY =
             this.contentOriginY +
-            (this.TITLEBOX_Y + (this.mobileKeyboardFocusField === 1 ? 86 : 71)) *
-                this.contentScale;
-        const targetFocusX = drawSurfaceWidth / 2;
-        const targetFocusY = drawSurfaceHeight * 0.46;
+            (this.TITLEBOX_Y + (this.mobileKeyboardFocusField === 1 ? 86 : 71)) * this.contentScale;
+        // The target ratios are keyboard-aware: WebGLOsrsRenderer biases them into the
+        // part of the (pre-keyboard-sized, frozen) surface the keyboard leaves visible.
+        const targetFocusX = drawSurfaceWidth * this.mobileKeyboardFocusTargetX;
+        const targetFocusY = drawSurfaceHeight * this.mobileKeyboardFocusTargetY;
         const renderOffsetX = this.clampFocusedOffset(
             targetFocusX - focusX * renderScale,
             scaledSceneWidth,
@@ -835,10 +851,7 @@ export class LoginRenderer {
         const mutePos = this.getTitleMuteDrawPosition();
         // Keep the original 50x50 hit area, anchored to the actual draw position.
         return (
-            x >= mutePos.x - 10 &&
-            y >= mutePos.y - 10 &&
-            x < mutePos.x + 40 &&
-            y < mutePos.y + 40
+            x >= mutePos.x - 10 && y >= mutePos.y - 10 && x < mutePos.x + 40 && y < mutePos.y + 40
         );
     }
 
@@ -991,19 +1004,12 @@ export class LoginRenderer {
         const padBottom = this.BOTTOM_CONTROLS_RESERVE;
         const availableW = Math.max(1, layoutWidth - padX * 2);
         const availableH = Math.max(1, layoutHeight - padTop - padBottom);
-        const sceneFit = Math.min(
-            1,
-            availableW / this.SCENE_WIDTH,
-            availableH / this.SCENE_HEIGHT,
-        );
-        let contentScale =
-            Number.isFinite(sceneFit) && sceneFit > 0 ? sceneFit : 1;
+        const sceneFit = Math.min(1, availableW / this.SCENE_WIDTH, availableH / this.SCENE_HEIGHT);
+        let contentScale = Number.isFinite(sceneFit) && sceneFit > 0 ? sceneFit : 1;
 
         if (isMobileMode) {
-            const titleboxW =
-                this.titleboxSprite?.subWidth || this.TITLEBOX_FALLBACK_WIDTH;
-            const titleboxH =
-                this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+            const titleboxW = this.titleboxSprite?.subWidth || this.TITLEBOX_FALLBACK_WIDTH;
+            const titleboxH = this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
             // Aim for the panel to use most of the short axis without covering
             // bottom server/mute controls. Side margins of the classic 765 band
             // may clip — that is empty art space around the centered box.
@@ -1022,21 +1028,17 @@ export class LoginRenderer {
         const scaledH = this.SCENE_HEIGHT * this.contentScale;
         this.contentOriginX = Math.floor((layoutWidth - scaledW) / 2);
 
-        const titleboxH =
-            this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+        const titleboxH = this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
         const titleboxMid = this.TITLEBOX_Y + titleboxH / 2;
 
         if (isMobileMode) {
             // Center the titlebox on the full viewport (not the band above the
             // bottom-control reserve). That reserve only clamps so the panel
             // doesn't cover server/mute — it must not bias the panel upward.
-            const preferredOriginY =
-                layoutHeight / 2 - titleboxMid * this.contentScale;
+            const preferredOriginY = layoutHeight / 2 - titleboxMid * this.contentScale;
             const minOriginY = padTop - this.TITLEBOX_Y * this.contentScale;
             const maxOriginY =
-                layoutHeight -
-                padBottom -
-                (this.TITLEBOX_Y + titleboxH) * this.contentScale;
+                layoutHeight - padBottom - (this.TITLEBOX_Y + titleboxH) * this.contentScale;
             this.contentOriginY = Math.floor(
                 maxOriginY < minOriginY
                     ? (minOriginY + maxOriginY) / 2
@@ -1045,8 +1047,7 @@ export class LoginRenderer {
         } else {
             // Desktop: center titlebox within the content band above bottom controls.
             const availableMidY = padTop + availableH / 2;
-            const preferredOriginY =
-                availableMidY - titleboxMid * this.contentScale;
+            const preferredOriginY = availableMidY - titleboxMid * this.contentScale;
             const minOriginY = padTop;
             const maxOriginY = padTop + availableH - scaledH;
             this.contentOriginY = Math.floor(
@@ -2098,13 +2099,7 @@ export class LoginRenderer {
         if (!this.titleBackgroundImage) return;
 
         const bg = this.getTitleBackgroundLayout();
-        ctx.drawImage(
-            this.titleBackgroundImage,
-            bg.drawX,
-            bg.drawY,
-            bg.drawW,
-            bg.drawH,
-        );
+        ctx.drawImage(this.titleBackgroundImage, bg.drawX, bg.drawY, bg.drawW, bg.drawH);
     }
 
     private drawLoadingBarToCtx(ctx: RenderContext, state: LoginState): void {
@@ -2308,12 +2303,7 @@ export class LoginRenderer {
             0xffff00,
             true,
         );
-        this.drawButton(
-            ctx,
-            layout.centerX - layout.buttonSpacing,
-            layout.buttonY,
-            "New User",
-        );
+        this.drawButton(ctx, layout.centerX - layout.buttonSpacing, layout.buttonY, "New User");
         this.drawButton(
             ctx,
             layout.centerX + layout.buttonSpacing,

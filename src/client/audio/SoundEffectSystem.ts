@@ -1,7 +1,13 @@
 import { SoundEffectLoader } from "../../rs/audio/SoundEffectLoader";
 import type { RawSoundData } from "../../rs/audio/legacy/SoundEffect";
 import type { SeqSoundEffect } from "../../rs/config/seqtype/SeqType";
-import { addAudioContextResumeListeners, getAudioContextConstructor } from "./audioContext";
+import {
+    addAudioContextResumeListeners,
+    getAudioContextConstructor,
+    registerManagedAudioContext,
+    resumeAudioContextIfNeeded,
+    unregisterManagedAudioContext,
+} from "./audioContext";
 import { resampleToSampleRate, smoothLowPass } from "./resample";
 
 type DecodedSound = {
@@ -172,10 +178,8 @@ export class SoundEffectSystem {
     private ensureContext(): AudioContext | undefined {
         if (typeof window === "undefined") return undefined;
         if (this.context) {
-            // Resume suspended context on subsequent calls (after user gesture)
-            if (this.context.state === "suspended") {
-                this.context.resume().catch(() => {});
-            }
+            // Resume suspended/interrupted context on subsequent calls (after user gesture)
+            resumeAudioContextIfNeeded(this.context);
             return this.context;
         }
         const AudioCtx = getAudioContextConstructor();
@@ -187,17 +191,20 @@ export class SoundEffectSystem {
         gain.connect(ctx.destination);
         this.context = ctx;
         this.gainNode = gain;
+        // Suspend/resume this context with page visibility so sound effects don't keep
+        // playing after the tab is hidden or closed (notably on iOS WebKit).
+        registerManagedAudioContext(ctx);
         // Separate gain node for ambient/area sounds
         const ambientGain = ctx.createGain();
         ambientGain.gain.value = this.ambientVolume;
         ambientGain.connect(ctx.destination);
         this.ambientGainNode = ambientGain;
 
-        // Auto-resume on user interaction (required by browser autoplay policy)
+        // Auto-resume on user interaction (required by browser autoplay policy).
+        // Listeners stay armed for the lifetime of the context because iOS re-locks
+        // audio after app switches; they are removed in dispose().
         if (!this.contextResumeCleanup) {
-            this.contextResumeCleanup = addAudioContextResumeListeners(ctx, () => {
-                this.contextResumeCleanup = null;
-            });
+            this.contextResumeCleanup = addAudioContextResumeListeners(ctx);
         }
 
         return ctx;
@@ -358,9 +365,7 @@ export class SoundEffectSystem {
         const ctx = this.ensureContext();
         if (!ctx || !this.loader.available()) return;
 
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
-        }
+        resumeAudioContextIfNeeded(ctx);
 
         const decoded = this.decode(soundId);
         if (!decoded) return;
@@ -570,9 +575,7 @@ export class SoundEffectSystem {
         const ctx = this.ensureContext();
         if (!ctx || !this.loader.available()) return;
 
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
-        }
+        resumeAudioContextIfNeeded(ctx);
 
         const now = ctx.currentTime;
         const dt =
@@ -1183,6 +1186,7 @@ export class SoundEffectSystem {
             this.ambientGainNode = undefined;
         }
         if (this.context) {
+            unregisterManagedAudioContext(this.context);
             this.context.close().catch(() => {});
             this.context = undefined;
         }
