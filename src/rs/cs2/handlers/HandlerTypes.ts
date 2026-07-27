@@ -438,6 +438,11 @@ export interface HandlerContext {
         wasKeyPressed?: (keyCode: number) => boolean;
     };
 
+    /** Show the device soft-keyboard for chat / text entry (mobile_keyboardshow). */
+    showMobileKeyboard?: (hint: string, keyboardType: number) => void;
+    /** Hide the device soft-keyboard (mobile_keyboardhide). */
+    hideMobileKeyboard?: () => void;
+
     // Callback when a sub-interface is opened (for triggering initial onVarTransmit)
     onSubInterfaceOpened?: (groupId: number) => void;
 

@@ -285,6 +285,11 @@ export interface Cs2Context {
         wasKeyPressed: (osrsKeyCode: number) => boolean;
     };
 
+    /** Show the device soft-keyboard for chat / text entry (mobile_keyboardshow). */
+    showMobileKeyboard?: (hint: string, keyboardType: number) => void;
+    /** Hide the device soft-keyboard (mobile_keyboardhide). */
+    hideMobileKeyboard?: () => void;
+
     // Audio playback (for SOUND_SONG, SOUND_JINGLE, SOUND_SYNTH opcodes)
     // SOUND_SONG takes 5 params (trackId, outDelay, outDur, inDelay, inDur)
     playSong?: (
@@ -1092,6 +1097,8 @@ export class Cs2Vm {
 
             // Input manager for keyboard state queries (KEYHELD, KEYPRESSED)
             inputManager: vm.context.inputManager,
+            showMobileKeyboard: vm.context.showMobileKeyboard,
+            hideMobileKeyboard: vm.context.hideMobileKeyboard,
 
             // Audio playback
             playSong: vm.context.playSong,

@@ -469,6 +469,43 @@ export class InputManager {
         this.keyEvents.length = 0;
     }
 
+    /**
+     * Inject a typed character for widget onKey handlers (mobile soft-keyboard bridge).
+     * Mirrors the keyTyped=-1 / keyPressed=charCode path used by real keydown events.
+     */
+    enqueueTypedChar(charCode: number, code: string = "Unidentified"): void {
+        const ch = charCode | 0;
+        if (ch < 32) return;
+        this.keyEvents.push({
+            keyTyped: -1,
+            keyPressed: ch,
+            code,
+        });
+        this.charQueue[this.writeIndex] = ch;
+        this.writeIndex = (this.writeIndex + 1) & 0x7f;
+        this.idleTime = 0;
+        this.lastInputTimeMs = this.nowMs();
+    }
+
+    /**
+     * Inject an OSRS internal key press (Enter/Backspace/Escape/etc) for onKey handlers.
+     * One-shot pulse — does not leave the key in a held state.
+     */
+    enqueueOsrsKeyPress(osrsKeyCode: number, code: string = "Unidentified"): void {
+        const key = osrsKeyCode | 0;
+        if (key < 0) return;
+        this.keyEvents.push({
+            keyTyped: key,
+            keyPressed: 0,
+            code,
+        });
+        if (key >= 0 && key < this.osrsKeyState.length) {
+            this.osrsKeyPressedThisFrame.add(key);
+        }
+        this.idleTime = 0;
+        this.lastInputTimeMs = this.nowMs();
+    }
+
     /** Read next character from queue (OSRS: readChar) */
     readChar(): number {
         if (this.writeIndex === this.readIndex) return -1;
