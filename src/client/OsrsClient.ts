@@ -6509,6 +6509,119 @@ export class OsrsClient {
         this.minimapZoom = Math.max(2, Math.min(8, this.minimapZoom + -wheelStep * 0.25));
     }
 
+    /** OSRS key code / DOM char for spacebar (see InputManager OSRS_KEY_MAP). */
+    private static readonly OSRS_KEY_SPACE = 83;
+    private static readonly DOM_CHAR_SPACE = 32;
+
+    private isSpaceKeyEvent(keyEvent: {
+        keyTyped: number;
+        keyPressed: number;
+        code?: string;
+    }): boolean {
+        return (
+            keyEvent.code === "Space" ||
+            (keyEvent.keyTyped | 0) === OsrsClient.OSRS_KEY_SPACE ||
+            (keyEvent.keyPressed | 0) === OsrsClient.DOM_CHAR_SPACE
+        );
+    }
+
+    /**
+     * True for "Click here to continue" / Continue pause-button widgets.
+     * Intentionally text/buttonType based — flag bit 0 alone is also set on dialog options.
+     */
+    private isClickToContinueWidget(widget: any): boolean {
+        if (!widget) return false;
+        if (((widget.buttonType | 0) as number) === 6) return true;
+
+        const buttonText = String(widget.buttonText || "")
+            .replace(/<[^>]+>/g, "")
+            .toLowerCase()
+            .trim();
+        if (buttonText === "continue") return true;
+
+        const widgetText = String(widget.text || "")
+            .replace(/<[^>]+>/g, "")
+            .toLowerCase();
+        return widgetText.includes("click") && widgetText.includes("continue");
+    }
+
+    private findActiveClickToContinueWidget(): any | null {
+        const wm = this.widgetManager;
+        if (!wm) return null;
+
+        for (const [containerUid, parent] of wm.interfaceParents) {
+            if (!parent) continue;
+            if (wm.isEffectivelyHidden(containerUid)) continue;
+
+            for (const w of wm.getWidgetsForGroup(parent.group)) {
+                if (!w) continue;
+                const uid = (typeof w.uid === "number" ? w.uid : 0) | 0;
+                if (uid !== 0 && wm.isEffectivelyHidden(uid)) continue;
+                if (!this.isClickToContinueWidget(w)) continue;
+                // Skip the widget already waiting on a prior continue click.
+                if (wm.meslayerContinueWidget === w) continue;
+                return w;
+            }
+        }
+        return null;
+    }
+
+    /** Send RESUME_PAUSEBUTTON for a continue widget. Returns true if a packet was queued. */
+    private resumePauseButtonFromWidget(widget: any): boolean {
+        if (!widget) return false;
+        if (!(this.widgetManager?.canSendResumePauseButton(widget) ?? true)) {
+            return false;
+        }
+
+        const widgetUid =
+            (typeof (widget as any).id === "number" ? (widget as any).id : (widget.uid ?? 0)) | 0;
+        const childIndex =
+            (typeof widget.childIndex === "number" && (widget.childIndex | 0) >= 0
+                ? widget.childIndex | 0
+                : typeof widget.fileId === "number" && widget.fileId >= 0
+                  ? widget.fileId | 0
+                  : widgetUid & 0xffff) | 0;
+
+        const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
+        pkt.packetBuffer.writeShortAddLE(childIndex);
+        pkt.packetBuffer.writeInt(widgetUid);
+        queuePacket(pkt);
+
+        if (this.widgetManager) {
+            this.widgetManager.meslayerContinueWidget = widget;
+            this.widgetManager.invalidateWidgetRender(widget);
+        }
+        return true;
+    }
+
+    /**
+     * Spacebar selects "Click here to continue" (OSRS parity).
+     * Does not activate dialog option buttons — those use number keys.
+     */
+    private trySpacebarContinueDialog(
+        keyEvents: Array<{ keyTyped: number; keyPressed: number; code?: string }>,
+    ): boolean {
+        let sawSpace = false;
+        for (const keyEvent of keyEvents) {
+            if (this.isSpaceKeyEvent(keyEvent)) {
+                sawSpace = true;
+                break;
+            }
+        }
+        if (!sawSpace) return false;
+
+        const widget = this.findActiveClickToContinueWidget();
+        if (!widget) return false;
+
+        const sent = this.resumePauseButtonFromWidget(widget);
+        if (sent) {
+            console.log(
+                `[OsrsClient] Pause button via spacebar: widget=${(widget.uid ?? 0) | 0}`,
+            );
+        }
+        return sent;
+    }
+
     /** "Press enter to type" chat gating is desktop-only; touch devices keep tap-to-type. */
     private isEnterToTypeChatEnabled(): boolean {
         return !isMobileMode && this.isLoggedIn();
@@ -8102,6 +8215,7 @@ export class OsrsClient {
             if (
                 !dialogActive &&
                 !this.chatTypingActive &&
+                !this.chatTypingUnlocked &&
                 !this.mobileChatKeyboardOpen &&
                 this.trySpacebarContinueDialog(input.keyEvents)
             ) {
