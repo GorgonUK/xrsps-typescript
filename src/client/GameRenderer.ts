@@ -182,25 +182,29 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
             cameraSpeedMult = 0.1;
         }
 
-        // Arrow-key rotation speed tuned to OSRS pacing (~4s per revolution)
+        // Arrow/WASD rotation speed tuned to OSRS pacing (~4s per revolution).
+        // While chat typing is active, leave these keys for the chatbox.
+        const chatTyping = this.osrsClient.isChatTypingActive();
         const deltaPitch = 64 * 8 * deltaTimeSec; // ~90°/s
         const deltaYaw = 512 * deltaTimeSec; // 2048 units / 4s
 
-        if (inputManager.isKeyDown("ArrowUp")) {
-            // Up tilts camera downward (increase positive pitch)
-            camera.updatePitch(camera.pitch, deltaPitch);
-        }
-        if (inputManager.isKeyDown("ArrowDown")) {
-            // Down tilts camera upward (decrease positive pitch)
-            camera.updatePitch(camera.pitch, -deltaPitch);
-        }
-        if (inputManager.isKeyDown("ArrowRight")) {
-            // Right rotates view to the right (negative yaw delta due to RS yaw basis)
-            camera.updateYaw(camera.yaw, -deltaYaw);
-        }
-        if (inputManager.isKeyDown("ArrowLeft")) {
-            // Left rotates view to the left
-            camera.updateYaw(camera.yaw, deltaYaw);
+        if (!chatTyping) {
+            if (inputManager.isKeyDown("ArrowUp") || inputManager.isKeyDown("KeyW")) {
+                // Up / W tilts camera downward (increase positive pitch)
+                camera.updatePitch(camera.pitch, deltaPitch);
+            }
+            if (inputManager.isKeyDown("ArrowDown") || inputManager.isKeyDown("KeyS")) {
+                // Down / S tilts camera upward (decrease positive pitch)
+                camera.updatePitch(camera.pitch, -deltaPitch);
+            }
+            if (inputManager.isKeyDown("ArrowRight") || inputManager.isKeyDown("KeyD")) {
+                // Right / D rotates view to the right (negative yaw delta due to RS yaw basis)
+                camera.updateYaw(camera.yaw, -deltaYaw);
+            }
+            if (inputManager.isKeyDown("ArrowLeft") || inputManager.isKeyDown("KeyA")) {
+                // Left / A rotates view to the left
+                camera.updateYaw(camera.yaw, deltaYaw);
+            }
         }
 
         // RuneLite-style WASD camera: while chat typing is locked ("press enter to
@@ -224,28 +228,10 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
         // camera position controls
         let deltaX = 0;
         let deltaY = 0;
-        let deltaZ = 0;
 
-        const deltaPos = 16 * (this.osrsClient.cameraSpeed * cameraSpeedMult) * deltaTimeSec;
         const deltaHeight = 8 * (this.osrsClient.cameraSpeed * cameraSpeedMult) * deltaTimeSec;
 
         if (!this.osrsClient.followPlayerCamera) {
-            if (inputManager.isKeyDown("KeyW")) {
-                // Forward
-                deltaZ -= deltaPos;
-            }
-            if (inputManager.isKeyDown("KeyA")) {
-                // Left
-                deltaX += deltaPos;
-            }
-            if (inputManager.isKeyDown("KeyS")) {
-                // Back
-                deltaZ += deltaPos;
-            }
-            if (inputManager.isKeyDown("KeyD")) {
-                // Right
-                deltaX -= deltaPos;
-            }
             if (inputManager.isKeyDown("KeyE") || inputManager.isKeyDown("KeyR")) {
                 // Move up
                 deltaY -= deltaHeight;
@@ -261,9 +247,6 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
         }
 
         if (!this.osrsClient.followPlayerCamera) {
-            if (deltaX !== 0 || deltaZ !== 0) {
-                camera.move(deltaX, 0, deltaZ);
-            }
             if (deltaY !== 0) {
                 camera.move(0, deltaY, 0);
             }

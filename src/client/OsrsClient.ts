@@ -623,6 +623,27 @@ export class OsrsClient {
      */
     mouseCamEnabled: boolean = true;
 
+    /** Soft-keyboard bridge for mobile chat (CS2 mobile_keyboardshow). */
+    private mobileChatInput?: HTMLInputElement;
+    private mobileChatLastValue: string = "";
+    private mobileChatKeyboardOpen: boolean = false;
+    private mobileChatRefocusArmed: boolean = false;
+
+    /**
+     * PC Enter-to-chat gate (RuneLite-style). When false, typed letters are not
+     * dispatched to chatbox onKey so WASD/camera keys cannot append into varc 335.
+     */
+    private chatTypingActive: boolean = false;
+    /** True when Enter was consumed this frame to open/close typing (do not forward to CS2). */
+    private chatGateConsumedEnter: boolean = false;
+    private static readonly CHAT_INPUT_PROMPT = "Click enter to chat";
+    /** Chatbox input label widget (interface 162 component 57). */
+    private static readonly CHAT_INPUT_LABEL_UID = (162 << 16) | 57;
+    /** Mobile side-panel keyboard button (interface 601 component 48). */
+    private static readonly MOBILE_KEYBOARD_BUTTON_UID = (601 << 16) | 48;
+    /** Chatbox open-input toggle varc (script 2251). */
+    private static readonly CHAT_INPUT_OPEN_VARC = 1226;
+
     /**
      * Render local player model in the 3D scene (set by RENDERSELF opcode).
      * Default true per OSRS reference.
@@ -1951,6 +1972,17 @@ export class OsrsClient {
                 }
             },
         });
+
+        this.cs2Vm.context.showMobileKeyboard = (hint, keyboardType) => {
+            self.showMobileChatKeyboard(hint, keyboardType);
+        };
+        this.cs2Vm.context.hideMobileKeyboard = () => {
+            self.hideMobileChatKeyboard();
+        };
+        // Open soft keyboard inside the touchstart gesture (iOS requires user activation).
+        this.inputManager.onCanvasTouchStart = (x, y) => {
+            self.tryEagerMobileKeyboardOpen(x, y);
+        };
 
         // Wire up the deferred callbacks - triggers queued var changes after script execution
         this.cs2Vm.onVarpChange = (varpId) => {
@@ -4966,30 +4998,11 @@ export class OsrsClient {
             const isPauseButtonWidget = isContinueButtonText || hasClickToContinue;
 
             if (isPauseButtonWidget) {
-                // Only send if not already waiting for response
-                if (this.widgetManager?.canSendResumePauseButton(event.widget) ?? true) {
-                    const widgetUid =
-                        (typeof (event.widget as any).id === "number"
-                            ? (event.widget as any).id
-                            : (event.widget.uid ?? 0)) | 0;
-                    const childIndex =
-                        (typeof event.widget.childIndex === "number" &&
-                        (event.widget.childIndex | 0) >= 0
-                            ? event.widget.childIndex | 0
-                            : typeof event.widget.fileId === "number" && event.widget.fileId >= 0
-                              ? event.widget.fileId | 0
-                              : widgetUid & 0xffff) | 0;
-                    const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
-                    pkt.packetBuffer.writeShortAddLE(childIndex);
-                    pkt.packetBuffer.writeInt(widgetUid);
-                    queuePacket(pkt);
-                    // Set meslayerContinueWidget to show "Please wait..."
-                    if (this.widgetManager) {
-                        this.widgetManager.meslayerContinueWidget = event.widget;
-                        this.widgetManager.invalidateWidgetRender(event.widget);
-                    }
+                if (this.resumePauseButtonFromWidget(event.widget)) {
                     console.log(
-                        `[OsrsClient] Pause button clicked: widget=${widgetUid}, childIndex=${childIndex}, buttonText=${isContinueButtonText}, textMatch=${hasClickToContinue}`,
+                        `[OsrsClient] Pause button clicked: widget=${
+                            (event.widget.uid ?? 0) | 0
+                        }, buttonText=${isContinueButtonText}, textMatch=${hasClickToContinue}`,
                     );
                 }
                 return; // Pause button widgets don't process other actions
@@ -6496,6 +6509,119 @@ export class OsrsClient {
         this.minimapZoom = Math.max(2, Math.min(8, this.minimapZoom + -wheelStep * 0.25));
     }
 
+    /** OSRS key code / DOM char for spacebar (see InputManager OSRS_KEY_MAP). */
+    private static readonly OSRS_KEY_SPACE = 83;
+    private static readonly DOM_CHAR_SPACE = 32;
+
+    private isSpaceKeyEvent(keyEvent: {
+        keyTyped: number;
+        keyPressed: number;
+        code?: string;
+    }): boolean {
+        return (
+            keyEvent.code === "Space" ||
+            (keyEvent.keyTyped | 0) === OsrsClient.OSRS_KEY_SPACE ||
+            (keyEvent.keyPressed | 0) === OsrsClient.DOM_CHAR_SPACE
+        );
+    }
+
+    /**
+     * True for "Click here to continue" / Continue pause-button widgets.
+     * Intentionally text/buttonType based — flag bit 0 alone is also set on dialog options.
+     */
+    private isClickToContinueWidget(widget: any): boolean {
+        if (!widget) return false;
+        if (((widget.buttonType | 0) as number) === 6) return true;
+
+        const buttonText = String(widget.buttonText || "")
+            .replace(/<[^>]+>/g, "")
+            .toLowerCase()
+            .trim();
+        if (buttonText === "continue") return true;
+
+        const widgetText = String(widget.text || "")
+            .replace(/<[^>]+>/g, "")
+            .toLowerCase();
+        return widgetText.includes("click") && widgetText.includes("continue");
+    }
+
+    private findActiveClickToContinueWidget(): any | null {
+        const wm = this.widgetManager;
+        if (!wm) return null;
+
+        for (const [containerUid, parent] of wm.interfaceParents) {
+            if (!parent) continue;
+            if (wm.isEffectivelyHidden(containerUid)) continue;
+
+            for (const w of wm.getWidgetsForGroup(parent.group)) {
+                if (!w) continue;
+                const uid = (typeof w.uid === "number" ? w.uid : 0) | 0;
+                if (uid !== 0 && wm.isEffectivelyHidden(uid)) continue;
+                if (!this.isClickToContinueWidget(w)) continue;
+                // Skip the widget already waiting on a prior continue click.
+                if (wm.meslayerContinueWidget === w) continue;
+                return w;
+            }
+        }
+        return null;
+    }
+
+    /** Send RESUME_PAUSEBUTTON for a continue widget. Returns true if a packet was queued. */
+    private resumePauseButtonFromWidget(widget: any): boolean {
+        if (!widget) return false;
+        if (!(this.widgetManager?.canSendResumePauseButton(widget) ?? true)) {
+            return false;
+        }
+
+        const widgetUid =
+            (typeof (widget as any).id === "number" ? (widget as any).id : (widget.uid ?? 0)) | 0;
+        const childIndex =
+            (typeof widget.childIndex === "number" && (widget.childIndex | 0) >= 0
+                ? widget.childIndex | 0
+                : typeof widget.fileId === "number" && widget.fileId >= 0
+                  ? widget.fileId | 0
+                  : widgetUid & 0xffff) | 0;
+
+        const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
+        pkt.packetBuffer.writeShortAddLE(childIndex);
+        pkt.packetBuffer.writeInt(widgetUid);
+        queuePacket(pkt);
+
+        if (this.widgetManager) {
+            this.widgetManager.meslayerContinueWidget = widget;
+            this.widgetManager.invalidateWidgetRender(widget);
+        }
+        return true;
+    }
+
+    /**
+     * Spacebar selects "Click here to continue" (OSRS parity).
+     * Does not activate dialog option buttons — those use number keys.
+     */
+    private trySpacebarContinueDialog(
+        keyEvents: Array<{ keyTyped: number; keyPressed: number; code?: string }>,
+    ): boolean {
+        let sawSpace = false;
+        for (const keyEvent of keyEvents) {
+            if (this.isSpaceKeyEvent(keyEvent)) {
+                sawSpace = true;
+                break;
+            }
+        }
+        if (!sawSpace) return false;
+
+        const widget = this.findActiveClickToContinueWidget();
+        if (!widget) return false;
+
+        const sent = this.resumePauseButtonFromWidget(widget);
+        if (sent) {
+            console.log(
+                `[OsrsClient] Pause button via spacebar: widget=${(widget.uid ?? 0) | 0}`,
+            );
+        }
+        return sent;
+    }
+
     /** "Press enter to type" chat gating is desktop-only; touch devices keep tap-to-type. */
     private isEnterToTypeChatEnabled(): boolean {
         return !isMobileMode && this.isLoggedIn();
@@ -7398,29 +7524,7 @@ export class OsrsClient {
                         // generic widget action dispatch.
                         // Pause button widgets send RESUME_PAUSEBUTTON - menu shows "Continue" with empty target
                         if (isPauseButtonWidget) {
-                            // Only send if not already waiting for response
-                            if (this.widgetManager?.canSendResumePauseButton(w) ?? true) {
-                                const widgetUid =
-                                    (typeof (w as any).id === "number"
-                                        ? (w as any).id
-                                        : (w.uid ?? 0)) | 0;
-                                const childIndex =
-                                    (typeof w.childIndex === "number" && (w.childIndex | 0) >= 0
-                                        ? w.childIndex | 0
-                                        : typeof w.fileId === "number" && w.fileId >= 0
-                                          ? w.fileId | 0
-                                          : widgetUid & 0xffff) | 0;
-                                // Send RESUME_PAUSEBUTTON packet to server
-                                const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
-                                pkt.packetBuffer.writeShortAddLE(childIndex);
-                                pkt.packetBuffer.writeInt(widgetUid);
-                                queuePacket(pkt);
-                                // Set meslayerContinueWidget to show "Please wait..."
-                                if (this.widgetManager) {
-                                    this.widgetManager.meslayerContinueWidget = w;
-                                    this.widgetManager.invalidateWidgetRender(w);
-                                }
-                            }
+                            this.resumePauseButtonFromWidget(w);
                             this.clickedWidgetHandled = true;
                             break;
                         }
@@ -8101,14 +8205,28 @@ export class OsrsClient {
         }
         // OSRS dispatches key events to all widgets with onKey handlers, not just mouse-hovered ones
         if (input.keyEvents.length > 0) {
-            // When inputDialogType > 0, keyboard input is captured for the dialog
-            // Type 0 = no dialog, Type 1 = default, Type 2 = interface-scoped, Type 3 = widget-scoped
-            const dialogActive = this.cs2Vm.inputDialogType > 0;
+            // Quantity/"Enter amount" dialogs are tracked via pendingInputDialogAction.
+            // Do NOT treat SETKEYINPUTMODE_KEYBOARD (inputDialogType=1) as that dialog —
+            // chat scripts historically may set it, and it must not steal public-chat keys.
+            const quantityDialogActive = !!this.pendingInputDialogAction;
+            const dialogActive = quantityDialogActive || this.cs2Vm.inputDialogType > 1;
+
+            // Spacebar = "Click here to continue" (before chat/widget key handlers steal the key)
+            if (
+                !dialogActive &&
+                !this.chatTypingActive &&
+                !this.chatTypingUnlocked &&
+                !this.mobileChatKeyboardOpen &&
+                this.trySpacebarContinueDialog(input.keyEvents)
+            ) {
+                return;
+            }
+
             const itemSpawnerSearchHandled =
                 !dialogActive && this.handleItemSpawnerSearchKeyEvents(input.keyEvents);
 
-            // Process keyboard input for active dialog before widget handlers
-            if (dialogActive) {
+            // Process keyboard input for active quantity dialog before widget handlers
+            if (quantityDialogActive) {
                 for (const keyEvent of input.keyEvents) {
                     // OSRS internal key codes: 84 = Enter, 85 = Backspace, 13 = Escape
                     const OSRS_KEY_ENTER = 84;
@@ -8188,6 +8306,13 @@ export class OsrsClient {
                 return;
             }
 
+            // PC Enter-to-chat gate: open/close typing before CS2 chat onKey (script 73).
+            // Without this, WASD camera keys always append into varc 335 via script 74.
+            // Mobile soft-keyboard has its own open state and must not be gated.
+            if (!quantityDialogActive && !this.mobileChatKeyboardOpen) {
+                this.handleChatTypingGate(input.keyEvents);
+            }
+
             // Collect ALL widgets with onKey handlers from all roots.
             // Note: some widget trees can reference the same widget via multiple traversal paths
             // (e.g., legacy IF1 `children` plus parentUid-indexed children), so de-duplicate by uid.
@@ -8226,6 +8351,12 @@ export class OsrsClient {
                 }
             }
 
+            const eventsForWidgets = this.filterKeyEventsForChatGate(input.keyEvents);
+            const draftBefore =
+                this.chatTypingActive && this.varManager
+                    ? (this.varManager.getVarcString(OsrsClient.CHAT_INPUT_VARC) ?? "")
+                    : "";
+
             // Process all key events for all widgets with onKey handlers
             for (const keyEvent of input.keyEvents) {
                 // Enter-to-type gate (desktop): Enter/Escape toggle chat typing mode and
@@ -8260,6 +8391,22 @@ export class OsrsClient {
                 ) {
                     this.setChatTypingUnlocked(false);
                 }
+            }
+
+            // After CS2 send (Enter clears varc 335), return to the prompt state.
+            if (this.chatTypingActive && this.varManager) {
+                const hadEnter = eventsForWidgets.some((e) => (e.keyTyped | 0) === 84);
+                if (hadEnter) {
+                    const draftAfter = this.varManager.getVarcString(OsrsClient.CHAT_INPUT_VARC) ?? "";
+                    if (draftBefore.trim().length > 0 && draftAfter.trim().length === 0) {
+                        this.setChatTypingActive(false);
+                    }
+                }
+            }
+
+            // Keep the idle prompt visible when CS2 rebuilds the chat input label.
+            if (!this.chatTypingActive && !this.mobileChatKeyboardOpen && !quantityDialogActive) {
+                this.applyChatInputPrompt();
             }
         }
     }
@@ -10504,6 +10651,11 @@ export class OsrsClient {
                 if (isMobileMode) {
                     this.loginState.onMobile = true;
                     this.loginState.virtualKeyboardVisible = true;
+                    // Ask the renderer to focus the login HTML input under this gesture.
+                    const renderer = this.renderer as {
+                        requestMobileLoginKeyboard?: (field: 0 | 1) => void;
+                    } | null;
+                    renderer?.requestMobileLoginKeyboard?.(action.field === 1 ? 1 : 0);
                 }
                 return undefined;
 
@@ -13048,6 +13200,337 @@ export class OsrsClient {
         }
     }
 
+    /** OSRS key codes used by the mobile soft-keyboard bridge. */
+    private static readonly OSRS_KEY_ENTER_CHAT = 84;
+    private static readonly OSRS_KEY_BACKSPACE_CHAT = 85;
+    private static readonly OSRS_KEY_ESCAPE_CHAT = 13;
+    private static readonly CHAT_INPUT_VARC = 335;
+
+    /** True while PC chatbox is accepting typed letters (after Enter). */
+    isChatTypingActive(): boolean {
+        return this.chatTypingActive;
+    }
+
+    /**
+     * Open/close PC chat typing. When closed, the chatbox shows the Enter prompt
+     * and letter keys are not dispatched to CS2 (so WASD can orbit the camera).
+     */
+    setChatTypingActive(active: boolean): void {
+        if (this.chatTypingActive === !!active) {
+            if (!active) this.applyChatInputPrompt();
+            return;
+        }
+        this.chatTypingActive = !!active;
+        try {
+            this.varManager?.setVarcString(OsrsClient.CHAT_INPUT_VARC, "");
+        } catch {}
+        if (this.chatTypingActive) {
+            try {
+                // Script 223 rebuilds the chat input label from varc 335 + prefixes.
+                this.cs2Vm?.runScriptEvent?.(createScriptEvent({ args: [223] }));
+            } catch {}
+        } else {
+            this.applyChatInputPrompt();
+        }
+    }
+
+    private applyChatInputPrompt(): void {
+        if (!this.widgetManager) return;
+        const widget = this.widgetManager.getWidgetByUid(OsrsClient.CHAT_INPUT_LABEL_UID);
+        if (!widget) return;
+        const prompt = OsrsClient.CHAT_INPUT_PROMPT;
+        if (widget.text === prompt) return;
+        widget.text = prompt;
+        markWidgetInteractionDirty(widget);
+        this.widgetManager.invalidateWidgetRender(widget);
+    }
+
+    /**
+     * Handle Enter/Escape for the PC Enter-to-chat gate.
+     * Returns true if a gate transition consumed a key this frame.
+     */
+    private handleChatTypingGate(
+        keyEvents: Array<{ keyTyped: number; keyPressed: number; code?: string }>,
+    ): boolean {
+        this.chatGateConsumedEnter = false;
+        let consumed = false;
+        for (const keyEvent of keyEvents) {
+            const typed = keyEvent.keyTyped | 0;
+            if (!this.chatTypingActive) {
+                if (typed === OsrsClient.OSRS_KEY_ENTER_CHAT) {
+                    this.setChatTypingActive(true);
+                    this.chatGateConsumedEnter = true;
+                    consumed = true;
+                }
+                continue;
+            }
+            if (typed === OsrsClient.OSRS_KEY_ESCAPE_CHAT) {
+                this.setChatTypingActive(false);
+                consumed = true;
+                continue;
+            }
+            if (typed === OsrsClient.OSRS_KEY_ENTER_CHAT) {
+                const draft = this.varManager?.getVarcString(OsrsClient.CHAT_INPUT_VARC) ?? "";
+                if (!draft.trim()) {
+                    // Empty Enter closes typing without sending.
+                    this.setChatTypingActive(false);
+                    this.chatGateConsumedEnter = true;
+                    consumed = true;
+                }
+            }
+        }
+        return consumed;
+    }
+
+    /**
+     * When chat typing is inactive, drop typed characters (and Enter/Escape/Backspace
+     * that the gate owns) so they never reach chatbox script 73/74.
+     */
+    private filterKeyEventsForChatGate(
+        keyEvents: Array<{ keyTyped: number; keyPressed: number; code?: string }>,
+    ): Array<{ keyTyped: number; keyPressed: number; code?: string }> {
+        // Soft-keyboard bridge injects typed chars while mobileChatKeyboardOpen.
+        if (this.mobileChatKeyboardOpen || this.chatTypingActive) {
+            const dropEnter = this.chatGateConsumedEnter;
+            this.chatGateConsumedEnter = false;
+            return keyEvents.filter((e) => {
+                const typed = e.keyTyped | 0;
+                if (dropEnter && typed === OsrsClient.OSRS_KEY_ENTER_CHAT) return false;
+                if (!this.mobileChatKeyboardOpen && typed === OsrsClient.OSRS_KEY_ESCAPE_CHAT) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        this.chatGateConsumedEnter = false;
+        return keyEvents.filter((e) => {
+            const typed = e.keyTyped | 0;
+            // Typed characters (WASD, letters, digits, etc.)
+            if (typed === -1) return false;
+            if (typed === OsrsClient.OSRS_KEY_ENTER_CHAT) return false;
+            if (typed === OsrsClient.OSRS_KEY_ESCAPE_CHAT) return false;
+            if (typed === OsrsClient.OSRS_KEY_BACKSPACE_CHAT) return false;
+            return true;
+        });
+    }
+
+    /**
+     * Open the device soft keyboard for chat (CS2 mobile_keyboardshow).
+     * Uses a hidden HTML input focused under the tap gesture when possible.
+     */
+    showMobileChatKeyboard(hint: string = "", keyboardType: number = 0): void {
+        if (typeof document === "undefined") return;
+        if (!isMobileMode && !isTouchDevice) return;
+
+        const input = this.ensureMobileChatInput();
+        if (!input) return;
+
+        input.placeholder = hint || "";
+        // keyboardType is opaque CS2 enum; treat 1 as numeric, everything else as text.
+        // Script 2251 passes 80 as the companion int (max length) via 1838 — not a type id.
+        input.inputMode = (keyboardType | 0) === 1 ? "numeric" : "text";
+        (input as any).enterKeyHint = "send";
+
+        const draft = this.varManager?.getVarcString(OsrsClient.CHAT_INPUT_VARC) ?? "";
+        if (input.value !== draft) {
+            input.value = draft;
+        }
+        this.mobileChatLastValue = input.value;
+        this.mobileChatKeyboardOpen = true;
+        this.chatTypingActive = true;
+        // varc 1226 is owned by script 2251 (open/close toggle) — do not set it here
+        // or a later CS2 run will see it as already-open and hide the keyboard.
+
+        const focusInput = () => {
+            // Temporarily allow the input to receive the gesture / synthetic click.
+            input.style.pointerEvents = "auto";
+            try {
+                input.focus({ preventScroll: true });
+            } catch {
+                try {
+                    input.focus();
+                } catch {}
+            }
+            try {
+                // Some WebViews need click() in addition to focus().
+                input.click();
+            } catch {}
+            try {
+                const end = input.value.length;
+                input.setSelectionRange(end, end);
+            } catch {}
+            // Keep it out of the way of subsequent canvas gestures.
+            input.style.pointerEvents = "none";
+        };
+
+        focusInput();
+        // Re-focus on the next frames in case layout/CS2 ran mid-gesture.
+        requestAnimationFrame(() => {
+            if (!this.mobileChatKeyboardOpen) return;
+            focusInput();
+            requestAnimationFrame(() => {
+                if (!this.mobileChatKeyboardOpen) return;
+                focusInput();
+            });
+        });
+
+        // CS2 often runs one frame after touchend, which iOS rejects for focus().
+        // Arm a one-shot capture listener so the next touch focuses the input.
+        if (document.activeElement !== input && !this.mobileChatRefocusArmed) {
+            this.mobileChatRefocusArmed = true;
+            const armFocus = () => {
+                this.mobileChatRefocusArmed = false;
+                if (!this.mobileChatKeyboardOpen) return;
+                focusInput();
+            };
+            document.addEventListener("touchstart", armFocus, { capture: true, once: true });
+            document.addEventListener("mousedown", armFocus, { capture: true, once: true });
+        }
+    }
+
+    /** Close the device soft keyboard (CS2 mobile_keyboardhide / logout). */
+    hideMobileChatKeyboard(): void {
+        this.mobileChatKeyboardOpen = false;
+        this.mobileChatRefocusArmed = false;
+        this.chatTypingActive = false;
+        try {
+            this.varManager?.setVarcInt(OsrsClient.CHAT_INPUT_OPEN_VARC, 0);
+        } catch {}
+        const input = this.mobileChatInput;
+        if (!input) {
+            this.applyChatInputPrompt();
+            return;
+        }
+        if (typeof document !== "undefined" && document.activeElement === input) {
+            try {
+                input.blur();
+            } catch {}
+        }
+        this.applyChatInputPrompt();
+    }
+
+    /**
+     * If the touch is on the mobile keyboard button, open the soft keyboard
+     * immediately inside the user-gesture window (before CS2 runs next frame).
+     */
+    private tryEagerMobileKeyboardOpen(canvasX: number, canvasY: number): void {
+        if (!isMobileMode && !isTouchDevice) return;
+        if (this.mobileChatKeyboardOpen) return;
+        if (!this.isLoggedIn()) return;
+
+        const widget = this.widgetManager?.getWidgetByUid(OsrsClient.MOBILE_KEYBOARD_BUTTON_UID);
+        if (!widget || widget.hidden) return;
+        if (this.widgetManager?.isEffectivelyHidden?.(widget.uid | 0)) return;
+
+        const ax = widget._absX;
+        const ay = widget._absY;
+        if (typeof ax !== "number" || typeof ay !== "number") return;
+        const aw = (widget.resolvedWidth ?? widget.width ?? 0) | 0;
+        const ah = (widget.resolvedHeight ?? widget.height ?? 0) | 0;
+        if (aw <= 0 || ah <= 0) return;
+        if (canvasX < ax || canvasY < ay || canvasX >= ax + aw || canvasY >= ay + ah) {
+            return;
+        }
+
+        const draft = this.varManager?.getVarcString(OsrsClient.CHAT_INPUT_VARC) ?? "";
+        this.showMobileChatKeyboard(draft, 0);
+    }
+
+    private ensureMobileChatInput(): HTMLInputElement | undefined {
+        if (typeof document === "undefined") return undefined;
+        const existing = this.mobileChatInput;
+        if (existing && existing.isConnected) {
+            return existing;
+        }
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.autocapitalize = "none";
+        input.setAttribute("autocorrect", "off");
+        input.spellcheck = false;
+        input.inputMode = "text";
+        (input as any).enterKeyHint = "send";
+        input.tabIndex = -1;
+        // Keep a real layout box — some mobile browsers ignore fully invisible inputs.
+        input.style.position = "fixed";
+        input.style.left = "0";
+        input.style.bottom = "0";
+        input.style.width = "100%";
+        input.style.height = "1px";
+        input.style.opacity = "0.01";
+        input.style.pointerEvents = "none";
+        input.style.border = "0";
+        input.style.margin = "0";
+        input.style.padding = "0";
+        input.style.background = "transparent";
+        input.style.color = "transparent";
+        input.style.caretColor = "transparent";
+        input.style.fontSize = "16px";
+        input.style.zIndex = "1";
+
+        input.addEventListener("input", this.onMobileChatInput);
+        input.addEventListener("keydown", this.onMobileChatKeyDown);
+        input.addEventListener("blur", this.onMobileChatBlur);
+        document.body.appendChild(input);
+        this.mobileChatInput = input;
+        return input;
+    }
+
+    private onMobileChatInput = (): void => {
+        const input = this.mobileChatInput;
+        if (!input || !this.mobileChatKeyboardOpen) return;
+
+        const next = input.value ?? "";
+        const prev = this.mobileChatLastValue;
+        let common = 0;
+        const maxCommon = Math.min(prev.length, next.length);
+        while (common < maxCommon && prev.charCodeAt(common) === next.charCodeAt(common)) {
+            common++;
+        }
+        for (let i = prev.length; i > common; i--) {
+            this.inputManager.enqueueOsrsKeyPress(
+                OsrsClient.OSRS_KEY_BACKSPACE_CHAT,
+                "Backspace",
+            );
+        }
+        for (let i = common; i < next.length; i++) {
+            this.inputManager.enqueueTypedChar(next.charCodeAt(i));
+        }
+        this.mobileChatLastValue = next;
+    };
+
+    private onMobileChatKeyDown = (event: KeyboardEvent): void => {
+        if (!this.mobileChatKeyboardOpen) return;
+        if (event.key === "Enter") {
+            event.preventDefault();
+            this.inputManager.enqueueOsrsKeyPress(OsrsClient.OSRS_KEY_ENTER_CHAT, "Enter");
+            if (this.mobileChatInput) {
+                this.mobileChatInput.value = "";
+            }
+            this.mobileChatLastValue = "";
+            // Keep keyboard open for multi-line chat sessions; CS2 hide closes it.
+            return;
+        }
+        if (event.key === "Escape") {
+            event.preventDefault();
+            this.hideMobileChatKeyboard();
+        }
+    };
+
+    private onMobileChatBlur = (): void => {
+        // Soft-keyboard dismissal clears the open flag; CS2 may also call hide.
+        if (!this.mobileChatRefocusArmed) {
+            this.mobileChatKeyboardOpen = false;
+            this.chatTypingActive = false;
+            try {
+                this.varManager?.setVarcInt(OsrsClient.CHAT_INPUT_OPEN_VARC, 0);
+            } catch {}
+            this.applyChatInputPrompt();
+        }
+    };
+
     /**
      * Reset all world/game state - used on disconnect/logout to prevent memory leaks.
      * Clears all players, NPCs, widgets, ground items, and other game entities.
@@ -13055,6 +13538,8 @@ export class OsrsClient {
      */
     resetWorld(fullReset: boolean = false): void {
         console.log(`[OsrsClient] Resetting world state (fullReset=${fullReset})...`);
+        this.hideMobileChatKeyboard();
+        this.chatTypingActive = false;
 
         // Clear all players
         try {

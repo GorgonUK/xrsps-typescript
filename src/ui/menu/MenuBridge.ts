@@ -26,7 +26,7 @@ type WidgetMenuEntryInput = {
 export type TargetLabelOptions = {
     includeExamineIds?: boolean; // default false (OSRS doesn't show IDs)
     includeNpcLevel?: boolean; // default true
-    /** Used for OSRS combat-level color tags on NPC targets. */
+    /** Used for OSRS combat-level color tags on NPC/player targets. */
     localPlayerCombatLevel?: number;
 };
 
@@ -35,9 +35,12 @@ function colorStartTag(rgb: number): string {
     return `<col=${(rgb >>> 0).toString(16)}>`;
 }
 
-// Combat level coloring (npcLevel, playerLevel)
-function combatLevelColorTag(npcLevel: number, localPlayerLevel: number): string {
-    const diff = (localPlayerLevel | 0) - (npcLevel | 0);
+/**
+ * Combat-level color relative to the local player.
+ * Green when lower (down to 10+ below), yellow when equal/close, red/orange when higher (up to 10+ above).
+ */
+export function combatLevelColorTag(targetLevel: number, localPlayerLevel: number): string {
+    const diff = (localPlayerLevel | 0) - (targetLevel | 0);
     if (diff < -9) return colorStartTag(16711680);
     if (diff < -6) return colorStartTag(16723968);
     if (diff < -3) return colorStartTag(16740352);
@@ -69,18 +72,19 @@ function splitArrow(raw: string): { left: string; right: string } | null {
     return { left, right };
 }
 
-function formatNpcNameWithLevel(
+/** Appends `  (level-N)` with combat-relative color (NPC and player targets). */
+export function formatActorNameWithLevel(
     name: string,
-    npcLevel: number,
+    combatLevel: number,
     localPlayerCombatLevel?: number,
     includeLevel?: boolean,
 ): string {
     let out = name;
-    if (includeLevel && (npcLevel | 0) > 0) {
+    if (includeLevel && (combatLevel | 0) > 0) {
         const lp = typeof localPlayerCombatLevel === "number" ? localPlayerCombatLevel | 0 : 0;
-        const tag = lp ? combatLevelColorTag(npcLevel | 0, lp) : colorStartTag(16776960);
+        const tag = lp ? combatLevelColorTag(combatLevel | 0, lp) : colorStartTag(16776960);
         // Reference (yes, double-space): tag + " " + " (" + "level-" + level + ")"
-        out += `${tag}  (level-${npcLevel | 0})`;
+        out += `${tag}  (level-${combatLevel | 0})`;
     }
     return out;
 }
@@ -133,8 +137,8 @@ export function osrsTargetLabel(e: OsrsMenuEntry, opts: TargetLabelOptions = {})
         }
 
         const rightBase =
-            e.targetType === MenuTargetType.NPC
-                ? formatNpcNameWithLevel(
+            e.targetType === MenuTargetType.NPC || e.targetType === MenuTargetType.PLAYER
+                ? formatActorNameWithLevel(
                       arrow.right,
                       e.targetLevel | 0,
                       opts.localPlayerCombatLevel,
@@ -145,8 +149,8 @@ export function osrsTargetLabel(e: OsrsMenuEntry, opts: TargetLabelOptions = {})
         t = left.length && right.length ? `${left} -> ${right}` : `${left}${right}`;
     } else {
         const base =
-            e.targetType === MenuTargetType.NPC
-                ? formatNpcNameWithLevel(
+            e.targetType === MenuTargetType.NPC || e.targetType === MenuTargetType.PLAYER
+                ? formatActorNameWithLevel(
                       rawName,
                       e.targetLevel | 0,
                       opts.localPlayerCombatLevel,
@@ -190,7 +194,7 @@ export function worldEntriesToSimple(
     }
     const intermediate: SimpleMenuEntry[] = (source || []).map((e) => {
         const action = e.spellCast ? MenuAction.Cast : inferMenuAction(e.option, e.targetType);
-        // osrsTargetLabel already includes the level text for NPCs
+        // osrsTargetLabel already includes the level text for NPCs/players
         const label = osrsTargetLabel(e, opts.label) || undefined;
         return {
             option: e.option,

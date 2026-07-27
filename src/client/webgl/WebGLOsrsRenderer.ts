@@ -76,7 +76,7 @@ import type { TileMarkerOverlay } from "../../ui/devoverlay/TileMarkerOverlay";
 import { TileTextOverlay } from "../../ui/devoverlay/TileTextOverlay";
 import { WidgetsOverlay } from "../../ui/devoverlay/WidgetsOverlay";
 import { MENU_ACTION_DEPRIORITIZE_OFFSET, MenuAction, menuAction } from "../../ui/menu/MenuAction";
-import { worldEntriesToSimple } from "../../ui/menu/MenuBridge";
+import { formatActorNameWithLevel, worldEntriesToSimple } from "../../ui/menu/MenuBridge";
 import type { MenuClickContext, SimpleMenuEntry } from "../../ui/menu/MenuEngine";
 import { chooseDefaultMenuEntry, shouldLeftClickOpenMenu } from "../../ui/menu/MenuEngine";
 import { MenuOpcode } from "../../ui/menu/MenuState";
@@ -789,7 +789,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     // Settings
     maxLevel: number = Scene.MAX_LEVELS - 1;
 
-    skyColor: vec4 = vec4.fromValues(0, 0, 0, 1); // Black ( — vanilla has no skybox)
+    skyColor: vec4 = vec4.fromValues(1, 1, 1, 1); // White fog / void (avoids a black "box" at the edge)
     fogDepth: number = 24; // Fog starts at 24 tiles (OSRS fog is subtle until near max distance)
     autoFogDepth: boolean = true;
     autoFogDepthFactor: number = 0.85;
@@ -1529,7 +1529,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         input.style.transform = "translate(-50%, -50%)";
     }
 
-    private requestMobileLoginKeyboard(field: 0 | 1): void {
+    requestMobileLoginKeyboard(field: 0 | 1): void {
         const state = this.osrsClient.loginState;
         state.currentLoginField = field;
         state.onMobile = true;
@@ -2523,6 +2523,45 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         output.push(overhead);
     }
 
+    /** Persistent white nameplate above other players (not the local player). */
+    private appendPlayerNameplate(
+        index: number,
+        output: OverheadTextEntry[],
+        maxEntries: number,
+        playerDefaultHeightTiles: number | undefined,
+        localPlayerEcsIndex: number | undefined,
+    ): void {
+        if (output.length >= maxEntries) return;
+        if (!this.shouldRenderPlayerIndex(index)) return;
+        if (localPlayerEcsIndex !== undefined && (index | 0) === (localPlayerEcsIndex | 0)) return;
+
+        const pe = this.osrsClient.playerEcs;
+        const name = pe.getName(index);
+        if (!name || name.length === 0) return;
+
+        const overhead = this.acquireOverheadTextEntry();
+        overhead.worldX = (pe.getX(index) | 0) / 128.0;
+        overhead.worldZ = (pe.getY(index) | 0) / 128.0;
+        overhead.plane = pe.getLevel(index) | 0;
+        overhead.footprintRadius = WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS;
+        overhead.groupKey = this.makeActorGroupKey(false, pe.getServerIdForIndex?.(index) ?? 0);
+        overhead.text = name;
+        overhead.color = 0xffffff;
+        overhead.colorId = undefined;
+        overhead.effect = 0;
+        overhead.modIcon = undefined;
+        overhead.pattern = undefined;
+        // Keep fully visible every frame (no chat fade).
+        overhead.duration = 1;
+        overhead.remaining = 1;
+        overhead.life = 1;
+        overhead.heightOffsetTiles = this.resolvePlayerLogicalHeightTiles(
+            index,
+            playerDefaultHeightTiles,
+        );
+        output.push(overhead);
+    }
+
     private appendActorHealthBars(
         map: Map<number, ActorHealthBarsState>,
         serverId: number,
@@ -2947,7 +2986,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         this.app.enable(PicoGL.BLEND);
         this.app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
-        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
 
         this.quadPositions = this.app.createVertexBuffer(
             PicoGL.FLOAT,
@@ -7446,12 +7485,21 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                 }
             }
 
-            // Other players' overhead text first; the local player's is appended after
-            // NPC text so it settles last in the overlap pass and draws on top.
+            // Other players: nameplates first, then chat so say-text stacks above the name.
+            // Local player's chat is appended after NPC text so it settles last.
             const localPlayerTextIdx = this.getControlledPlayerEcsIndex();
             try {
                 const pe = this.osrsClient.playerEcs;
                 const count = pe.size?.() ?? (pe as any).size?.() ?? 0;
+                for (let i = 0; i < count; i++) {
+                    this.appendPlayerNameplate(
+                        i,
+                        overheadTexts,
+                        overheadTextMaxEntries,
+                        playerDefaultHeightTiles,
+                        localPlayerTextIdx,
+                    );
+                }
                 for (let i = 0; i < count; i++) {
                     if (i === localPlayerTextIdx) continue;
                     this.appendPlayerOverheadText(
@@ -8827,7 +8875,6 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         const targetSubX = px;
         const targetSubZ = py;
 
-        let smoothingCycles = 0;
         if (!this.followCamFocalInitialized || this.followCamFocalLastClientCycle < 0) {
             this.followCamFocalXSub = targetSubX;
             this.followCamFocalZSub = targetSubZ;
@@ -8840,9 +8887,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                 this.followCamFocalXSub = targetSubX;
                 this.followCamFocalZSub = targetSubZ;
                 this.followCamFocalLastClientCycle = clientCycle;
-                smoothingCycles = 1;
             } else if (cyclesElapsed > 0) {
-                smoothingCycles = cyclesElapsed;
                 for (let i = 0; i < cyclesElapsed; i++) {
                     const dxFocal = targetSubX - this.followCamFocalXSub;
                     const dzFocal = targetSubZ - this.followCamFocalZSub;
@@ -8863,20 +8908,9 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         const focalSubX = this.followCamFocalXSub;
         const focalSubZ = this.followCamFocalZSub;
         const basePlane = pe.getLevel(playerEcsIndex) | 0;
-        const onWorldEntity = this.getControlledPlayerWorldViewId() >= 0;
-        // Pitch pressure eases on the client-cycle timebase like the focal point;
-        // per-frame easing would converge several times faster than OSRS at high refresh rates.
-        if (!onWorldEntity) {
-            this.updateCameraTerrainPitchPressure(focalSubX, focalSubZ, basePlane, smoothingCycles);
-        } else {
-            // On a world entity (ship) the deck is flat; let pressure decay to the minimum
-            // so it doesn't artificially restrict the camera pitch.
-            for (let i = 0; i < smoothingCycles; i++) {
-                const current = this.cameraTerrainPitchPressure | 0;
-                if (current <= 32768) break;
-                this.cameraTerrainPitchPressure = current + (((32768 - current) / 80) | 0);
-            }
-        }
+        // Terrain pitch-pressure (OSRS hill clip avoidance) is intentionally disabled:
+        // it forces a steeper orbit pitch than the player's look angle, which feels
+        // inverted underground/in caves. Prefer free look even if the camera clips.
 
         const targetX = focalSubX / 128;
         const targetZ = focalSubZ / 128;
@@ -8909,10 +8943,6 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             (this.osrsClient.zoomWidth - this.osrsClient.zoomHeight) * (v / 100) +
             this.osrsClient.zoomHeight;
         let camAngleX = camera.getScenePitchAngle();
-        const terrainMinCamAngleX = (this.cameraTerrainPitchPressure | 0) >> 8;
-        if (terrainMinCamAngleX > camAngleX) {
-            camAngleX = terrainMinCamAngleX;
-        }
         // active pitch-shake also raises the minimum camera angle for orbit distance.
         if (this.cameraShakeEnabled[4]) {
             const shakeMinCamAngleX = (this.cameraShakeWaveAmplitude[4] | 0) + 128;
@@ -8969,8 +8999,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         const focusHeightTiles = (this.osrsClient.camFollowHeight | 0) / 128.0;
         const targetY = playerHeightSample.height - focusHeightTiles;
-        // Camera Y is purely the orbit position around the focal point; terrain clipping is
-        // handled by the pitch clamp pressure, never by raising the camera off its orbit.
+        // Camera Y follows the orbit around the focal point from the player's pitch.
         const desiredPosY = Math.round((targetY - forward[1] * dist) * 128) / 128;
 
         // Tight follow: snap camera height to the computed orbit position to keep the target stable in view.
@@ -9020,7 +9049,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         width: number;
         height: number;
     }): void {
-        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
         this.app.clear();
 
         const left = Math.max(0, viewportRect.x | 0);
@@ -13719,9 +13748,16 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         : 0;
                 const targetIsClanMember = isClanMemberName(playerLabel);
 
-                // When hovering a player, Walk here target becomes the player's label.
+                // When hovering a player, Walk here target becomes name + (level-N).
                 if (walkHereEntry) {
-                    walkHereEntry.targetName = `<col=ffffff>${playerLabel}`;
+                    const leveled = formatActorNameWithLevel(
+                        playerLabel,
+                        targetCombatLevel,
+                        localCombatLevel,
+                        true,
+                    );
+                    walkHereEntry.targetName = `<col=ffffff>${leveled}`;
+                    walkHereEntry.targetLevel = targetCombatLevel;
                 }
 
                 // Item selection: Use only (HttpHeaders.addPlayerToMenu).
@@ -13733,7 +13769,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         targetId: -1,
                         targetType: MenuTargetType.PLAYER,
                         targetName: `${itemName} -> ${playerLabel}`,
-                        targetLevel: -1,
+                        targetLevel: targetCombatLevel,
                         mapX: localX,
                         mapY: localY,
                         playerServerId: sid | 0,
@@ -13764,7 +13800,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             targetId: -1,
                             targetType: MenuTargetType.PLAYER,
                             targetName: `${activeSpell.spellName} -> ${playerLabel}`,
-                            targetLevel: -1,
+                            targetLevel: targetCombatLevel,
                             mapX: localX,
                             mapY: localY,
                             playerServerId: sid | 0,
@@ -13788,7 +13824,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             targetId: sid | 0,
                             targetType: MenuTargetType.PLAYER,
                             targetName: playerLabel,
-                            targetLevel: -1,
+                            targetLevel: targetCombatLevel,
                             mapX: localX,
                             mapY: localY,
                             playerServerId: sid | 0,
@@ -13807,7 +13843,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             targetId: sid | 0,
                             targetType: MenuTargetType.PLAYER,
                             targetName: playerLabel,
-                            targetLevel: -1,
+                            targetLevel: targetCombatLevel,
                             mapX: localX,
                             mapY: localY,
                             playerServerId: sid | 0,
