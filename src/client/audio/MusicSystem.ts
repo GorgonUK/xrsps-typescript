@@ -6,7 +6,12 @@ import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
 import { copyArrayBufferLike, copyArrayBufferView } from "../../util/ArrayBufferUtil";
 import { decodeOggVorbisToAudioBuffer, isOggVorbis } from "./VorbisWasm";
-import { addAudioContextResumeListeners, getAudioContextConstructor } from "./audioContext";
+import {
+    addAudioContextResumeListeners,
+    getAudioContextConstructor,
+    registerManagedAudioContext,
+    unregisterManagedAudioContext,
+} from "./audioContext";
 import { RealtimeMidiSynth } from "./music/realtime/RealtimeMidiSynth";
 
 /**
@@ -262,6 +267,9 @@ export class MusicSystem {
             gainNode.connect(ctx.destination);
             this.context = ctx;
             this.gainNode = gainNode;
+            // Suspend/resume with page visibility so the fallback music context doesn't keep
+            // playing after the tab is hidden or closed (notably on iOS WebKit).
+            registerManagedAudioContext(ctx);
 
             // Auto-resume on user interaction (required by browser autoplay policy)
             if (!this.contextResumeCleanup) {
@@ -961,6 +969,7 @@ export class MusicSystem {
 
         // Close audio context
         if (this.context) {
+            unregisterManagedAudioContext(this.context);
             this.context.close().catch(() => {});
             this.context = null;
         }

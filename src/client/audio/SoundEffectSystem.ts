@@ -1,7 +1,12 @@
 import { SoundEffectLoader } from "../../rs/audio/SoundEffectLoader";
 import type { RawSoundData } from "../../rs/audio/legacy/SoundEffect";
 import type { SeqSoundEffect } from "../../rs/config/seqtype/SeqType";
-import { addAudioContextResumeListeners, getAudioContextConstructor } from "./audioContext";
+import {
+    addAudioContextResumeListeners,
+    getAudioContextConstructor,
+    registerManagedAudioContext,
+    unregisterManagedAudioContext,
+} from "./audioContext";
 import { resampleToSampleRate, smoothLowPass } from "./resample";
 
 type DecodedSound = {
@@ -187,6 +192,9 @@ export class SoundEffectSystem {
         gain.connect(ctx.destination);
         this.context = ctx;
         this.gainNode = gain;
+        // Suspend/resume this context with page visibility so sound effects don't keep
+        // playing after the tab is hidden or closed (notably on iOS WebKit).
+        registerManagedAudioContext(ctx);
         // Separate gain node for ambient/area sounds
         const ambientGain = ctx.createGain();
         ambientGain.gain.value = this.ambientVolume;
@@ -1183,6 +1191,7 @@ export class SoundEffectSystem {
             this.ambientGainNode = undefined;
         }
         if (this.context) {
+            unregisterManagedAudioContext(this.context);
             this.context.close().catch(() => {});
             this.context = undefined;
         }
