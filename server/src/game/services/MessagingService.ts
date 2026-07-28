@@ -1,4 +1,5 @@
 import type { ServerServices } from "../ServerServices";
+import { ChatMessageType } from "../../../../src/shared/chat/ChatMessageType";
 import { createLootPickupNotification } from "../notifications/LootPickupNotification";
 import type { PlayerState } from "../player";
 import type { ChatMessageSnapshot, ForcedChatBroadcast } from "../systems/BroadcastScheduler";
@@ -19,6 +20,28 @@ export class MessagingService {
         });
     }
 
+    /** Sends an OSRS clickable trade request with the initiating player's identity. */
+    sendTradeRequestToPlayer(target: PlayerState, from: PlayerState, fromName: string): void {
+        const sender = this.cleanChatSender(fromName, from.id);
+        this.queueChatMessage({
+            messageType: "trade",
+            chatType: ChatMessageType.TRADE_REQUEST,
+            // Type 101 chat scripts combine this text with `from`; do not put
+            // the name in the text or decorate the sender field.
+            text: "wishes to trade with you.",
+            from: sender,
+            playerId: from.id,
+            targetPlayerIds: [target.id],
+        });
+    }
+
+    private cleanChatSender(name: string, playerId: number): string {
+        const raw = String(name ?? "")
+            .replace(/<[^>]*>/g, "")
+            .trim();
+        return raw.length > 0 ? raw : `player${playerId}`;
+    }
+
     queueChatMessage(message: {
         messageType: string;
         playerId?: number;
@@ -30,6 +53,7 @@ export class MessagingService {
         effectId?: number;
         pattern?: number[];
         autoChat?: boolean;
+        chatType?: number;
         targetPlayerIds?: number[];
     }): void {
         const normalized: ChatMessageSnapshot = {

@@ -1007,8 +1007,9 @@ export function decodeServerPacket(data: Uint8Array | ArrayBuffer): DecodedServe
                 "trade",
                 "server",
             ];
-            const messageType = messageTypes[reader.readByte()] || "game";
             const text = reader.readString();
+            const chatType = reader.readByte();
+            const messageType = messageTypes[chatType] || "game";
             const from = reader.readString() || undefined;
             const prefix = reader.readString() || undefined;
             const playerId = reader.readSignedShort();
@@ -1020,6 +1021,7 @@ export function decodeServerPacket(data: Uint8Array | ArrayBuffer): DecodedServe
                     from,
                     prefix,
                     playerId: playerId >= 0 ? playerId : undefined,
+                    chatType,
                 },
             };
         }

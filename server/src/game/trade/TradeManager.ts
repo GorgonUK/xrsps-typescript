@@ -305,10 +305,7 @@ export class TradeManager {
         });
         const name = this.resolveName(initiator);
         this.svc.messagingService.sendGameMessageToPlayer(initiator, "Sending trade offer...");
-        this.svc.messagingService.sendGameMessageToPlayer(
-            target,
-            `${name} wishes to trade with you.`,
-        );
+        this.svc.messagingService.sendTradeRequestToPlayer(target, initiator, name);
         this.svc.broadcastService.queueTradeMessage(target.id, {
             kind: "request",
             fromId: initiator.id,

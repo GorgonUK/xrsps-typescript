@@ -676,9 +676,11 @@ export class ServerBinaryEncoder {
         from?: string,
         prefix?: string,
         playerId?: number,
+        chatType?: number,
     ): Uint8Array {
         this.buffer.reset();
-        // messageType as byte: game=0, public=1, private_in=2, etc.
+        // The client reads chat payloads as text, channel id, then sender
+        // metadata.  Type 101 uses `from` as its clickable target identity.
         const typeMap: Record<string, number> = {
             game: 0,
             public: 1,
@@ -689,8 +691,8 @@ export class ServerBinaryEncoder {
             trade: 6,
             server: 7,
         };
-        this.buffer.writeByte(typeMap[messageType] ?? 0);
         this.buffer.writeString(text);
+        this.buffer.writeByte(chatType ?? typeMap[messageType] ?? 0);
         this.buffer.writeString(from ?? "");
         this.buffer.writeString(prefix ?? "");
         this.buffer.writeShort(playerId ?? -1);

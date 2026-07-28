@@ -88,6 +88,8 @@ export interface ChatMessageSnapshot {
     effectId?: number;
     pattern?: number[];
     autoChat?: boolean;
+    /** Raw OSRS chatbox channel id, when it differs from messageType. */
+    chatType?: number;
     targetPlayerIds?: number[];
 }
 
