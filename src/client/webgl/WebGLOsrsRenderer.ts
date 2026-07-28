@@ -31,6 +31,22 @@ import { flushPackets } from "../../network/packet";
 import { createTextureArray } from "../../picogl/PicoTexture";
 import { RS_TO_RADIANS } from "../../rs/MathConstants";
 import { CollisionFlag } from "../../shared/CollisionFlag";
+import { isInWilderness } from "../../shared/world/Wilderness";
+
+/** Format a player menu target using the OSRS combat-level colour convention. */
+function formatPlayerCombatLabel(
+    username: string,
+    localCombatLevel: number,
+    targetCombatLevel: number,
+): string {
+    const colour =
+        targetCombatLevel < localCombatLevel
+            ? "00ff00"
+            : targetCombatLevel === localCombatLevel
+              ? "ffff00"
+              : "ff0000";
+    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
+}
 import {
     getWorldLocChanges,
     getWorldLocSpawns,
@@ -13669,15 +13685,29 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     localCombatLevelFromEcs > 0
                         ? localCombatLevelFromEcs
                         : ClientState.localPlayerCombatLevel | 0;
+                const playerMenuLabel = formatPlayerCombatLabel(
+                    playerLabel,
+                    localCombatLevel,
+                    targetCombatLevel,
+                );
                 const localTeam =
                     typeof localEcsIndex === "number"
                         ? playerEcs.getTeam(localEcsIndex | 0) | 0
                         : 0;
+                const localWorldX =
+                    typeof localEcsIndex === "number"
+                        ? playerEcs.getX(localEcsIndex | 0) >> 7
+                        : 0;
+                const localWorldY =
+                    typeof localEcsIndex === "number"
+                        ? playerEcs.getY(localEcsIndex | 0) >> 7
+                        : 0;
+                const canAttackPlayers = isInWilderness(localWorldX, localWorldY);
                 const targetIsClanMember = isClanMemberName(playerLabel);
 
                 // When hovering a player, Walk here target becomes the player's label.
                 if (walkHereEntry) {
-                    walkHereEntry.targetName = `<col=ffffff>${playerLabel}`;
+                    walkHereEntry.targetName = `<col=ffffff>${playerMenuLabel}`;
                 }
 
                 // Item selection: Use only (HttpHeaders.addPlayerToMenu).
@@ -13688,7 +13718,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         option: "Use",
                         targetId: -1,
                         targetType: MenuTargetType.PLAYER,
-                        targetName: `${itemName} -> ${playerLabel}`,
+                            targetName: `${itemName} -> ${playerMenuLabel}`,
                         targetLevel: -1,
                         mapX: localX,
                         mapY: localY,
@@ -13719,7 +13749,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             option: activeSpell.actionName || "Cast",
                             targetId: -1,
                             targetType: MenuTargetType.PLAYER,
-                            targetName: `${activeSpell.spellName} -> ${playerLabel}`,
+                            targetName: `${activeSpell.spellName} -> ${playerMenuLabel}`,
                             targetLevel: -1,
                             mapX: localX,
                             mapY: localY,
@@ -13743,7 +13773,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             option: "Follow",
                             targetId: sid | 0,
                             targetType: MenuTargetType.PLAYER,
-                            targetName: playerLabel,
+                            targetName: playerMenuLabel,
                             targetLevel: -1,
                             mapX: localX,
                             mapY: localY,
@@ -13762,7 +13792,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             option: "Trade with",
                             targetId: sid | 0,
                             targetType: MenuTargetType.PLAYER,
-                            targetName: playerLabel,
+                            targetName: playerMenuLabel,
                             targetLevel: -1,
                             mapX: localX,
                             mapY: localY,
@@ -13777,6 +13807,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             },
                         });
                     } else if (actionIdx === 0) {
+                        // Player combat is a Wilderness-only menu action.
+                        if (!canAttackPlayers) continue;
                         const attackOption = ClientState.playerAttackOption | 0;
                         if (attackOption === 3) continue;
 
@@ -13798,7 +13830,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             option: "Attack",
                             targetId: sid | 0,
                             targetType: MenuTargetType.PLAYER,
-                            targetName: playerLabel,
+                            targetName: playerMenuLabel,
                             targetLevel: targetCombatLevel,
                             mapX: localX,
                             mapY: localY,
