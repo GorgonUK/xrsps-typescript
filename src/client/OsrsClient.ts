@@ -14,6 +14,7 @@ import {
     sendInventoryUseOn,
     sendNpcOption,
     sendPlayerDesignConfirm,
+    sendPlayerOption,
     sendVarpTransmit,
     sendWidgetAction,
     sendWidgetClose,
@@ -92,6 +93,7 @@ import { ConfigType } from "../rs/cache/ConfigType";
 import { IndexType } from "../rs/cache/IndexType";
 import { CacheLoaderFactory, getCacheLoaderFactory } from "../rs/cache/loader/CacheLoaderFactory";
 import { getPlayerTypeInfo } from "../rs/chat/PlayerType";
+import { ChatMessageType } from "../shared/chat/ChatMessageType";
 import { BasTypeLoader } from "../rs/config/bastype/BasTypeLoader";
 import { DbRepository } from "../rs/config/db/DbRepository";
 import { IdkTypeLoader } from "../rs/config/idktype/IdkTypeLoader";
@@ -542,6 +544,8 @@ export class OsrsClient {
     private localChatNamePrefix: string = "";
     private modIconsWidthLoaded: boolean = false;
     private modIconWidthById: Map<number, number> = new Map();
+    /** Trade-request senders keyed exactly as the chatbox OPPLAYER script receives them. */
+    private readonly tradeRequestTargetsByName = new Map<string, number>();
     private accountTypeVarbitAvailable?: boolean;
 
     // ========== Game State ==========
@@ -1598,6 +1602,22 @@ export class OsrsClient {
             },
             resolveChatPlayerName: (scriptId: number) =>
                 self.resolveChatPlayerNameForScript(scriptId | 0),
+            sendPlayerOption: (playerName: string, option: number) => {
+                const normalizedName = playerName.trim().toLowerCase();
+                const tradeTarget = self.tradeRequestTargetsByName.get(normalizedName);
+                if (tradeTarget !== undefined) {
+                    // Type-101's chat action is always Trade, even if the
+                    // cache script passes a menu-specific action value.
+                    sendPlayerOption(tradeTarget, 2);
+                    return;
+                }
+                const index = self.playerEcs.findIndexByName(playerName);
+                const serverId =
+                    index === undefined ? undefined : self.playerEcs.getServerIdForIndex(index);
+                if (serverId !== undefined && option >= 1 && option <= 8) {
+                    sendPlayerOption(serverId, option);
+                }
+            },
             openMobileTab: (interfaceId: number) => {
                 console.log(`[Cs2Vm] CLIENT_SET_SIDE_PANEL interfaceId=${interfaceId}`);
                 // Map interface ID to mobile tab index (0-13)
@@ -2855,7 +2875,23 @@ export class OsrsClient {
         try {
             this.unsubscribeChatMessages = subscribeChatMessages((msg) => {
                 // Add message to chat history for CS2 scripts to query
-                chatHistory.addMessage(msg.messageType, msg.text, msg.from ?? "", msg.prefix ?? "");
+                const isTradeRequest = msg.chatType === ChatMessageType.TRADE_REQUEST;
+                if (isTradeRequest && msg.from && msg.playerId !== undefined) {
+                    this.tradeRequestTargetsByName.set(
+                        msg.from.trim().toLowerCase(),
+                        msg.playerId | 0,
+                    );
+                }
+                const text =
+                    isTradeRequest && msg.from
+                        ? `${msg.from} ${msg.text}`
+                        : msg.text;
+                chatHistory.addMessage(
+                    msg.chatType ?? msg.messageType,
+                    text,
+                    msg.from ?? "",
+                    msg.prefix ?? "",
+                );
                 // Note: chatCycle is now marked by onMessageAdded callback below
             });
             // Set up callback to mark chat cycle when ANY message is added (including from CS2 MES opcode)
@@ -6442,6 +6478,28 @@ export class OsrsClient {
     }
 
     /**
+     * Cache chatbox scripts render request lines as ordinary text widgets, so
+     * they do not expose a React-style row onClick.  Consume a click on the
+     * rendered type-101 line here and send the native Trade player option.
+     */
+    private handleTradeRequestChatClick(widgets: readonly any[]): boolean {
+        for (let i = widgets.length - 1; i >= 0; i--) {
+            const text = String(widgets[i]?.text ?? "")
+                .replace(/<[^>]*>/g, "")
+                .trim()
+                .toLowerCase();
+            if (!text.includes("wishes to trade with you.")) continue;
+
+            for (const [name, playerId] of this.tradeRequestTargetsByName) {
+                if (!text.includes(name)) continue;
+                sendPlayerOption(playerId, 2);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check if a point is over UI that should consume a world click.
      * Used by WebGLOsrsRenderer for widgets with actual click-capture traits.
      *
@@ -7090,6 +7148,9 @@ export class OsrsClient {
             if (!this.clickedWidget) {
                 // Find widget with click handlers
                 const clickHits = collectFromAllRoots(input.leftClickX, input.leftClickY);
+                if (this.handleTradeRequestChatClick(clickHits)) {
+                    return;
+                }
                 for (let i = clickHits.length - 1; i >= 0; i--) {
                     const w = clickHits[i];
                     const hitWidgetGroupId =
