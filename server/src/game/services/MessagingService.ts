@@ -23,6 +23,7 @@ export class MessagingService {
     /** Sends an OSRS clickable trade request with the initiating player's identity. */
     sendTradeRequestToPlayer(target: PlayerState, from: PlayerState, fromName: string): void {
         const sender = this.cleanChatSender(fromName, from.id);
+        target.pendingTradeRequests.set(from.id, Date.now());
         this.queueChatMessage({
             messageType: "trade",
             chatType: ChatMessageType.TRADE_REQUEST,
