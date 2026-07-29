@@ -5,6 +5,7 @@ import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { BitmapFont } from "../../rs/font/BitmapFont";
 import { isTouchDevice } from "../../util/DeviceUtil";
 import { getUiScale } from "../UiScale";
+import { FONT_VERDANA_13 } from "../fonts";
 import { getChooseOptionMenuRect } from "../gl/choose-option";
 import { GLRenderer } from "../gl/renderer";
 import {
@@ -14,6 +15,7 @@ import {
     processWidgetUiInput,
     renderWidgetTreeGL,
 } from "../gl/widgets-gl";
+import { drawTextGL } from "../widgets/components/TextRenderer";
 import type { WidgetManager } from "../widgets/WidgetManager";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
@@ -77,6 +79,7 @@ export class WidgetsOverlay implements Overlay {
 
     private lastMenuVisualSignature: string = "";
     private lastMenuVisualRect?: DirtyRect;
+    private lastTradeAmountOverlaySignature: string = "";
 
     // Public property to enable/disable the overlay
     public enabled: boolean = true;
@@ -115,6 +118,7 @@ export class WidgetsOverlay implements Overlay {
         this.lastRootSignature = "";
         this.lastMenuVisualSignature = "";
         this.lastMenuVisualRect = undefined;
+        this.lastTradeAmountOverlaySignature = "";
     }
 
     clearAndHide(): void {
@@ -622,12 +626,15 @@ export class WidgetsOverlay implements Overlay {
             const menuOpen = !!ui?.menu?.open;
             const menuVisualState = this.getMenuVisualState(sharedUi, inputManager);
             const menuVisualDirty = menuVisualState.signature !== this.lastMenuVisualSignature;
+            const tradeOverlaySignature = this.getTradeAmountOverlaySignature(widgetManager);
+            const tradeOverlayDirty = tradeOverlaySignature !== this.lastTradeAmountOverlaySignature;
 
             // Force a full redraw only for root set changes.
             // The Choose Option menu is drawn as part of the shared widget overlay. When it is
             // open, partial dirty-rect redraws can visibly blink as hover/click state changes
             // every frame. Redraw the full overlay for the duration of the menu instead.
-            const forceFullRedraw = !this.hasPresentedFrame || this.rootSetChanged || menuOpen;
+            const forceFullRedraw =
+                !this.hasPresentedFrame || this.rootSetChanged || menuOpen || tradeOverlayDirty;
             const preciseDirtyCount = preciseDirtyWidgets.length | 0;
             const shouldRedraw =
                 anyDirty || preciseDirtyCount > 0 || forceFullRedraw || menuVisualDirty;
@@ -697,6 +704,7 @@ export class WidgetsOverlay implements Overlay {
                     for (const entry of this.widgetEntries) {
                         renderWidgetTreeGL(this.glRenderer, entry.root, entry.renderOpts);
                     }
+                    this.drawTradeAmountOverlay(widgetManager);
                     this.rootSetChanged = false;
                 } else if (widgetManager) {
                     // Partial pass: keep existing click targets and redraw only dirty root regions.
@@ -728,11 +736,13 @@ export class WidgetsOverlay implements Overlay {
                             });
                         }
                     }
+                    this.drawTradeAmountOverlay(widgetManager);
                 }
                 this.presentOverlayCanvas(renderFull, dirtyRects);
 
                 this.lastMenuVisualSignature = menuVisualState.signature;
                 this.lastMenuVisualRect = menuVisualState.rect;
+                this.lastTradeAmountOverlaySignature = tradeOverlaySignature;
             }
 
             // Process input against the current click target registry.
@@ -745,6 +755,75 @@ export class WidgetsOverlay implements Overlay {
         } catch (e) {
             console.error("Error rendering widgets:", e);
         }
+    }
+
+    private getTradeAmountOverlaySignature(widgetManager?: WidgetManager): string {
+        const client = this.ctx.getGameContext?.()?.osrsClient;
+        if (!client?.isTradeQuantityInputActive?.()) return "hidden";
+        const value = String(client.cs2Vm?.inputDialogString ?? "");
+        const roots = widgetManager?.getAllGroupRoots?.(162) ?? [];
+        const bounds = roots
+            .map((root: any) => `${root?._absX ?? root?.x ?? 0},${root?._absY ?? root?.y ?? 0}`)
+            .join(";");
+        return `visible:${value}:${bounds}`;
+    }
+
+    /** Draw over the chat history while preserving the underlying widget tree. */
+    private drawTradeAmountOverlay(widgetManager?: WidgetManager): void {
+        const client = this.ctx.getGameContext?.()?.osrsClient;
+        if (!client?.isTradeQuantityInputActive?.() || !this.glRenderer || !widgetManager) return;
+
+        const roots = widgetManager.getAllGroupRoots?.(162) ?? [];
+        if (roots.length === 0) return;
+        const left = Math.min(...roots.map((w: any) => w?._absX ?? w?.x ?? 0));
+        const top = Math.min(...roots.map((w: any) => w?._absY ?? w?.y ?? 0));
+        const right = Math.max(
+            ...roots.map((w: any) => (w?._absX ?? w?.x ?? 0) + (w?.width ?? 0)),
+        );
+        const bottom = Math.max(
+            ...roots.map((w: any) => (w?._absY ?? w?.y ?? 0) + (w?.height ?? 0)),
+        );
+        const width = Math.max(1, right - left);
+        // Preserve the channel tabs along the bottom of the normal chatbox.
+        const height = Math.max(72, bottom - top - 25);
+        const x = left + 4;
+        const y = top + 4;
+        const innerWidth = Math.max(1, width - 8);
+        const innerHeight = Math.max(1, height - 8);
+
+        // Warm parchment tone approximates the native chatbox panel and masks
+        // scrollback without changing the widget/layout tree beneath it.
+        this.glRenderer.drawRect(x, y, innerWidth, innerHeight, [0.76, 0.71, 0.59, 1]);
+        const fontLoader = this.ctx.getFontLoader?.() || (() => undefined);
+        drawTextGL(
+            this.glRenderer,
+            fontLoader,
+            "Enter amount:",
+            x,
+            y + Math.floor(innerHeight * 0.35),
+            innerWidth,
+            20,
+            FONT_VERDANA_13,
+            0x000000,
+            1,
+            1,
+            false,
+        );
+        drawTextGL(
+            this.glRenderer,
+            fontLoader,
+            `<col=0000ff>${String(client.cs2Vm?.inputDialogString ?? "")}*</col>`,
+            x,
+            y + Math.floor(innerHeight * 0.55),
+            innerWidth,
+            20,
+            FONT_VERDANA_13,
+            0x0000ff,
+            1,
+            1,
+            false,
+        );
+        this.glRenderer.flush();
     }
 
     setWidgetVisibility(uid: number, visible: boolean): void {
