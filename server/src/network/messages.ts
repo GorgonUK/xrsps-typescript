@@ -467,6 +467,7 @@ export type ServerToClient =
               from?: string;
               prefix?: string;
               text: string;
+              chatType?: number;
           };
       }
     | {
@@ -873,6 +874,7 @@ function encodeMessageToBinaryDirect(msg: ServerToClient): Uint8Array {
                 payload.from,
                 payload.prefix,
                 payload.playerId,
+                payload.chatType,
             );
 
         case "sound":

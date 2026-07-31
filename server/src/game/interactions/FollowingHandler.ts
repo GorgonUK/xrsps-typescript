@@ -177,6 +177,9 @@ export class FollowingHandler {
 
             const dCheb = Math.max(Math.abs(tx - px), Math.abs(ty - py));
             const adjacent = dCheb <= 1;
+            // A one-tile trade may only complete when the collision map has a
+            // clear edge between the players; this rejects solid walls and
+            // blocked diagonal corners, then keeps the pathfinder searching.
             const edgeReachable =
                 adjacent && this.hasDirectReach({ x: px, y: py }, { x: tx, y: ty }, 1, 1, me.level);
             if (st.kind === FollowInteractionKind.Trade && adjacent) {

@@ -281,7 +281,8 @@ export function decodePacket(opcode: number, data: Uint8Array): DecodedPacket {
             return { type: "player_op", opNum: 1, playerIndex, ctrlHeld };
         }
 
-        // OPPLAYER2 (45) - Trade
+        // OPPLAYER2 (45) - Trade. This is also the packet sent when an OSRS
+        // chat type 101 trade-request link is clicked.
         // Client: writeByte(ctrl), writeShort(identifier)
         case ClientPacketId.OPPLAYER2: {
             const ctrlHeld = buf.readByte() !== 0;

@@ -39,6 +39,7 @@ export class ChatBroadcaster implements BroadcastDomain {
                     from: msg.from,
                     prefix: msg.prefix,
                     text: msg.text,
+                    chatType: msg.chatType,
                 },
             });
 

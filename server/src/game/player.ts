@@ -543,6 +543,8 @@ export class PlayerState extends Actor {
     public isHidden: boolean = false;
     /** Player display name */
     public name: string = "";
+    /** Sender id -> request creation time (ms since epoch) for pending trade links. */
+    readonly pendingTradeRequests: Map<number, number> = new Map();
     /** Display mode (mobile vs desktop) - set during login based on clientType */
     public displayMode: DisplayMode = DisplayMode.RESIZABLE_NORMAL;
     /** Pending face direction (consumed by interaction system) */
