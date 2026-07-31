@@ -834,6 +834,9 @@ export class OsrsClient {
     /** CS2 script 223 = [proc,chat_promptinput], rebuilds the chat input line text. */
     private static readonly CHAT_PROMPT_SCRIPT_ID = 223;
     private static readonly CHAT_LOCKED_PROMPT = "Press enter to type";
+    private mobileChatInput?: HTMLInputElement;
+    private mobileChatKeyboardOpen = false;
+    private mobileChatLastValue = "";
 
     // Script event queues (like OSRS's 3-tier priority system)
     private scriptEvents: ScriptEvent[] = []; // Normal priority
@@ -1983,6 +1986,11 @@ export class OsrsClient {
                 }
             },
         });
+
+        this.cs2Vm.context.showMobileKeyboard = (hint, keyboardType) => {
+            this.showMobileChatKeyboard(hint, keyboardType);
+        };
+        this.cs2Vm.context.hideMobileKeyboard = () => this.hideMobileChatKeyboard();
 
         // Wire up the deferred callbacks - triggers queued var changes after script execution
         this.cs2Vm.onVarpChange = (varpId) => {
@@ -13164,12 +13172,51 @@ export class OsrsClient {
         }
     }
 
+    private showMobileChatKeyboard(hint: string, keyboardType: number): void {
+        if (typeof document === "undefined" || (!isMobileMode && !isTouchDevice)) return;
+        const input = this.ensureMobileChatInput();
+        input.placeholder = hint;
+        input.inputMode = keyboardType === 1 ? "numeric" : "text";
+        input.value = this.varManager.getVarcString(335) ?? "";
+        this.mobileChatLastValue = input.value;
+        this.mobileChatKeyboardOpen = true;
+        input.focus({ preventScroll: true });
+    }
+
+    private hideMobileChatKeyboard(): void {
+        this.mobileChatKeyboardOpen = false;
+        this.mobileChatInput?.blur();
+    }
+
+    private ensureMobileChatInput(): HTMLInputElement {
+        if (this.mobileChatInput?.isConnected) return this.mobileChatInput;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.style.cssText = "position:fixed;bottom:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none";
+        input.addEventListener("input", () => {
+            if (!this.mobileChatKeyboardOpen) return;
+            const next = input.value;
+            const prev = this.mobileChatLastValue;
+            for (let i = prev.length; i > 0 && next.length < i; i--) this.inputManager.enqueueOsrsKeyPress(85, "Backspace");
+            for (let i = Math.min(prev.length, next.length); i < next.length; i++) this.inputManager.enqueueTypedChar(next.charCodeAt(i));
+            this.mobileChatLastValue = next;
+        });
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") { event.preventDefault(); this.inputManager.enqueueOsrsKeyPress(84, "Enter"); }
+        });
+        document.body.appendChild(input);
+        this.mobileChatInput = input;
+        return input;
+    }
+
     /**
      * Reset all world/game state - used on disconnect/logout to prevent memory leaks.
      * Clears all players, NPCs, widgets, ground items, and other game entities.
      * @param fullReset If true, also clears chat history, vars, and transmit cycles (for full logout to login screen)
      */
     resetWorld(fullReset: boolean = false): void {
+        this.hideMobileChatKeyboard();
         console.log(`[OsrsClient] Resetting world state (fullReset=${fullReset})...`);
 
         // Clear all players
