@@ -371,11 +371,18 @@ export class LoginRenderer {
             pageHost === "::1";
         if (pageIsLocal) return servers;
 
-        const filtered = servers.filter((s) => {
-            const host = s.address.trim().toLowerCase().split(":")[0] ?? "";
-            return host !== "localhost" && host !== "127.0.0.1" && host !== "[::1]" && host !== "::1";
+        return servers.filter((s) => {
+            const address = s.address.trim().toLowerCase();
+            return !(
+                address === "localhost" ||
+                address.startsWith("localhost:") ||
+                address === "127.0.0.1" ||
+                address.startsWith("127.0.0.1:") ||
+                address === "[::1]" ||
+                address.startsWith("[::1]:") ||
+                address === "::1"
+            );
         });
-        return filtered.length > 0 ? filtered : servers;
     }
 
     refreshServerList(): void {

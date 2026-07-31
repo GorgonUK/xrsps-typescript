@@ -28,8 +28,16 @@ type PersistedIosPwaLoginState = {
 };
 
 function isLocalOnlyServerAddress(address: string): boolean {
-    const host = address.trim().toLowerCase().split(":")[0] ?? "";
-    return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+    const normalized = address.trim().toLowerCase();
+    return (
+        normalized === "localhost" ||
+        normalized.startsWith("localhost:") ||
+        normalized === "127.0.0.1" ||
+        normalized.startsWith("127.0.0.1:") ||
+        normalized === "[::1]" ||
+        normalized.startsWith("[::1]:") ||
+        normalized === "::1"
+    );
 }
 
 function isPageRunningLocally(): boolean {
