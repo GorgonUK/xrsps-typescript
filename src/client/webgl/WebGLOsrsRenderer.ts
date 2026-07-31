@@ -805,7 +805,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     // Settings
     maxLevel: number = Scene.MAX_LEVELS - 1;
 
-    skyColor: vec4 = vec4.fromValues(0, 0, 0, 1); // Black ( — vanilla has no skybox)
+    skyColor: vec4 = vec4.fromValues(1, 1, 1, 1); // White fog / void (avoids a black "box" at the edge)
     fogDepth: number = 24; // Fog starts at 24 tiles (OSRS fog is subtle until near max distance)
     autoFogDepth: boolean = true;
     autoFogDepthFactor: number = 0.85;
@@ -2924,7 +2924,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         this.app.enable(PicoGL.BLEND);
         this.app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
-        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
 
         this.quadPositions = this.app.createVertexBuffer(
             PicoGL.FLOAT,
@@ -7848,7 +7848,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         profiler.startPhase("present");
         this.app.clearMask(PicoGL.COLOR_BUFFER_BIT | PicoGL.DEPTH_BUFFER_BIT);
-        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
         this.app.defaultDrawFramebuffer().clear();
 
         if (this.frameFxaaDrawCall && this.fxaaEnabled) {
