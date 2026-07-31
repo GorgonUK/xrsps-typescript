@@ -16,6 +16,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     kill: "developer",
     levelup: "developer",
     lunar: "developer",
+    maxall: "developer",
     onehealth: "developer",
     quest: "developer",
     randomitem: "developer",

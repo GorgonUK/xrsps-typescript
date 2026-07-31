@@ -1,4 +1,4 @@
-import { MAX_REAL_LEVEL, SkillId, getXpForLevel } from "../../../../src/rs/skill/skills";
+import { MAX_REAL_LEVEL, SKILL_IDS, SkillId, getXpForLevel } from "../../../../src/rs/skill/skills";
 import { VARBIT_ACTIVE_SPELLBOOK } from "../../../../src/shared/vars";
 import { getItemDefinition } from "../../data/items";
 import { SpellbookName } from "../../data/spellWidgetLoader";
@@ -388,6 +388,39 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                     const itemName = getItemDefinition(itemId)?.name?.trim() || `Item ${itemId}`;
                     logger.info(
                         `[cmd] ::randomitem - Gave player ${sender.id} collection log item ${itemId} (${itemName})`,
+                    );
+                    return;
+                }
+
+                if (root === "maxall") {
+                    const targetXp = getXpForLevel(MAX_REAL_LEVEL);
+                    let changed = 0;
+                    for (const skillId of SKILL_IDS) {
+                        const skill = sender.skillSystem.getSkill(skillId);
+                        const previousLevel = skill.baseLevel;
+                        sender.skillSystem.setSkillXp(skillId, targetXp);
+                        sender.skillSystem.setSkillBoost(skillId, MAX_REAL_LEVEL);
+                        if (skillId === SkillId.Hitpoints) {
+                            sender.skillSystem.setHitpointsCurrent(MAX_REAL_LEVEL);
+                        }
+                        if (previousLevel < MAX_REAL_LEVEL) {
+                            changed++;
+                            services.eventBus?.emit("skill:levelUp", {
+                                player: sender,
+                                skillId,
+                                oldLevel: previousLevel,
+                                newLevel: MAX_REAL_LEVEL,
+                            });
+                        }
+                    }
+
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: "All skills have been set to level 99.",
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(
+                        `[cmd] ::maxall - Player ${sender.id} set all ${SKILL_IDS.length} skills to level 99 (${changed} level-up event(s))`,
                     );
                     return;
                 }
