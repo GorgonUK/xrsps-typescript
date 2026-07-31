@@ -8,6 +8,12 @@ import {
     getEnchantedBoltEffect,
 } from "../../combat/AmmoSystem";
 import { AttackType } from "../../combat/AttackType";
+import {
+    getPrayerDefinition,
+    PRAYER_NAME_SET,
+    type PrayerCombatStat,
+    type PrayerName,
+} from "../../../../../src/rs/prayer/prayers";
 import * as CombatFormulas from "../../combat/CombatFormulaProvider";
 import { MagicStyle, MeleeStyle, RangedStyle } from "../../combat/CombatXp";
 import type { MagicStyleMode, MeleeStyleMode, RangedStyleMode } from "../../combat/CombatXp";
@@ -230,47 +236,6 @@ const MAGIC_STYLE_BY_SLOT: MagicStyleMode[] = [
     MagicStyle.Defensive,
     MagicStyle.Defensive,
 ];
-
-type PrayerStat = "attack" | "strength" | "defence" | "ranged" | "ranged_strength" | "magic";
-
-const PRAYER_BONUS: Record<PrayerStat, Map<string, number>> = {
-    attack: new Map<string, number>([
-        ["clarity_of_thought", 1.05],
-        ["improved_reflexes", 1.1],
-        ["incredible_reflexes", 1.15],
-        ["chivalry", 1.15],
-        ["piety", 1.2],
-    ]),
-    strength: new Map<string, number>([
-        ["burst_of_strength", 1.05],
-        ["superhuman_strength", 1.1],
-        ["ultimate_strength", 1.15],
-        ["chivalry", 1.18],
-        ["piety", 1.23],
-    ]),
-    defence: new Map<string, number>([
-        ["thick_skin", 1.05],
-        ["rock_skin", 1.1],
-        ["steel_skin", 1.15],
-        ["chivalry", 1.2],
-        ["piety", 1.25],
-        ["rigour", 1.25],
-        ["augury", 1.25],
-    ]),
-    ranged: new Map<string, number>([
-        ["sharp_eye", 1.05],
-        ["hawk_eye", 1.1],
-        ["eagle_eye", 1.15],
-        ["rigour", 1.2],
-    ]),
-    ranged_strength: new Map<string, number>([["rigour", 1.23]]),
-    magic: new Map<string, number>([
-        ["mystic_will", 1.05],
-        ["mystic_lore", 1.1],
-        ["mystic_might", 1.15],
-        ["augury", 1.25],
-    ]),
-};
 
 type AttackStyle =
     | {
@@ -1524,7 +1489,7 @@ export class CombatEngine {
         );
     }
 
-    private getPrayerMultiplier(player: PlayerState, stat: PrayerStat): number {
+    private getPrayerMultiplier(player: PlayerState, stat: PrayerCombatStat): number {
         const prayers: Set<string> | undefined = (() => {
             const active = player.prayer.activePrayers;
             if (active instanceof Set) return active as Set<string>;
@@ -1532,11 +1497,11 @@ export class CombatEngine {
             return undefined;
         })();
         if (!prayers || prayers.size === 0) return 1;
-        const table = PRAYER_BONUS[stat];
-        if (!table) return 1;
         let multiplier = 1;
         for (const prayer of prayers) {
-            const bonus = table.get(prayer);
+            // Ignore stale or invalid prayer ids from an older saved state.
+            if (!PRAYER_NAME_SET.has(prayer as PrayerName)) continue;
+            const bonus = getPrayerDefinition(prayer as PrayerName).combatMultipliers?.[stat];
             if (bonus && bonus > multiplier) {
                 multiplier = bonus;
             }

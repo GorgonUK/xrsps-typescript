@@ -1,5 +1,3 @@
-import { SkillId } from "../skill/skills";
-
 export type PrayerGroup =
     | "attack"
     | "strength"
@@ -42,6 +40,15 @@ export type PrayerSpecialEffect =
     | "redemption"
     | "smite"
     | "preserve";
+
+/** Combat-roll multipliers contributed by an active prayer. */
+export type PrayerCombatStat =
+    | "attack"
+    | "strength"
+    | "defence"
+    | "ranged"
+    | "ranged_strength"
+    | "magic";
 
 export type PrayerName =
     | "thick_skin"
@@ -91,7 +98,12 @@ interface PrayerDefinitionInit {
     readonly questRequirement?: { varbit: number; minValue: number; hint: string };
     readonly soundId?: number;
     readonly category: "offence" | "defence" | "overhead" | "utility";
-    readonly statBoosts?: Partial<Record<SkillId, number>>;
+    /**
+     * Multipliers used by the server combat engine. These are intentionally
+     * separate from skill levels: prayers modify combat rolls rather than
+     * permanently boosting the player's skills.
+     */
+    readonly combatMultipliers?: Partial<Record<PrayerCombatStat, number>>;
 }
 
 export interface PrayerDefinition extends PrayerDefinitionInit {
@@ -118,7 +130,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["defence", "combat"],
         soundId: 2690,
         category: "defence",
-        statBoosts: { [SkillId.Defence]: 5 },
+        combatMultipliers: { defence: 1.05 },
     },
     {
         id: "burst_of_strength",
@@ -133,7 +145,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["strength", "ranged", "magic", "combat"],
         soundId: 2688,
         category: "offence",
-        statBoosts: { [SkillId.Strength]: 5 },
+        combatMultipliers: { strength: 1.05 },
     },
     {
         id: "clarity_of_thought",
@@ -148,7 +160,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["attack", "ranged", "magic", "combat"],
         soundId: 2664,
         category: "offence",
-        statBoosts: { [SkillId.Attack]: 5 },
+        combatMultipliers: { attack: 1.05 },
     },
     {
         id: "sharp_eye",
@@ -163,7 +175,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2685,
         category: "offence",
-        statBoosts: { [SkillId.Ranged]: 5 },
+        combatMultipliers: { ranged: 1.05 },
     },
     {
         id: "mystic_will",
@@ -178,7 +190,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["magic", "attack", "strength", "ranged", "combat"],
         soundId: 2670,
         category: "offence",
-        statBoosts: { [SkillId.Magic]: 5 },
+        combatMultipliers: { magic: 1.05 },
     },
     {
         id: "rock_skin",
@@ -193,7 +205,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["defence", "combat"],
         soundId: 2684,
         category: "defence",
-        statBoosts: { [SkillId.Defence]: 10 },
+        combatMultipliers: { defence: 1.1 },
     },
     {
         id: "superhuman_strength",
@@ -208,7 +220,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["strength", "ranged", "magic", "combat"],
         soundId: 2689,
         category: "offence",
-        statBoosts: { [SkillId.Strength]: 10 },
+        combatMultipliers: { strength: 1.1 },
     },
     {
         id: "improved_reflexes",
@@ -223,7 +235,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["attack", "ranged", "magic", "combat"],
         soundId: 2662,
         category: "offence",
-        statBoosts: { [SkillId.Attack]: 10 },
+        combatMultipliers: { attack: 1.1 },
     },
     {
         id: "rapid_restore",
@@ -280,7 +292,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2666,
         category: "offence",
-        statBoosts: { [SkillId.Ranged]: 10 },
+        combatMultipliers: { ranged: 1.1 },
     },
     {
         id: "mystic_lore",
@@ -295,7 +307,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["magic", "attack", "strength", "ranged", "combat"],
         soundId: 2668,
         category: "offence",
-        statBoosts: { [SkillId.Magic]: 10 },
+        combatMultipliers: { magic: 1.1 },
     },
     {
         id: "steel_skin",
@@ -310,7 +322,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["defence", "combat"],
         soundId: 2687,
         category: "defence",
-        statBoosts: { [SkillId.Defence]: 15 },
+        combatMultipliers: { defence: 1.15 },
     },
     {
         id: "ultimate_strength",
@@ -325,7 +337,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["strength", "ranged", "magic", "combat"],
         soundId: 2691,
         category: "offence",
-        statBoosts: { [SkillId.Strength]: 15 },
+        combatMultipliers: { strength: 1.15 },
     },
     {
         id: "incredible_reflexes",
@@ -340,7 +352,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["attack", "ranged", "magic", "combat"],
         soundId: 2667,
         category: "offence",
-        statBoosts: { [SkillId.Attack]: 15 },
+        combatMultipliers: { attack: 1.15 },
     },
     {
         id: "protect_from_magic",
@@ -400,7 +412,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2665,
         category: "offence",
-        statBoosts: { [SkillId.Ranged]: 15 },
+        combatMultipliers: { ranged: 1.15 },
     },
     {
         id: "mystic_might",
@@ -415,7 +427,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["magic", "attack", "strength", "ranged", "combat"],
         soundId: 2669,
         category: "offence",
-        statBoosts: { [SkillId.Magic]: 15 },
+        combatMultipliers: { magic: 1.15 },
     },
     {
         id: "retribution",
@@ -493,11 +505,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["combat", "attack", "strength", "defence", "ranged", "magic"],
         soundId: 3826,
         category: "offence",
-        statBoosts: {
-            [SkillId.Attack]: 15,
-            [SkillId.Strength]: 18,
-            [SkillId.Defence]: 20,
-        },
+        combatMultipliers: { attack: 1.15, strength: 1.18, defence: 1.2 },
         questRequirement: {
             varbit: QUEST_VARBIT_KINGS_RANSOM,
             minValue: 8,
@@ -517,11 +525,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["combat", "attack", "strength", "defence", "ranged", "magic"],
         soundId: 3825,
         category: "offence",
-        statBoosts: {
-            [SkillId.Attack]: 20,
-            [SkillId.Strength]: 23,
-            [SkillId.Defence]: 25,
-        },
+        combatMultipliers: { attack: 1.2, strength: 1.23, defence: 1.25 },
         questRequirement: {
             varbit: QUEST_VARBIT_KINGS_RANSOM,
             minValue: 8,
@@ -541,10 +545,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["combat", "attack", "strength", "defence", "ranged", "magic"],
         soundId: 3825,
         category: "offence",
-        statBoosts: {
-            [SkillId.Ranged]: 20,
-            [SkillId.Defence]: 25,
-        },
+        combatMultipliers: { ranged: 1.2, ranged_strength: 1.23, defence: 1.25 },
         unlockVarbit: RIGOUR_UNLOCK_VARBIT,
     },
     {
@@ -560,10 +561,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["combat", "attack", "strength", "defence", "ranged", "magic"],
         soundId: 3825,
         category: "offence",
-        statBoosts: {
-            [SkillId.Magic]: 25,
-            [SkillId.Defence]: 25,
-        },
+        combatMultipliers: { magic: 1.25, defence: 1.25 },
         unlockVarbit: AUGURY_UNLOCK_VARBIT,
     },
 ];
