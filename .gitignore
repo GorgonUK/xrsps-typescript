@@ -63,6 +63,8 @@ AGENT.md
 server/data/gamemodes/*/player-state.json
 server/data/gamemodes/*/accounts.json
 server/data/gamemodes/*/game.sqlite*
+.vercel/project.json
+.vercel/README.txt
 .vercel
 .env*
 !.env.example

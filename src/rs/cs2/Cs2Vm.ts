@@ -279,6 +279,9 @@ export interface Cs2Context {
      */
     resolveChatPlayerName?: (scriptId: number) => string | undefined;
 
+    /** Dispatches the native player-option packet requested by CS2 OPPLAYER. */
+    sendPlayerOption?: (playerName: string, option: number) => void;
+
     // Input manager for keyboard state queries (KEYHELD, KEYPRESSED)
     inputManager?: {
         isKeyHeld: (osrsKeyCode: number) => boolean;

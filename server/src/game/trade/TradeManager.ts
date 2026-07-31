@@ -55,7 +55,7 @@ type TradeSession = {
 type TradeRequestState = {
     fromId: number;
     toId: number;
-    expireTick: number;
+    requestedAtMs: number;
 };
 
 type TradePersistenceTarget = Pick<TradePartyState, "player" | "accountKey">;
@@ -67,7 +67,7 @@ class TradeIntegrityError extends Error {
     }
 }
 
-const REQUEST_TIMEOUT_TICKS = 64; // ~38.4 seconds at 600ms ticks
+const REQUEST_TIMEOUT_MS = 30_000;
 const TRADE_CONFIRM_GROUP_ID = 334;
 const TRADE_OFFER_GROUP_ID = 335;
 const TRADE_INVENTORY_GROUP_ID = 336;
@@ -291,9 +291,20 @@ export class TradeManager {
         const reverseKey = this.buildRequestKey(target.id, initiator.id);
         const key = this.buildRequestKey(initiator.id, target.id);
         const reverse = this.requests.get(reverseKey);
-        if (reverse && reverse.expireTick > currentTick) {
+        const pendingAtMs = initiator.pendingTradeRequests.get(target.id);
+        if (pendingAtMs !== undefined && Date.now() - pendingAtMs > REQUEST_TIMEOUT_MS) {
+            initiator.pendingTradeRequests.delete(target.id);
+            this.requests.delete(reverseKey);
+            this.svc.messagingService.sendGameMessageToPlayer(
+                initiator,
+                "Other player's trade request has expired.",
+            );
+            return;
+        }
+        if (reverse && pendingAtMs !== undefined) {
             this.requests.delete(reverseKey);
             this.requests.delete(key);
+            initiator.pendingTradeRequests.delete(target.id);
             this.startSession(initiator, target);
             return;
         }
@@ -301,14 +312,11 @@ export class TradeManager {
         this.requests.set(key, {
             fromId: initiator.id,
             toId: target.id,
-            expireTick: currentTick + REQUEST_TIMEOUT_TICKS,
+            requestedAtMs: Date.now(),
         });
         const name = this.resolveName(initiator);
         this.svc.messagingService.sendGameMessageToPlayer(initiator, "Sending trade offer...");
-        this.svc.messagingService.sendGameMessageToPlayer(
-            target,
-            `${name} wishes to trade with you.`,
-        );
+        this.svc.messagingService.sendTradeRequestToPlayer(target, initiator, name);
         this.svc.broadcastService.queueTradeMessage(target.id, {
             kind: "request",
             fromId: initiator.id,
@@ -332,7 +340,7 @@ export class TradeManager {
 
     tick(currentTick: number): void {
         for (const [key, req] of Array.from(this.requests.entries())) {
-            if (req.expireTick <= currentTick) {
+            if (Date.now() - req.requestedAtMs > REQUEST_TIMEOUT_MS) {
                 this.requests.delete(key);
                 const fromPlayer = this.svc.players?.getById(req.fromId);
                 if (fromPlayer) {
@@ -460,6 +468,8 @@ export class TradeManager {
         for (const [key, req] of Array.from(this.requests.entries())) {
             if (req.fromId === playerId || req.toId === playerId) {
                 this.requests.delete(key);
+                const recipient = this.svc.players?.getById(req.toId);
+                recipient?.pendingTradeRequests.delete(req.fromId);
             }
         }
     }

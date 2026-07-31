@@ -62,6 +62,7 @@ vm.run(initScript, [componentUid], []);
 
 const component = widgetManager.getWidgetByUid(componentUid);
 assert.ok(component, "trade inventory root component should exist");
+assert.equal(component.width, 162, "trade inventory's native container width should be preserved");
 assert.equal(
     component.children?.filter(Boolean).length,
     Inventory.SLOT_COUNT,
@@ -79,6 +80,9 @@ assert.equal(
     6512,
     "empty inventory slots should retain the native transparent placeholder",
 );
+assert.equal(component.children?.[0]?.x, 0, "trade inventory should align its first column");
+assert.equal(component.children?.[3]?.x, 126, "trade inventory's fourth column should fit");
+assert.equal(component.children?.[3]?.x! + 36, component.width, "the final column must not clip");
 
 inventory.setSlot(0, 1337, 42);
 const refreshScript = loadScript(3619);
@@ -87,6 +91,7 @@ vm.run(refreshScript, [componentUid, inventory.capacity], []);
 
 assert.equal(component.children?.[0]?.itemId, 1337, "refresh should read the latest item");
 assert.equal(component.children?.[0]?.itemQuantity, 42, "refresh should read the latest quantity");
+assert.equal(component.children?.[3]?.x, 126, "trade refresh must reapply the fitted layout");
 
 const offerGroup = widgetManager.loadGroup(335);
 assert.ok(offerGroup, "trade offer widget group should load");

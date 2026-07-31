@@ -55,7 +55,7 @@ export class TouchInputAdapter {
 
     destroy(): void {
         this.clearLongPressTimer();
-        this.recognizer.cancel();
+        this.applyIntents(this.recognizer.cancel());
     }
 
     private scheduleLongPressCheck(): void {

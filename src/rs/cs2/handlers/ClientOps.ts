@@ -1763,8 +1763,11 @@ export function registerClientOps(handlers: HandlerMap): void {
     });
 
     handlers.set(Opcodes.OPPLAYER, (ctx) => {
-        ctx.intStackSize--; // pop op
-        ctx.stringStackSize--; // pop playerName
+        const option = ctx.intStack[--ctx.intStackSize];
+        const playerName = String(ctx.stringStack[--ctx.stringStackSize] ?? "");
+        if (playerName.length > 0) {
+            ctx.sendPlayerOption?.(playerName, option);
+        }
     });
 
     handlers.set(Opcodes.OPENURL, (ctx) => {
