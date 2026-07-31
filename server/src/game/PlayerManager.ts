@@ -348,6 +348,15 @@ export class PlayerManager implements PlayerRepository {
         return false;
     }
 
+    getConnectedPlayerByName(username: string): PlayerState | undefined {
+        const normalized = normalizePlayerAccountName(username);
+        if (!normalized) return undefined;
+        for (const player of this.players.values()) {
+            if (normalizePlayerAccountName(player.name) === normalized) return player;
+        }
+        return undefined;
+    }
+
     /**
      * Get total player count (active + orphaned + bots).
      * Used for world capacity checks.

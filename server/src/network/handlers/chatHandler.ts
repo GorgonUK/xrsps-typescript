@@ -545,6 +545,41 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                     return;
                 }
 
+                if (root === "teleto" || root === "teletome") {
+                    const targetName = parts.slice(1).join(" ");
+                    const target = services.getConnectedPlayerByName(targetName);
+                    if (!target) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: `Player \"${targetName || "?"}\" is not online.`,
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    if (root === "teleto") {
+                        services.teleportPlayer(sender, target.tileX, target.tileY, target.level);
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: `Teleported to ${target.name}.`,
+                            targetPlayerIds: [sender.id],
+                        });
+                    } else {
+                        services.teleportPlayer(target, sender.tileX, sender.tileY, sender.level);
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: `Teleported ${target.name} to you.`,
+                            targetPlayerIds: [sender.id],
+                        });
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: `You were teleported to ${sender.name}.`,
+                            targetPlayerIds: [target.id],
+                        });
+                    }
+                    logger.info(`[cmd] ::${root} - Player ${sender.id} targeted ${target.id}`);
+                    return;
+                }
+
                 if (root === "devbank") {
                     const banking = services.getGamemodeServices().banking as
                         | BankingServices

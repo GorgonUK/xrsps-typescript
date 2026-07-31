@@ -66,6 +66,7 @@ export interface MessageHandlerServices {
     // Player management
     getPlayer: (ws: WebSocket) => PlayerState | undefined;
     getPlayerById: (id: number) => PlayerState | undefined;
+    getConnectedPlayerByName: (name: string) => PlayerState | undefined;
     startFollowing: (
         ws: WebSocket,
         targetId: number,

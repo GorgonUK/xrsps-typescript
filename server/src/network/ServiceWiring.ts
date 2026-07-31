@@ -38,6 +38,7 @@ export function registerMessageHandlers(svc: ServerServices, router: MessageRout
         // Player management
         getPlayer: (ws) => svc.players?.get(ws),
         getPlayerById: (id) => svc.players?.getById(id),
+        getConnectedPlayerByName: (name) => svc.players?.getConnectedPlayerByName(name),
         startFollowing: (ws, targetId, mode, modifierFlags) =>
             svc.players?.startFollowing(ws, targetId, mode, modifierFlags),
         startLocInteract: (ws, opts, currentTick) =>

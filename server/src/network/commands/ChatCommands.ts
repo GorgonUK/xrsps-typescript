@@ -25,6 +25,8 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     spawn: "developer",
     standard: "developer",
     tele: "developer",
+    teleto: "developer",
+    teletome: "developer",
     tickstats: "developer",
     whip: "developer",
 };
