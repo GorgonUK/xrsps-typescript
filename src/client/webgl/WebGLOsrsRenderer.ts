@@ -1390,7 +1390,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             this.canvas.height,
         );
         loginRenderer.setMousePosition(x, y);
-        return this.resolveLoginFieldAt(loginRenderer.mouseY);
+        const content = loginRenderer.mapPointerToContent(
+            loginRenderer.mouseX,
+            loginRenderer.mouseY,
+        );
+        return this.resolveLoginFieldAt(content.y);
     }
 
     isMobileLoginInputActive(): boolean {

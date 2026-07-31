@@ -165,11 +165,33 @@ const SERVER_LIST_URL = getServerListUrl();
 export class LoginRenderer {
     // ========== Layout Constants ==========
 
-    /** Standard login box X position (within 765px content area) */
+    /** Standard login box X position fallback (within classic 765px content area) */
     private readonly LOGIN_BOX_X = 202;
 
-    /** Login box center (loginBoxX + 180) */
+    /** Login box center fallback (loginBoxX + 180) — also used before first layout */
     private readonly LOGIN_BOX_CENTER = 382;
+
+    /** Native titlebox top Y fallback within the classic 503px scene */
+    private readonly TITLEBOX_Y = 170;
+
+    /** Fallback titlebox size when the sprite has not loaded yet (matches classic assets) */
+    private readonly TITLEBOX_FALLBACK_WIDTH = 360;
+    private readonly TITLEBOX_FALLBACK_HEIGHT = 200;
+
+    /** Current titlebox top Y in the active (dynamic) layout */
+    private titleboxY: number = this.TITLEBOX_Y;
+
+    /** Vertical origin of the classic 503px login content band within the viewport */
+    private contentOriginY: number = 0;
+
+    /** Horizontal origin of the scaled classic login content band */
+    private contentOriginX: number = 0;
+
+    /** Uniform scale applied to the classic 765×503 login UI so it fits mobile viewports */
+    private contentScale: number = 1;
+
+    /** Reserved bottom strip (px) so server/mute controls stay visible */
+    private readonly BOTTOM_CONTROLS_RESERVE = 52;
 
     /** Standard content width (login UI is designed for this) */
     private readonly CONTENT_WIDTH = 765;
@@ -478,17 +500,9 @@ export class LoginRenderer {
         const isMobile = isMobileMode;
         const isTouch = isTouchDevice;
 
-        // OSRS desktop title/login stays authored at native fixed-mode size. Only mobile layout
-        // scales the scene down to fit smaller handheld viewports.
+        // OSRS desktop title/login used to stay at a fixed 765x503 scene. Layout now follows
+        // the real viewport; keep scale at 1 so we don't shrink a scene that already matches.
         let scale = 1.0;
-        if (isMobile) {
-            const fitScale = Math.min(
-                1.0,
-                canvasWidth / this.SCENE_WIDTH,
-                canvasHeight / this.SCENE_HEIGHT,
-            );
-            scale = Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1.0;
-        }
 
         // On mobile with small screens (portrait or small landscape), use list mode for world select
         // List mode provides 60px rows vs 19px grid rows for touch targets
@@ -585,20 +599,21 @@ export class LoginRenderer {
             return undefined;
         }
 
-        const coverScale = Math.max(
-            viewportWidth / this.SCENE_WIDTH,
-            viewportHeight / this.SCENE_HEIGHT,
-        );
-        const focusedScale = Math.max(layoutScale, Math.min(2.4, coverScale * 1.15));
+        // Layout already matches the viewport; zoom in slightly so fields stay above the keyboard.
+        const focusedScale = Math.max(layoutScale, Math.min(2.4, layoutScale * 1.35));
         if (!Number.isFinite(focusedScale) || focusedScale <= layoutScale) {
             return undefined;
         }
 
         const renderScale = focusedScale * safeSurfaceScale;
-        const scaledSceneWidth = this.SCENE_WIDTH * renderScale;
-        const scaledSceneHeight = this.SCENE_HEIGHT * renderScale;
-        const focusX = this.LOGIN_BOX_CENTER;
-        const focusY = this.mobileKeyboardFocusField === 1 ? 256 : 241;
+        const scaledSceneWidth = viewportWidth * renderScale;
+        const scaledSceneHeight = viewportHeight * renderScale;
+        const focusX =
+            this.contentOriginX + this.LOGIN_BOX_CENTER * this.contentScale;
+        const focusY =
+            this.contentOriginY +
+            (this.TITLEBOX_Y + (this.mobileKeyboardFocusField === 1 ? 86 : 71)) *
+                this.contentScale;
         const targetFocusX = drawSurfaceWidth / 2;
         const targetFocusY = drawSurfaceHeight * 0.46;
         const renderOffsetX = this.clampFocusedOffset(
@@ -705,22 +720,66 @@ export class LoginRenderer {
     }
 
     /** Get fire positions for WebGL rendering (left and right fire X coordinates) */
-    getFirePositions(): { leftX: number; rightX: number; y: number } {
+    getFirePositions(): { leftX: number; rightX: number; y: number; scale: number } {
         const logical = this.getLogicalFirePositions();
         const scale = this.renderScale;
         const leftX = logical.leftX * scale + this.renderOffsetX;
         const rightX = logical.rightX * scale + this.renderOffsetX;
         const y = logical.y * scale + this.renderOffsetY;
-        return { leftX, rightX, y };
+        return { leftX, rightX, y, scale: logical.scale * scale };
     }
 
-    private getLogicalFirePositions(): { leftX: number; rightX: number; y: number } {
-        //
-        // left  = Login.xPadding - 22
-        // right = Login.xPadding + 22 + 765 - 128
-        const leftX = this.xPadding - 22;
-        const rightX = this.xPadding + 22 + 765 - 128;
-        return { leftX, rightX, y: 0 };
+    /**
+     * Cover-fit rect for the title background art in layout coordinates.
+     * Fire overlays must use this so they stay locked to the pillars as the window resizes.
+     */
+    private getTitleBackgroundLayout(): {
+        drawX: number;
+        drawY: number;
+        drawW: number;
+        drawH: number;
+        scale: number;
+    } {
+        const targetW = Math.max(1, this.containerWidth);
+        const targetH = Math.max(1, this.containerHeight);
+        const img = this.titleBackgroundImage;
+        const srcW = img?.width || LoginRenderer.TITLE_BG_WIDTH;
+        const srcH = img?.height || LoginRenderer.MAX_BG_HEIGHT;
+        const scale = Math.max(targetW / srcW, targetH / srcH);
+        const drawW = srcW * scale;
+        const drawH = srcH * scale;
+        return {
+            drawX: this.containerX + (targetW - drawW) / 2,
+            drawY: (targetH - drawH) / 2,
+            drawW,
+            drawH,
+            scale,
+        };
+    }
+
+    private getLogicalFirePositions(): {
+        leftX: number;
+        rightX: number;
+        y: number;
+        scale: number;
+    } {
+        // Classic 765-scene fire edges mapped into the 1089-wide title art:
+        //   cropX = (1089 - 765) / 2 = 162
+        //   left  = 162 + (-22) = 140
+        //   right = 162 + (765 - 128 + 22) = 821
+        // Track those art-space X values through the cover-fit background transform.
+        const bg = this.getTitleBackgroundLayout();
+        const artW = LoginRenderer.TITLE_BG_WIDTH;
+        const leftSrcX = LoginRenderer.TITLE_BG_CROP_X - 22;
+        const rightSrcX = LoginRenderer.TITLE_BG_CROP_X + this.SCENE_WIDTH - 128 + 22;
+        // Scale fire sprites with the background so bowl size matches the art.
+        const fireScale = bg.drawW / artW;
+        return {
+            leftX: bg.drawX + (leftSrcX / artW) * bg.drawW,
+            rightX: bg.drawX + (rightSrcX / artW) * bg.drawW,
+            y: bg.drawY,
+            scale: fireScale,
+        };
     }
 
     private getVisibleLayoutRightEdge(): number {
@@ -728,24 +787,37 @@ export class LoginRenderer {
         return (this.renderSurfaceWidth - this.renderOffsetX) / scale;
     }
 
+    /** Shared Y for bottom-left server button and bottom-right mute button. */
+    private getBottomControlsY(): number {
+        return Math.max(8, this.canvasHeight - 40);
+    }
+
+    private getServerListButtonPosition(): { x: number; y: number } {
+        return {
+            x: this.containerX + 5,
+            y: this.getBottomControlsY(),
+        };
+    }
+
     private getTitleMuteDrawPosition(): { x: number; y: number } {
-        // The custom login background is wider than the native 765px title scene and is rendered
-        // full-width, so anchor the music toggle to the visible background edge.
-        const defaultRightEdge = this.xPadding + this.CONTENT_WIDTH;
-        const backgroundRightEdge = this.titleBackgroundImage
-            ? this.xPadding - LoginRenderer.TITLE_BG_CROP_X + this.titleBackgroundImage.width
-            : defaultRightEdge;
-        const titleRightEdge = Math.min(backgroundRightEdge, this.getVisibleLayoutRightEdge());
+        // Anchor the music toggle to the visible right edge, same baseline as server button.
+        const defaultRightEdge = this.containerX + this.containerWidth;
+        const titleRightEdge = Math.min(defaultRightEdge, this.getVisibleLayoutRightEdge());
         return {
             x: Math.floor(titleRightEdge) - 40,
-            y: 463,
+            y: this.getBottomControlsY(),
         };
     }
 
     private isTitleMuteHit(x: number, y: number): boolean {
         const mutePos = this.getTitleMuteDrawPosition();
         // Keep the original 50x50 hit area, anchored to the actual draw position.
-        return x >= mutePos.x - 10 && y >= 453 && x < mutePos.x + 40 && y < this.SCENE_HEIGHT;
+        return (
+            x >= mutePos.x - 10 &&
+            y >= mutePos.y - 10 &&
+            x < mutePos.x + 40 &&
+            y < mutePos.y + 40
+        );
     }
 
     private drawTitleMuteButton(ctx: RenderContext, titleMusicDisabled: boolean): void {
@@ -850,16 +922,18 @@ export class LoginRenderer {
         const safeSurfaceScale =
             Number.isFinite(surfaceScale) && surfaceScale > 0 ? surfaceScale : 1.0;
 
-        // Keep the browser canvas at the real device DPR, but scale a fixed native login scene
-        // inside it instead of stretching the scene to the viewport dimensions.
+        // Use the real viewport as the login layout (dynamic width/height).
+        // Surface scale maps CSS layout pixels onto the device-pixel draw buffer.
         let renderScale = layoutScale * safeSurfaceScale;
-        const layoutWidth = this.SCENE_WIDTH;
-        const layoutHeight = this.SCENE_HEIGHT;
+        const layoutWidth = viewportWidth;
+        const layoutHeight = viewportHeight;
 
         let renderOffsetX = Math.floor(
             (drawSurfaceWidth - Math.round(layoutWidth * renderScale)) / 2,
         );
-        let renderOffsetY = 0;
+        let renderOffsetY = Math.floor(
+            (drawSurfaceHeight - Math.round(layoutHeight * renderScale)) / 2,
+        );
         const mobileFocusTransform = this.getMobileKeyboardFocusTransform(
             viewportWidth,
             viewportHeight,
@@ -882,16 +956,157 @@ export class LoginRenderer {
         this.canvasWidth = layoutWidth;
         this.canvasHeight = layoutHeight;
 
-        this.containerWidth = LoginRenderer.MAX_BG_WIDTH;
-        this.containerHeight = LoginRenderer.MAX_BG_HEIGHT;
-
-        // The native login scene is the background container, so its origin is fixed.
+        // Background fills the dynamic viewport.
+        this.containerWidth = layoutWidth;
+        this.containerHeight = layoutHeight;
         this.containerX = 0;
 
-        this.xPadding = 0;
+        // Classic login UI is authored for 765×503. Scale it to fit when the viewport
+        // is smaller, then on mobile bias upward so the titlebox stays readable
+        // (full-scene fit alone leaves the 360px panel too small on short phones).
+        const padX = 8;
+        const padTop = 8;
+        const padBottom = this.BOTTOM_CONTROLS_RESERVE;
+        const availableW = Math.max(1, layoutWidth - padX * 2);
+        const availableH = Math.max(1, layoutHeight - padTop - padBottom);
+        const sceneFit = Math.min(
+            1,
+            availableW / this.SCENE_WIDTH,
+            availableH / this.SCENE_HEIGHT,
+        );
+        let contentScale =
+            Number.isFinite(sceneFit) && sceneFit > 0 ? sceneFit : 1;
 
-        this.loginBoxX = this.xPadding + this.LOGIN_BOX_X;
-        this.loginBoxCenter = this.xPadding + this.LOGIN_BOX_CENTER;
+        if (isMobileMode) {
+            const titleboxW =
+                this.titleboxSprite?.subWidth || this.TITLEBOX_FALLBACK_WIDTH;
+            const titleboxH =
+                this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+            // Aim for the panel to use most of the short axis without covering
+            // bottom server/mute controls. Side margins of the classic 765 band
+            // may clip — that is empty art space around the centered box.
+            const titleboxFit = Math.min(
+                availableW / (titleboxW + 32),
+                availableH / (titleboxH + 72),
+            );
+            if (Number.isFinite(titleboxFit) && titleboxFit > contentScale) {
+                contentScale = Math.min(titleboxFit, contentScale * 1.28);
+            }
+        }
+
+        this.contentScale = contentScale;
+
+        const scaledW = this.SCENE_WIDTH * this.contentScale;
+        const scaledH = this.SCENE_HEIGHT * this.contentScale;
+        this.contentOriginX = Math.floor((layoutWidth - scaledW) / 2);
+
+        const titleboxH =
+            this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+        const titleboxMid = this.TITLEBOX_Y + titleboxH / 2;
+
+        if (isMobileMode) {
+            // Center the titlebox on the full viewport (not the band above the
+            // bottom-control reserve). That reserve only clamps so the panel
+            // doesn't cover server/mute — it must not bias the panel upward.
+            const preferredOriginY =
+                layoutHeight / 2 - titleboxMid * this.contentScale;
+            const minOriginY = padTop - this.TITLEBOX_Y * this.contentScale;
+            const maxOriginY =
+                layoutHeight -
+                padBottom -
+                (this.TITLEBOX_Y + titleboxH) * this.contentScale;
+            this.contentOriginY = Math.floor(
+                maxOriginY < minOriginY
+                    ? (minOriginY + maxOriginY) / 2
+                    : Math.max(minOriginY, Math.min(preferredOriginY, maxOriginY)),
+            );
+        } else {
+            // Desktop: center titlebox within the content band above bottom controls.
+            const availableMidY = padTop + availableH / 2;
+            const preferredOriginY =
+                availableMidY - titleboxMid * this.contentScale;
+            const minOriginY = padTop;
+            const maxOriginY = padTop + availableH - scaledH;
+            this.contentOriginY = Math.floor(
+                Math.max(minOriginY, Math.min(preferredOriginY, maxOriginY)),
+            );
+        }
+        this.xPadding = this.contentOriginX;
+
+        // Draw/hit-test login panels in classic coordinates; the content transform maps them.
+        this.loginBoxX = this.LOGIN_BOX_X;
+        this.loginBoxCenter = this.LOGIN_BOX_CENTER;
+        this.titleboxY = this.TITLEBOX_Y;
+    }
+
+    /**
+     * Titlebox rect in classic content-band coordinates (inside content transform).
+     */
+    private getTitleBoxLayout(): {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        centerX: number;
+    } {
+        const width = this.titleboxSprite?.subWidth || this.TITLEBOX_FALLBACK_WIDTH;
+        const height = this.titleboxSprite?.subHeight || this.TITLEBOX_FALLBACK_HEIGHT;
+        const x = this.LOGIN_BOX_X;
+        const y = this.TITLEBOX_Y;
+        return {
+            x,
+            y,
+            width,
+            height,
+            centerX: x + Math.floor(width / 2),
+        };
+    }
+
+    /**
+     * Welcome screen positions derived from the titlebox, not hardcoded pixels.
+     * Coordinates are in the classic content band (drawLoginScreen applies content transform).
+     */
+    private getWelcomeLayout(): {
+        centerX: number;
+        titleY: number;
+        buttonY: number;
+        buttonSpacing: number;
+    } {
+        const box = this.getTitleBoxLayout();
+        return {
+            centerX: box.centerX,
+            titleY: box.y + Math.round(box.height * 0.405),
+            buttonY: box.y + Math.round(box.height * 0.605),
+            buttonSpacing: Math.max(60, Math.round(box.width * 0.222)),
+        };
+    }
+
+    /** Map viewport layout coordinates into classic content-band space. */
+    private toContentPoint(layoutX: number, layoutY: number): { x: number; y: number } {
+        const scale = this.contentScale > 0 ? this.contentScale : 1;
+        return {
+            x: (layoutX - this.contentOriginX) / scale,
+            y: (layoutY - this.contentOriginY) / scale,
+        };
+    }
+
+    /** Public helper for input mapping (mobile field hit-tests, etc.). */
+    mapPointerToContent(layoutX: number, layoutY: number): { x: number; y: number } {
+        return this.toContentPoint(layoutX, layoutY);
+    }
+
+    /** Apply the centered/scaled classic login transform for UI drawn in 765×503 space. */
+    private withContentTransform(ctx: RenderContext, drawFn: () => void): void {
+        ctx.save();
+        ctx.translate(this.contentOriginX, this.contentOriginY);
+        if (this.contentScale !== 1) {
+            ctx.scale(this.contentScale, this.contentScale);
+        }
+        try {
+            drawFn();
+        } finally {
+            ctx.restore();
+        }
     }
 
     // ========== Asset Loading ==========
@@ -1146,11 +1361,15 @@ export class LoginRenderer {
 
         // Server list button (bottom left, replaces world select button)
         if (gameState >= GameState.LOGIN_SCREEN && this.worldSelectButtonSprite) {
-            const buttonX = this.containerX + 5;
-            const buttonY = 463;
+            const buttonPos = this.getServerListButtonPosition();
             const buttonW = this.worldSelectButtonSprite.subWidth || 100;
             const buttonH = this.worldSelectButtonSprite.subHeight || 35;
-            if (x >= buttonX && x <= buttonX + buttonW && y >= buttonY && y <= buttonY + buttonH) {
+            if (
+                x >= buttonPos.x &&
+                x <= buttonPos.x + buttonW &&
+                y >= buttonPos.y &&
+                y <= buttonPos.y + buttonH
+            ) {
                 return LoginActions.OPEN_SERVER_LIST;
             }
         }
@@ -1160,44 +1379,47 @@ export class LoginRenderer {
             return this.handleWorldSelectClick(state, x, y);
         }
 
+        // Login panels are drawn in a centered/scaled classic content band.
+        const content = this.toContentPoint(x, y);
+
         // Route to appropriate screen handler
         switch (state.loginIndex) {
             case LoginIndex.WELCOME:
-                return this.handleWelcomeClick(x, y);
+                return this.handleWelcomeClick(content.x, content.y);
             case LoginIndex.WARNING:
-                return this.handleWarningClick(x, y);
+                return this.handleWarningClick(content.x, content.y);
             case LoginIndex.LOGIN_FORM:
-                return this.handleLoginFormClick(state, x, y, gameState);
+                return this.handleLoginFormClick(state, content.x, content.y, gameState);
             case LoginIndex.INVALID_CREDENTIALS:
-                return this.handleInvalidCredentialsClick(x, y);
+                return this.handleInvalidCredentialsClick(content.x, content.y);
             case LoginIndex.AUTHENTICATOR:
-                return this.handleAuthenticatorClick(state, x, y);
+                return this.handleAuthenticatorClick(state, content.x, content.y);
             case LoginIndex.FORGOT_PASSWORD:
-                return this.handleForgotPasswordClick(x, y);
+                return this.handleForgotPasswordClick(content.x, content.y);
             case LoginIndex.DATE_OF_BIRTH:
-                return this.handleDobClick(state, x, y);
+                return this.handleDobClick(state, content.x, content.y);
             case LoginIndex.MESSAGE:
             case LoginIndex.MUST_ACCEPT_TERMS:
-                return this.handleMessageClick(state, x, y);
+                return this.handleMessageClick(state, content.x, content.y);
             case LoginIndex.TRY_AGAIN:
-                return this.handleTryAgainClick(x, y);
+                return this.handleTryAgainClick(content.x, content.y);
             case LoginIndex.BANNED:
-                return this.handleBannedClick(x, y);
+                return this.handleBannedClick(content.x, content.y);
             case LoginIndex.OK_MESSAGE:
-                return this.handleOkMessageClick(x, y);
+                return this.handleOkMessageClick(content.x, content.y);
             default:
                 return undefined;
         }
     }
 
     private handleWelcomeClick(x: number, y: number): LoginAction | undefined {
-        const buttonY = 291;
-        const newUserX = this.loginBoxCenter - 80;
-        if (this.isButtonHit(x, y, newUserX, buttonY)) {
+        const layout = this.getWelcomeLayout();
+        const newUserX = layout.centerX - layout.buttonSpacing;
+        if (this.isButtonHit(x, y, newUserX, layout.buttonY)) {
             return LoginActions.NEW_USER;
         }
-        const existingUserX = this.loginBoxCenter + 80;
-        if (this.isButtonHit(x, y, existingUserX, buttonY)) {
+        const existingUserX = layout.centerX + layout.buttonSpacing;
+        if (this.isButtonHit(x, y, existingUserX, layout.buttonY)) {
             return LoginActions.EXISTING_USER;
         }
         return undefined;
@@ -1553,11 +1775,8 @@ export class LoginRenderer {
         const visualHalfH = 20;
 
         // On touch devices, enforce minimum 44px touch targets in SCREEN space.
-        // Convert that minimum back to layout space so it stays 44px after render scaling.
-        const scale =
-            Number.isFinite(this.layoutConfig.scale) && this.layoutConfig.scale > 0
-                ? this.layoutConfig.scale
-                : 1.0;
+        // Clicks are in classic content space, so convert through contentScale.
+        const scale = this.contentScale > 0 ? this.contentScale : 1.0;
         const minScreenHalf = this.layoutConfig.isTouch
             ? Math.ceil(this.layoutConfig.minTouchTarget / 2)
             : 0;
@@ -1739,10 +1958,17 @@ export class LoginRenderer {
                         );
                         cacheCtx.clip();
 
-                        // Fire positions fixed relative to content center.
+                        // Lock flames to the scaled background art (pillar braziers).
                         const firePos = this.getLogicalFirePositions();
-                        this.loginScreenRunesAnimation.draw(cacheCtx, firePos.leftX, this.cycle);
-                        this.loginScreenRunesAnimation.draw(cacheCtx, firePos.rightX, this.cycle);
+                        const drawFireAt = (x: number) => {
+                            cacheCtx.save();
+                            cacheCtx.translate(x, firePos.y);
+                            cacheCtx.scale(firePos.scale, firePos.scale);
+                            this.loginScreenRunesAnimation!.draw(cacheCtx, 0, this.cycle);
+                            cacheCtx.restore();
+                        };
+                        drawFireAt(firePos.leftX);
+                        drawFireAt(firePos.rightX);
 
                         cacheCtx.restore();
                     }
@@ -1757,21 +1983,25 @@ export class LoginRenderer {
                         }
                     }
 
-                    // Server list button (bottom left)
+                    // Server list button (bottom left) — same baseline as mute button
                     if (
                         gameState >= GameState.LOGIN_SCREEN &&
                         this.worldSelectButtonSprite &&
                         this.fontPlain11
                     ) {
-                        const buttonX = this.containerX + 5;
-                        const buttonY = 463;
-                        this.drawSprite(cacheCtx, this.worldSelectButtonSprite, buttonX, buttonY);
+                        const buttonPos = this.getServerListButtonPosition();
+                        this.drawSprite(
+                            cacheCtx,
+                            this.worldSelectButtonSprite,
+                            buttonPos.x,
+                            buttonPos.y,
+                        );
                         this.drawCenteredText(
                             cacheCtx,
                             this.fontPlain11,
                             state.serverName,
-                            buttonX + (this.worldSelectButtonSprite.subWidth >> 1),
-                            buttonY + 22,
+                            buttonPos.x + (this.worldSelectButtonSprite.subWidth >> 1),
+                            buttonPos.y + 22,
                             0xffffff,
                             true,
                         );
@@ -1843,71 +2073,67 @@ export class LoginRenderer {
     // ========== Rendering - Components ==========
 
     private drawTitleBackgroundToCtx(ctx: RenderContext): void {
-        if (this.titleBackgroundImage) {
-            ctx.drawImage(
-                this.titleBackgroundImage,
-                this.xPadding - LoginRenderer.TITLE_BG_CROP_X,
-                0,
-                LoginRenderer.TITLE_BG_WIDTH,
-                this.containerHeight,
-            );
-        }
+        if (!this.titleBackgroundImage) return;
+
+        const bg = this.getTitleBackgroundLayout();
+        ctx.drawImage(
+            this.titleBackgroundImage,
+            bg.drawX,
+            bg.drawY,
+            bg.drawW,
+            bg.drawH,
+        );
     }
 
     private drawLoadingBarToCtx(ctx: RenderContext, state: LoginState): void {
-        const centerX = this.loginBoxCenter;
-        const barY = 245;
-        const barWidth = 304;
-        const barHeight = 34;
-        const barX = centerX - barWidth / 2;
+        this.withContentTransform(ctx, () => {
+            const centerX = this.LOGIN_BOX_CENTER;
+            const barY = 245;
+            const barWidth = 304;
+            const barHeight = 34;
+            const barX = centerX - barWidth / 2;
 
-        // Loading bar structure:
-        // - Outer red border at (0,0) size 304x34
-        // - Inner black border at (1,1) size 302x32
-        // - Red progress fill at (2,2) width=percent*3, height=30
-        // - Black remainder fill
-        // Color: 9179409 = #8c1111 (RGB 140, 17, 17)
+            // Outer red border
+            ctx.strokeStyle = "#8c1111";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX + 0.5, barY + 0.5, barWidth - 1, barHeight - 1);
 
-        // Outer red border
-        ctx.strokeStyle = "#8c1111";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(barX + 0.5, barY + 0.5, barWidth - 1, barHeight - 1);
+            // Inner black border
+            ctx.strokeStyle = "#000000";
+            ctx.strokeRect(barX + 1.5, barY + 1.5, barWidth - 3, barHeight - 3);
 
-        // Inner black border
-        ctx.strokeStyle = "#000000";
-        ctx.strokeRect(barX + 1.5, barY + 1.5, barWidth - 3, barHeight - 3);
+            // Black background (remainder)
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(barX + 2, barY + 2, barWidth - 4, barHeight - 4);
 
-        // Black background (remainder)
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(barX + 2, barY + 2, barWidth - 4, barHeight - 4);
+            // Red progress fill (percent * 3 pixels, max 300)
+            const fillWidth = Math.floor(state.loadingPercent * 3);
+            ctx.fillStyle = "#8c1111";
+            ctx.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
 
-        // Red progress fill (percent * 3 pixels, max 300)
-        const fillWidth = Math.floor(state.loadingPercent * 3);
-        ctx.fillStyle = "#8c1111";
-        ctx.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
+            const loadingText = state.loadingText || `${state.loadingPercent}%`;
+            const titleText = "RuneScape is loading - please wait...";
 
-        // Draw text using fontBold12
-        // Falls back to Helvetica if bitmap font not loaded yet
-        const loadingText = state.loadingText || `${state.loadingPercent}%`;
-        const titleText = "RuneScape is loading - please wait...";
-
-        if (this.fontBold12) {
-            // Use bitmap font
-            // BitmapFont.draw uses baseline Y like OSRS AbstractFont.draw
-            // OSRS: title at Y=245-var3=225, loading at Y=276-var3=256, bar at Y=253-var3=233
-            // Relative: title at barY-8, loading at barY+23
-            this.drawCenteredText(ctx, this.fontBold12, titleText, centerX, barY - 8, 0xffffff);
-            this.drawCenteredText(ctx, this.fontBold12, loadingText, centerX, barY + 23, 0xffffff);
-        } else {
-            // Fallback to system font before bitmap fonts are loaded
-            ctx.font = "bold 13px Helvetica, Arial, sans-serif";
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(titleText, centerX, barY - 8);
-            ctx.textBaseline = "middle";
-            ctx.fillText(loadingText, centerX, barY + barHeight / 2);
-        }
+            if (this.fontBold12) {
+                this.drawCenteredText(ctx, this.fontBold12, titleText, centerX, barY - 8, 0xffffff);
+                this.drawCenteredText(
+                    ctx,
+                    this.fontBold12,
+                    loadingText,
+                    centerX,
+                    barY + 23,
+                    0xffffff,
+                );
+            } else {
+                ctx.font = "bold 13px Helvetica, Arial, sans-serif";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(titleText, centerX, barY - 8);
+                ctx.textBaseline = "middle";
+                ctx.fillText(loadingText, centerX, barY + barHeight / 2);
+            }
+        });
     }
 
     /**
@@ -1915,60 +2141,62 @@ export class LoginRenderer {
      * Similar to loading bar but shows download bytes instead of percentage.
      */
     private drawDownloadBarToCtx(ctx: RenderContext, state: LoginState): void {
-        const centerX = this.loginBoxCenter;
-        const barY = 245;
-        const barWidth = 304;
-        const barHeight = 34;
-        const barX = centerX - barWidth / 2;
+        this.withContentTransform(ctx, () => {
+            const centerX = this.LOGIN_BOX_CENTER;
+            const barY = 245;
+            const barWidth = 304;
+            const barHeight = 34;
+            const barX = centerX - barWidth / 2;
 
-        // OSRS uses Helvetica Bold 13pt for the loading bar
-        ctx.font = "bold 13px Helvetica, Arial, sans-serif";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
+            // OSRS uses Helvetica Bold 13pt for the loading bar
+            ctx.font = "bold 13px Helvetica, Arial, sans-serif";
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
 
-        // Draw title text
-        ctx.textBaseline = "bottom";
-        ctx.fillText("RuneScape is loading - please wait...", centerX, barY - 8);
+            // Draw title text
+            ctx.textBaseline = "bottom";
+            ctx.fillText("RuneScape is loading - please wait...", centerX, barY - 8);
 
-        // Calculate progress percentage
-        const progress =
-            state.downloadTotal > 0
-                ? Math.min(100, Math.floor((state.downloadCurrent / state.downloadTotal) * 100))
-                : 0;
+            // Calculate progress percentage
+            const progress =
+                state.downloadTotal > 0
+                    ? Math.min(100, Math.floor((state.downloadCurrent / state.downloadTotal) * 100))
+                    : 0;
 
-        // OSRS loading bar structure
-        // Outer red border
-        ctx.strokeStyle = "#8c1111";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(barX + 0.5, barY + 0.5, barWidth - 1, barHeight - 1);
+            // OSRS loading bar structure
+            // Outer red border
+            ctx.strokeStyle = "#8c1111";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX + 0.5, barY + 0.5, barWidth - 1, barHeight - 1);
 
-        // Inner black border
-        ctx.strokeStyle = "#000000";
-        ctx.strokeRect(barX + 1.5, barY + 1.5, barWidth - 3, barHeight - 3);
+            // Inner black border
+            ctx.strokeStyle = "#000000";
+            ctx.strokeRect(barX + 1.5, barY + 1.5, barWidth - 3, barHeight - 3);
 
-        // Black background (remainder)
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(barX + 2, barY + 2, barWidth - 4, barHeight - 4);
+            // Black background (remainder)
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(barX + 2, barY + 2, barWidth - 4, barHeight - 4);
 
-        // Red progress fill (percent * 3 pixels, max 300)
-        const fillWidth = Math.floor(progress * 3);
-        ctx.fillStyle = "#8c1111";
-        ctx.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
+            // Red progress fill (percent * 3 pixels, max 300)
+            const fillWidth = Math.floor(progress * 3);
+            ctx.fillStyle = "#8c1111";
+            ctx.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
 
-        // Draw progress text centered in bar
-        // OSRS format: "Loading sprites - X%" when label available
-        let progressText: string;
-        if (state.downloadLabel) {
-            // Capitalize first letter and add percentage
-            const label =
-                state.downloadLabel.charAt(0).toUpperCase() + state.downloadLabel.slice(1);
-            progressText = `Loading ${label} - ${progress}%`;
-        } else {
-            progressText = `${progress}%`;
-        }
-        ctx.fillStyle = "white";
-        ctx.textBaseline = "middle";
-        ctx.fillText(progressText, centerX, barY + barHeight / 2);
+            // Draw progress text centered in bar
+            // OSRS format: "Loading sprites - X%" when label available
+            let progressText: string;
+            if (state.downloadLabel) {
+                // Capitalize first letter and add percentage
+                const label =
+                    state.downloadLabel.charAt(0).toUpperCase() + state.downloadLabel.slice(1);
+                progressText = `Loading ${label} - ${progress}%`;
+            } else {
+                progressText = `${progress}%`;
+            }
+            ctx.fillStyle = "white";
+            ctx.textBaseline = "middle";
+            ctx.fillText(progressText, centerX, barY + barHeight / 2);
+        });
     }
 
     private drawLoginScreenToCtx(
@@ -1976,85 +2204,100 @@ export class LoginRenderer {
         state: LoginState,
         gameState: GameState,
     ): void {
-        // Draw titlebox background
-        if (this.titleboxSprite) {
-            this.drawSprite(ctx, this.titleboxSprite, this.loginBoxX, 170);
-        }
+        // Draw classic login panels inside the centered/scaled content band.
+        this.withContentTransform(ctx, () => {
+            // Draw titlebox background at classic coordinates.
+            if (this.titleboxSprite) {
+                this.drawSprite(ctx, this.titleboxSprite, this.LOGIN_BOX_X, this.TITLEBOX_Y);
+            }
 
-        // Route to appropriate screen
-        switch (state.loginIndex) {
-            case LoginIndex.WELCOME:
-                this.drawWelcomeScreen(ctx, state);
-                break;
-            case LoginIndex.WARNING:
-                this.drawWarningScreen(ctx, state);
-                break;
-            case LoginIndex.LOGIN_FORM:
-                this.drawLoginForm(ctx, state, gameState);
-                break;
-            case LoginIndex.INVALID_CREDENTIALS:
-                this.drawInvalidCredentials(ctx, state);
-                break;
-            case LoginIndex.AUTHENTICATOR:
-                this.drawAuthenticator(ctx, state);
-                break;
-            case LoginIndex.FORGOT_PASSWORD:
-                this.drawForgotPassword(ctx, state);
-                break;
-            case LoginIndex.MESSAGE:
-                this.drawMessage(ctx, state);
-                break;
-            case LoginIndex.DATE_OF_BIRTH:
-                this.drawDateOfBirth(ctx, state);
-                break;
-            case LoginIndex.NOT_ELIGIBLE:
-                this.drawNotEligible(ctx, state);
-                break;
-            case LoginIndex.TRY_AGAIN:
-                this.drawTryAgain(ctx, state);
-                break;
-            case LoginIndex.WELCOME_DISPLAY_NAME:
-                this.drawWelcomeDisplayName(ctx, state);
-                break;
-            case LoginIndex.TERMS:
-                this.drawTerms(ctx, state);
-                break;
-            case LoginIndex.MUST_ACCEPT_TERMS:
-                this.drawMustAcceptTerms(ctx, state);
-                break;
-            case LoginIndex.BANNED:
-                this.drawBanned(ctx, state);
-                break;
-            case LoginIndex.OK_MESSAGE:
-                this.drawOkMessage(ctx, state);
-                break;
-            case LoginIndex.DOB_NOT_SET:
-                this.drawDobNotSet(ctx, state);
-                break;
-            case LoginIndex.DOWNLOAD_LAUNCHER:
-                this.drawDownloadLauncher(ctx, state);
-                break;
-            case LoginIndex.WORLD_HOP_WARNING:
-                this.drawWorldHopWarning(ctx, state);
-                break;
-        }
+            // Route to appropriate screen
+            switch (state.loginIndex) {
+                case LoginIndex.WELCOME:
+                    this.drawWelcomeScreen(ctx, state);
+                    break;
+                case LoginIndex.WARNING:
+                    this.drawWarningScreen(ctx, state);
+                    break;
+                case LoginIndex.LOGIN_FORM:
+                    this.drawLoginForm(ctx, state, gameState);
+                    break;
+                case LoginIndex.INVALID_CREDENTIALS:
+                    this.drawInvalidCredentials(ctx, state);
+                    break;
+                case LoginIndex.AUTHENTICATOR:
+                    this.drawAuthenticator(ctx, state);
+                    break;
+                case LoginIndex.FORGOT_PASSWORD:
+                    this.drawForgotPassword(ctx, state);
+                    break;
+                case LoginIndex.MESSAGE:
+                    this.drawMessage(ctx, state);
+                    break;
+                case LoginIndex.DATE_OF_BIRTH:
+                    this.drawDateOfBirth(ctx, state);
+                    break;
+                case LoginIndex.NOT_ELIGIBLE:
+                    this.drawNotEligible(ctx, state);
+                    break;
+                case LoginIndex.TRY_AGAIN:
+                    this.drawTryAgain(ctx, state);
+                    break;
+                case LoginIndex.WELCOME_DISPLAY_NAME:
+                    this.drawWelcomeDisplayName(ctx, state);
+                    break;
+                case LoginIndex.TERMS:
+                    this.drawTerms(ctx, state);
+                    break;
+                case LoginIndex.MUST_ACCEPT_TERMS:
+                    this.drawMustAcceptTerms(ctx, state);
+                    break;
+                case LoginIndex.BANNED:
+                    this.drawBanned(ctx, state);
+                    break;
+                case LoginIndex.OK_MESSAGE:
+                    this.drawOkMessage(ctx, state);
+                    break;
+                case LoginIndex.DOB_NOT_SET:
+                    this.drawDobNotSet(ctx, state);
+                    break;
+                case LoginIndex.DOWNLOAD_LAUNCHER:
+                    this.drawDownloadLauncher(ctx, state);
+                    break;
+                case LoginIndex.WORLD_HOP_WARNING:
+                    this.drawWorldHopWarning(ctx, state);
+                    break;
+            }
+        });
     }
 
     // ========== Rendering - Individual Screens ==========
 
     private drawWelcomeScreen(ctx: RenderContext, state: LoginState): void {
         if (!this.fontBold12) return;
+        const layout = this.getWelcomeLayout();
+        const welcomeName = state.serverName?.trim() || "xRSPS";
         this.drawCenteredText(
             ctx,
             this.fontBold12,
-            "Welcome to xRSPS",
-            this.loginBoxX + 180,
-            251,
+            `Welcome to ${welcomeName}`,
+            layout.centerX,
+            layout.titleY,
             0xffff00,
             true,
         );
-        this.drawButton(ctx, this.loginBoxCenter - 80, 291, "New User");
-        this.drawButton(ctx, this.loginBoxCenter + 80, 291, "Existing User");
+        this.drawButton(
+            ctx,
+            layout.centerX - layout.buttonSpacing,
+            layout.buttonY,
+            "New User",
+        );
+        this.drawButton(
+            ctx,
+            layout.centerX + layout.buttonSpacing,
+            layout.buttonY,
+            "Existing User",
+        );
     }
 
     private drawWarningScreen(ctx: RenderContext, state: LoginState): void {
@@ -2555,7 +2798,7 @@ export class LoginRenderer {
         this.drawCenteredText(
             ctx,
             this.fontBold12,
-            "Welcome to xRSPS",
+            `Welcome to ${state.serverName?.trim() || "xRSPS"}`,
             this.loginBoxX + 180,
             209,
             0xffff00,
@@ -3881,13 +4124,16 @@ export class LoginRenderer {
     // ========== Rendering Utilities ==========
 
     private drawLogoToCtx(ctx: RenderContext): void {
-        if (this.logoImageLoaded && this.logoImage) {
-            const logoX = this.xPadding + 382 - Math.floor(this.logoImage.width / 2);
-            ctx.drawImage(this.logoImage, logoX, 18);
-        } else if (this.logoSprite) {
-            const logoX = this.xPadding + 382 - Math.floor(this.logoSprite.subWidth / 2);
-            this.drawSprite(ctx, this.logoSprite, logoX, 18);
-        }
+        this.withContentTransform(ctx, () => {
+            const logoY = 18;
+            if (this.logoImageLoaded && this.logoImage) {
+                const logoX = this.LOGIN_BOX_CENTER - Math.floor(this.logoImage.width / 2);
+                ctx.drawImage(this.logoImage, logoX, logoY);
+            } else if (this.logoSprite) {
+                const logoX = this.LOGIN_BOX_CENTER - Math.floor(this.logoSprite.subWidth / 2);
+                this.drawSprite(ctx, this.logoSprite, logoX, logoY);
+            }
+        });
     }
 
     private drawButton(

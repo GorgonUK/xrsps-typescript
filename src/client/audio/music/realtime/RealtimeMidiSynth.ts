@@ -5,7 +5,7 @@
 import { CacheSystem } from "../../../../rs/cache/CacheSystem";
 import { IndexType } from "../../../../rs/cache/IndexType";
 import { ByteBuffer } from "../../../../rs/io/ByteBuffer";
-import { addAudioContextResumeListeners, getAudioContextConstructor } from "../../audioContext";
+import { ensureSharedMusicWorklet } from "../../audioContext";
 import { MusicPatch } from "../patch/MusicPatch";
 import { MusicTrack } from "../patch/MusicTrack";
 import { SoundCache } from "../patch/SoundCache";
@@ -89,8 +89,6 @@ export class RealtimeMidiSynth {
     private patchCache = new Map<number, MusicPatch>();
     private readonly MAX_PATCH_CACHE_SIZE = 50;
 
-    // Memory leak fix: track context resume listener cleanup
-    private contextResumeCleanup: (() => void) | null = null;
     // Visibility change listener to recover from tab throttling
     private visibilityListener: (() => void) | null = null;
 
@@ -125,7 +123,7 @@ export class RealtimeMidiSynth {
     // Browsers throttle setTimeout to 1000ms+ when tab is inactive/loading
     // Use 3-second lookahead to ensure buffer doesn't run dry during throttling
     private readonly LOOKAHEAD = 3.0;
-    private readonly SCHEDULER_INTERVAL = 200; // Run scheduler every 200ms (may be throttled)
+    private readonly SCHEDULER_INTERVAL = 100; // Keep main-thread MIDI feed ahead of the worklet
 
     constructor(cache: CacheSystem) {
         this.cache = cache;
@@ -134,28 +132,15 @@ export class RealtimeMidiSynth {
     }
 
     /**
-     * Initialize the audio context and worklet
+     * Initialize the shared audio context and a dedicated worklet node for this synth.
      */
     async initialize(): Promise<boolean> {
         if (this.workletReady) return true;
 
         try {
-            // Create audio context
-            const AudioCtx = getAudioContextConstructor();
-            if (!AudioCtx) {
-                console.error("[RealtimeMidiSynth] Web Audio not supported");
-                return false;
-            }
-
-            const ctx = new AudioCtx({ sampleRate: 44100 });
+            // Share one device-rate AudioContext across all synths (no forced 44100).
+            const ctx = await ensureSharedMusicWorklet(() => this.getWorkletCode());
             this.context = ctx;
-
-            // Auto-resume on user interaction (required by browser autoplay policy)
-            if (!this.contextResumeCleanup) {
-                this.contextResumeCleanup = addAudioContextResumeListeners(ctx, () => {
-                    this.contextResumeCleanup = null;
-                });
-            }
 
             // Listen for visibility changes to recover from browser throttling
             // When tab becomes visible again, immediately reschedule to catch up
@@ -175,17 +160,6 @@ export class RealtimeMidiSynth {
                     }
                 };
                 document.addEventListener("visibilitychange", this.visibilityListener);
-            }
-
-            // Create and register worklet
-            const workletCode = await this.getWorkletCode();
-            const blob = new Blob([workletCode], { type: "application/javascript" });
-            const url = URL.createObjectURL(blob);
-
-            try {
-                await this.context.audioWorklet.addModule(url);
-            } finally {
-                URL.revokeObjectURL(url);
             }
 
             // Create worklet node
@@ -209,14 +183,6 @@ export class RealtimeMidiSynth {
         } catch (e) {
             console.error("[RealtimeMidiSynth] Failed to initialize:", e);
             return false;
-        }
-    }
-
-    private removeContextListeners(): void {
-        if (this.contextResumeCleanup) {
-            const cleanup = this.contextResumeCleanup;
-            this.contextResumeCleanup = null;
-            cleanup();
         }
     }
 
@@ -263,10 +229,17 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
         this.noteMap = new Map();
         this.noteOnCount = 0;
         this.noteAddedCount = 0;
+        this.eventQueue = [];
+        this.eventQueueReadIndex = 0;
+        // Reused every sample to avoid GC on the audio thread
+        this._sampleOut = { value: 0, volume: 0, pan: 8192 };
 
         // FIX: Calculate 50Hz tick based on ACTUAL sample rate (e.g. 48000 / 50 = 960)
         // 'sampleRate' is a global variable in AudioWorkletGlobalScope
         this.samplesPerTick = Math.floor(sampleRate / 50);
+
+        // Cheap substitute for Math.pow(2, pitch/3072) on the hot path
+        this.LN2_OVER_3072 = Math.LN2 / 3072;
 
         // B6: Global tick counter for synchronized envelope updates
         this.globalTickCounter = 0;
@@ -320,6 +293,13 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
     insertIntoQueue(msg) {
         // Simple insertion sort to keep queue ordered by time
         if (!this.eventQueue) this.eventQueue = [];
+        if (this.eventQueueReadIndex == null) this.eventQueueReadIndex = 0;
+
+        // Drop already-consumed prefix so inserts stay correct
+        if (this.eventQueueReadIndex > 0) {
+            this.eventQueue.splice(0, this.eventQueueReadIndex);
+            this.eventQueueReadIndex = 0;
+        }
         
         // Optimization: check if it goes at the end (common case for sequential midi)
         if (this.eventQueue.length === 0 || msg.time >= this.eventQueue[this.eventQueue.length - 1].time) {
@@ -360,6 +340,7 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
 
             case "pitchBend":
                 this.channels[msg.channel].pitchBend = msg.value;
+                this.refreshChannelNoteCaches(msg.channel);
                 break;
 
             case "programChange":
@@ -368,12 +349,16 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
 
             case "setVolume":
                 this.masterVolume = msg.volume;
+                for (const note of this.activeNotes) {
+                    if (note.active) this.refreshNoteAudioCache(note);
+                }
                 break;
 
             case "stopAll":
                 this.activeNotes = [];
                 this.noteMap.clear();
                 this.eventQueue = []; // Clear scheduled events too
+                this.eventQueueReadIndex = 0;
                 for (let i = 0; i < 16; i++) {
                     this.channels[i] = this.createDefaultChannelState();
                 }
@@ -438,6 +423,7 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
 
                     // Update key mapping
                     this.noteMap.set(noteKey, existingNote);
+                    this.refreshNoteAudioCache(existingNote);
                     return; // Don't create new note
                 }
             }
@@ -505,8 +491,13 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             vibratoDepth: msg.vibratoDepth,
             vibratoRate: msg.vibratoRate,
             vibratoDelay: msg.vibratoDelay,
+            // Cached at 50Hz tick / control changes — never Math.pow per sample
+            cachedRate: 1,
+            cachedVolume: 0,
+            cachedPan: 8192,
         };
 
+        this.refreshNoteAudioCache(note);
         this.activeNotes.push(note);
         this.noteMap.set(noteKey, note);
         this.noteAddedCount++;
@@ -545,14 +536,14 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
 
         switch (controller) {
             // Volume MSB/LSB
-            case 7: ch.volume = (value << 7) + (ch.volume & 0x7F); break;
-            case 39: ch.volume = (ch.volume & 0x3F80) + value; break;
+            case 7: ch.volume = (value << 7) + (ch.volume & 0x7F); this.refreshChannelNoteCaches(channel); break;
+            case 39: ch.volume = (ch.volume & 0x3F80) + value; this.refreshChannelNoteCaches(channel); break;
             // Pan MSB/LSB
-            case 10: ch.pan = (value << 7) + (ch.pan & 0x7F); break;
-            case 42: ch.pan = (ch.pan & 0x3F80) + value; break;
+            case 10: ch.pan = (value << 7) + (ch.pan & 0x7F); this.refreshChannelNoteCaches(channel); break;
+            case 42: ch.pan = (ch.pan & 0x3F80) + value; this.refreshChannelNoteCaches(channel); break;
             // Expression MSB/LSB
-            case 11: ch.expression = (value << 7) + (ch.expression & 0x7F); break;
-            case 43: ch.expression = (ch.expression & 0x3F80) + value; break;
+            case 11: ch.expression = (value << 7) + (ch.expression & 0x7F); this.refreshChannelNoteCaches(channel); break;
+            case 43: ch.expression = (ch.expression & 0x3F80) + value; this.refreshChannelNoteCaches(channel); break;
             // Modulation MSB/LSB
             case 1: ch.modulation = (value << 7) + (ch.modulation & 0x7F); break;
             case 33: ch.modulation = (ch.modulation & 0x3F80) + value; break;
@@ -735,7 +726,8 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
 
         // Formula: sampleRate * 2^(pitch/3072) / outputRate
         // 3072 = 256 * 12 (256 units per semitone, 12 semitones per octave)
-        const rate = (actualSampleRate * Math.pow(2, pitch / 3072)) / sampleRate;
+        // Use exp instead of pow — still only called from refreshNoteAudioCache (tick rate)
+        const rate = (actualSampleRate * Math.exp(pitch * this.LN2_OVER_3072)) / sampleRate;
         return Math.max(0.001, rate);
     }
 
@@ -928,15 +920,36 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
         }
 
         note.ticksElapsed++;
+        this.refreshNoteAudioCache(note);
+    }
+
+    refreshNoteAudioCache(note) {
+        note.cachedRate = this.calculatePlaybackRate(note);
+        note.cachedVolume = this.calculateVolume(note);
+        note.cachedPan = this.calculatePan(note);
+    }
+
+    refreshChannelNoteCaches(channel) {
+        for (const note of this.activeNotes) {
+            if (note.active && note.channel === channel) {
+                this.refreshNoteAudioCache(note);
+            }
+        }
     }
 
     generateSample(note) {
         const sample = this.samples.get(note.sampleIndex);
-        if (!sample || sample.samples.length === 0) return { value: 0, volume: 0, pan: 8192 };
+        if (!sample || sample.samples.length === 0) {
+            this._sampleOut.value = 0;
+            this._sampleOut.volume = 0;
+            this._sampleOut.pan = 8192;
+            return this._sampleOut;
+        }
 
-        const playbackRate = this.calculatePlaybackRate(note);
-        const volume = this.calculateVolume(note);  // B2: Now returns integer 0-16384
-        const pan = this.calculatePan(note);        // B3: Now returns integer 0-16384
+        // Rate/volume/pan are refreshed at 50Hz ticks and on control changes — not per sample.
+        const playbackRate = note.cachedRate;
+        const volume = note.cachedVolume;
+        const pan = note.cachedPan;
 
         // FIX: The patch (note.looped) is the authority on whether this specific note should loop.
         // Sample.looped is just a hint about the sample's default behavior, but patch overrides it.
@@ -985,8 +998,10 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             this.sampleEndChans[note.channel] = (this.sampleEndChans[note.channel] || 0) + 1;
         }
 
-        // Return integer sample value along with volume and pan for OSRS-style mixing
-        return { value: intSample, volume: volume, pan: pan };
+        this._sampleOut.value = intSample;
+        this._sampleOut.volume = volume;
+        this._sampleOut.pan = pan;
+        return this._sampleOut;
     }
 
     process(inputs, outputs, parameters) {
@@ -1001,15 +1016,14 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
         // currentTime is the time at the START of this block
         const blockStartTime = currentTime;
         const secondsPerSample = 1 / sampleRate;
+        const queue = this.eventQueue;
+        let readIndex = this.eventQueueReadIndex;
 
         for (let i = 0; i < blockSize; i++) {
-            // B1: Sample-accurate event timing - check events for this specific sample
-            if (this.eventQueue && this.eventQueue.length > 0) {
-                const sampleTime = blockStartTime + (i * secondsPerSample);
-                while (this.eventQueue.length > 0 && this.eventQueue[0].time <= sampleTime) {
-                    const msg = this.eventQueue.shift();
-                    this.dispatchMessage(msg);
-                }
+            // B1: Sample-accurate event timing - index walk avoids Array.shift() GC/cost
+            const sampleTime = blockStartTime + (i * secondsPerSample);
+            while (readIndex < queue.length && queue[readIndex].time <= sampleTime) {
+                this.dispatchMessage(queue[readIndex++]);
             }
 
             // B6: Global tick boundary - update all notes on the same tick
@@ -1018,12 +1032,21 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             if (shouldUpdateEnvelopes) {
                 this.globalSampleCounter = 0;
                 this.globalTickCounter++;
-                // Update all active notes at the same time
-                for (const note of this.activeNotes) {
-                    if (note.active) {
-                        this.updateNoteState(note);
+                // Update + compact inactive notes once per tick (not every sample)
+                let write = 0;
+                for (let r = 0; r < this.activeNotes.length; r++) {
+                    const note = this.activeNotes[r];
+                    if (!note.active) {
+                        const noteKey = note.channel + ":" + note.key;
+                        if (this.noteMap.get(noteKey) === note) {
+                            this.noteMap.delete(noteKey);
+                        }
+                        continue;
                     }
+                    this.updateNoteState(note);
+                    this.activeNotes[write++] = note;
                 }
+                this.activeNotes.length = write;
             }
 
             // B2/B3: Integer mixing buffers (32-bit signed)
@@ -1031,17 +1054,9 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             let mixL = 0;
             let mixR = 0;
 
-            for (let j = this.activeNotes.length - 1; j >= 0; j--) {
+            for (let j = 0; j < this.activeNotes.length; j++) {
                 const note = this.activeNotes[j];
-
-                if (!note.active) {
-                    this.activeNotes.splice(j, 1);
-                    const noteKey = note.channel + ":" + note.key;
-                    if (this.noteMap.get(noteKey) === note) {
-                        this.noteMap.delete(noteKey);
-                    }
-                    continue;
-                }
+                if (!note.active) continue;
 
                 const result = this.generateSample(note);
                 const sampleVal = result.value;   // -32768 to 32767
@@ -1074,6 +1089,18 @@ class MusicWorkletProcessor extends AudioWorkletProcessor {
             left[i] = mixL / 32768;
             right[i] = mixR / 32768;
         }
+
+        // Compact consumed event queue entries once per block
+        if (readIndex > 0) {
+            if (readIndex >= queue.length) {
+                queue.length = 0;
+                readIndex = 0;
+            } else if (readIndex > 32) {
+                queue.splice(0, readIndex);
+                readIndex = 0;
+            }
+        }
+        this.eventQueueReadIndex = readIndex;
 
         return true;
     }
@@ -2223,9 +2250,6 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
     dispose(): void {
         this.stop();
 
-        // Memory leak fix: remove context event listeners
-        this.removeContextListeners();
-
         // Remove visibility listener
         if (this.visibilityListener) {
             document.removeEventListener("visibilitychange", this.visibilityListener);
@@ -2240,10 +2264,8 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
             this.gainNode.disconnect();
             this.gainNode = null;
         }
-        if (this.context) {
-            this.context.close();
-            this.context = null;
-        }
+        // Shared music AudioContext stays alive for other synths / page lifetime.
+        this.context = null;
         this.workletReady = false;
         this.loadedSamples.clear();
         this.patchCache.clear();
