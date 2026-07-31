@@ -87,6 +87,7 @@ export class PrayerSystem implements PrayerSystemProvider {
         const active = player.prayer.getActivePrayers();
         if (active.size === 0) {
             player.prayer.resetDrainAccumulator();
+            player.prayer.consumeActivationTick();
             return undefined;
         }
         const skill = player.skillSystem.getSkill(SkillId.Prayer);
@@ -95,6 +96,9 @@ export class PrayerSystem implements PrayerSystemProvider {
             player.prayer.resetDrainAccumulator();
             return { prayerDepleted: active.size > 0 };
         }
+        // Official behaviour does not drain prayer on the tick a prayer is
+        // activated. This also preserves OSRS one-tick prayer flicking.
+        if (player.prayer.consumeActivationTick()) return undefined;
         const drainRate = this.computeDrainRate(active);
         if (!(drainRate > 0)) {
             player.prayer.resetDrainAccumulator();
@@ -142,11 +146,14 @@ export class PrayerSystem implements PrayerSystemProvider {
         for (let i = active.length - 1; i >= 0; i--) {
             const candidate = getPrayerDefinition(active[i]);
             if (!candidate.groups) continue;
-            if (def.groups && candidate.groups === def.groups) {
-                active.splice(i, 1);
-                continue;
-            }
-            if (def.exclusiveGroups.includes(candidate.groups)) {
+            const sameGroup = def.groups !== undefined && candidate.groups === def.groups;
+            // Treat conflict declarations as a relationship, not a one-way
+            // instruction. This keeps old/save data and future prayers from
+            // bypassing exclusivity when only one definition lists the other.
+            const conflicts =
+                def.exclusiveGroups.includes(candidate.groups) ||
+                (def.groups !== undefined && candidate.exclusiveGroups.includes(def.groups));
+            if (sameGroup || conflicts) {
                 active.splice(i, 1);
             }
         }

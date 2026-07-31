@@ -740,6 +740,22 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
             },
             applyPrayers: (player, prayers) => {
                 const result = deps.prayerSystem.applySelection(player, prayers);
+                // Prayer button scripts optimistically toggle their local
+                // varbits. Push the resolved server set straight back so the
+                // UI clears every prayer removed by conflict resolution.
+                if (result.changed) {
+                    deps.queueCombatSnapshot(
+                        player.id,
+                        player.combat?.weaponCategory ?? 0,
+                        player.combat?.weaponItemId ?? -1,
+                        player.combat?.autoRetaliate ?? true,
+                        player.combat?.styleSlot,
+                        Array.from(player.prayer.getActivePrayers()),
+                        player.combat?.spellId !== undefined && player.combat.spellId >= 0
+                            ? player.combat.spellId
+                            : undefined,
+                    );
+                }
                 if (result.activated.length > 0) {
                     for (const prayer of result.activated) {
                         const soundId = getPrayerDefinition(prayer).soundId;
@@ -760,7 +776,7 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
                     player.combat?.weaponItemId ?? -1,
                     player.combat?.autoRetaliate ?? true,
                     player.combat?.styleSlot,
-                    undefined,
+                    Array.from(player.prayer.getActivePrayers()),
                     player.combat?.spellId !== undefined && player.combat.spellId >= 0
                         ? player.combat.spellId
                         : undefined,

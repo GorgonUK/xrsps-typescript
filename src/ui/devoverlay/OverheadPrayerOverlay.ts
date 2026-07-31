@@ -142,13 +142,17 @@ export class OverheadPrayerOverlay implements Overlay {
         const cached = this.prayerSprites.get(index);
         if (cached) return cached;
 
-        // Don't retry failed indices
-        if (this.failedSpriteIndices.has(index)) return undefined;
-
         if (!this.spriteIndex || this.headIconsPrayerArchiveId < 0) {
-            this.failedSpriteIndices.add(index);
+            // The overlay can be constructed before cache loading finishes.
+            // Re-resolve here rather than permanently hiding every icon.
+            this.initAssetsFromCache();
+        }
+        if (!this.spriteIndex || this.headIconsPrayerArchiveId < 0) {
             return undefined;
         }
+
+        // Don't repeatedly parse a confirmed missing sprite frame.
+        if (this.failedSpriteIndices.has(index)) return undefined;
 
         try {
             // Load all sprites from the headicons_prayer archive
@@ -190,7 +194,7 @@ export class OverheadPrayerOverlay implements Overlay {
             const g = (color >> 8) & 0xff;
             const b = color & 0xff;
             // Index 0 is transparent in OSRS indexed sprites
-            const a = idx === 0 ? 0 : 0xff;
+            const a = idx === 0 ? 0 : (spr.alpha?.[i] ?? 0xff);
             const di = i * 4;
             pixels[di] = r;
             pixels[di + 1] = g;

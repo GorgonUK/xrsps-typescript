@@ -85,6 +85,8 @@ export interface PlayerViewSnapshot {
     orientation: number;
     running: boolean;
     appearance?: PlayerAppearance;
+    /** Force an appearance mask for every observer during this tick. */
+    appearanceDirty?: boolean;
     name?: string;
     anim?: PlayerAnimSet;
     interactionIndex?: number;

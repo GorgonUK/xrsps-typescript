@@ -1078,9 +1078,15 @@ export class CombatEngine {
                     equipmentBonuses[MAGIC_DAMAGE_INDEX] ?? 0,
                     equipmentEffects?.tumekenMagicDamageMultiplier,
                 );
+                // Prayer magic damage is an additive percentage bonus, just
+                // like worn magic-damage equipment (e.g. 10% gear + Augury =
+                // 14%, not 14.4%).
+                const prayerMagicDamagePct =
+                    (this.getPrayerMultiplier(context.player, "magic_damage") - 1) * 100;
                 const baseDamage = this.resolveMagicBaseDamage(context.player, effectiveLevel);
                 const maxHit = Math.floor(
-                    Math.max(0, baseDamage) * (1 + Math.max(0, magicDamagePct) / 100),
+                    Math.max(0, baseDamage) *
+                        (1 + Math.max(0, magicDamagePct + prayerMagicDamagePct) / 100),
                 );
 
                 return { style, attackRoll, maxHit, equipmentBonuses };

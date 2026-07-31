@@ -15,6 +15,8 @@ export class PlayerPrayerState {
     quickPrayers: Set<PrayerName> = new Set();
     quickPrayersEnabled: boolean = false;
     drainAccumulator: number = 0;
+    /** True when a prayer was enabled this tick; OSRS skips that tick's drain. */
+    private activatedThisTick: boolean = false;
     headIcon: PrayerHeadIcon | null = null;
 
     private deps?: PlayerPrayerDeps;
@@ -38,6 +40,9 @@ export class PlayerPrayerState {
             }
         }
         if (!changed) return false;
+        // Prayer activation is special: it takes effect this tick but is not
+        // charged until the following tick, which is what permits 1-tick flicking.
+        this.activatedThisTick = Array.from(next).some((prayer) => !this.activePrayers.has(prayer));
         this.activePrayers = next;
         this.updateHeadIcon();
         if (this.quickPrayersEnabled && !this.areSetsEqual(this.quickPrayers, this.activePrayers)) {
@@ -103,6 +108,12 @@ export class PlayerPrayerState {
 
     resetDrainAccumulator(): void {
         this.drainAccumulator = 0;
+    }
+
+    consumeActivationTick(): boolean {
+        const activated = this.activatedThisTick;
+        this.activatedThisTick = false;
+        return activated;
     }
 
     private areSetsEqual(a: ReadonlySet<PrayerName>, b: ReadonlySet<PrayerName>): boolean {

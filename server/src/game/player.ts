@@ -587,7 +587,11 @@ export class PlayerState extends Actor {
                 return Math.max(0, skill.baseLevel + skill.boost);
             },
             setHeadIconIndex: (index) => {
+                if (this.appearance.headIcons.prayer === index) return;
                 this.appearance.headIcons.prayer = index;
+                // Head icons are encoded in the appearance update block, so a
+                // prayer toggle must invalidate that block for nearby clients.
+                this.markAppearanceDirty();
             },
         });
         // Default to post-design for existing saves; new accounts can override to 0.

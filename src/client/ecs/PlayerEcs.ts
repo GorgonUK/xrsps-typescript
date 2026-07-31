@@ -1091,7 +1091,16 @@ export class PlayerEcs {
     }
 
     setHeadIconPrayer(index: number, iconId: number): void {
-        if (this.headIconPrayer) this.headIconPrayer[index] = (iconId | 0) & 0x7f;
+        const normalized = iconId < 0 ? -1 : (iconId | 0) & 0x7f;
+        if (this.headIconPrayer) this.headIconPrayer[index] = normalized;
+        // Appearance is the authoritative source used by getHeadIconPrayer.
+        // Mirror local combat-state updates here so self icons do not wait for
+        // a self player-sync appearance block.
+        const appearance = this.appearances[index];
+        if (appearance) {
+            appearance.headIcons ??= {};
+            appearance.headIcons.prayer = normalized;
+        }
     }
 
     getHeadIconPk(index: number): number {

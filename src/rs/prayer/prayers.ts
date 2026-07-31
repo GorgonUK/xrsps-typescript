@@ -20,8 +20,8 @@ export const PRAYER_HEAD_ICON_ORDER: PrayerHeadIcon[] = [
     "protect_missiles",
     "protect_magic",
     "retribution",
-    "smite",
     "redemption",
+    "smite",
 ];
 
 export const PRAYER_HEAD_ICON_IDS: Record<PrayerHeadIcon, number> = PRAYER_HEAD_ICON_ORDER.reduce(
@@ -48,7 +48,8 @@ export type PrayerCombatStat =
     | "defence"
     | "ranged"
     | "ranged_strength"
-    | "magic";
+    | "magic"
+    | "magic_damage";
 
 export type PrayerName =
     | "thick_skin"
@@ -165,7 +166,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
     {
         id: "sharp_eye",
         name: "Sharp Eye",
-        description: "+5% Ranged accuracy.",
+        description: "+5% Ranged accuracy and strength.",
         level: 8,
         drainRate: 1,
         quickSlot: 18,
@@ -175,7 +176,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2685,
         category: "offence",
-        combatMultipliers: { ranged: 1.05 },
+        combatMultipliers: { ranged: 1.05, ranged_strength: 1.05 },
     },
     {
         id: "mystic_will",
@@ -282,7 +283,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
     {
         id: "hawk_eye",
         name: "Hawk Eye",
-        description: "+10% Ranged accuracy.",
+        description: "+10% Ranged accuracy and strength.",
         level: 26,
         drainRate: 6,
         quickSlot: 20,
@@ -292,7 +293,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2666,
         category: "offence",
-        combatMultipliers: { ranged: 1.1 },
+        combatMultipliers: { ranged: 1.1, ranged_strength: 1.1 },
     },
     {
         id: "mystic_lore",
@@ -402,7 +403,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
     {
         id: "eagle_eye",
         name: "Eagle Eye",
-        description: "+15% Ranged accuracy.",
+        description: "+15% Ranged accuracy and strength.",
         level: 44,
         drainRate: 12,
         quickSlot: 22,
@@ -412,12 +413,12 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["ranged", "attack", "strength", "magic", "combat"],
         soundId: 2665,
         category: "offence",
-        combatMultipliers: { ranged: 1.15 },
+        combatMultipliers: { ranged: 1.15, ranged_strength: 1.15 },
     },
     {
         id: "mystic_might",
         name: "Mystic Might",
-        description: "+15% Magic accuracy and defence.",
+        description: "+15% Magic accuracy and defence, and +2% Magic damage.",
         level: 45,
         drainRate: 12,
         quickSlot: 23,
@@ -427,7 +428,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["magic", "attack", "strength", "ranged", "combat"],
         soundId: 2669,
         category: "offence",
-        combatMultipliers: { magic: 1.15 },
+        combatMultipliers: { magic: 1.15, magic_damage: 1.02 },
     },
     {
         id: "retribution",
@@ -551,7 +552,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
     {
         id: "augury",
         name: "Augury",
-        description: "+25% Magic accuracy, +25% Defence.",
+        description: "+25% Magic accuracy and defence, +25% Defence, and +4% Magic damage.",
         level: 77,
         drainRate: 24,
         quickSlot: 27,
@@ -561,7 +562,7 @@ const BASE_DEFINITIONS: PrayerDefinitionInit[] = [
         exclusiveGroups: ["combat", "attack", "strength", "defence", "ranged", "magic"],
         soundId: 3825,
         category: "offence",
-        combatMultipliers: { magic: 1.25, defence: 1.25 },
+        combatMultipliers: { magic: 1.25, magic_damage: 1.04, defence: 1.25 },
         unlockVarbit: AUGURY_UNLOCK_VARBIT,
     },
 ];

@@ -96,7 +96,8 @@ class AppearanceReader {
 
     readByte(): number {
         if (this.offset >= this.buffer.length) return 0;
-        return this.buffer[this.offset++] | 0;
+        const value = this.buffer[this.offset++] & 0xff;
+        return value > 127 ? value - 256 : value;
     }
 
     readUnsignedByte(): number {

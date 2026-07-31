@@ -1123,6 +1123,11 @@ export class TickPhaseService {
             if (view) {
                 if (snapshot.payload.appearance) {
                     view.appearance = snapshot.payload.appearance;
+                    // A shared frame is encoded once per observing session.
+                    // Keep this flag on the frame so every observer receives
+                    // the changed head icon, rather than relying only on a
+                    // per-session appearance hash.
+                    view.appearanceDirty = true;
                 }
                 if (snapshot.payload.snap) {
                     view.x = snapshot.payload.x;

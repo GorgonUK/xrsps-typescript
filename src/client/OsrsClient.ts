@@ -8973,8 +8973,31 @@ export class OsrsClient {
             this.activePrayers = new Set(unique);
             // Sync prayer varbits for CS2 scripts
             this.syncPrayerVarbits();
+            this.syncLocalPrayerHeadIcon();
         }
         if (opts.fromServer || !changed) return;
+    }
+
+    /**
+     * The controlled player does not always receive its own appearance mask.
+     * Mirror the server-confirmed prayer set into the local render entity so
+     * its overhead icon changes immediately as it does for nearby players.
+     */
+    private syncLocalPrayerHeadIcon(): void {
+        const serverId = this.controlledPlayerServerId | 0;
+        if (serverId < 0) return;
+        const index = this.playerEcs.getIndexForServerId(serverId);
+        if (index === undefined) return;
+
+        let icon = -1;
+        if (this.activePrayers.has("protect_from_melee")) icon = 0;
+        else if (this.activePrayers.has("protect_from_missiles")) icon = 1;
+        else if (this.activePrayers.has("protect_from_magic")) icon = 2;
+        else if (this.activePrayers.has("retribution")) icon = 3;
+        else if (this.activePrayers.has("redemption")) icon = 4;
+        else if (this.activePrayers.has("smite")) icon = 5;
+
+        this.playerEcs.setHeadIconPrayer(index, icon);
     }
 
     /** Sync prayer state to varbits for CS2 scripts (prayer_op, prayer_redraw, etc.) */
@@ -9162,6 +9185,9 @@ export class OsrsClient {
             const isLocalPlayer = serverId === this.controlledPlayerServerId;
             const pa = this.buildPlayerAppearanceFromPayload(appearance, isLocalPlayer);
             this.playerEcs.setAppearance(ecsIndex, pa);
+            // Keep the dedicated icon array in lockstep with the decoded
+            // appearance for remote players as well as the local player.
+            this.playerEcs.setHeadIconPrayer(ecsIndex, pa.headIcons.prayer ?? -1);
             let team = 0;
             try {
                 const equip = Array.isArray(pa?.equip) ? pa.equip : [];

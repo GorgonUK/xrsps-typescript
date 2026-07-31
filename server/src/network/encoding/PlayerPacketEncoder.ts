@@ -510,7 +510,12 @@ export class PlayerPacketEncoder {
                 view?.interactionDirty === true,
             );
 
-            if (view && (spawnSet.has(id) || this.shouldWriteAppearance(session, id, view))) {
+            if (
+                view &&
+                (spawnSet.has(id) ||
+                    view.appearanceDirty === true ||
+                    this.shouldWriteAppearance(session, id, view))
+            ) {
                 const entry = markMask(id, PLAYER_MASKS.APPEARANCE);
                 entry.appearance = this.serializeAppearancePayload(view);
             }
