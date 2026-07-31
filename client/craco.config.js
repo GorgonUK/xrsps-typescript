@@ -58,6 +58,22 @@ module.exports = {
                           : [jsXxhashPath];
                 }
                 if (rule.oneOf) {
+                    // appSrc is the package root (not src/), so without this
+                    // babel-preset-react-app also rewrites node_modules CJS
+                    // (e.g. threads) into broken ESM and browsers throw
+                    // "exports is not defined".
+                    for (const oneOfRule of rule.oneOf) {
+                        const loader =
+                            typeof oneOfRule.loader === "string"
+                                ? oneOfRule.loader
+                                : "";
+                        if (
+                            loader.includes("babel-loader") &&
+                            oneOfRule.include === paths.appSrc
+                        ) {
+                            oneOfRule.exclude = /node_modules/;
+                        }
+                    }
                     rule.oneOf.unshift(glslLoader);
                     break;
                 }
