@@ -19,12 +19,10 @@ import {
     sendInventoryUse,
     sendInventoryUseOn,
     sendNpcOption,
-    sendPlayerDesignConfirm,
     sendPlayerOption,
     sendVarpTransmit,
     sendWidgetAction,
     sendWidgetClose,
-    sendWidgetDrag,
     setClientCycleProvider,
     subscribeAnim,
     subscribeBank,
@@ -113,7 +111,6 @@ import { ObjModelLoader } from "../rs/config/objtype/ObjModelLoader";
 import { ObjTypeLoader } from "../rs/config/objtype/ObjTypeLoader";
 import { EquipToDisplaySlot, EquipmentSlot } from "../rs/config/player/Equipment";
 import { PlayerAppearance } from "../rs/config/player/PlayerAppearance";
-import { PLAYER_BODY_RECOLOR_TO_1 } from "../rs/config/player/PlayerDesignColors";
 import type { SeqSoundEffect, SeqType } from "../rs/config/seqtype/SeqType";
 import { SeqTypeLoader } from "../rs/config/seqtype/SeqTypeLoader";
 import { SpotAnimTypeLoader } from "../rs/config/spotanimtype/SpotAnimTypeLoader";
@@ -121,7 +118,6 @@ import { VarManager } from "../rs/config/vartype/VarManager";
 import { chatHistory } from "../rs/cs2/ChatHistory";
 import { Cs2Vm, ScriptArgMagic, type ScriptEvent, createScriptEvent } from "../rs/cs2/Cs2Vm";
 import { Opcodes as Cs2Opcodes } from "../rs/cs2/Opcodes";
-import { type Script as Cs2Script, parseScriptFromBytes } from "../rs/cs2/Script";
 import { BitmapFont } from "../rs/font/BitmapFont";
 import { encodeInteractionIndex } from "../rs/interaction/InteractionIndex";
 import { Inventory, InventorySlotInput } from "../rs/inventory/Inventory";
@@ -132,26 +128,15 @@ import {
     getMapPlaneId,
     getMapSquareId,
 } from "../rs/map/MapFileIndex";
-import { WorldMapArchiveRenderer } from "../rs/map/WorldMapArchiveRenderer";
-import { WorldMapState, packWorldMapCoord, unpackWorldMapCoord } from "../rs/map/WorldMapArea";
+import { WorldMapState } from "../rs/map/WorldMapArea";
+import { WorldMapController, type WorldMapRenderedIcon } from "./worldMap/WorldMapController";
 import { SeqFrameLoader } from "../rs/model/seq/SeqFrameLoader";
 import type { SkeletalSeqLoader } from "../rs/model/skeletal/SkeletalSeqLoader";
-import {
-    PRAYER_NAME_SET,
-    PRAYER_NAME_TO_VARBIT,
-    PrayerName,
-    PrayerVarbits,
-    prayerSetToBitmask,
-} from "../rs/prayer/prayers";
+import { CombatOptionsController } from "./combat/CombatOptionsController";
 import { SkillId } from "../rs/skill/skills";
-import { SpriteLoader } from "../rs/sprite/SpriteLoader";
 import { TextureLoader } from "../rs/texture/TextureLoader";
 import { faceAngleRs } from "../rs/utils/rotation";
 import { directionToDelta } from "../shared/Direction";
-import {
-    type CacheItemSearchEntry,
-    CacheItemSearchIndex,
-} from "../shared/items/CacheItemSearchIndex";
 import type { ProjectileLaunch } from "../shared/projectiles/ProjectileLaunch";
 import { buildSelectedSpellPayload } from "../shared/spells/selectedSpellPayload";
 import type { QuestListWidgetGroup } from "../shared/ui/questList";
@@ -160,19 +145,7 @@ import {
     INTERFACE_QUEST_LIST_ID,
     SIDE_JOURNAL_GROUP_ID,
 } from "../shared/ui/sideJournal";
-import {
-    ITEM_SPAWNER_MODAL_COMPONENT_HELPER,
-    ITEM_SPAWNER_MODAL_COMPONENT_QUERY,
-    ITEM_SPAWNER_MODAL_COMPONENT_RESULTS_SCROLLBAR,
-    ITEM_SPAWNER_MODAL_COMPONENT_RESULTS_VIEW,
-    ITEM_SPAWNER_MODAL_COMPONENT_SEARCH_BACKGROUND,
-    ITEM_SPAWNER_MODAL_COMPONENT_SLOT_BACKGROUND_START,
-    ITEM_SPAWNER_MODAL_COMPONENT_SLOT_ICON_START,
-    ITEM_SPAWNER_MODAL_COMPONENT_SUMMARY,
-    ITEM_SPAWNER_MODAL_GROUP_ID,
-    ITEM_SPAWNER_MODAL_RESULT_SLOT_COUNT,
-    ITEM_SPAWNER_MODAL_SLOT_COLUMNS,
-} from "../shared/ui/widgets";
+import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../shared/ui/widgets";
 import {
     TRANSMIT_VARPS,
     VARBIT_COMBATLEVEL_TRANSMIT,
@@ -201,7 +174,6 @@ import {
     VARP_SOUND_EFFECTS_VOLUME,
 } from "../shared/vars";
 import { getOsrsInterfaceScalingPercent, setOsrsInterfaceScalingPercent } from "../ui/UiScale";
-import { ClickRegistry } from "../ui/gl/click-registry";
 import { cleanupInterfaceClickTargets } from "../ui/gl/widgets-gl";
 import {
     setNpcExamineIdResolver,
@@ -209,42 +181,42 @@ import {
     setSpellSelectionResolver,
 } from "../ui/menu/MenuAction";
 import {
-    type DefaultChoiceState,
     type SimpleMenuEntry,
-    chooseDefaultMenuEntry,
-    getShiftClickActionIndex,
 } from "../ui/menu/MenuEngine";
 import { MenuOpcode, MenuState } from "../ui/menu/MenuState";
 import {
-    getDragDepth,
     isDropTarget,
     isWidgetUseTarget,
-    shouldTransmitAction,
 } from "../ui/widgets/WidgetFlags";
 import { markWidgetInteractionDirty } from "../ui/widgets/WidgetInteraction";
 import { WidgetManager } from "../ui/widgets/WidgetManager";
 import { WidgetSessionManager } from "../ui/widgets/WidgetSessionManager";
 import { applyQuestListWidgetGroups } from "../ui/widgets/custom/questList";
 import { layoutWidgets } from "../ui/widgets/layout/WidgetLayout";
-import {
-    collectWidgetsAtPointAcrossRoots,
-    collectWidgetsWithKeyHandlers,
-    deriveMenuEntriesForWidget,
-    findBlockingWidgetInHits,
-    findDropTarget,
-    getVisibleWidgetSurfaceReason,
-    getWidgetTargetLabel,
-    getWidgetTargetLabelForMenu,
-    isPauseButtonWidget as isPauseButtonWidgetUtil,
-    sanitizeText,
-} from "../ui/widgets/menu/utils";
+import { sanitizeText } from "../ui/widgets/menu/utils";
 import { isMobileMode, isTouchDevice } from "../util/DeviceUtil";
-import { clamp } from "../util/MathUtil";
+import { ChatTextMetrics } from "./chat/ChatTextMetrics";
+import { EnterToTypeChat } from "./chat/EnterToTypeChat";
+import { MobileChatKeyboard } from "./chat/MobileChatKeyboard";
+import { ClientScriptLoader } from "./cs2/ClientScriptLoader";
+import { HitsplatFlushController } from "./combat/HitsplatFlushController";
+import { NpcInstanceFlushController } from "./npc/NpcInstanceFlushController";
+import { VarcPersistence } from "./vars/VarcPersistence";
+import { ItemSpawnerUi } from "./widgets/itemSpawner";
+import { PlayerDesignController } from "./widgets/PlayerDesignController";
+import { WidgetInputController } from "./widgets/WidgetInputController";
+import { SpellSelectionController } from "./widgets/SpellSelectionController";
+import { WidgetInteractionController } from "./widgets/WidgetInteractionController";
 import {
-    getBrowserVarcsStorageKey,
-    loadBrowserVarcs,
-    saveBrowserVarcs,
-} from "./BrowserVarcsPersistence";
+    WidgetActionRouter,
+    type SelectedSpellInfo,
+    type SpellSelectionState,
+} from "./widgets/WidgetActionRouter";
+import { WidgetTransmitProcessor } from "./widgets/WidgetTransmitProcessor";
+import { NotificationDisplay } from "./widgets/NotificationDisplay";
+import { AudioVarpController } from "./audio/AudioVarpController";
+import { resolveWidgetIdentifiers } from "./widgets/widgetActionPayload";
+import { clamp } from "../util/MathUtil";
 import { CacheList, LoadedCache } from "./Caches";
 import { Camera, CameraView, ProjectionType } from "./Camera";
 import {
@@ -255,7 +227,7 @@ import {
 } from "./ClientState";
 import { GameRenderer } from "./GameRenderer";
 import { OsrsRendererType, createRenderer } from "./GameRenderers";
-import { ClickMode, InputManager } from "./InputManager";
+import { InputManager } from "./InputManager";
 import { MapManager } from "./MapManager";
 import { PlayerAnimController } from "./PlayerAnimController";
 import {
@@ -337,24 +309,6 @@ import type { NpcInstance } from "./webgl/npc/NpcRenderTemplate";
 import { RenderDataWorkerPool } from "./worker/RenderDataWorkerPool";
 import { WorldViewManager } from "./worldview/WorldViewManager";
 
-/** Spell info for setSelectedSpell (uses ClientState as single source of truth) */
-interface SelectedSpellInfo {
-    spellId: number;
-    spellName: string;
-    spellLevel?: number;
-    runes?: Array<{ itemId: number; quantity: number; name?: string }>;
-    /** Widget that initiated targeting mode (for onTargetEnter/Leave events) */
-    sourceWidget?: any;
-}
-
-type SpellSelectionState = {
-    widgetId: number;
-    childIndex: number;
-    itemId: number;
-};
-
-const SPELL_BUTTON_PARAM_ID = 596;
-const SPELLBOOK_GROUP_IDS = new Set([218, 219, 388, 389]);
 const DEVICE_OPTION_INTERFACE_SCALING = 27;
 
 // OSRS draw distance is constrained in Scene.setDrawDistanceRaw(25..90).
@@ -394,37 +348,9 @@ const ACCOUNT_TYPE_MAIN = 0;
 const SCRIPT_HIGHLIGHT_SCREEN_COMPONENT = 2463;
 const SCRIPT_HIGHLIGHT_TEXTBOX_DEFAULT = 2465;
 
-const ITEM_SPAWNER_SCROLLBAR_INIT_SCRIPT_ID = 31;
-const ITEM_SPAWNER_SCROLLBAR_RESIZE_SCRIPT_ID = 72;
-const ITEM_SPAWNER_SLOT_PITCH_Y = 44;
-const ITEM_SPAWNER_SLOT_BACKGROUND_BASE_RAW_Y = 0;
-const ITEM_SPAWNER_SLOT_ICON_BASE_RAW_Y = 2;
-const WORLD_MAP_ELEMENT_TOOLTIP_SCRIPT_ID = 7325;
-const WORLD_MAP_ELEMENT_TOOLTIP_CLEAR_SCRIPT_ID = 7326;
-const ITEM_SPAWNER_SCROLLBAR_GRAPHICS = [
-    "scrollbar_dragger_v2,3",
-    "scrollbar_dragger_v2,0",
-    "scrollbar_dragger_v2,1",
-    "scrollbar_dragger_v2,2",
-    "scrollbar_v2,0",
-    "scrollbar_v2,1",
-] as const;
-
 // Use shared OSRS rotation scale
 
-type WorldMapRenderedIcon = {
-    elementId: number;
-    category: number;
-    coord1: number;
-    coord2: number;
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
-};
-
 export class OsrsClient {
-    private static readonly SCRIPT_CACHE_CAPACITY = 128;
     private static readonly CLIENT_TICK_MS = 20;
     // Maximum amount of client-tick backlog (in ms) we will attempt to simulate.
     // This avoids multi-second/minute "catch-up" after sleep/throttling while still allowing
@@ -467,7 +393,6 @@ export class OsrsClient {
 
     cs2Vm!: Cs2Vm;
     fontCache: Map<number, BitmapFont> = new Map();
-    private readonly cs2ScriptCache: Map<number, Cs2Script> = new Map();
 
     private readonly resolvePlayerPlane: ResolveTilePlaneFn = (_tileX, _tileY, plane) =>
         clampPlane(plane);
@@ -530,12 +455,7 @@ export class OsrsClient {
     idkTypeLoader!: IdkTypeLoader;
 
     varManager!: VarManager;
-    private varcsStorageKey?: string;
-    private varcsUnwrittenChanges: boolean = false;
-    private varcsLastWriteTimeMs: number = 0;
-    private readonly handleVarcsPageLifecycleFlush = (): void => {
-        this.writeVarcs();
-    };
+    private readonly varcPersistence: VarcPersistence;
 
     // Transmit cycles for engine-level event gating
     // See TransmitCycles.ts for documentation on how OSRS gates transmit handlers
@@ -548,9 +468,6 @@ export class OsrsClient {
     localPlayerIsAdmin: boolean = false;
     private localChatNameIcons: number[] = [];
     private localChatNamePrefix: string = "";
-    private modIconsWidthLoaded: boolean = false;
-    private modIconWidthById: Map<number, number> = new Map();
-    /** Trade-request senders keyed exactly as the chatbox OPPLAYER script receives them. */
     private readonly tradeRequestTargetsByName = new Map<string, number>();
     private accountTypeVarbitAvailable?: boolean;
 
@@ -747,57 +664,6 @@ export class OsrsClient {
           }
         | undefined;
 
-    dragSourceWidget: any = null;
-
-    // track hover state per-widget.
-    // Multiple widgets (parents + children) can be hovered at once and must receive onMouseRepeat.
-    private hoveredWidgetUids: Set<number> = new Set();
-    private hoveredWidgetsByUid: Map<number, any> = new Map();
-
-    // Track clicked widget for onClick/onClickRepeat/onRelease events
-    private clickedWidget: any = null;
-    // parent widget used as drag clamp/coordinate space (Client.clickedWidgetParent)
-    private clickedWidgetParent: any = null;
-    private clickedWidgetX: number = 0; // Mouse position relative to clicked widget
-    private clickedWidgetY: number = 0;
-    // Track if game loop already fired CS2 handlers for current click (prevents double-invocation)
-    private clickedWidgetHandled: boolean = false;
-
-    // OSRS drag fidelity state
-    private widgetDragDuration: number = 0;
-    private isDraggingWidget: boolean = false;
-    private dragClickX: number = 0; // Absolute screen X of original click
-    private dragClickY: number = 0; // Absolute screen Y of original click
-    private draggedOnWidget: any = null; // Widget under cursor that can receive drag (OSRS: Client.draggedOnWidget)
-    private if1ScrollbarDragging: boolean = false;
-    private if1AlternativeScrollbarWidth: number = 0;
-    private worldMapDragStartMouseX: number = -1;
-    private worldMapDragStartMouseY: number = -1;
-    private worldMapDragStartDisplayX: number = 0;
-    private worldMapDragStartDisplayY: number = 0;
-    private worldMapDragPixelsPerTileX: number = 1;
-    private worldMapDragPixelsPerTileY: number = 1;
-    private worldMapClickStartMouseX: number = -1;
-    private worldMapClickStartMouseY: number = -1;
-    private worldMapClickStartTimeMs: number = 0;
-    private pendingWorldMapDragDisplayX: number | undefined;
-    private pendingWorldMapDragDisplayY: number | undefined;
-
-    // PERF: Cache drag hit test - only recompute when mouse moves
-    private _lastDragHitX: number = -1;
-    private _lastDragHitY: number = -1;
-
-    // PERF: Cache hover hit test - only recompute when mouse moves
-    private _lastHoverHitX: number = -1;
-    private _lastHoverHitY: number = -1;
-    private _cachedHoverHits: any[] | null = null;
-    // hover listeners are dispatched once per client cycle.
-    private _lastHoverListenerCycle: number = -1;
-
-    // Deferred widget action for draggable items
-    // Action is queued on mousedown and fired on mouseup if no drag occurred
-    private deferredWidgetAction: any = null;
-
     // Pending widget action for input dialogs (Withdraw-X, Deposit-X, etc.)
     // When a CS2 script opens an input dialog, the widget action is deferred until dialog completion
     private pendingInputDialogAction: {
@@ -816,27 +682,30 @@ export class OsrsClient {
     isTradeQuantityInputActive(): boolean {
         return this.pendingTradeQuantityAction !== null && this.cs2Vm.inputDialogType > 0;
     }
-    private itemSpawnerSearchFocused: boolean = false;
-    private itemSpawnerSearchQuery: string = "";
-    private itemSpawnerSearchIndex?: CacheItemSearchIndex;
-    private itemSpawnerSearchResults: CacheItemSearchEntry[] = [];
-    private itemSpawnerSearchResultsVersion: number = 0;
-    private itemSpawnerRenderedResultsVersion: number = -1;
-    private itemSpawnerVisibleStartRow: number = -1;
+    // RuneLite-style press-enter-to-type (desktop) + mobile soft-keyboard bridge.
+    private enterToTypeChat!: EnterToTypeChat;
+    private mobileChatKeyboard!: MobileChatKeyboard;
+    private playerDesign!: PlayerDesignController;
+    private itemSpawnerUi!: ItemSpawnerUi;
+    private combatOptions!: CombatOptionsController;
+    private worldMap!: WorldMapController;
+    private widgetInteraction!: WidgetInteractionController;
+    private widgetInputController!: WidgetInputController;
+    private spellSelectionController!: SpellSelectionController;
+    private widgetActionRouter!: WidgetActionRouter;
+    private widgetTransmitProcessor!: WidgetTransmitProcessor;
+    private audioVarp!: AudioVarpController;
+    private notificationDisplay!: NotificationDisplay;
 
-    // RuneLite-style "press enter to chat" (desktop only): while locked, keystrokes are
-    // not delivered to the chatbox input scripts and WASD rotates the camera instead.
-    // Enter (or "/" / ":") unlocks typing; sending a message or Escape re-locks it.
-    private chatTypingUnlocked: boolean = false;
-    private static readonly CHATBOX_GROUP_ID = 162;
-    /** Component 162:57 — the chat input line written by [proc,chat_promptinput]. */
-    private static readonly CHATBOX_INPUT_CHILD_ID = 57;
-    /** CS2 script 223 = [proc,chat_promptinput], rebuilds the chat input line text. */
-    private static readonly CHAT_PROMPT_SCRIPT_ID = 223;
-    private static readonly CHAT_LOCKED_PROMPT = "Press enter to type";
-    private mobileChatInput?: HTMLInputElement;
-    private mobileChatKeyboardOpen = false;
-    private mobileChatLastValue = "";
+    get dragSourceWidget(): any {
+        return this.widgetInteraction?.dragSourceWidget ?? null;
+    }
+
+    set dragSourceWidget(value: any) {
+        if (this.widgetInteraction) {
+            this.widgetInteraction.dragSourceWidget = value;
+        }
+    }
 
     // Script event queues (like OSRS's 3-tier priority system)
     private scriptEvents: ScriptEvent[] = []; // Normal priority
@@ -868,11 +737,6 @@ export class OsrsClient {
     controlledPlayerServerId: number = -1;
     /** Per-tick active world entity IDs — maintained by WORLDENTITY_INFO packets. */
     private activeWorldEntityIds: number[] = [];
-    private npcInstanceMap: Map<string, NpcInstance> = new Map();
-    private npcInstanceMapsPendingReload: Set<number> = new Set();
-    private npcInstanceFlushScheduled: boolean = false;
-    private npcInstanceFlushFallbackTimer?: ReturnType<typeof setTimeout>;
-    private npcInstanceFlushFallbackAttempt: number = 0;
 
     // Server-provided animation sequences for the controlled player (idle/walk/run/crawl + optional directional/turn)
     serverPlayerSeqs?: {
@@ -895,16 +759,9 @@ export class OsrsClient {
 
     combatWeaponCategory: number = 0;
     combatWeaponItemId: number = -1;
-    combatStyleSlot: number = 0;
-    combatSpellId: number = -1;
-    activePrayers: Set<PrayerName> = new Set();
-    quickPrayers: Set<PrayerName> = new Set();
-    quickPrayersEnabled: boolean = false;
 
     // Track last server-provided local appearance to avoid redundant rebuilds
     private _lastLocalAppearanceKey?: string;
-    // PlayerDesign (679) is client-side; keep a local editable appearance even before a world player exists.
-    private playerDesignAppearance?: PlayerAppearance;
 
     inventory: Inventory = new Inventory();
     equipment: Inventory = new Inventory(14); // Equipment has 14 slots
@@ -930,37 +787,8 @@ export class OsrsClient {
     // Cap how many generated minimap object URLs we retain in-memory to prevent growth over time.
     static readonly MAX_MINIMAP_URLS = 128;
     static readonly MAX_MINIMAP_URLS_MOBILE = 64;
-    static readonly MAX_WORLDMAP_URLS = 96;
-    static readonly MAX_WORLDMAP_URLS_MOBILE = 32;
-    static readonly BASE_PENDING_WORLDMAP_TILE_LOADS = 8;
-    static readonly BASE_PENDING_WORLDMAP_TILE_LOADS_MOBILE = 4;
-    static readonly MAX_PENDING_WORLDMAP_TILE_LOADS = 128;
-    static readonly MAX_PENDING_WORLDMAP_TILE_LOADS_MOBILE = 48;
-    static readonly MAX_FAILED_WORLDMAP_IDS = 256;
-    static readonly MAX_FAILED_WORLDMAP_IDS_MOBILE = 64;
-    static readonly WORLDMAP_TILE_RETRY_MS = 2500;
-
     minimapImageUrls: Map<number, string> = new Map();
     private minimapImageAccess: Map<number, number> = new Map();
-    worldMapState: WorldMapState = WorldMapState.empty();
-    private worldMapArchiveRenderer?: WorldMapArchiveRenderer;
-    private worldMapImageTiles: Map<
-        number,
-        { key: string; pixels?: Uint8Array; width: number; height: number }
-    > = new Map();
-    private worldMapImageAccess: Map<number, number> = new Map();
-    private pendingWorldMapImageIds: Set<number> = new Set();
-    private failedWorldMapImageIds: Map<number, number> = new Map();
-    private retainedWorldMapImageIds: Set<number> = new Set();
-    private worldMapImageRequestViewportKey: string = "";
-    private worldMapImageRequestEpoch: number = 0;
-    private worldMapImageCacheEpoch: number = 0;
-    private worldMapIconCache: Map<number, MinimapIcon[] | undefined> = new Map();
-    private worldMapIconCacheAreaId: number = -2;
-    private worldMapImageRepaintQueued: boolean = false;
-    private worldMapWidgetUid: number = -1;
-    private renderedWorldMapIcons: WorldMapRenderedIcon[] = [];
-    private hoveredWorldMapIcons: Map<string, WorldMapRenderedIcon> = new Map();
 
     cameraSpeed: number = 1;
 
@@ -1009,118 +837,12 @@ export class OsrsClient {
     // Skills data from server - maps skill ID to {currentLevel, baseLevel, xp}
     private skillsMap: Map<number, { currentLevel: number; baseLevel: number; xp: number }> =
         new Map();
-    autoRetaliateEnabled: boolean = true;
     private playerSyncManager!: PlayerSyncManager;
     private npcUpdateDecoder: NpcUpdateDecoder = new NpcUpdateDecoder();
-    private pendingHitsplats: HitsplatServerPayload[] = [];
-    private pendingPlayerHealthBars: Array<{ serverId: number; bar: any }> = [];
-    private pendingNpcHealthBars: Array<{ serverId: number; bar: any }> = [];
-
-    private flushPendingHitsplats(): void {
-        if (!this.renderer || this.pendingHitsplats.length === 0) return;
-        const pending = this.pendingHitsplats.splice(0, this.pendingHitsplats.length);
-        for (const event of pending) {
-            try {
-                this.renderer.registerHitsplat(event);
-            } catch (err) {
-                console.warn("[OsrsClient] registerHitsplat failed", err);
-            }
-        }
-    }
-
-    private flushPendingPlayerHealthBars(): void {
-        if (!this.renderer || this.pendingPlayerHealthBars.length === 0) return;
-        const pending = this.pendingPlayerHealthBars.splice(0, this.pendingPlayerHealthBars.length);
-        for (const entry of pending) {
-            try {
-                (this.renderer as any).registerPlayerHealthBarUpdate?.(entry);
-            } catch (err) {
-                console.warn("[OsrsClient] registerPlayerHealthBarUpdate failed", err);
-            }
-        }
-    }
-
-    private flushPendingNpcHealthBars(): void {
-        if (!this.renderer || this.pendingNpcHealthBars.length === 0) return;
-        const pending = this.pendingNpcHealthBars.splice(0, this.pendingNpcHealthBars.length);
-        for (const entry of pending) {
-            try {
-                (this.renderer as any).registerNpcHealthBarUpdate?.(entry);
-            } catch (err) {
-                console.warn("[OsrsClient] registerNpcHealthBarUpdate failed", err);
-            }
-        }
-    }
-
-    private ensureModIconWidthsLoaded(): void {
-        if (this.modIconsWidthLoaded) return;
-        this.modIconsWidthLoaded = true;
-        this.modIconWidthById.clear();
-        try {
-            const spriteIndex = this.cacheSystem?.getIndex?.(IndexType.DAT2.sprites);
-            if (!spriteIndex) return;
-            const archiveId = (spriteIndex as any).getArchiveId?.("mod_icons");
-            if (typeof archiveId !== "number" || archiveId < 0) return;
-            const sprites = SpriteLoader.loadIntoIndexedSprites(spriteIndex, archiveId);
-            if (!sprites || sprites.length === 0) return;
-            for (let i = 0; i < sprites.length; i++) {
-                const sprite = sprites[i];
-                if (!sprite) continue;
-                const width = Math.max(0, (sprite.width ?? sprite.subWidth ?? 0) | 0);
-                this.modIconWidthById.set(i, width);
-            }
-        } catch {}
-    }
-
-    private getModIconWidth(iconId: number): number {
-        const id = iconId | 0;
-        if (id < 0) return 0;
-        if (!this.modIconsWidthLoaded) {
-            this.ensureModIconWidthsLoaded();
-        }
-        return this.modIconWidthById.get(id) ?? 0;
-    }
-
-    private measureTextWidthOsrsMarkup(text: string, font: BitmapFont | undefined): number {
-        if (!text) return 0;
-
-        let width = 0;
-        let chunk = "";
-        const flushChunk = () => {
-            if (chunk.length === 0) return;
-            width += font ? font.measure(chunk) : chunk.length * 6;
-            chunk = "";
-        };
-
-        for (let i = 0; i < text.length; ) {
-            const ch = text.charAt(i);
-            if (ch === "<") {
-                const end = text.indexOf(">", i + 1);
-                if (end !== -1) {
-                    flushChunk();
-                    const tag = text.slice(i + 1, end).toLowerCase();
-                    if (tag === "lt") {
-                        width += font ? font.measure("<") : 6;
-                    } else if (tag === "gt") {
-                        width += font ? font.measure(">") : 6;
-                    } else if (tag.startsWith("img=")) {
-                        const iconId = Number.parseInt(tag.slice(4), 10);
-                        if (Number.isFinite(iconId) && iconId >= 0) {
-                            width += this.getModIconWidth(iconId | 0);
-                        }
-                    }
-                    i = end + 1;
-                    continue;
-                }
-            }
-
-            chunk += text.charCodeAt(i) === 160 ? " " : ch;
-            i++;
-        }
-
-        flushChunk();
-        return Math.max(0, Math.ceil(width));
-    }
+    private readonly hitsplatFlush: HitsplatFlushController;
+    private readonly clientScripts: ClientScriptLoader;
+    private readonly chatTextMetrics: ChatTextMetrics;
+    private readonly npcInstances: NpcInstanceFlushController;
 
     private resolveChatPlayerNameForScript(_scriptId: number): string {
         let baseName = this.localPlayerName ?? "";
@@ -1154,73 +876,33 @@ export class OsrsClient {
         return `${iconPrefix}${textPrefix}${strippedBase}`;
     }
 
-    private cacheClientScript(scriptId: number, script: Cs2Script): void {
-        if (this.cs2ScriptCache.has(scriptId)) {
-            this.cs2ScriptCache.delete(scriptId);
-        }
-        this.cs2ScriptCache.set(scriptId, script);
-
-        if (this.cs2ScriptCache.size > OsrsClient.SCRIPT_CACHE_CAPACITY) {
-            const oldestKey = this.cs2ScriptCache.keys().next().value as number | undefined;
-            if (oldestKey !== undefined) {
-                this.cs2ScriptCache.delete(oldestKey);
-            }
-        }
-    }
-
-    private loadClientScript(scriptId: number): Cs2Script | null {
-        const cached = this.cs2ScriptCache.get(scriptId);
-        if (cached) {
-            this.cs2ScriptCache.delete(scriptId);
-            this.cs2ScriptCache.set(scriptId, cached);
-            return cached;
-        }
-
-        try {
-            const scriptIdx = this.cacheSystem.getIndex(IndexType.DAT2.clientScript);
-            const arch = scriptIdx.getArchive(scriptId);
-            const file = arch?.getFile(0);
-            if (!file?.data) {
-                return null;
-            }
-
-            const script = parseScriptFromBytes(scriptId, file.data);
-            this.cacheClientScript(scriptId, script);
-            return script;
-        } catch (e) {
-            console.warn(`[Cs2Vm] Failed to load script ${scriptId}`, e);
-            return null;
-        }
-    }
-
-    private loadClientScriptIfExists(scriptId: number): Cs2Script | null {
-        const cached = this.cs2ScriptCache.get(scriptId);
-        if (cached) {
-            this.cs2ScriptCache.delete(scriptId);
-            this.cs2ScriptCache.set(scriptId, cached);
-            return cached;
-        }
-
-        try {
-            const scriptIdx = this.cacheSystem.getIndex(IndexType.DAT2.clientScript);
-            if (!scriptIdx.archiveExists(scriptId | 0)) return null;
-            const arch = scriptIdx.getArchive(scriptId | 0);
-            const file = arch?.getFile(0);
-            if (!file?.data) return null;
-            const script = parseScriptFromBytes(scriptId | 0, file.data);
-            this.cacheClientScript(scriptId | 0, script);
-            return script;
-        } catch {
-            return null;
-        }
-    }
-
     constructor(
         readonly workerPool: RenderDataWorkerPool,
         readonly cacheList: CacheList,
         rendererType: OsrsRendererType,
         cache?: LoadedCache,
     ) {
+        this.varcPersistence = new VarcPersistence({
+            getVarManager: () => this.varManager,
+        });
+        this.hitsplatFlush = new HitsplatFlushController({
+            getRenderer: () => this.renderer,
+        });
+        this.clientScripts = new ClientScriptLoader({
+            getCacheSystem: () => this.cacheSystem,
+        });
+        this.chatTextMetrics = new ChatTextMetrics({
+            getCacheSystem: () => this.cacheSystem,
+        });
+        this.npcInstances = new NpcInstanceFlushController({
+            getRenderer: () => this.renderer,
+            workerPool: this.workerPool,
+            getSeqTypeLoader: () => this.seqTypeLoader,
+            getSeqFrameLoader: () => this.seqFrameLoader,
+            getNpcTypeLoader: () => this.npcTypeLoader,
+            getBasTypeLoader: () => this.basTypeLoader,
+        });
+        this.varcPersistence.bindPageLifecycle();
         setSpellSelectionClearHandler(() => this.clearSelectedSpell());
         setSpellSelectionResolver((selection) =>
             this.resolveSpellSelectionFromWidget(
@@ -1257,13 +939,13 @@ export class OsrsClient {
                 // A door/loc reload can replace the map after a previous NPC
                 // flush already linked entities, leaving newly created cache
                 // NPCs unlinked and invisible.
-                this.npcInstanceMapsPendingReload.add(mapId | 0);
-                this.scheduleNpcInstanceFlush();
+                this.npcInstances.markMapPendingReload(mapId | 0);
+                this.npcInstances.scheduleFlush();
             };
             mapManager.onCurrentMapChanged = (_mapX, _mapY, _mapRadius) => {
                 this.applyMobileMapCacheBudget(_mapRadius | 0);
-                if (this.npcInstanceMapsPendingReload.size > 0) {
-                    this.scheduleNpcInstanceFlush();
+                if (this.npcInstances.mapsPendingReload.size > 0) {
+                    this.npcInstances.scheduleFlush();
                 }
             };
         } catch (error) {
@@ -1321,11 +1003,6 @@ export class OsrsClient {
         this.tileMarkersPlugin.subscribe(() => {
             this.syncSidebarPlugins();
         });
-        if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-            window.addEventListener("pagehide", this.handleVarcsPageLifecycleFlush);
-            window.addEventListener("beforeunload", this.handleVarcsPageLifecycleFlush);
-        }
-
         // If cache is provided, initialize immediately
         // Otherwise, OsrsClient stays in DOWNLOADING state until initCache() is called
         if (cache) {
@@ -1375,6 +1052,225 @@ export class OsrsClient {
      * Initialize cache-dependent components.
      * Called after initCache() completes.
      */
+
+    private initChatControllers(): void {
+        this.enterToTypeChat = new EnterToTypeChat({
+            cs2Vm: this.cs2Vm,
+            varManager: this.varManager,
+            widgetManager: this.widgetManager,
+            isLoggedIn: () => this.isLoggedIn(),
+            isItemSpawnerSearchFocused: () => this.itemSpawnerUi.isSearchFocused(),
+        });
+        this.mobileChatKeyboard = new MobileChatKeyboard({
+            inputManager: this.inputManager,
+            varManager: this.varManager,
+        });
+    }
+
+    private initCombatOptionsController(): void {
+        this.combatOptions = new CombatOptionsController({
+            getVarManager: () => this.varManager,
+            playerEcs: this.playerEcs,
+            getControlledPlayerServerId: () => this.controlledPlayerServerId,
+            getCombatWeaponCategory: () => this.combatWeaponCategory,
+        });
+    }
+
+    private initWorldMapController(): void {
+        this.worldMap = new WorldMapController({
+            getCacheSystem: () => this.cacheSystem,
+            getLoaderFactory: () => this.loaderFactory,
+            getLocTypeLoader: () => this.locTypeLoader,
+            getMapElementTypeLoader: () => this.mapElementTypeLoader,
+            getTextureLoader: () => this.textureLoader,
+            getVarManager: () => this.varManager,
+            getWidgetManager: () => this.widgetManager,
+            getCs2Vm: () => this.cs2Vm,
+            getRenderer: () => this.renderer,
+            getMinimapImageKey: (mapX, mapY, level) => this.getMinimapImageKey(mapX, mapY, level),
+            loadClientScriptIfExists: (scriptId) => this.clientScripts.loadIfExists(scriptId),
+            clearHostRenderCaches: () => {
+                const host = this as any;
+                delete host.__worldMapVisibleTileCache;
+                host.__worldMapElementCache?.clear?.();
+                host.__worldMapLabelMetricsCache?.clear?.();
+            },
+        });
+    }
+
+    private initPlayerDesignController(): void {
+        this.playerDesign = new PlayerDesignController({
+            getIdkTypeLoader: () => this.idkTypeLoader,
+            getObjTypeLoader: () => this.objTypeLoader,
+            getModelLoader: () => this.modelLoader,
+            getTextureLoader: () => this.textureLoader,
+            getSeqTypeLoader: () => this.seqTypeLoader,
+            getSeqFrameLoader: () => this.seqFrameLoader,
+            getBasTypeLoader: () => this.basTypeLoader,
+            getSkeletalSeqLoader: () => this.loaderFactory?.getSkeletalSeqLoader?.(),
+            varManager: this.varManager,
+            widgetManager: this.widgetManager,
+            playerEcs: this.playerEcs,
+            getControlledPlayerServerId: () => this.controlledPlayerServerId,
+        });
+    }
+
+    private initItemSpawnerUi(): void {
+        this.itemSpawnerUi = new ItemSpawnerUi({
+            widgetManager: this.widgetManager,
+            getObjTypeLoader: () => this.objTypeLoader,
+            getCacheSystem: () => this.cacheSystem,
+            runWidgetScopedClientScript: (widgetUid, scriptId, args, phase) =>
+                this.runWidgetScopedClientScript(widgetUid, scriptId, args, phase),
+        });
+    }
+
+    private initWidgetInteractionController(): void {
+        this.widgetInteraction = new WidgetInteractionController({
+            getWidgetManager: () => this.widgetManager,
+            getInputManager: () => this.inputManager,
+            getRendererCanvas: () => this.renderer?.canvas,
+            getTradeRequestTargetsByName: () => this.tradeRequestTargetsByName,
+        });
+    }
+
+
+    private initSpellSelectionController(): void {
+        this.spellSelectionController = new SpellSelectionController({
+            getWidgetManager: () => this.widgetManager,
+            getObjTypeLoader: () => this.objTypeLoader,
+            getCs2Vm: () => this.cs2Vm,
+            executeScriptListener: (widget, listener, eventContext) =>
+                this.executeScriptListener(widget, listener, eventContext),
+        });
+    }
+
+    private initWidgetInputController(): void {
+        this.widgetInputController = new WidgetInputController({
+            getInputManager: () => this.inputManager,
+            getWidgetManager: () => this.widgetManager,
+            getWidgetInteraction: () => this.widgetInteraction,
+            getTransmitCycles: () => this.transmitCycles,
+            getRenderer: () => this.renderer,
+            getCs2Vm: () => this.cs2Vm,
+            getVarManager: () => this.varManager,
+            getWorldMap: () => this.worldMap,
+            getItemSpawnerUi: () => this.itemSpawnerUi,
+            getEnterToTypeChat: () => this.enterToTypeChat,
+            getPlayerDesign: () => this.playerDesign,
+            getObjTypeLoader: () => this.objTypeLoader,
+            getSettings: () => this.settings,
+            getMinimapZoomEnabled: () => this.minimapZoomEnabled,
+            getMenuOpen: () => this.menuOpen,
+            getMenuJustClosed: () => this.menuJustClosed,
+            setMenuJustClosed: (value) => {
+                this.menuJustClosed = value;
+            },
+            applyMinimapWheelZoom: (deltaY) => this.applyMinimapWheelZoom(deltaY),
+            executeScriptListener: (widget, listener, eventContext) =>
+                this.executeScriptListener(widget, listener, eventContext),
+            handleWidgetAction: (event) => this.handleWidgetAction(event),
+            handleTradeWidgetAction: (widget, event, groupId, childId) =>
+                this.handleTradeWidgetAction(widget, event, groupId, childId),
+            handleInventorySlotMove: (from, to) => this.handleInventorySlotMove(from, to),
+            buildWidgetActionPayload: (event) => this.widgetActionRouter.buildWidgetActionPayload(event),
+            resolveTransmitFlagWidget: (eventWidget, payload) =>
+                this.widgetActionRouter.resolveTransmitFlagWidget(eventWidget, payload),
+            getSpellSelection: () => this.spellSelectionController,
+            getPendingInputDialogAction: () => this.pendingInputDialogAction,
+            setPendingInputDialogAction: (action) => {
+                this.pendingInputDialogAction = action;
+            },
+            getPendingTradeQuantityAction: () => this.pendingTradeQuantityAction,
+            setPendingTradeQuantityAction: (action) => {
+                this.pendingTradeQuantityAction = action;
+            },
+        });
+    }
+
+    private initWidgetActionRouter(): void {
+        this.widgetActionRouter = new WidgetActionRouter({
+            getWidgetManager: () => this.widgetManager,
+            getCs2Vm: () => this.cs2Vm,
+            getVarManager: () => this.varManager,
+            getInventory: () => this.inventory,
+            getInputManager: () => this.inputManager,
+            getWidgetInteraction: () => this.widgetInteraction,
+            getItemSpawnerUi: () => this.itemSpawnerUi,
+            getPlayerDesign: () => this.playerDesign,
+            getTradeState: () => this.tradeState,
+            getTradeOfferInventory: () => this.tradeOfferInventory,
+            clearSelectedSpell: () => this.spellSelectionController.clearSelectedSpell(),
+            setSelectedSpell: (spell, sourceWidget) =>
+                this.spellSelectionController.setSelectedSpell(spell, sourceWidget),
+            normalizeSelectedSpellState: () =>
+                this.spellSelectionController.normalizeSelectedSpellState(),
+            resolveSpellSelectionFromWidget: (widget, widgetUid, childId, itemId) =>
+                this.spellSelectionController.resolveSpellSelectionFromWidget(
+                    widget,
+                    widgetUid,
+                    childId,
+                    itemId,
+                ),
+            getWidgetTargetMask: (widget) =>
+                this.spellSelectionController.getWidgetTargetMask(widget),
+            executeScriptListener: (widget, listener, eventContext) =>
+                this.executeScriptListener(widget, listener, eventContext),
+            getPendingInputDialogAction: () => this.pendingInputDialogAction,
+            setPendingInputDialogAction: (action) => {
+                this.pendingInputDialogAction = action;
+            },
+            setPendingTradeQuantityAction: (action) => {
+                this.pendingTradeQuantityAction = action;
+            },
+            examineWidgetItem: (widget) => this.examineWidgetItem(widget),
+        });
+    }
+
+    private initWidgetTransmitProcessor(): void {
+        this.widgetTransmitProcessor = new WidgetTransmitProcessor({
+            getWidgetManager: () => this.widgetManager,
+            getTransmitCycles: () => this.transmitCycles,
+            getCs2Vm: () => this.cs2Vm,
+            queueScriptEvent: (event, priority) => this.queueScriptEvent(event, priority),
+            executeScriptListener: (widget, listener) =>
+                this.executeScriptListener(widget, listener),
+        });
+    }
+
+    private initAudioVarpController(): void {
+        this.audioVarp = new AudioVarpController({
+            getMusicSystem: () => this.musicSystem,
+            getSoundEffectSystem: () => this.soundEffectSystem,
+            getRenderer: () => this.renderer,
+            getMasterVolume: () => this.masterVolume,
+            setMasterVolume: (value) => {
+                this.masterVolume = value;
+            },
+            getMusicVolume: () => this._musicVolume,
+            setMusicVolume: (value) => {
+                this._musicVolume = value;
+            },
+            getSfxVolume: () => this._sfxVolume,
+            setSfxVolume: (value) => {
+                this._sfxVolume = value;
+            },
+            getAmbientVolume: () => this._ambientVolume,
+            setAmbientVolume: (value) => {
+                this._ambientVolume = value;
+            },
+        });
+    }
+
+    private initNotificationDisplay(): void {
+        this.notificationDisplay = new NotificationDisplay({
+            getWidgetManager: () => this.widgetManager,
+            getCs2Vm: () => this.cs2Vm,
+            triggerInitialVarTransmitForGroup: (groupId) =>
+                this.widgetTransmitProcessor.triggerInitialVarTransmitForGroup(groupId),
+        });
+    }
+
     private initCacheDependent(): void {
         this.widgetManager.osrsClient = this;
         // CS2 VM context with canvas/viewport state
@@ -1446,7 +1342,7 @@ export class OsrsClient {
             setMinimapIconZoomLimit: (limit: number) => {
                 self.minimapIconZoomLimit = limit | 0;
             },
-            worldMapState: this.worldMapState,
+            worldMapState: this.worldMap.worldMapState,
             getRunEnergy: () => {
                 // Return 0-10000 units as expected by CS2 opcodes
                 return self.runEnergyUnits;
@@ -1488,7 +1384,7 @@ export class OsrsClient {
                 return (self.playerEcs.getY(idx) >> 7) | 0;
             },
             loadScript: (id: number) => {
-                return self.loadClientScript(id);
+                return self.clientScripts.load(id);
             },
             clientRevision: 235,
             // Canvas dimensions as defined by the renderer's current UI layout space.
@@ -1521,23 +1417,23 @@ export class OsrsClient {
             },
             setDragSource: (widget) => {
                 this.dragSourceWidget = widget;
-                if (widget) this.isDraggingWidget = true;
+                if (widget) this.widgetInteraction.isDraggingWidget = true;
                 // Initialize drag state for programmatic drag (cc_dragpickup)
                 if (widget) {
                     // Set clickedWidget to the dragged widget so drag handling works
-                    this.clickedWidget = widget;
-                    this.clickedWidgetParent = this.resolveClickedWidgetParent(widget);
+                    this.widgetInteraction.clickedWidget = widget;
+                    this.widgetInteraction.clickedWidgetParent = this.widgetInteraction.resolveClickedWidgetParent(widget);
                     // Use the pickup offset as the click offset within the widget.
                     // cc_dragpickup provides offsets in logical (widget) coordinates, but
                     // clickedWidgetX/Y are subtracted from pixel-space mouse coordinates,
                     // so scale them to pixel space.
-                    const [pickupScaleX, pickupScaleY] = this.getUiRenderScale();
-                    this.clickedWidgetX = ((widget as any)._dragPickupOffsetX ?? 0) * pickupScaleX;
-                    this.clickedWidgetY = ((widget as any)._dragPickupOffsetY ?? 0) * pickupScaleY;
+                    const [pickupScaleX, pickupScaleY] = this.widgetInteraction.getUiRenderScale();
+                    this.widgetInteraction.clickedWidgetX = ((widget as any)._dragPickupOffsetX ?? 0) * pickupScaleX;
+                    this.widgetInteraction.clickedWidgetY = ((widget as any)._dragPickupOffsetY ?? 0) * pickupScaleY;
 
                     // Determine the drag render area for coordinate calculations
                     // Priority: explicit dragRenderArea > parent widget > widget itself
-                    const renderArea = this.clickedWidgetParent ?? widget;
+                    const renderArea = this.widgetInteraction.clickedWidgetParent ?? widget;
 
                     // Calculate absolute position of drag render area
                     let renderAreaAbsX: number;
@@ -1555,8 +1451,8 @@ export class OsrsClient {
                         renderAreaAbsX = renderArea.x ?? 0;
                         renderAreaAbsY = renderArea.y ?? 0;
                     }
-                    (this as any)._dragRenderAreaAbsX = renderAreaAbsX;
-                    (this as any)._dragRenderAreaAbsY = renderAreaAbsY;
+                    this.widgetInteraction.dragRenderAreaAbsX = renderAreaAbsX;
+                    this.widgetInteraction.dragRenderAreaAbsY = renderAreaAbsY;
                 }
             },
             getTextWidth: (text: string, fontId: number) => {
@@ -1567,7 +1463,7 @@ export class OsrsClient {
                     }
                 }
                 const font = this.fontCache.get(fontId);
-                return this.measureTextWidthOsrsMarkup(text, font);
+                return this.chatTextMetrics.measureTextWidthOsrsMarkup(text, font);
             },
             getTextHeight: (fontId: number) => {
                 // Return full visual line height (maxAscent + maxDescent)
@@ -1594,7 +1490,7 @@ export class OsrsClient {
                     }
                 }
                 const font = this.fontCache.get(fontId);
-                const measure = (s: string) => this.measureTextWidthOsrsMarkup(s, font);
+                const measure = (s: string) => this.chatTextMetrics.measureTextWidthOsrsMarkup(s, font);
 
                 // Handle <br> tags and newlines first
                 const normalized = text.replace(/<br\s*\/?>/gi, "\n");
@@ -1904,11 +1800,10 @@ export class OsrsClient {
                         // When master is 0, all audio should be muted
                         const masterVol = Math.max(0, Math.min(1, storedValue / 100));
                         self.masterVolume = masterVol;
-                        // Apply master volume to all audio systems
-                        self.applyMasterVolume();
+                        self.audioVarp.applyMasterVolume();
                         break;
                     case DEVICE_OPTION_INTERFACE_SCALING:
-                        self.applyInterfaceScalingPercentDeviceOption(storedValue);
+                        self.audioVarp.applyInterfaceScalingPercentDeviceOption(storedValue);
                         break;
                 }
             },
@@ -1974,7 +1869,7 @@ export class OsrsClient {
 
                     // notification_display must be mounted into the toplevel "notifications"
                     // component (e.g., toplevel_osrs_stretch:notifications) before running scripts.
-                    self.ensureNotificationDisplayMounted();
+                    self.notificationDisplay.ensureNotificationDisplayMounted();
 
                     const script = self.cs2Vm?.context?.loadScript?.(NOTIFICATION_DISPLAY_INIT);
                     if (script) {
@@ -1987,10 +1882,20 @@ export class OsrsClient {
             },
         });
 
+        this.initItemSpawnerUi();
+        this.initWidgetInteractionController();
+        this.initSpellSelectionController();
+        this.initAudioVarpController();
+        this.initChatControllers();
+        this.initPlayerDesignController();
+        this.initWidgetActionRouter();
+        this.initWidgetInputController();
+        this.initWidgetTransmitProcessor();
+        this.initNotificationDisplay();
         this.cs2Vm.context.showMobileKeyboard = (hint, keyboardType) => {
-            this.showMobileChatKeyboard(hint, keyboardType);
+            this.mobileChatKeyboard.show(hint, keyboardType);
         };
-        this.cs2Vm.context.hideMobileKeyboard = () => this.hideMobileChatKeyboard();
+        this.cs2Vm.context.hideMobileKeyboard = () => this.mobileChatKeyboard.hide();
 
         // Wire up the deferred callbacks - triggers queued var changes after script execution
         this.cs2Vm.onVarpChange = (varpId) => {
@@ -2074,7 +1979,7 @@ export class OsrsClient {
                 `[runWidgetScript] scriptId=${scriptId} widget=${widget.groupId}:${widget.fileId} uid=${widget.uid}`,
             );*/
             try {
-                const script = this.loadClientScript(scriptId);
+                const script = this.clientScripts.load(scriptId);
                 if (script) {
                     /*console.log(
                         `[runWidgetScript] Script ${scriptId} loaded`,
@@ -2241,14 +2146,14 @@ export class OsrsClient {
                     );
                 } catch {}
                 if (this.renderer) this.renderer.registerHitsplat(payload as any);
-                else this.pendingHitsplats.push(payload as any);
+                else this.hitsplatFlush.queueHitsplat(payload as any);
             },
             onHealthBar: (payload) => {
                 try {
                     if (this.renderer) {
                         (this.renderer as any).registerPlayerHealthBarUpdate?.(payload);
                     } else {
-                        this.pendingPlayerHealthBars.push(payload as any);
+                        this.hitsplatFlush.queuePlayerHealthBar(payload as any);
                     }
                 } catch (err) {
                     console.warn("[OsrsClient] registerPlayerHealthBarUpdate failed", err);
@@ -2455,9 +2360,7 @@ export class OsrsClient {
                         }
                     }
                     if ((payload.groupId | 0) === ITEM_SPAWNER_MODAL_GROUP_ID) {
-                        this.clearItemSpawnerSearchState();
-                        this.setItemSpawnerSearchFocus(true);
-                        this.refreshItemSpawnerSearchResults(true);
+                        this.itemSpawnerUi.onInterfaceOpened();
                     }
                 }
             } else if (payload?.action === "close_sub") {
@@ -2483,18 +2386,14 @@ export class OsrsClient {
                 }
 
                 if (closingGroupId === ITEM_SPAWNER_MODAL_GROUP_ID) {
-                    this.clearItemSpawnerSearchState();
+                    this.itemSpawnerUi.onInterfaceClosed();
                 }
             } else if (payload?.action === "set_text") {
                 const uid = Number(payload.uid) | 0;
                 const text = typeof payload.text === "string" ? payload.text : String(payload.text);
                 const w = this.widgetManager?.getWidgetByUid(uid);
                 if (w) {
-                    if (uid === this.getItemSpawnerQueryWidgetUid()) {
-                        this.itemSpawnerSearchQuery = this.escapeItemSpawnerSearchText(text);
-                        this.syncItemSpawnerSearchWidgets();
-                        this.refreshItemSpawnerSearchResults(true);
-                    } else {
+                    if (!this.itemSpawnerUi.handleSetText(uid, text)) {
                         w.text = text;
                         markWidgetInteractionDirty(w);
                         this.widgetManager.invalidateWidgetRender(w);
@@ -3583,1658 +3482,35 @@ export class OsrsClient {
     }
 
     private markVarcsChanged(): void {
-        if (!this.varcsStorageKey || !this.varManager) {
-            return;
-        }
-        this.varcsUnwrittenChanges = true;
+        this.varcPersistence.markVarcsChanged();
     }
 
     private writeVarcs(): void {
-        if (!this.varcsUnwrittenChanges || !this.varcsStorageKey || !this.varManager) {
-            return;
-        }
-        saveBrowserVarcs(this.varcsStorageKey, this.varManager.snapshotPersistentVarcs());
-        this.varcsUnwrittenChanges = false;
-        this.varcsLastWriteTimeMs = Date.now();
+        this.varcPersistence.writeVarcs();
     }
 
     private tryWriteVarcs(): void {
-        if (!this.varcsUnwrittenChanges) {
-            return;
-        }
-        const now = Date.now();
-        if (this.varcsLastWriteTimeMs < now - 60000) {
-            this.writeVarcs();
-        }
+        this.varcPersistence.tryWriteVarcs();
     }
 
-    /**
-     * Check if a widget UID belongs to an inventory container (type 2)
-     * Used to determine if child items should be treated as draggable
-     */
-    private isInventoryContainer(parentUid: number): boolean {
-        const parent = this.widgetManager?.getWidgetByUid(parentUid);
-        if (!parent) return false;
-        // Type 2 = inventory grid, type 5 with items = item container
-        return parent.type === 2 || (parent.itemId !== undefined && parent.itemId >= 0);
-    }
-
-    private getDragParentDepth(w: any): number {
-        const flags = this.widgetManager?.getWidgetFlags?.(w) ?? w?.flags ?? 0;
-        return getDragDepth(flags);
-    }
-
-    /**
-     * Resolve clickedWidgetParent via flag-based parent climbing.
-     */
-    private resolveDragParentByFlags(w: any): any | null {
-        const depth = this.getDragParentDepth(w);
-        if (depth === 0) return null;
-        let cur: any = w;
-        for (let i = 0; i < depth; i++) {
-            const parentUid = cur?.parentUid;
-            if (typeof parentUid !== "number" || parentUid === -1) return null;
-            cur = this.widgetManager?.getWidgetByUid(parentUid);
-            if (!cur) return null;
-        }
-        return cur;
-    }
-
-    /**
-     * clickedWidgetParent selection used for clamping and script coords.
-     * `dragRenderArea` is the equivalent of the parent widget (CC_SETDRAGGABLE).
-     *
-     * IMPORTANT: Only return a drag parent if explicitly set via:
-     * 1. Flag bits 17-19 (from cc_setdraggable with parent depth)
-     * 2. dragRenderArea (from cc_setdraggable with explicit render area)
-     *
-     * Do NOT fall back to parentUid - that causes incorrect clamping for widgets like
-     * bank items that should be draggable anywhere on screen.
-     */
-    private resolveClickedWidgetParent(w: any): any | null {
-        if (!w) return null;
-        // Check flag-based parent depth first (set by cc_setdraggable)
-        const byFlags = this.resolveDragParentByFlags(w);
-        if (byFlags) return byFlags;
-        // Check explicit drag render area (set by cc_setdraggable)
-        if (w.dragRenderArea) return w.dragRenderArea;
-        // Do NOT fall back to parentUid for drag clamping
-        // Widgets without explicit drag parent (like bank items) should drag freely
-        return null;
-    }
-
-    private isWidgetInteractionStale(widget: any): boolean {
-        const uid = typeof widget?.uid === "number" ? widget.uid | 0 : 0;
-        if (uid === 0 || !this.widgetManager) return true;
-        return (
-            this.widgetManager.getWidgetByUid(uid) !== widget ||
-            this.widgetManager.isEffectivelyHidden(uid)
-        );
-    }
-
-    private clearDragWidgetVisualState(widget: any): void {
-        if (!widget) return;
-        delete (widget as any)._dragPickupOffsetX;
-        delete (widget as any)._dragPickupOffsetY;
-        delete (widget as any)._dragVisualX;
-        delete (widget as any)._dragVisualY;
-        delete (widget as any)._dragAbsX;
-        delete (widget as any)._dragAbsY;
-        delete (widget as any)._isDragActive;
-        try {
-            this.widgetManager?.invalidateWidgetRender?.(widget);
-        } catch {}
-    }
-
-    private cancelActiveUiClickIfHeld(): void {
-        const isHeld =
-            this.inputManager?.clickMode2 === ClickMode.LEFT ||
-            this.inputManager?.isDragging?.() === true;
-        if (!isHeld) return;
-        (this.renderer?.canvas as any)?.__inputBridge?.consumeClick?.();
-    }
-
-    private clearWidgetInteractionState(): void {
-        const clicked = this.clickedWidget;
-        const dragSource = this.dragSourceWidget;
-
-        this.clearDragWidgetVisualState(clicked);
-        if (dragSource && dragSource !== clicked) {
-            this.clearDragWidgetVisualState(dragSource);
-        }
-
-        this.clickedWidget = null;
-        this.clickedWidgetParent = null;
-        this.clickedWidgetX = 0;
-        this.clickedWidgetY = 0;
-        this.clickedWidgetHandled = false;
-        this.widgetDragDuration = 0;
-        this.isDraggingWidget = false;
-        this.dragClickX = 0;
-        this.dragClickY = 0;
-        this.dragSourceWidget = null;
-        this.draggedOnWidget = null;
-        this.deferredWidgetAction = null;
-        this._lastDragHitX = -1;
-        this._lastDragHitY = -1;
-        delete (this as any)._dragRenderAreaAbsX;
-        delete (this as any)._dragRenderAreaAbsY;
-        this.cancelActiveUiClickIfHeld();
-    }
-
-    private clearStaleWidgetInteractionState(): void {
-        if (this.clickedWidget && this.isWidgetInteractionStale(this.clickedWidget)) {
-            this.clearWidgetInteractionState();
-            return;
-        }
-
-        if (this.dragSourceWidget && this.isWidgetInteractionStale(this.dragSourceWidget)) {
-            this.clearWidgetInteractionState();
-            return;
-        }
-
-        if (
-            this.deferredWidgetAction?.widget &&
-            this.isWidgetInteractionStale(this.deferredWidgetAction.widget)
-        ) {
-            this.deferredWidgetAction = null;
-            this.cancelActiveUiClickIfHeld();
-        }
-
-        if (this.draggedOnWidget && this.isWidgetInteractionStale(this.draggedOnWidget)) {
-            this.draggedOnWidget = null;
-        }
-    }
-
-    /**
-     * Get the UI render scale that maps logical widget coordinates to canvas pixel coordinates.
-     * Returns [scaleX, scaleY]. At scale 1 (no UI scaling), both are 1.
-     */
-    private getUiRenderScale(): [number, number] {
-        const canvas = this.inputManager?.element as HTMLCanvasElement | undefined;
-        const layoutW = this.widgetManager?.canvasWidth || 0;
-        const layoutH = this.widgetManager?.canvasHeight || 0;
-        const bufW = canvas?.width || 0;
-        const bufH = canvas?.height || 0;
-        const sx = layoutW > 0 && bufW > 0 ? bufW / layoutW : 1;
-        const sy = layoutH > 0 && bufH > 0 ? bufH / layoutH : 1;
-        return [sx, sy];
-    }
-
-    /**
-     * Check if a widget is draggable.
-     * Drag is controlled by flag bits 17-19 set via cc_setdraggable.
-     * A widget is only draggable if:
-     * 1. cc_setdraggable was called (sets isDraggable flag)
-     * 2. OR it has an onDrag handler
-     * 3. OR it's an inventory item with a dragRenderArea set
-     */
-    private isWidgetDraggable(w: any): boolean {
-        // primary gate is flags bits 17-19 (parent depth) OR explicit drag parent set by CC_SETDRAGGABLE.
-        if (this.getDragParentDepth(w) !== 0) return true;
-        if (w.dragRenderArea) return true;
-        if (w.isDraggable) return true;
-
-        // Has drag handlers set via cc_setondrag
-        if (w.eventHandlers?.onDrag || w.onDrag) return true;
-
-        return false;
+    get worldMapState(): WorldMapState {
+        return this.worldMap.worldMapState;
     }
 
     private setWorldMapState(state: WorldMapState): void {
-        state.setElementMetadataResolver((elementId) => {
-            try {
-                const element = this.mapElementTypeLoader?.load?.(elementId | 0);
-                return element ? { category: element.category | 0 } : undefined;
-            } catch {
-                return undefined;
-            }
-        });
-        this.worldMapState = state;
-        this.clearWorldMapIconCache();
-        this.clearWorldMapRenderCaches();
-        this.resetWorldMapDrag();
-        this.resetWorldMapClick();
-        this.pendingWorldMapDragDisplayX = undefined;
-        this.pendingWorldMapDragDisplayY = undefined;
-        if (this.cs2Vm?.context) {
-            this.cs2Vm.context.worldMapState = state;
-        }
-    }
-
-    private initWorldMapArchiveRenderer(): void {
-        try {
-            let mapScenes: ReturnType<CacheLoaderFactory["getMapScenes"]> = [];
-            try {
-                mapScenes = this.loaderFactory.getMapScenes();
-            } catch (error) {
-                console.log("[OsrsClient] Failed to load world map scene sprites", { error });
-            }
-            this.worldMapArchiveRenderer = new WorldMapArchiveRenderer({
-                cacheSystem: this.cacheSystem,
-                locTypeLoader: this.locTypeLoader,
-                mapElementTypeLoader: this.mapElementTypeLoader,
-                overlayTypeLoader: this.loaderFactory.getOverlayTypeLoader(),
-                textureLoader: this.textureLoader,
-                mapScenes,
-                varManager: this.varManager,
-            });
-        } catch (error) {
-            this.worldMapArchiveRenderer = undefined;
-            console.log("[OsrsClient] Failed to initialise world map archive renderer", { error });
-        }
-    }
-
-    private findWorldMapHit(hits: any[]): any | null {
-        for (let i = hits.length - 1; i >= 0; i--) {
-            const w = hits[i];
-            if (!w) continue;
-            const uid = (w.uid ?? 0) | 0;
-            if (uid !== 0 && this.widgetManager?.isEffectivelyHidden(uid)) continue;
-            if (w.hidden || w.hide) continue;
-            if (((w.contentType ?? 0) | 0) === 1400) return w;
-        }
-        return null;
-    }
-
-    private findWorldMapClickHit(hits: any[]): any | null {
-        for (let i = hits.length - 1; i >= 0; i--) {
-            const w = hits[i];
-            if (!w) continue;
-            const uid = (w.uid ?? 0) | 0;
-            if (uid !== 0 && this.widgetManager?.isEffectivelyHidden(uid)) continue;
-            if (w.hidden || w.hide) continue;
-            if (((w.contentType ?? 0) | 0) === 1400) return w;
-            if (getVisibleWidgetSurfaceReason(w)) return null;
-        }
-        return null;
-    }
-
-    private resetWorldMapDrag(): void {
-        this.worldMapDragStartMouseX = -1;
-        this.worldMapDragStartMouseY = -1;
-        this.worldMapDragStartDisplayX = 0;
-        this.worldMapDragStartDisplayY = 0;
-        this.worldMapDragPixelsPerTileX = 1;
-        this.worldMapDragPixelsPerTileY = 1;
-    }
-
-    private resetWorldMapClick(): void {
-        this.worldMapClickStartMouseX = -1;
-        this.worldMapClickStartMouseY = -1;
-        this.worldMapClickStartTimeMs = 0;
+        this.worldMap.setWorldMapState(state);
     }
 
     setRenderedWorldMapIcons(icons: WorldMapRenderedIcon[]): void {
-        this.renderedWorldMapIcons = Array.isArray(icons) ? icons : [];
-    }
-
-    private getWorldMapIconKey(icon: WorldMapRenderedIcon): string {
-        return `${icon.elementId | 0}:${icon.coord1 | 0}:${icon.coord2 | 0}`;
-    }
-
-    private getWorldMapIconsAt(screenX: number, screenY: number): WorldMapRenderedIcon[] {
-        const hits: WorldMapRenderedIcon[] = [];
-        const x = screenX | 0;
-        const y = screenY | 0;
-        for (let i = this.renderedWorldMapIcons.length - 1; i >= 0; i--) {
-            const icon = this.renderedWorldMapIcons[i];
-            if (x >= icon.x0 && x <= icon.x1 && y >= icon.y0 && y <= icon.y1) {
-                hits.push(icon);
-            }
-        }
-        return hits;
-    }
-
-    private loadWorldMapScript(
-        eventType: number,
-        elementId: number,
-        categoryId: number,
-    ): Cs2Script | null {
-        const type = eventType | 0;
-        const elementScriptId = ((elementId | 0) << 8) + type;
-        const categoryScriptId = ((-3 - (categoryId | 0)) << 8) + type;
-        const fallbackScriptId = type - 512;
-        return (
-            this.loadWorldMapEventScriptIfValid(elementScriptId) ??
-            this.loadWorldMapEventScriptIfValid(categoryScriptId) ??
-            this.loadWorldMapEventScriptIfValid(fallbackScriptId) ??
-            this.loadWorldMapDefaultHoverScript(type)
-        );
-    }
-
-    private loadWorldMapDefaultHoverScript(eventType: number): Cs2Script | null {
-        switch (eventType | 0) {
-            case 15:
-            case 17:
-                return this.loadWorldMapEventScriptIfValid(WORLD_MAP_ELEMENT_TOOLTIP_SCRIPT_ID);
-            case 16:
-                return this.loadWorldMapEventScriptIfValid(
-                    WORLD_MAP_ELEMENT_TOOLTIP_CLEAR_SCRIPT_ID,
-                );
-            default:
-                return null;
-        }
-    }
-
-    private loadWorldMapEventScriptIfValid(scriptId: number): Cs2Script | null {
-        const script = this.loadClientScriptIfExists(scriptId | 0);
-        if (!script || !this.isWorldMapEventScript(script)) return null;
-        return script;
-    }
-
-    private isWorldMapEventScript(script: Cs2Script, seen: Set<number> = new Set()): boolean {
-        const scriptId = script.id | 0;
-        if (seen.has(scriptId)) return false;
-        seen.add(scriptId);
-        if (scriptId === WORLD_MAP_ELEMENT_TOOLTIP_CLEAR_SCRIPT_ID) return true;
-        const instructions = script.instructions;
-        const intOperands = script.intOperands;
-        for (let i = 0; i < instructions.length; i++) {
-            const opcode = instructions[i] | 0;
-            if (
-                opcode === Cs2Opcodes.WORLDMAP_ELEMENT ||
-                opcode === Cs2Opcodes.WORLDMAP_ELEMENTCOORD1 ||
-                opcode === Cs2Opcodes.WORLDMAP_ELEMENTCOORD
-            ) {
-                return true;
-            }
-            if (opcode === Cs2Opcodes.INVOKE) {
-                const subScript = this.loadClientScriptIfExists(intOperands[i] | 0);
-                if (subScript && this.isWorldMapEventScript(subScript, seen)) return true;
-            }
-        }
-        return false;
-    }
-
-    private getWorldMapIconMouseArgs(screenX: number, screenY: number): number[] {
-        return [screenX | 0, screenY | 0];
-    }
-
-    private runWorldMapScriptEvent(
-        eventType: number,
-        icon: WorldMapRenderedIcon,
-        intArgs: number[] = [],
-    ): void {
-        const category = icon.category | 0;
-        const script = this.loadWorldMapScript(eventType | 0, icon.elementId | 0, category);
-        if (!script) return;
-        const previousEvent = this.worldMapState.currentEvent;
-        this.worldMapState.setCurrentEvent({
-            element: icon.elementId | 0,
-            coord1: icon.coord1 | 0,
-            coord2: icon.coord2 | 0,
-        });
-        try {
-            this.cs2Vm.run(
-                script,
-                intArgs.map((value) => value | 0),
-            );
-            this.widgetManager?.invalidateAll?.();
-        } finally {
-            this.worldMapState.setCurrentEvent(previousEvent);
-        }
-    }
-
-    private updateWorldMapIconHover(screenX: number, screenY: number): void {
-        const hits = this.getWorldMapIconsAt(screenX, screenY);
-        const next = new Map<string, WorldMapRenderedIcon>();
-        for (const icon of hits) {
-            const key = this.getWorldMapIconKey(icon);
-            next.set(key, icon);
-            this.runWorldMapScriptEvent(
-                this.hoveredWorldMapIcons.has(key) ? 17 : 15,
-                icon,
-                this.getWorldMapIconMouseArgs(screenX, screenY),
-            );
-        }
-        for (const [key, icon] of this.hoveredWorldMapIcons) {
-            if (!next.has(key)) {
-                this.runWorldMapScriptEvent(
-                    16,
-                    icon,
-                    this.getWorldMapIconMouseArgs(screenX, screenY),
-                );
-            }
-        }
-        this.hoveredWorldMapIcons = next;
+        this.worldMap.setRenderedWorldMapIcons(icons);
     }
 
     getWorldMapMenuEntriesAt(screenX: number, screenY: number): SimpleMenuEntry[] {
-        const icons = this.getWorldMapIconsAt(screenX | 0, screenY | 0);
-        const opcodes = [
-            MenuOpcode.WorldMap1,
-            MenuOpcode.WorldMap2,
-            MenuOpcode.WorldMap3,
-            MenuOpcode.WorldMap4,
-            MenuOpcode.WorldMap5,
-        ];
-        for (const icon of icons) {
-            let element: any;
-            try {
-                element = this.mapElementTypeLoader?.load?.(icon.elementId | 0);
-            } catch {
-                element = undefined;
-            }
-            const ops = Array.isArray(element?.ops) ? element.ops : [];
-            const entries: SimpleMenuEntry[] = [];
-            for (let i = 0; i < opcodes.length; i++) {
-                const option = typeof ops[i] === "string" ? String(ops[i]).trim() : "";
-                if (!option) continue;
-                const opcode = opcodes[i] | 0;
-                entries.push({
-                    option,
-                    target: element?.targetName ?? "",
-                    opcode,
-                    targetId: icon.elementId | 0,
-                    mapX: icon.coord1 | 0,
-                    mapY: icon.coord2 | 0,
-                    onClick: () => {
-                        this.runWorldMapScriptEvent(opcode - 998, icon);
-                    },
-                });
-            }
-            if (entries.length > 0) {
-                entries.push({ option: "Cancel", opcode: MenuOpcode.Cancel });
-                return entries;
-            }
-        }
-        return [];
+        return this.worldMap.getWorldMapMenuEntriesAt(screenX, screenY);
     }
 
-    private getWorldMapWidgetPixelsPerTile(widget: any): { x: number; y: number } {
-        const logicalPixelsPerTile = this.worldMapState.getZoomScale();
-        const logicalWidth = Math.max(
-            1,
-            (widget?.width ?? this.worldMapState.getDisplayPixelWidth() ?? 1) | 0,
-        );
-        const logicalHeight = Math.max(
-            1,
-            (widget?.height ?? this.worldMapState.getDisplayPixelHeight() ?? 1) | 0,
-        );
-        const pixelWidth =
-            typeof widget?._absWidth === "number" && Number.isFinite(widget._absWidth)
-                ? Math.max(1, widget._absWidth | 0)
-                : logicalWidth;
-        const pixelHeight =
-            typeof widget?._absHeight === "number" && Number.isFinite(widget._absHeight)
-                ? Math.max(1, widget._absHeight | 0)
-                : logicalHeight;
-        return {
-            x: logicalPixelsPerTile * (pixelWidth / logicalWidth),
-            y: logicalPixelsPerTile * (pixelHeight / logicalHeight),
-        };
-    }
-
-    private resolveWorldMapClickCoord(
-        widget: any,
-        mouseX: number,
-        mouseY: number,
-    ): { plane: number; x: number; y: number } | undefined {
-        const area = this.worldMapState.currentArea;
-        if (!area || !this.worldMapState.isLoaded()) return undefined;
-
-        const absX = Number.isFinite(widget?._absX) ? widget._absX : (widget?.x ?? 0);
-        const absY = Number.isFinite(widget?._absY) ? widget._absY : (widget?.y ?? 0);
-        const width = Math.max(
-            1,
-            Number.isFinite(widget?._absWidth)
-                ? widget._absWidth
-                : (widget?.width ?? this.worldMapState.getDisplayPixelWidth() ?? 1),
-        );
-        const height = Math.max(
-            1,
-            Number.isFinite(widget?._absHeight)
-                ? widget._absHeight
-                : (widget?.height ?? this.worldMapState.getDisplayPixelHeight() ?? 1),
-        );
-
-        if (mouseX < absX || mouseY < absY || mouseX >= absX + width || mouseY >= absY + height) {
-            return undefined;
-        }
-
-        const pixelsPerTile = this.getWorldMapWidgetPixelsPerTile(widget);
-        const centerX = absX + width / 2;
-        const centerY = absY + height / 2;
-        const displayX = Math.trunc(
-            (this.worldMapState.displayX | 0) + (mouseX - centerX) / pixelsPerTile.x,
-        );
-        const displayY = Math.trunc(
-            (this.worldMapState.displayY | 0) - (mouseY - centerY) / pixelsPerTile.y,
-        );
-        return area.coord(displayX, displayY);
-    }
-
-    private sendWorldMapClick(coord: { plane: number; x: number; y: number }): void {
-        if (!isServerConnected()) return;
-        const pkt = createPacket(ClientPacketId.WORLD_MAP_CLICK);
-        pkt.packetBuffer.writeIntIME(packWorldMapCoord(coord));
-        queuePacket(pkt);
-    }
-
-    private handleWorldMapDragInput(
-        hits: any[],
-        mouseX: number,
-        mouseY: number,
-        isNewClick: boolean,
-        isHolding: boolean,
-    ): boolean {
-        if (isNewClick) {
-            const clickHit = this.findWorldMapClickHit(hits);
-            if (clickHit) {
-                this.worldMapClickStartMouseX = mouseX | 0;
-                this.worldMapClickStartMouseY = mouseY | 0;
-                this.worldMapClickStartTimeMs = Date.now();
-            } else {
-                this.resetWorldMapClick();
-            }
-        }
-
-        if (!isHolding) {
-            if (this.worldMapClickStartMouseX >= 0 && this.worldMapClickStartMouseY >= 0) {
-                const deltaX = (mouseX | 0) - this.worldMapClickStartMouseX;
-                const deltaY = (mouseY | 0) - this.worldMapClickStartMouseY;
-                const clickHit = this.findWorldMapClickHit(hits);
-                if (
-                    clickHit &&
-                    Date.now() - this.worldMapClickStartTimeMs <= 500 &&
-                    deltaX >= -25 &&
-                    deltaX <= 25 &&
-                    deltaY >= -25 &&
-                    deltaY <= 25
-                ) {
-                    const coord = this.resolveWorldMapClickCoord(clickHit, mouseX | 0, mouseY | 0);
-                    if (coord) this.sendWorldMapClick(coord);
-                }
-                this.resetWorldMapClick();
-            }
-            this.resetWorldMapDrag();
-            return false;
-        }
-
-        if (isNewClick) {
-            const worldMapHit = this.findWorldMapHit(hits);
-            if (!worldMapHit) {
-                this.resetWorldMapDrag();
-                return false;
-            }
-            this.worldMapDragStartMouseX = mouseX | 0;
-            this.worldMapDragStartMouseY = mouseY | 0;
-            this.worldMapDragStartDisplayX = this.worldMapState.displayX | 0;
-            this.worldMapDragStartDisplayY = this.worldMapState.displayY | 0;
-            const pixelsPerTile = this.getWorldMapWidgetPixelsPerTile(worldMapHit);
-            this.worldMapDragPixelsPerTileX = pixelsPerTile.x;
-            this.worldMapDragPixelsPerTileY = pixelsPerTile.y;
-        }
-
-        if (this.worldMapDragStartMouseX < 0 || this.worldMapDragStartMouseY < 0) {
-            return false;
-        }
-
-        const deltaX = (mouseX | 0) - this.worldMapDragStartMouseX;
-        const deltaY = (mouseY | 0) - this.worldMapDragStartMouseY;
-        const nextX =
-            this.worldMapDragStartDisplayX - Math.trunc(deltaX / this.worldMapDragPixelsPerTileX);
-        const nextY =
-            this.worldMapDragStartDisplayY + Math.trunc(deltaY / this.worldMapDragPixelsPerTileY);
-        const currentX =
-            this.pendingWorldMapDragDisplayX !== undefined
-                ? this.pendingWorldMapDragDisplayX
-                : this.worldMapState.displayX | 0;
-        const currentY =
-            this.pendingWorldMapDragDisplayY !== undefined
-                ? this.pendingWorldMapDragDisplayY
-                : this.worldMapState.displayY | 0;
-        if (nextX !== currentX || nextY !== currentY) {
-            this.pendingWorldMapDragDisplayX = nextX;
-            this.pendingWorldMapDragDisplayY = nextY;
-        }
-        return true;
-    }
-
-    private applyPendingWorldMapDrag(): boolean {
-        if (
-            this.pendingWorldMapDragDisplayX === undefined ||
-            this.pendingWorldMapDragDisplayY === undefined
-        ) {
-            return false;
-        }
-        const nextX = this.pendingWorldMapDragDisplayX | 0;
-        const nextY = this.pendingWorldMapDragDisplayY | 0;
-        this.pendingWorldMapDragDisplayX = undefined;
-        this.pendingWorldMapDragDisplayY = undefined;
-        if (
-            nextX !== (this.worldMapState.displayX | 0) ||
-            nextY !== (this.worldMapState.displayY | 0)
-        ) {
-            this.worldMapState.setDisplayPosition(nextX, nextY);
-            this.widgetManager?.invalidateAll();
-            return true;
-        }
-        return false;
-    }
-
-    private getOrInitPlayerDesignAppearance(): PlayerAppearance | undefined {
-        if (this.playerDesignAppearance) return this.playerDesignAppearance;
-        if (!this.idkTypeLoader) return undefined;
-
-        try {
-            const idx = this.playerEcs.getIndexForServerId(this.controlledPlayerServerId);
-            const ap = idx !== undefined ? this.playerEcs.getAppearance(idx) : undefined;
-            if (ap) {
-                this.playerDesignAppearance = new PlayerAppearance(
-                    (ap.gender as any) ?? 0,
-                    Array.from(ap.colors ?? []),
-                    Array.from(ap.kits ?? []),
-                    Array.from(ap.equip ?? []),
-                    { ...(ap.headIcons ?? { prayer: -1 }) },
-                );
-                return this.playerDesignAppearance;
-            }
-        } catch {}
-
-        this.playerDesignAppearance = PlayerAppearance.defaultMale(this.idkTypeLoader);
-        return this.playerDesignAppearance;
-    }
-
-    private syncPlayerDesignAppearanceToUi(pa: PlayerAppearance): void {
-        // Expose gender to CS2 (A/B button state uses player_design_bodytype varbit).
-        try {
-            this.varManager?.setVarbit?.(14021, ((pa.gender ?? 0) | 0) === 1 ? 1 : 0);
-        } catch {}
-
-        // Keep the model widget fed even if the local ECS player isn't spawned yet.
-        try {
-            const w = this.widgetManager?.findWidget?.(679, 73);
-            if (w) {
-                (w as any).playerAppearance = {
-                    gender: (pa.gender ?? 0) | 0,
-                    colors: Array.from(pa.colors ?? [])
-                        .slice(0, 5)
-                        .map((n) => Number(n) | 0),
-                    kits: Array.from(pa.kits ?? [])
-                        .slice(0, 7)
-                        .map((n) => Number(n) | 0),
-                    equip: new Array(14).fill(-1),
-                };
-                this.widgetManager.invalidateWidgetRender(w, "player-design");
-            }
-        } catch {}
-    }
-
-    private handlePlayerDesignWidgetAction(childId: number): boolean {
-        // PlayerDesign (Interface group 679) is a client-side appearance editor.
-        // Cache widgets in this group are mostly empty containers; clicks should mutate the local
-        // player appearance immediately and let CS2 redraw visuals (e.g. body type A/B via varbit).
-        const id = childId | 0;
-
-        // Component IDs from cache (group 679)
-        const COMP_HEAD_LEFT = 15;
-        const COMP_HEAD_RIGHT = 16;
-        const COMP_JAW_LEFT = 19;
-        const COMP_JAW_RIGHT = 20;
-        const COMP_TORSO_LEFT = 23;
-        const COMP_TORSO_RIGHT = 24;
-        const COMP_ARMS_LEFT = 27;
-        const COMP_ARMS_RIGHT = 28;
-        const COMP_HANDS_LEFT = 31;
-        const COMP_HANDS_RIGHT = 32;
-        const COMP_LEGS_LEFT = 35;
-        const COMP_LEGS_RIGHT = 36;
-        const COMP_FEET_LEFT = 39;
-        const COMP_FEET_RIGHT = 40;
-        const COMP_HAIR_LEFT = 46;
-        const COMP_HAIR_RIGHT = 47;
-        const COMP_TORSO_COL_LEFT = 50;
-        const COMP_TORSO_COL_RIGHT = 51;
-        const COMP_LEGS_COL_LEFT = 54;
-        const COMP_LEGS_COL_RIGHT = 55;
-        const COMP_FEET_COL_LEFT = 58;
-        const COMP_FEET_COL_RIGHT = 59;
-        const COMP_SKIN_LEFT = 62;
-        const COMP_SKIN_RIGHT = 63;
-        const COMP_BODYTYPE_A = 68;
-        const COMP_BODYTYPE_B = 69;
-        const COMP_CONFIRM = 74;
-
-        const VARBIT_PLAYER_DESIGN_BODYTYPE = 14021;
-
-        if (!this.idkTypeLoader) return true;
-        const pa = this.getOrInitPlayerDesignAppearance();
-        if (!pa) return true;
-
-        const gender = ((pa.gender ?? 0) | 0) === 1 ? 1 : 0;
-        const kits = Array.isArray(pa.kits) ? pa.kits : (pa.kits = new Array(7).fill(-1));
-        const colors = Array.isArray(pa.colors) ? pa.colors : (pa.colors = [0, 0, 0, 0, 0]);
-        if (kits.length < 7) kits.length = 7;
-        if (colors.length < 5) colors.length = 5;
-        for (let i = 0; i < 7; i++) kits[i] = (kits[i] ?? -1) | 0;
-        for (let i = 0; i < 5; i++) colors[i] = (colors[i] ?? 0) | 0;
-
-        const expectedIdkBodyPartId = (g: number, partIndex: number): number =>
-            ((partIndex | 0) + (((g | 0) === 1 ? 7 : 0) | 0)) | 0;
-
-        const cycleKit = (partIndex: number, dir: -1 | 1): boolean => {
-            const loader: any = this.idkTypeLoader as any;
-            const count = (loader?.getCount?.() ?? 0) | 0;
-            if (count <= 0 || typeof loader?.load !== "function") return false;
-
-            const want = expectedIdkBodyPartId(pa.gender | 0, partIndex | 0) | 0;
-            const currentKitId = (kits[partIndex] ?? -1) | 0;
-            let idkId = currentKitId;
-            if (idkId < 0 || idkId >= count) {
-                idkId = dir === 1 ? count - 1 : 0;
-            }
-
-            for (let i = 0; i < count; i++) {
-                idkId = (idkId + (dir === 1 ? 1 : -1) + count) % count;
-                try {
-                    const kit: any = loader.load(idkId);
-                    if (!kit || kit.nonSelectable) continue;
-                    const rawPart = kit.bodyPartId ?? kit.bodyPartyId;
-                    const bodyPartId = typeof rawPart === "number" ? rawPart | 0 : -1;
-                    if (bodyPartId !== want) continue;
-                    kits[partIndex] = idkId | 0;
-                    return true;
-                } catch {
-                    continue;
-                }
-            }
-            return false;
-        };
-
-        const cycleColor = (colorIndex: number, dir: -1 | 1): boolean => {
-            const idx = Math.max(0, Math.min(4, colorIndex | 0)) | 0;
-            const palette = PLAYER_BODY_RECOLOR_TO_1[idx] ?? [];
-            const len = (palette.length | 0) >>> 0;
-            if (len <= 0) return false;
-            let v = (colors[idx] ?? 0) | 0;
-            for (let i = 0; i < len; i++) {
-                v = (v + (dir === 1 ? 1 : -1) + len) % len;
-                // restrict skin palette (index 4) to < 8
-                if (idx !== 4 || v < 8) break;
-            }
-            colors[idx] = v | 0;
-            return true;
-        };
-
-        const setGender = (g: 0 | 1): boolean => {
-            const newGender = g | 0;
-            const was = ((pa.gender ?? 0) | 0) === 1 ? 1 : 0;
-            if (((pa.gender ?? 0) | 0) !== newGender) {
-                pa.gender = newGender as any;
-                const defaults =
-                    newGender === 1
-                        ? PlayerAppearance.defaultFemale(this.idkTypeLoader)
-                        : PlayerAppearance.defaultMale(this.idkTypeLoader);
-                const defKits = Array.isArray(defaults.kits)
-                    ? defaults.kits
-                    : new Array(7).fill(-1);
-                pa.kits = defKits.slice(0, 7).map((n) => Number(n) | 0);
-            }
-            // Mirror gender into player_design_bodytype for CS2 UI (script3755) and other scripts.
-            this.varManager?.setVarbit?.(VARBIT_PLAYER_DESIGN_BODYTYPE, newGender);
-            return was !== newGender;
-        };
-
-        const confirm = (): boolean => {
-            try {
-                // Server receives only the final selection; it will validate + persist + close the interface.
-                const payload = {
-                    gender: ((pa.gender ?? 0) | 0) === 1 ? 1 : 0,
-                    colors: Array.from(pa.colors ?? [])
-                        .slice(0, 5)
-                        .map((n) => Number(n) | 0),
-                    kits: Array.from(pa.kits ?? [])
-                        .slice(0, 7)
-                        .map((n) => Number(n) | 0),
-                };
-                sendPlayerDesignConfirm(payload);
-            } catch {}
-            // Ensure UI remains consistent even if server response is delayed.
-            this.syncPlayerDesignAppearanceToUi(pa);
-            return true;
-        };
-
-        let changed = false;
-        switch (id) {
-            case COMP_HEAD_LEFT:
-                changed = cycleKit(0, -1);
-                break;
-            case COMP_HEAD_RIGHT:
-                changed = cycleKit(0, 1);
-                break;
-            case COMP_JAW_LEFT:
-                changed = cycleKit(1, -1);
-                break;
-            case COMP_JAW_RIGHT:
-                changed = cycleKit(1, 1);
-                break;
-            case COMP_TORSO_LEFT:
-                changed = cycleKit(2, -1);
-                break;
-            case COMP_TORSO_RIGHT:
-                changed = cycleKit(2, 1);
-                break;
-            case COMP_ARMS_LEFT:
-                changed = cycleKit(3, -1);
-                break;
-            case COMP_ARMS_RIGHT:
-                changed = cycleKit(3, 1);
-                break;
-            case COMP_HANDS_LEFT:
-                changed = cycleKit(4, -1);
-                break;
-            case COMP_HANDS_RIGHT:
-                changed = cycleKit(4, 1);
-                break;
-            case COMP_LEGS_LEFT:
-                changed = cycleKit(5, -1);
-                break;
-            case COMP_LEGS_RIGHT:
-                changed = cycleKit(5, 1);
-                break;
-            case COMP_FEET_LEFT:
-                changed = cycleKit(6, -1);
-                break;
-            case COMP_FEET_RIGHT:
-                changed = cycleKit(6, 1);
-                break;
-            case COMP_HAIR_LEFT:
-                changed = cycleColor(0, -1);
-                break;
-            case COMP_HAIR_RIGHT:
-                changed = cycleColor(0, 1);
-                break;
-            case COMP_TORSO_COL_LEFT:
-                changed = cycleColor(1, -1);
-                break;
-            case COMP_TORSO_COL_RIGHT:
-                changed = cycleColor(1, 1);
-                break;
-            case COMP_LEGS_COL_LEFT:
-                changed = cycleColor(2, -1);
-                break;
-            case COMP_LEGS_COL_RIGHT:
-                changed = cycleColor(2, 1);
-                break;
-            case COMP_FEET_COL_LEFT:
-                changed = cycleColor(3, -1);
-                break;
-            case COMP_FEET_COL_RIGHT:
-                changed = cycleColor(3, 1);
-                break;
-            case COMP_SKIN_LEFT:
-                changed = cycleColor(4, -1);
-                break;
-            case COMP_SKIN_RIGHT:
-                changed = cycleColor(4, 1);
-                break;
-            case COMP_BODYTYPE_A:
-                changed = setGender(0);
-                break;
-            case COMP_BODYTYPE_B:
-                changed = setGender(1);
-                break;
-            case COMP_CONFIRM:
-                return confirm();
-            default:
-                this.syncPlayerDesignAppearanceToUi(pa);
-                return true;
-        }
-
-        // Always suppress server widget ops for this interface (client-only).
-        if (!changed) {
-            this.syncPlayerDesignAppearanceToUi(pa);
-            return true;
-        }
-
-        // Commit appearance change for local preview and keep CS2 vars/sprites in sync.
-        this.playerDesignAppearance = pa;
-        const localIdx = this.playerEcs.getIndexForServerId(this.controlledPlayerServerId);
-        if (localIdx !== undefined) {
-            this.playerEcs.setAppearance(localIdx, pa);
-            try {
-                this.playerEcs.ensureBaseForIndex(localIdx, {
-                    idkTypeLoader: this.idkTypeLoader,
-                    objTypeLoader: this.objTypeLoader,
-                    modelLoader: this.modelLoader,
-                    textureLoader: this.textureLoader,
-                    npcTypeLoader: undefined,
-                    seqTypeLoader: this.seqTypeLoader,
-                    seqFrameLoader: this.seqFrameLoader,
-                    skeletalSeqLoader: this.loaderFactory.getSkeletalSeqLoader?.(),
-                    varManager: this.varManager,
-                    basTypeLoader: this.basTypeLoader,
-                });
-            } catch {}
-        }
-
-        // Keep the bodytype varbit in sync with current gender for CS2 state (A/B buttons).
-        if ((pa.gender | 0) !== gender) {
-            this.varManager?.setVarbit?.(
-                VARBIT_PLAYER_DESIGN_BODYTYPE,
-                (pa.gender | 0) === 1 ? 1 : 0,
-            );
-        }
-        this.syncPlayerDesignAppearanceToUi(pa);
-
-        return true;
-    }
-
-    handleWidgetAction(event: {
-        widget?: any;
-        option?: string;
-        target?: string;
-        source?: "menu" | "primary";
-        cursorX?: number;
-        cursorY?: number;
-        slot?: number;
-        itemId?: number;
-        /** Explicit 1-based widget op index (identifier); 0 for targetVerb entries */
-        opIndex?: number;
-        /** 1-based submenu entry index when invoked from an op submenu */
-        opSubIndex?: number;
-    }): void {
-        // for dynamic children (CC_CREATE), the click packet identifies the parent widget
-        // plus a childIndex ("slot"). Our menu/hit-test layers sometimes surface the parent widget with
-        // `slot` set to the dynamic child index. For CS2, we must execute onOp/onClick on the DYNAMIC
-        // child widget itself (where cc_setonop listeners are attached), not on the parent container.
-        const resolveDynamicChildForAction = (widget: any, slot: unknown): any => {
-            if (!widget || typeof slot !== "number") return widget;
-            const idx = slot | 0;
-            if (idx < 0) return widget;
-            let host = widget as any;
-            let children = host?.children;
-            // Some input layers pass a shallow widget snapshot without the dynamic `children` array.
-            // Prefer the canonical widget instance from the widget manager when available.
-            if (!Array.isArray(children) && typeof host?.uid === "number") {
-                const canonical = this.widgetManager?.getWidgetByUid?.((host.uid as number) | 0);
-                if (canonical) {
-                    host = canonical as any;
-                    children = (canonical as any)?.children;
-                }
-            }
-            if (!Array.isArray(children)) return widget;
-            const child = children[idx];
-            if (!child) return widget;
-            // Only switch to a CC_CREATE dynamic child (fileId === -1) at the matching childIndex.
-            if ((child.fileId | 0) !== -1) return widget;
-            if (typeof child.childIndex === "number" && (child.childIndex | 0) !== idx) {
-                return widget;
-            }
-            const childParentUid =
-                typeof child.parentUid === "number" ? (child.parentUid as number) | 0 : undefined;
-            const widgetUid =
-                typeof widget.uid === "number" ? (widget.uid as number) | 0 : undefined;
-            const widgetId = typeof widget.id === "number" ? (widget.id as number) | 0 : undefined;
-            if (
-                childParentUid !== undefined &&
-                widgetUid !== undefined &&
-                childParentUid !== widgetUid &&
-                (widgetId === undefined || childParentUid !== widgetId)
-            ) {
-                return widget;
-            }
-            return child;
-        };
-
-        const w = resolveDynamicChildForAction(event.widget, event.slot);
-        if (w !== event.widget) {
-            event = { ...event, widget: w, slot: (w.childIndex ?? event.slot) as any };
-        }
-        const groupId = w?.groupId ?? w?.uid >>> 16;
-        const childId =
-            w?.fileId != null && w?.fileId >= 0
-                ? w.fileId
-                : typeof w?.childIndex === "number"
-                  ? w.childIndex
-                  : w?.uid & 0xffff;
-        const isItemSpawnerSearchClick =
-            (groupId | 0) === ITEM_SPAWNER_MODAL_GROUP_ID &&
-            this.isItemSpawnerSearchComponent(childId | 0);
-
-        if (this.itemSpawnerSearchFocused && !isItemSpawnerSearchClick) {
-            this.setItemSpawnerSearchFocus(false);
-        }
-        if (isItemSpawnerSearchClick) {
-            this.setItemSpawnerSearchFocus(true);
-            return;
-        }
-
-        // PlayerDesign (679): handle locally (appearance changes are client-side).
-        // The interface widgets themselves are largely CS2-driven containers; server should only
-        // receive the final selection, not each arrow click.
-        if ((groupId | 0) === 679) {
-            if (this.handlePlayerDesignWidgetAction(childId | 0)) {
-                return;
-            }
-        }
-
-        if (this.handleTradeWidgetAction(w, event, groupId | 0, childId | 0)) {
-            return;
-        }
-
-        if (w) {
-            const uid = typeof w.uid === "number" ? w.uid | 0 : undefined;
-            const logGroupId = uid !== undefined ? (uid >>> 16) & 0xffff : (groupId as number);
-            const logChildId = uid !== undefined ? uid & 0xffff : (childId as number);
-            console.log("[widget-click]", {
-                uid,
-                groupId: logGroupId,
-                childId: logChildId,
-                fileId: typeof w.fileId === "number" ? w.fileId | 0 : undefined,
-                childIndex: typeof w.childIndex === "number" ? w.childIndex | 0 : undefined,
-                option: event.option,
-                target: event.target,
-                source: event.source,
-                cursorX: event.cursorX,
-                cursorY: event.cursorY,
-                slot: typeof event.slot === "number" ? event.slot | 0 : undefined,
-                itemId: typeof event.itemId === "number" ? event.itemId | 0 : undefined,
-                type: typeof w.type === "number" ? w.type | 0 : undefined,
-                contentType: typeof w.contentType === "number" ? w.contentType | 0 : undefined,
-            });
-        }
-
-        // For draggable widgets (like inventory items), defer action until mouse released
-        // This prevents "Use" from triggering on mousedown when the user might be trying to drag
-        if (event.source === "primary" && event.widget && this.isWidgetDraggable(event.widget)) {
-            // Check if mouse button is currently held
-            const isMouseDown = this.inputManager?.isDragging?.() === true;
-            if (isMouseDown) {
-                // Queue this action to fire when mouse is released
-                this.deferredWidgetAction = event;
-                return;
-            }
-        }
-
-        // Handle minimap orbs directly on client side for instant feedback
-        if (event.widget) {
-            const widgetGroupId = event.widget.groupId ?? event.widget.uid >>> 16;
-            const childId = event.widget.fileId ?? event.widget.uid & 0xffff;
-
-            // Settings cog buttons in side tabs switch to the Settings tab (index 11)
-            // Widget 399:11 = Quest list settings cog
-            // Widget 629:* with option "Settings" = Side journal settings cogs
-            // Widget 116:32 = "All Settings" button (opens settings modal - handled separately)
-            if (
-                event.option === "Settings" &&
-                (groupId === INTERFACE_QUEST_LIST_ID ||
-                    groupId === SIDE_JOURNAL_GROUP_ID ||
-                    groupId === INTERFACE_ACHIEVEMENT_DIARY_ID)
-            ) {
-                // Invoke CS2 script 914 (toplevel_sidebutton_op) to switch to Settings tab (index 11)
-                // Args: event_op=1, enum_id=1130 (resizable mode), tab_index=11 (settings)
-                const rootInterfaceId = this.widgetManager?.rootInterface ?? 161;
-                // Map root interface to enum ID:
-                // 161 = toplevel_osrs_stretch -> enum_1130
-                // 165 = toplevel_display (fullscreen) -> enum_1132
-                // 548 = toplevel -> enum_1129
-                // 164 = toplevel_pre_eoc -> enum_1131
-                let displayEnumId = 1130; // Default to resizable
-                if (rootInterfaceId === 165) displayEnumId = 1132;
-                else if (rootInterfaceId === 548) displayEnumId = 1129;
-                else if (rootInterfaceId === 164) displayEnumId = 1131;
-
-                if (this.cs2Vm) {
-                    const script = (this.cs2Vm as any).context?.loadScript?.(914);
-                    if (script) {
-                        // toplevel_sidebutton_op(event_op, enum, tab_index)
-                        (this.cs2Vm as any).run(script, [1, displayEnumId, 11], []);
-                        console.log(
-                            `[OsrsClient] Settings cog clicked - invoked script 914 to switch to Settings tab (enum=${displayEnumId})`,
-                        );
-                    } else {
-                        // Fallback: just set varcint171 directly
-                        this.varManager.setVarcInt(171, 11);
-                        console.log(
-                            `[OsrsClient] Settings cog clicked (group=${groupId}, child=${childId}), set varcint171=11 (fallback)`,
-                        );
-                    }
-                } else {
-                    this.varManager.setVarcInt(171, 11);
-                    console.log(
-                        `[OsrsClient] Settings cog clicked - no VM, set varcint171=11 directly`,
-                    );
-                }
-                // Don't return - let the action continue to send to server and run CS2 handlers
-            }
-
-            // Handle spell-on-widget (e.g., High Alchemy on inventory item)
-            // route this through the low-level IF_BUTTONT packet.
-            if (ClientState.isSpellSelected) {
-                // Prevent casting on the same click that entered targeting mode
-                // Require at least 50ms to have passed since entering spell targeting
-                const timeSinceTargeting = Date.now() - ClientState.spellTargetEnteredFrame;
-                if (timeSinceTargeting < 50) {
-                    console.log(
-                        `[OsrsClient] Ignoring spell-on-item in same click as targeting entry (${timeSinceTargeting}ms)`,
-                    );
-                    return;
-                }
-
-                const targetItemId = event.itemId ?? event.widget.itemId ?? -1;
-                const targetSlot = event.slot ?? event.widget.childIndex ?? childId;
-                const targetWidgetUid = event.widget.uid;
-
-                // Check if this is an inventory item widget (has itemId or is in inventory group 149)
-                const isInventoryItem = targetItemId >= 0 || groupId === 149;
-
-                // Check if clicking on the same item that's currently selected (item-on-itself)
-                // In OSRS, this cancels the selection rather than trying to use item on itself
-                if (ClientState.isItemSelected === 1 && isInventoryItem) {
-                    const isSameItem =
-                        targetSlot === ClientState.selectedItemSlot &&
-                        targetItemId === ClientState.selectedItemId;
-                    if (isSameItem) {
-                        console.log(
-                            `[OsrsClient] Item clicked on itself - cancelling selection (slot=${targetSlot}, itemId=${targetItemId})`,
-                        );
-                        this.clearSelectedSpell();
-                        ClientState.isItemSelected = 0;
-                        ClientState.selectedItemWidget = 0;
-                        ClientState.selectedItemSlot = 0;
-                        ClientState.selectedItemId = -1;
-                        return;
-                    }
-                }
-
-                // Check if this widget is a valid target for the selected spell/item
-                // If targeting a non-item widget, check WIDGET_USE_TARGET (bit 21) validation
-                // WIDGET_USE_TARGET validation: (flags >> 21 & 1) != 0
-                if (!isInventoryItem) {
-                    const targetFlags =
-                        this.widgetManager?.getWidgetFlags?.(event.widget) ??
-                        event.widget?.flags ??
-                        0;
-                    const targetHasWidgetUseTarget = isWidgetUseTarget(targetFlags);
-                    // selectedSpellTargetMask is the 6-bit mask: bit 5 (0x20) = USE_WIDGET
-                    const spellCanTargetWidgets =
-                        (ClientState.selectedSpellTargetMask & 0x20) !== 0;
-
-                    if (spellCanTargetWidgets && !targetHasWidgetUseTarget) {
-                        // Spell can target widgets, but this widget doesn't have WIDGET_USE_TARGET
-                        console.log(
-                            `[OsrsClient] Widget targeting rejected: target widget lacks WIDGET_USE_TARGET flag (targetFlags=0x${targetFlags.toString(
-                                16,
-                            )}, spellTargetMask=0x${ClientState.selectedSpellTargetMask.toString(
-                                16,
-                            )})`,
-                        );
-                        // Clear selection and ignore this click
-                        this.clearSelectedSpell();
-                        return;
-                    }
-                }
-
-                if (isInventoryItem) {
-                    // Check if this is item-on-item (isItemSelected === 1) or spell-on-item
-                    if (ClientState.isItemSelected === 1) {
-                        // This is item-on-item (e.g., using knife on logs)
-                        console.log(
-                            `[OsrsClient] Item-on-item: "${ClientState.selectedSpellName}" (slot=${ClientState.selectedItemSlot}, itemId=${ClientState.selectedItemId}) -> item=${targetItemId}, slot=${targetSlot}`,
-                        );
-
-                        sendInventoryUseOn({
-                            slot: ClientState.selectedItemSlot,
-                            itemId: ClientState.selectedItemId,
-                            target: {
-                                kind: "inv",
-                                slot: targetSlot,
-                                itemId: targetItemId,
-                            },
-                        });
-
-                        // Clear selection after use
-                        this.clearSelectedSpell();
-                        ClientState.clearItemSelection();
-                        return;
-                    } else {
-                        // This is spell-on-item (e.g., High Alchemy on item)
-                        this.normalizeSelectedSpellState();
-                        const selection = buildSelectedSpellPayload(
-                            ClientState.selectedSpellWidget,
-                            ClientState.selectedSpellChildIndex,
-                            ClientState.selectedSpellItemId,
-                        );
-                        if (!selection) {
-                            this.clearSelectedSpell();
-                            return;
-                        }
-
-                        console.log(
-                            `[OsrsClient] Spell-on-item: spell="${ClientState.selectedSpellName}" (group=${selection.spellbookGroupId}, child=${selection.widgetChildId}) -> item=${targetItemId}, slot=${targetSlot}`,
-                        );
-
-                        if (isServerConnected()) {
-                            queuePacket(
-                                createSelectedSpellOnWidgetPacket(
-                                    targetWidgetUid,
-                                    targetSlot,
-                                    targetItemId,
-                                    selection,
-                                ),
-                            );
-                        }
-
-                        // Clear spell selection after use
-                        this.clearSelectedSpell();
-                        return;
-                    }
-                }
-            }
-
-            // Handle item "Use" action - enter item targeting mode
-            // When user clicks "Use" on an inventory item, the item should get selected
-            // and show a white outline until another target is selected
-            const optionLower = (event.option || "").toLowerCase();
-            const targetItemId = event.itemId ?? event.widget.itemId ?? -1;
-            const isInventoryItem = targetItemId >= 0 || groupId === 149;
-
-            if (isInventoryItem && optionLower === "use") {
-                const targetSlot = event.slot ?? event.widget.childIndex ?? childId;
-                const containerUid = event.widget.parentUid ?? event.widget.uid;
-
-                // Enter item targeting mode
-                ClientState.isItemSelected = 1;
-                ClientState.selectedItemWidget = containerUid;
-                ClientState.selectedItemSlot = targetSlot;
-                ClientState.selectedItemId = targetItemId;
-
-                // Also set spell selection state for targeting cursor display
-                ClientState.isSpellSelected = true;
-                ClientState.selectedSpellWidget = containerUid;
-                ClientState.selectedSpellChildIndex = targetSlot;
-                ClientState.selectedSpellItemId = targetItemId;
-                ClientState.selectedSpellActionName = "Use";
-                ClientState.selectedSpellName = event.target || event.widget.name || "";
-                ClientState.spellTargetEnteredFrame = Date.now();
-                // Items can target NPCs, objects, ground items, players, and widgets
-                // Set targetMask with all target types enabled (bits 11-16)
-                ClientState.selectedSpellTargetMask = 0x3f; // All 6 target type bits
-
-                console.log(
-                    `[OsrsClient] Entered item targeting mode: containerUid=${containerUid}, slot=${targetSlot}, itemId=${targetItemId}, name="${
-                        ClientState.selectedSpellName
-                    }", targetMask=0x${ClientState.selectedSpellTargetMask.toString(16)}`,
-                );
-
-                // Don't proceed with normal action dispatch - we're in targeting mode now
-                return;
-            }
-
-            // Handle inventory item actions that should go via inventory_use message
-            // These need special routing to handleInventoryUseMessage on the server
-            const inventoryItemActions = [
-                "drop",
-                "eat",
-                "drink",
-                "wear",
-                "wield",
-                "equip",
-                "bury",
-                "scatter",
-                "light",
-                "read",
-                "open",
-                "open-all",
-                "empty",
-                "destroy",
-                "rub",
-                "commune",
-                "fill",
-                "craft",
-                "check",
-            ];
-            if (isInventoryItem && inventoryItemActions.includes(optionLower)) {
-                const targetSlot = event.slot ?? event.widget.childIndex ?? childId;
-                const quantity = event.widget.itemQuantity ?? 1;
-                console.log(
-                    `[OsrsClient] Inventory action: ${event.option} on slot=${targetSlot}, itemId=${targetItemId}`,
-                );
-                sendInventoryUse(targetSlot, targetItemId, quantity, event.option);
-                return;
-            }
-
-            // Handle spell/item targeting mode - if widget has targetVerb, enter targeting mode
-            // This matches OSRS behavior where clicking a spell with buttonType=2 enters targeting
-            // Also handle spellbook (group 218) widgets as a fallback since CS2 scripts may not set targetVerb
-            let targetVerb = event.widget.targetVerb || event.widget.spellActionName;
-            const isSpellbookWidget = groupId === 218 && childId > 0;
-
-            // Only enter targeting mode if targetMask > 0 (spell needs a target)
-            // Teleport spells have targetMask === 0 and should cast immediately
-            const targetMask = this.getWidgetTargetMask(event.widget);
-            const needsTarget = targetMask > 0;
-
-            // No-target spells (teleports) send IF_BUTTON1 directly.
-            // spellbook op1 routes through widget button packets.
-            if (
-                isSpellbookWidget &&
-                !needsTarget &&
-                targetVerb &&
-                (event.widget.name || event.widget.opBase || event.widget.spriteId >= 0)
-            ) {
-                sendWidgetAction({
-                    widgetId: ((groupId & 0xffff) << 16) | (childId & 0xffff),
-                    groupId: groupId | 0,
-                    childId: childId | 0,
-                    option: "Cast",
-                    target: event.target || event.widget.name || event.widget.opBase || "",
-                    opId: 1,
-                });
-                return;
-            }
-
-            // Widget_getSpellActionName can be null, and client stores literal "null".
-            if (!targetVerb && isSpellbookWidget && needsTarget) {
-                targetVerb = "null";
-            }
-
-            if (
-                targetVerb &&
-                typeof targetVerb === "string" &&
-                targetVerb.length > 0 &&
-                needsTarget
-            ) {
-                // Get the import for ClientState
-                const { ClientState } = require("./ClientState");
-                const spellSelection = this.resolveSpellSelectionFromWidget(
-                    event.widget,
-                    event.widget.uid,
-                    childId,
-                    event.itemId ?? -1,
-                );
-
-                // Clicking the currently selected spell deselects it.
-                if (
-                    ClientState.isSpellSelected &&
-                    ClientState.selectedSpellWidget === spellSelection.widgetId
-                ) {
-                    console.log(
-                        `[OsrsClient] Spell widget re-clicked while active, clearing selection: widget=${spellSelection.widgetId}`,
-                    );
-                    this.clearSelectedSpell();
-                    return;
-                }
-
-                // Enter targeting mode
-                ClientState.clearItemSelection();
-                try {
-                    this.inventory?.setSelectedSlot?.(null);
-                } catch {}
-                ClientState.isSpellSelected = true;
-                ClientState.selectedSpellWidget = spellSelection.widgetId;
-                ClientState.selectedSpellChildIndex = spellSelection.childIndex;
-                ClientState.selectedSpellItemId = spellSelection.itemId;
-                ClientState.selectedSpellActionName = targetVerb;
-                // OSRS uses widget.dataText for spell name display (e.g., "Wind Strike")
-                // Also check opBase which CS2 sets for spells (contains colored spell name)
-                ClientState.selectedSpellName =
-                    event.widget.opBase ||
-                    event.widget.dataText ||
-                    event.widget.name ||
-                    event.target ||
-                    "";
-                // Track when spell targeting was entered to prevent casting on same click
-                ClientState.spellTargetEnteredFrame = Date.now();
-                // Store the spell's target mask (what entity types it can target)
-                // This is stored in bits 11-16 of the current widget flags.
-                ClientState.selectedSpellTargetMask = targetMask;
-
-                console.log(
-                    `[OsrsClient] Entered spell targeting mode: widget=${
-                        spellSelection.widgetId
-                    }, verb="${targetVerb}", name="${
-                        ClientState.selectedSpellName
-                    }", group=${(spellSelection.widgetId >>> 16) & 0xffff}, child=${
-                        spellSelection.childIndex
-                    }, targetMask=0x${ClientState.selectedSpellTargetMask.toString(16)}`,
-                );
-
-                // Fire onTargetEnter on the source widget ( - use widget child ID, not hardcoded spell ID)
-                this.setSelectedSpell(
-                    {
-                        spellId: spellSelection.childIndex,
-                        spellName: ClientState.selectedSpellName,
-                        spellLevel: 1,
-                    },
-                    event.widget,
-                );
-
-                // Don't proceed with normal action dispatch - we're in targeting mode now
-                return;
-            }
-        }
-
-        // Handle pause button widgets
-        // When a widget with buttonText "Continue" or text containing "click here to continue"
-        // is clicked, send RESUME_PAUSEBUTTON packet.
-        // This handles dialog continue buttons like:
-        // - Level up interface (233:3)
-        // - NPC dialog continue buttons
-        // - Quest dialog continue buttons
-        // NOTE: Flag bit 0 (IF_OP1) just means "clickable" - it does NOT indicate pause button.
-        // Dialog options (219) have IF_OP1 set but should send widget_action, not pause button.
-        if (event.widget) {
-            // Check for IF1 buttonText "Continue" (set by WidgetLoader for buttonType 6)
-            const buttonText = String(event.widget.buttonText || "")
-                .replace(/<[^>]+>/g, "")
-                .toLowerCase();
-            const isContinueButtonText = buttonText === "continue";
-            // Check widget text for "click here to continue" (for IF3 widgets like level up 233:3)
-            const widgetText = String(event.widget.text || "")
-                .replace(/<[^>]+>/g, "")
-                .toLowerCase();
-            const hasClickToContinue =
-                widgetText.includes("click") && widgetText.includes("continue");
-
-            const isPauseButtonWidget = isContinueButtonText || hasClickToContinue;
-
-            if (isPauseButtonWidget) {
-                // Only send if not already waiting for response
-                if (this.widgetManager?.canSendResumePauseButton(event.widget) ?? true) {
-                    const widgetUid =
-                        (typeof (event.widget as any).id === "number"
-                            ? (event.widget as any).id
-                            : (event.widget.uid ?? 0)) | 0;
-                    const childIndex =
-                        (typeof event.widget.childIndex === "number" &&
-                        (event.widget.childIndex | 0) >= 0
-                            ? event.widget.childIndex | 0
-                            : typeof event.widget.fileId === "number" && event.widget.fileId >= 0
-                              ? event.widget.fileId | 0
-                              : widgetUid & 0xffff) | 0;
-                    const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
-                    pkt.packetBuffer.writeShortAddLE(childIndex);
-                    pkt.packetBuffer.writeInt(widgetUid);
-                    queuePacket(pkt);
-                    // Set meslayerContinueWidget to show "Please wait..."
-                    if (this.widgetManager) {
-                        this.widgetManager.meslayerContinueWidget = event.widget;
-                        this.widgetManager.invalidateWidgetRender(event.widget);
-                    }
-                    console.log(
-                        `[OsrsClient] Pause button clicked: widget=${widgetUid}, childIndex=${childIndex}, buttonText=${isContinueButtonText}, textMatch=${hasClickToContinue}`,
-                    );
-                }
-                return; // Pause button widgets don't process other actions
-            }
-        }
-
-        // CS2 Event Hooks
-        // Skip CS2 handler invocation for primary clicks if game loop already handled it
-        // This prevents double-invocation when:
-        // 1. Game loop fires onClick/onOp on mousedown (non-draggable widgets)
-        // 2. UI registry fires handleWidgetAction on mouseup
-        const skipCs2Handlers =
-            event.source === "primary" &&
-            this.clickedWidgetHandled &&
-            event.widget?.uid === this.clickedWidget?.uid;
-        const meslayerBeforeAction = this.widgetManager?.meslayerContinueWidget ?? null;
-
-        if (event.widget && !skipCs2Handlers) {
-            let handled = false;
-
-            // Determine the op index (1-based) for onOp handlers.
-            // Menu entries pass the explicit op index; fall back to option-text inference.
-            const opIndex = event.opIndex ?? this.inferWidgetOpId(event.widget, event.option) ?? 1;
-            const widgetGroupId = event.widget.groupId ?? event.widget.uid >>> 16;
-
-            // CS2 event coords are relative to the widget ("event_mousex/y").
-            // The GL UI dispatches absolute canvas coords; the main loop uses relative coords.
-            // Prefer already-relative coords when they fit inside the widget bounds; otherwise
-            // convert absolute coords using the widget's cached absolute position from rendering.
-            let relMouseX = event.cursorX ?? 0;
-            let relMouseY = event.cursorY ?? 0;
-            try {
-                const wAny: any = event.widget as any;
-                const wW = (wAny?.width ?? 0) | 0;
-                const wH = (wAny?.height ?? 0) | 0;
-                const looksRelative =
-                    relMouseX >= 0 && relMouseY >= 0 && relMouseX <= wW && relMouseY <= wH;
-                if (
-                    !looksRelative &&
-                    typeof wAny?._absX === "number" &&
-                    typeof wAny?._absY === "number"
-                ) {
-                    relMouseX = (event.cursorX ?? 0) - (wAny._absX | 0);
-                    relMouseY = (event.cursorY ?? 0) - (wAny._absY | 0);
-                }
-            } catch {}
-
-            // Create event context for magic number substitution
-            const eventContext: Partial<ScriptEvent> = {
-                mouseX: relMouseX,
-                mouseY: relMouseY,
-                opIndex,
-                opSubIndex: event.opSubIndex ?? 0,
-                targetName: event.target ?? "",
-            };
-
-            // First, try new CS2 eventHandlers map from VM
-            if (event.widget.eventHandlers) {
-                const eventType = event.source === "menu" ? "onOp" : "onClick";
-                handled = this.cs2Vm.invokeEventHandler(
-                    event.widget,
-                    eventType as any,
-                    eventContext,
-                );
-
-                // If onClick didn't work, try onOp as fallback for primary clicks
-                // Many widgets only define onOp even for left-click actions
-                if (!handled && event.source === "primary" && event.widget.eventHandlers.onOp) {
-                    handled = this.cs2Vm.invokeEventHandler(
-                        event.widget,
-                        "onOp" as any,
-                        eventContext,
-                    );
-                }
-            }
-
-            // Fall back to old-style array-based handlers if not handled
-            if (!handled) {
-                let handler: any[] | undefined;
-                if (event.source === "menu" && event.widget.onOp) {
-                    handler = event.widget.onOp;
-                } else if (event.widget.onClick) {
-                    handler = event.widget.onClick;
-                } else if (event.source === "primary" && event.widget.onOp) {
-                    // Fallback: try onOp for primary clicks if no onClick
-                    handler = event.widget.onOp;
-                }
-
-                if (handler) {
-                    this.executeScriptListener(event.widget, handler, eventContext);
-                }
-            }
-        }
-
-        // If CS2 handler invoked cc_resume_pausebutton/if_resume_pausebutton, do not also send a
-        // generic IF_BUTTON packet for the same click.
-        const resumePauseTriggeredByHandler =
-            meslayerBeforeAction === null &&
-            (this.widgetManager?.meslayerContinueWidget ?? null) !== null;
-        if (resumePauseTriggeredByHandler) {
-            return;
-        }
-
-        // Withdraw-X and Deposit-X need to prompt for quantity
-        const optionLower = event.option?.toLowerCase() ?? "";
-        const isQuantityDialog = optionLower === "withdraw-x" || optionLower === "deposit-x";
-        const widgetGroupId = event.widget?.groupId ?? event.widget?.uid >>> 16;
-        const isBankInterface = widgetGroupId === 12 || widgetGroupId === 15;
-
-        if (isQuantityDialog && isBankInterface) {
-            // Store pending action for when input dialog completes
-            const payload = this.buildWidgetActionPayload(event);
-            if (payload) {
-                this.pendingInputDialogAction = {
-                    payload,
-                    option: optionLower,
-                };
-                // Invoke chatbox_open_input script (2251) to open the chatbox input dialog
-                const scriptEvent = createScriptEvent({
-                    args: [2251], // Script ID for chatbox_open_input
-                    widget: event.widget,
-                });
-                console.log(`[handleWidgetAction] Invoking chatbox_open_input for ${optionLower}`);
-                const result = this.cs2Vm.runScriptEvent(scriptEvent);
-                console.log(`[handleWidgetAction] Script execution result: ${result}`);
-
-                // Manually enable key input capture (opcode 3138 sets inputDialogType=0 which allows all widgets to receive input)
-                this.cs2Vm.inputDialogType = 0;
-                this.cs2Vm.inputDialogString = "";
-                this.varManager.setVarcString(335, "");
-                console.log(
-                    `[handleWidgetAction] inputDialogType set to: ${this.cs2Vm.inputDialogType}`,
-                );
-            }
-            return;
-        }
-
-        try {
-            const payload = this.buildWidgetActionPayload(event);
-            if (!payload) return;
-
-            // Only transmit action to server if the transmit flag is set for this action.
-            // (flags >> (actionIndex + 1) & 1) != 0
-            // If the transmit flag is not set, the action is client-side only (CS2 handlers)
-            const widget = event.widget;
-            if (widget) {
-                const transmitFlagWidget = this.resolveTransmitFlagWidget(widget, payload);
-                const flags =
-                    this.widgetManager?.getWidgetFlags?.(transmitFlagWidget) ??
-                    transmitFlagWidget?.flags ??
-                    0;
-                // opId is 1-indexed (1 = first action), actionIndex is 0-indexed
-                // targetVerb returns opId=0, which corresponds to actionIndex=-1 (not in transmit range)
-                const opId = payload.opId ?? 0;
-                const actionIndex = opId > 0 ? opId - 1 : -1;
-
-                // For actions 0-9 (opId 1-10), check the transmit flag
-                // If actionIndex is -1 (targetVerb) or > 9, we don't check transmit flags
-                if (actionIndex >= 0 && actionIndex <= 9) {
-                    if (!shouldTransmitAction(flags, actionIndex)) {
-                        // Action should not be transmitted - CS2 handler already ran above
-                        const wId = (widget as any).id ?? widget.uid;
-                        const wChildIndex = (widget as any).childIndex ?? -1;
-                        const wGroupId = (wId >> 16) & 0xffff;
-                        const wChildId = wId & 0xffff;
-                        console.log(
-                            `[OsrsClient] Widget action ${event.option} (op${opId}) not transmitted - transmit flag not set. ` +
-                                `Widget: uid=${widget.uid}, id=${wId} (group=${wGroupId}, child=${wChildId}), childIndex=${wChildIndex}, flags=${flags}`,
-                        );
-                        return;
-                    }
-                }
-            }
-
-            sendWidgetAction(payload);
-        } catch (err) {
-            console.warn("[OsrsClient] widget action dispatch failed", err);
-        }
+    handleWidgetAction(event: Parameters<WidgetActionRouter["handleWidgetAction"]>[0]): void {
+        this.widgetActionRouter.handleWidgetAction(event);
     }
 
     private runClientScriptWithInts(scriptId: number, args: number[]): void {
@@ -5306,431 +3582,6 @@ export class OsrsClient {
         }
     }
 
-    private getItemSpawnerWidgetUid(componentId: number): number {
-        return ((ITEM_SPAWNER_MODAL_GROUP_ID & 0xffff) << 16) | (componentId & 0xffff);
-    }
-
-    private getItemSpawnerQueryWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_QUERY);
-    }
-
-    private getItemSpawnerSearchBackgroundWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_SEARCH_BACKGROUND);
-    }
-
-    private getItemSpawnerHelperWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_HELPER);
-    }
-
-    private getItemSpawnerSummaryWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_SUMMARY);
-    }
-
-    private getItemSpawnerResultsViewWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_RESULTS_VIEW);
-    }
-
-    private getItemSpawnerResultsScrollbarWidgetUid(): number {
-        return this.getItemSpawnerWidgetUid(ITEM_SPAWNER_MODAL_COMPONENT_RESULTS_SCROLLBAR);
-    }
-
-    private getItemSpawnerSlotBackgroundWidgetUid(slotIndex: number): number {
-        return this.getItemSpawnerWidgetUid(
-            ITEM_SPAWNER_MODAL_COMPONENT_SLOT_BACKGROUND_START + slotIndex,
-        );
-    }
-
-    private getItemSpawnerSlotIconWidgetUid(slotIndex: number): number {
-        return this.getItemSpawnerWidgetUid(
-            ITEM_SPAWNER_MODAL_COMPONENT_SLOT_ICON_START + slotIndex,
-        );
-    }
-
-    private isItemSpawnerModalMounted(): boolean {
-        return (
-            (this.widgetManager?.getInterfaceParentContainerUid(ITEM_SPAWNER_MODAL_GROUP_ID) ??
-                undefined) !== undefined
-        );
-    }
-
-    private isItemSpawnerSearchComponent(componentId: number): boolean {
-        const normalized = componentId | 0;
-        return (
-            normalized === ITEM_SPAWNER_MODAL_COMPONENT_QUERY ||
-            normalized === ITEM_SPAWNER_MODAL_COMPONENT_SEARCH_BACKGROUND
-        );
-    }
-
-    private escapeItemSpawnerSearchText(value: string): string {
-        return String(value ?? "").replace(/[<>]/g, "");
-    }
-
-    private getItemSpawnerSearchIndex(): CacheItemSearchIndex | undefined {
-        if (!this.objTypeLoader) {
-            return undefined;
-        }
-        if (!this.itemSpawnerSearchIndex) {
-            this.itemSpawnerSearchIndex = new CacheItemSearchIndex(this.objTypeLoader);
-        }
-        return this.itemSpawnerSearchIndex;
-    }
-
-    private setItemSpawnerWidgetText(widgetUid: number, text: string): void {
-        if (!this.widgetManager) {
-            return;
-        }
-        const widget = this.widgetManager.getWidgetByUid(widgetUid);
-        if (!widget || widget.text === text) {
-            return;
-        }
-        widget.text = text;
-        markWidgetInteractionDirty(widget);
-        this.widgetManager.invalidateWidgetRender(widget);
-    }
-
-    private resolveItemSpawnerScrollbarGraphicId(token: string): number {
-        let spriteIndex: any;
-        try {
-            spriteIndex = this.cacheSystem?.getIndex?.(IndexType.DAT2.sprites);
-        } catch {
-            spriteIndex = undefined;
-        }
-        if (!spriteIndex) {
-            return -1;
-        }
-
-        const rawToken = String(token ?? "").trim();
-        if (rawToken.length === 0) {
-            return -1;
-        }
-
-        const directArchiveId = (spriteIndex as any).getArchiveId?.(rawToken);
-        if (typeof directArchiveId === "number" && directArchiveId >= 0) {
-            return directArchiveId | 0;
-        }
-
-        let archiveToken = rawToken;
-        let frameIndex = 0;
-        const commaIndex = rawToken.lastIndexOf(",");
-        if (commaIndex >= 0 && commaIndex < rawToken.length - 1) {
-            const candidateFrame = Number.parseInt(rawToken.slice(commaIndex + 1), 10);
-            if (Number.isFinite(candidateFrame) && candidateFrame >= 0) {
-                archiveToken = rawToken.slice(0, commaIndex);
-                frameIndex = candidateFrame | 0;
-            }
-        }
-
-        const archiveId = (spriteIndex as any).getArchiveId?.(archiveToken);
-        if (!(typeof archiveId === "number") || archiveId < 0) {
-            return -1;
-        }
-
-        return ((archiveId & 0xffff) << 16) | (frameIndex & 0xffff);
-    }
-
-    private formatItemSpawnerSearchText(): string {
-        const query = this.escapeItemSpawnerSearchText(this.itemSpawnerSearchQuery);
-        if (query.length === 0) {
-            return this.itemSpawnerSearchFocused
-                ? "<col=ffcf70>|</col>"
-                : "<col=8f7f66>Search items...</col>";
-        }
-        return this.itemSpawnerSearchFocused
-            ? `<col=e8ded0>${query}</col><col=ffcf70>|</col>`
-            : `<col=e8ded0>${query}</col>`;
-    }
-
-    private syncItemSpawnerSearchWidgets(): void {
-        if (!this.widgetManager) {
-            return;
-        }
-
-        const queryWidget = this.widgetManager.getWidgetByUid(this.getItemSpawnerQueryWidgetUid());
-        if (queryWidget) {
-            queryWidget.text = this.formatItemSpawnerSearchText();
-            markWidgetInteractionDirty(queryWidget);
-            this.widgetManager.invalidateWidgetRender(queryWidget);
-        }
-
-        const backgroundWidget = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerSearchBackgroundWidgetUid(),
-        ) as any;
-        if (backgroundWidget) {
-            backgroundWidget.color = this.itemSpawnerSearchFocused ? 0x3a3125 : 0x2b241b;
-            backgroundWidget.mouseOverColor = this.itemSpawnerSearchFocused ? 0x3a3125 : 0x342b20;
-            markWidgetInteractionDirty(backgroundWidget);
-            this.widgetManager.invalidateWidgetRender(backgroundWidget);
-        }
-    }
-
-    private initializeItemSpawnerScrollView(): void {
-        if (!this.widgetManager || !this.isItemSpawnerModalMounted()) {
-            return;
-        }
-
-        const resultsView = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsViewWidgetUid(),
-        ) as any;
-        const scrollbar = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsScrollbarWidgetUid(),
-        ) as any;
-        if (!resultsView || !scrollbar) {
-            return;
-        }
-
-        scrollbar.scrollBarTargetUid = resultsView.uid | 0;
-        scrollbar.scrollBarAxis = "y";
-
-        const hasScrollbarChildren =
-            Array.isArray(scrollbar.children) && scrollbar.children.length >= 6;
-        if (!hasScrollbarChildren) {
-            const graphicIds = ITEM_SPAWNER_SCROLLBAR_GRAPHICS.map((token) =>
-                this.resolveItemSpawnerScrollbarGraphicId(token),
-            );
-            if (graphicIds.some((id) => id < 0)) {
-                return;
-            }
-            this.runWidgetScopedClientScript(
-                scrollbar.uid | 0,
-                ITEM_SPAWNER_SCROLLBAR_INIT_SCRIPT_ID,
-                [scrollbar.uid | 0, resultsView.uid | 0, ...graphicIds],
-                "run_script",
-            );
-        }
-
-        this.widgetManager.invalidateWidget(scrollbar, "item-spawner-scrollbar-init");
-    }
-
-    private refreshItemSpawnerScrollbar(): void {
-        if (!this.widgetManager || !this.isItemSpawnerModalMounted()) {
-            return;
-        }
-
-        const resultsView = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsViewWidgetUid(),
-        ) as any;
-        const scrollbar = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsScrollbarWidgetUid(),
-        ) as any;
-        if (!resultsView || !scrollbar) {
-            return;
-        }
-
-        this.initializeItemSpawnerScrollView();
-        this.runWidgetScopedClientScript(
-            scrollbar.uid | 0,
-            ITEM_SPAWNER_SCROLLBAR_RESIZE_SCRIPT_ID,
-            [scrollbar.uid | 0, resultsView.uid | 0, (resultsView.scrollY ?? 0) | 0],
-            "run_script",
-        );
-        this.widgetManager.invalidateWidget(scrollbar, "item-spawner-scrollbar-resize");
-    }
-
-    private refreshItemSpawnerVisibleSlots(force: boolean = false): void {
-        if (!this.widgetManager || !this.isItemSpawnerModalMounted()) {
-            return;
-        }
-
-        const resultsView = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsViewWidgetUid(),
-        ) as any;
-        if (!resultsView) {
-            return;
-        }
-
-        const scrollY = Math.max(0, (resultsView.scrollY ?? 0) | 0);
-        const startRow = Math.max(0, Math.floor(scrollY / ITEM_SPAWNER_SLOT_PITCH_Y));
-        if (
-            !force &&
-            startRow === this.itemSpawnerVisibleStartRow &&
-            this.itemSpawnerRenderedResultsVersion === this.itemSpawnerSearchResultsVersion
-        ) {
-            return;
-        }
-
-        this.itemSpawnerVisibleStartRow = startRow;
-        this.itemSpawnerRenderedResultsVersion = this.itemSpawnerSearchResultsVersion;
-
-        for (let slotIndex = 0; slotIndex < ITEM_SPAWNER_MODAL_RESULT_SLOT_COUNT; slotIndex++) {
-            const poolRow = Math.floor(slotIndex / ITEM_SPAWNER_MODAL_SLOT_COLUMNS);
-            const column = slotIndex % ITEM_SPAWNER_MODAL_SLOT_COLUMNS;
-            const resultRow = startRow + poolRow;
-            const resultIndex = resultRow * ITEM_SPAWNER_MODAL_SLOT_COLUMNS + column;
-            const result = this.itemSpawnerSearchResults[resultIndex];
-            const backgroundWidget = this.widgetManager.getWidgetByUid(
-                this.getItemSpawnerSlotBackgroundWidgetUid(slotIndex),
-            ) as any;
-            const iconWidget = this.widgetManager.getWidgetByUid(
-                this.getItemSpawnerSlotIconWidgetUid(slotIndex),
-            ) as any;
-            if (!backgroundWidget || !iconWidget) {
-                continue;
-            }
-
-            const backgroundRawY =
-                ITEM_SPAWNER_SLOT_BACKGROUND_BASE_RAW_Y + resultRow * ITEM_SPAWNER_SLOT_PITCH_Y;
-            const iconRawY =
-                ITEM_SPAWNER_SLOT_ICON_BASE_RAW_Y + resultRow * ITEM_SPAWNER_SLOT_PITCH_Y;
-
-            backgroundWidget.rawY = backgroundRawY;
-            backgroundWidget.y = backgroundRawY;
-            iconWidget.rawY = iconRawY;
-            iconWidget.y = iconRawY;
-
-            const hidden = !result;
-            backgroundWidget.hidden = hidden;
-            backgroundWidget.isHidden = hidden;
-            iconWidget.hidden = hidden;
-            iconWidget.isHidden = hidden;
-
-            if (result) {
-                const resultName = this.escapeItemSpawnerSearchText(result.name);
-                iconWidget.itemId = result.itemId | 0;
-                iconWidget.itemQuantity = 1;
-                iconWidget.itemAmount = 1;
-                iconWidget.text = `<col=ffcf70>${resultName}</col> <col=c5b79b>(id ${result.itemId})</col>`;
-            } else {
-                iconWidget.itemId = -1;
-                iconWidget.itemQuantity = 0;
-                iconWidget.itemAmount = 0;
-                iconWidget.text = "";
-            }
-
-            markWidgetInteractionDirty(backgroundWidget);
-            markWidgetInteractionDirty(iconWidget);
-            this.widgetManager.invalidateWidgetRender(backgroundWidget);
-            this.widgetManager.invalidateWidgetRender(iconWidget);
-        }
-
-        this.widgetManager.invalidateScroll(resultsView);
-    }
-
-    private refreshItemSpawnerSearchResults(resetScroll: boolean = false): void {
-        if (!this.widgetManager || !this.isItemSpawnerModalMounted()) {
-            return;
-        }
-
-        const resultsView = this.widgetManager.getWidgetByUid(
-            this.getItemSpawnerResultsViewWidgetUid(),
-        ) as any;
-        if (!resultsView) {
-            return;
-        }
-
-        const query = this.escapeItemSpawnerSearchText(this.itemSpawnerSearchQuery);
-        const nextResults =
-            query.length > 0 ? (this.getItemSpawnerSearchIndex()?.search(query) ?? []) : [];
-        this.itemSpawnerSearchResults = nextResults;
-        this.itemSpawnerSearchResultsVersion++;
-
-        const totalRows = Math.max(
-            1,
-            Math.ceil(nextResults.length / Math.max(1, ITEM_SPAWNER_MODAL_SLOT_COLUMNS)),
-        );
-        const viewHeight = Math.max(0, (resultsView.height ?? 0) | 0);
-        const scrollHeight = Math.max(viewHeight, totalRows * ITEM_SPAWNER_SLOT_PITCH_Y);
-        resultsView.scrollWidth = Math.max(0, (resultsView.width ?? 0) | 0);
-        resultsView.scrollHeight = scrollHeight;
-
-        const maxScrollY = Math.max(0, scrollHeight - viewHeight);
-        const currentScrollY = (resultsView.scrollY ?? 0) | 0;
-        resultsView.scrollY = resetScroll ? 0 : Math.min(Math.max(0, currentScrollY), maxScrollY);
-
-        this.setItemSpawnerWidgetText(
-            this.getItemSpawnerHelperWidgetUid(),
-            "<col=c5b79b>Type to search cache items.</col>",
-        );
-        this.setItemSpawnerWidgetText(
-            this.getItemSpawnerSummaryWidgetUid(),
-            query.length === 0
-                ? "<col=c5b79b>Start typing to filter cache item names.</col>"
-                : nextResults.length > 0
-                  ? `Matches: <col=40ff40>${nextResults.length}</col>`
-                  : "<col=ff981f>No matches found in cache.</col>",
-        );
-
-        this.itemSpawnerVisibleStartRow = -1;
-        this.itemSpawnerRenderedResultsVersion = -1;
-        this.refreshItemSpawnerVisibleSlots(true);
-        this.refreshItemSpawnerScrollbar();
-        this.widgetManager.invalidateWidget(resultsView, "item-spawner-results");
-    }
-
-    private tickItemSpawnerSearchUi(): void {
-        if (!this.isItemSpawnerModalMounted()) {
-            return;
-        }
-        this.initializeItemSpawnerScrollView();
-        this.refreshItemSpawnerVisibleSlots();
-    }
-
-    private setItemSpawnerSearchFocus(focused: boolean): void {
-        this.itemSpawnerSearchFocused = !!focused && this.isItemSpawnerModalMounted();
-        this.syncItemSpawnerSearchWidgets();
-    }
-
-    private clearItemSpawnerSearchState(): void {
-        this.itemSpawnerSearchFocused = false;
-        this.itemSpawnerSearchQuery = "";
-        this.itemSpawnerSearchResults = [];
-        this.itemSpawnerSearchResultsVersion = 0;
-        this.itemSpawnerRenderedResultsVersion = -1;
-        this.itemSpawnerVisibleStartRow = -1;
-    }
-
-    private handleItemSpawnerSearchKeyEvents(
-        keyEvents: Array<{ keyTyped: number; keyPressed: number }>,
-    ): boolean {
-        if (!this.itemSpawnerSearchFocused) {
-            return false;
-        }
-        if (!this.isItemSpawnerModalMounted()) {
-            this.clearItemSpawnerSearchState();
-            return false;
-        }
-
-        const OSRS_KEY_ENTER = 84;
-        const OSRS_KEY_BACKSPACE = 85;
-        const OSRS_KEY_ESCAPE = 13;
-        let query = this.itemSpawnerSearchQuery;
-        let changed = false;
-
-        for (const keyEvent of keyEvents) {
-            if ((keyEvent.keyTyped | 0) === OSRS_KEY_ESCAPE) {
-                this.setItemSpawnerSearchFocus(false);
-                continue;
-            }
-            if ((keyEvent.keyTyped | 0) === OSRS_KEY_ENTER) {
-                continue;
-            }
-            if ((keyEvent.keyTyped | 0) === OSRS_KEY_BACKSPACE) {
-                if (query.length > 0) {
-                    query = query.slice(0, -1);
-                    changed = true;
-                }
-                continue;
-            }
-            if ((keyEvent.keyPressed | 0) <= 0 || query.length >= 60) {
-                continue;
-            }
-
-            const char = String.fromCharCode(keyEvent.keyPressed | 0);
-            if (!/^[ -~]$/.test(char)) {
-                continue;
-            }
-            query += char;
-            changed = true;
-        }
-
-        if (changed) {
-            this.itemSpawnerSearchQuery = query;
-            this.syncItemSpawnerSearchWidgets();
-            this.refreshItemSpawnerSearchResults(true);
-        }
-
-        return true;
-    }
-
     updateWidgets() {
         const widgetManager = this.widgetManager;
         if (!widgetManager) {
@@ -5777,7 +3628,7 @@ export class OsrsClient {
 
         // Keep the "Press enter to type" placeholder on the chat input line while
         // chat typing is locked (re-applied whenever chat_promptinput rewrites it).
-        this.applyChatPromptLockPlaceholder();
+        this.enterToTypeChat?.applyLockPlaceholder();
     }
 
     /**
@@ -5786,592 +3637,29 @@ export class OsrsClient {
      * traverses both static children (via parentUid) and dynamic children
      */
     private processWidgetTimers(): void {
-        if (this.widgetManager.rootInterface === -1) return;
-        const allRoots = this.widgetManager.getAllGroupRoots(this.widgetManager.rootInterface);
-        if (!allRoots || allRoots.length === 0) return;
-
-        const visited = new Set<number>();
-        const stack: any[] = [];
-        for (const r of allRoots) if (r) stack.push(r);
-
-        // Also process timers for InterfaceParent-mounted sub-interfaces.
-        // In the official client these are traversed via the InterfaceParent draw/update path.
-        for (const [containerUid, parent] of this.widgetManager.interfaceParents) {
-            if (!parent) continue;
-            // Skip if the container (or any of its ancestors) is hidden.
-            if (this.widgetManager.isEffectivelyHidden(containerUid)) continue;
-            if ((parent.group | 0) === (this.widgetManager.rootInterface | 0)) continue;
-            const subRoots = this.widgetManager.getAllGroupRoots(parent.group);
-            for (const r of subRoots) if (r) stack.push(r);
-        }
-
-        while (stack.length > 0) {
-            const node = stack.pop();
-            if (!node || typeof node !== "object") continue;
-            const uid = (node.uid ?? 0) | 0;
-            if (uid === 0 || visited.has(uid)) continue;
-            visited.add(uid);
-            if (node.hidden) continue;
-
-            // Check for onTimer handler (from CS2 IF_SETONTIMER/CC_SETONTIMER)
-            if (node.eventHandlers?.onTimer) {
-                // Prefer the OSRS-style Object[] args array (kept in sync by Cs2Vm.setEventHandler*)
-                // to preserve exact signature ordering (ints/strings can interleave).
-                if (Array.isArray(node.onTimer) && node.onTimer.length > 0) {
-                    const event = createScriptEvent({
-                        widget: node,
-                        args: node.onTimer,
-                    });
-                    (event as any).timerArgsSnapshot = node.onTimer;
-                    this.queueScriptEvent(event, 1); // 1 = low priority (timer)
-                } else {
-                    // Fallback to structured handler data (ints then strings).
-                    const handler = node.eventHandlers.onTimer;
-                    if (handler && handler.scriptId > 0) {
-                        const handlerObjectArgs =
-                            handler.objectArgs ??
-                            (handler.stringArgs ? [...handler.stringArgs] : []);
-                        const event = createScriptEvent({
-                            widget: node,
-                            args: [handler.scriptId, ...handler.intArgs, ...handlerObjectArgs],
-                        });
-                        (event as any).timerArgsSnapshot = node.onTimer;
-                        this.queueScriptEvent(event, 1); // 1 = low priority (timer)
-                    }
-                }
-            }
-            // Also check legacy array-style onTimer
-            else if (Array.isArray(node.onTimer) && node.onTimer.length > 0) {
-                const event = createScriptEvent({
-                    widget: node,
-                    args: node.onTimer,
-                });
-                (event as any).timerArgsSnapshot = node.onTimer;
-                this.queueScriptEvent(event, 1); // 1 = low priority (timer)
-            }
-
-            // traverse static children (via parentUid filtering)
-            const staticChildren = this.widgetManager.getStaticChildrenByParentUid(uid);
-            for (let i = staticChildren.length - 1; i >= 0; i--) {
-                stack.push(staticChildren[i]);
-            }
-
-            // Traverse dynamic children (from CC_CREATE)
-            if (Array.isArray(node.children)) {
-                for (let i = node.children.length - 1; i >= 0; i--) {
-                    stack.push(node.children[i]);
-                }
-            }
-        }
+        this.widgetTransmitProcessor.processWidgetTimers();
     }
 
-    /**
-     * Process transmit handlers at the engine level.
-     *
-     * Instead of calling triggerChatTransmit/triggerMiscTransmit directly when events occur,
-     * OSRS gates transmit handlers during widget tree updates by comparing global "event cycles"
-     * to per-widget timestamps.
-     *
-     * Runs during updateRootInterface.
-     *
-     * For each widget:
-     * 1. If chatCycle > widget.lastTransmitCycle && widget.onChatTransmit exists → queue event
-     * 2. If statCycle > widget.lastTransmitCycle && widget.onStatTransmit exists → queue event
-     * 3. (repeat for all transmit types)
-     * 4. Set widget.lastTransmitCycle = cycleCntr
-     *
-     * All transmit handlers are QUEUED, not executed immediately.
-     * This ensures cycleCntr++ happens before scripts run.
-     */
     private processWidgetTransmits(): void {
-        if (this.widgetManager.rootInterface === -1) return;
-
-        // Performance optimization: skip traversal if no events and no new widgets
-        if (!isTransmitProcessingNeeded()) {
-            return;
-        }
-
-        const cycles = this.transmitCycles;
-        // All transmit types with triggers (var, inv, stat) now use counter-based
-        // tracking. No snapshots needed - counters are monotonically increasing and never cleared.
-        const allRoots = this.widgetManager.getAllGroupRoots(this.widgetManager.rootInterface);
-        if (!allRoots || allRoots.length === 0) {
-            resetTransmitDirtyFlags();
-            return;
-        }
-
-        const visited = new Set<number>();
-        const visibleNodes: any[] = [];
-        const queuedTransmitKeys = new Set<string>();
-        const invRefreshGroupsAfterVarTransmit = new Set<number>();
-        const stack: any[] = [];
-        for (const r of allRoots) if (r) stack.push(r);
-
-        // Also traverse InterfaceParent-mounted sub-interfaces so their transmit
-        // handlers (var/inv/stat/chat/etc.) fire while the interface is open.
-        for (const [containerUid, parent] of this.widgetManager.interfaceParents) {
-            if (!parent) continue;
-            if (this.widgetManager.isEffectivelyHidden(containerUid)) continue;
-            if ((parent.group | 0) === (this.widgetManager.rootInterface | 0)) continue;
-            const subRoots = this.widgetManager.getAllGroupRoots(parent.group);
-            for (const r of subRoots) if (r) stack.push(r);
-        }
-
-        // Helper to queue a transmit event
-        const queueTransmit = (
-            node: any,
-            handler: any,
-            cacheHandler: any[],
-            eventType?: string,
-        ) => {
-            if (eventType) {
-                const key = `${((node?.uid ?? 0) as number) | 0}:${eventType}`;
-                if (queuedTransmitKeys.has(key)) return;
-                queuedTransmitKeys.add(key);
-            }
-            // Prefer the OSRS-style args array (Object[]) to preserve exact
-            // signature ordering (ints/strings can interleave).
-            if (Array.isArray(cacheHandler) && cacheHandler.length > 0) {
-                const event = createScriptEvent({
-                    args: cacheHandler,
-                    widget: node,
-                });
-                this.queueScriptEvent(event, 0);
-            } else if (handler) {
-                // Fallback: structured handler data (ints then strings). This may differ from OSRS
-                // if the signature interleaves types, but should only occur if args array is missing.
-                const handlerObjectArgs =
-                    handler.objectArgs ?? (handler.stringArgs ? [...handler.stringArgs] : []);
-                const event = createScriptEvent({
-                    args: [handler.scriptId, ...handler.intArgs, ...handlerObjectArgs],
-                    widget: node,
-                });
-                this.queueScriptEvent(event, 0);
-            }
-        };
-
-        // Helper to check if transmit should fire
-        // Fire if (eventCycle > lastCycle) OR (newly loaded widget AND event pending)
-        const shouldFire = (eventCycle: number, lastCycle: number): boolean => {
-            return eventCycle > -1 && (lastCycle === -1 || eventCycle > lastCycle);
-        };
-
-        while (stack.length > 0) {
-            const node = stack.pop();
-            if (!node || typeof node !== "object") continue;
-            const uid = (node.uid ?? 0) | 0;
-            if (uid === 0 || visited.has(uid)) continue;
-            visited.add(uid);
-
-            // Skip hidden widgets
-            if (node.hidden || node.isHidden) continue;
-            visibleNodes.push(node);
-
-            // Get widget's last processed cycle (default -1 for never processed)
-            const lastCycle = node.lastTransmitCycle ?? -1;
-
-            // onChatTransmit - fires for any chat message
-            if (
-                (node.onChatTransmit || node.eventHandlers?.onChatTransmit) &&
-                shouldFire(cycles.chatCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onChatTransmit,
-                    node.onChatTransmit,
-                    "onChatTransmit",
-                );
-            }
-
-            // onStatTransmit - check statTransmitTriggers if defined
-            // Use counter-based approach instead of cycle-based
-            // - changedStatCount is monotonically increasing (never cleared)
-            // - Widget tracks lastChangedStatCount - the count when handler last fired
-            // - Fire if changedStatCount > lastChangedStatCount
-            // - If triggers defined AND diff <= 32, scan circular buffer for matching triggers
-            // - If no triggers OR diff > 32, fire unconditionally
-            if (node.onStatTransmit || node.eventHandlers?.onStatTransmit) {
-                const lastStatCount = node.lastChangedStatCount ?? 0;
-                const currentStatCount = cycles.changedStatCount;
-
-                if (currentStatCount > lastStatCount) {
-                    let shouldFireStat = false;
-                    const triggers = node.statTransmitTriggers;
-
-                    if (triggers && triggers.length > 0 && currentStatCount - lastStatCount <= 32) {
-                        // Scan circular buffer for matching triggers
-                        scanStatLoop: for (let i = lastStatCount; i < currentStatCount; i++) {
-                            const changedStatId = cycles.changedStatsBuffer[i & 31];
-                            for (const triggerId of triggers) {
-                                if (changedStatId === triggerId) {
-                                    shouldFireStat = true;
-                                    break scanStatLoop;
-                                }
-                            }
-                        }
-                    } else {
-                        // No triggers OR > 32 changes since last fire - fire unconditionally
-                        shouldFireStat = true;
-                    }
-
-                    if (shouldFireStat) {
-                        queueTransmit(
-                            node,
-                            node.eventHandlers?.onStatTransmit,
-                            node.onStatTransmit,
-                            "onStatTransmit",
-                        );
-                    }
-
-                    // Always update lastChangedStatCount, even if we didn't fire
-                    node.lastChangedStatCount = currentStatCount;
-                }
-            }
-
-            // onVarTransmit - check varTransmitTriggers if defined
-            // Use counter-based approach instead of cycle-based.
-            // - changedVarpCount is monotonically increasing (never cleared)
-            // - Widget tracks lastChangedVarpCount - the count when handler last fired
-            // - Fire if changedVarpCount > lastChangedVarpCount
-            // - If triggers defined AND diff <= 32, scan circular buffer for matching triggers
-            // - If no triggers OR diff > 32, fire unconditionally
-            if (node.onVarTransmit || node.eventHandlers?.onVarTransmit) {
-                const lastVarpCount = node.lastChangedVarpCount ?? 0;
-                const currentVarpCount = cycles.changedVarpCount;
-
-                if (currentVarpCount > lastVarpCount) {
-                    let shouldFireVar = false;
-                    const triggers = node.varTransmitTriggers;
-
-                    if (triggers && triggers.length > 0 && currentVarpCount - lastVarpCount <= 32) {
-                        // Scan circular buffer for matching triggers
-                        scanLoop: for (let i = lastVarpCount; i < currentVarpCount; i++) {
-                            const changedVarpId = cycles.changedVarps[i & 31];
-                            for (const triggerId of triggers) {
-                                if (changedVarpId === triggerId) {
-                                    shouldFireVar = true;
-                                    break scanLoop;
-                                }
-                            }
-                        }
-                    } else {
-                        // No triggers OR > 32 changes since last fire - fire unconditionally
-                        shouldFireVar = true;
-                    }
-
-                    if (shouldFireVar) {
-                        queueTransmit(
-                            node,
-                            node.eventHandlers?.onVarTransmit,
-                            node.onVarTransmit,
-                            "onVarTransmit",
-                        );
-                        const groupId =
-                            typeof node.groupId === "number"
-                                ? node.groupId | 0
-                                : (((node.uid ?? 0) as number) >>> 16) | 0;
-                        if (groupId > 0) {
-                            invRefreshGroupsAfterVarTransmit.add(groupId);
-                        }
-                    }
-
-                    // Always update lastChangedVarpCount, even if we didn't fire
-                    // This prevents re-checking old changes on next tick
-                    node.lastChangedVarpCount = currentVarpCount;
-                }
-            }
-
-            // onInvTransmit - check invTransmitTriggers if defined
-            // Use counter-based approach instead of cycle-based
-            // - changedInvCount is monotonically increasing (never cleared)
-            // - Widget tracks lastChangedInvCount - the count when handler last fired
-            // - Fire if changedInvCount > lastChangedInvCount
-            // - If triggers defined AND diff <= 32, scan circular buffer for matching triggers
-            // - If no triggers OR diff > 32, fire unconditionally
-            if (node.onInvTransmit || node.eventHandlers?.onInvTransmit) {
-                const lastInvCount = node.lastChangedInvCount ?? 0;
-                const currentInvCount = cycles.changedInvCount;
-
-                if (currentInvCount > lastInvCount) {
-                    let shouldFireInv = false;
-                    const triggers = node.invTransmitTriggers;
-
-                    if (triggers && triggers.length > 0 && currentInvCount - lastInvCount <= 32) {
-                        // Scan circular buffer for matching triggers
-                        scanInvLoop: for (let i = lastInvCount; i < currentInvCount; i++) {
-                            const changedInvId = cycles.changedInvsBuffer[i & 31];
-                            for (const triggerId of triggers) {
-                                if (changedInvId === triggerId) {
-                                    shouldFireInv = true;
-                                    break scanInvLoop;
-                                }
-                            }
-                        }
-                    } else {
-                        // No triggers OR > 32 changes since last fire - fire unconditionally
-                        shouldFireInv = true;
-                    }
-
-                    if (shouldFireInv) {
-                        queueTransmit(
-                            node,
-                            node.eventHandlers?.onInvTransmit,
-                            node.onInvTransmit,
-                            "onInvTransmit",
-                        );
-                    }
-
-                    // Always update lastChangedInvCount, even if we didn't fire
-                    node.lastChangedInvCount = currentInvCount;
-                }
-            }
-
-            // onMiscTransmit (varc changes, run energy, etc.) - no trigger array, fires for any misc change
-            if (
-                (node.onMiscTransmit || node.eventHandlers?.onMiscTransmit) &&
-                shouldFire(cycles.miscCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onMiscTransmit,
-                    node.onMiscTransmit,
-                    "onMiscTransmit",
-                );
-            }
-
-            // onStockTransmit - fires when Grand Exchange offers update (no trigger array)
-            if (
-                (node.onStockTransmit || node.eventHandlers?.onStockTransmit) &&
-                shouldFire(cycles.stockCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onStockTransmit,
-                    node.onStockTransmit,
-                    "onStockTransmit",
-                );
-            }
-
-            // onFriendTransmit - no trigger array
-            if (
-                (node.onFriendTransmit || node.eventHandlers?.onFriendTransmit) &&
-                shouldFire(cycles.friendCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onFriendTransmit,
-                    node.onFriendTransmit,
-                    "onFriendTransmit",
-                );
-            }
-
-            // onClanTransmit - no trigger array
-            if (
-                (node.onClanTransmit || node.eventHandlers?.onClanTransmit) &&
-                shouldFire(cycles.clanCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onClanTransmit,
-                    node.onClanTransmit,
-                    "onClanTransmit",
-                );
-            }
-
-            // onClanSettingsTransmit - no trigger array
-            if (
-                (node.onClanSettingsTransmit || node.eventHandlers?.onClanSettingsTransmit) &&
-                shouldFire(cycles.clanSettingsCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onClanSettingsTransmit,
-                    node.onClanSettingsTransmit,
-                    "onClanSettingsTransmit",
-                );
-            }
-
-            // onClanChannelTransmit - no trigger array
-            if (
-                (node.onClanChannelTransmit || node.eventHandlers?.onClanChannelTransmit) &&
-                shouldFire(cycles.clanChannelCycle, lastCycle)
-            ) {
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onClanChannelTransmit,
-                    node.onClanChannelTransmit,
-                    "onClanChannelTransmit",
-                );
-            }
-
-            // Update widget's last processed cycle
-            // OSRS: widget.lastTransmitCycle = cycleCntr
-            node.lastTransmitCycle = cycles.cycleCntr;
-
-            // Traverse static children
-            const staticChildren = this.widgetManager.getStaticChildrenByParentUid(uid);
-            for (let i = staticChildren.length - 1; i >= 0; i--) {
-                stack.push(staticChildren[i]);
-            }
-
-            // Traverse dynamic children
-            if (Array.isArray(node.children)) {
-                for (let i = node.children.length - 1; i >= 0; i--) {
-                    stack.push(node.children[i]);
-                }
-            }
-        }
-
-        if (invRefreshGroupsAfterVarTransmit.size > 0) {
-            for (const node of visibleNodes) {
-                if (!node || !(node.onInvTransmit || node.eventHandlers?.onInvTransmit)) {
-                    continue;
-                }
-                const groupId =
-                    typeof node.groupId === "number"
-                        ? node.groupId | 0
-                        : (((node.uid ?? 0) as number) >>> 16) | 0;
-                if (!invRefreshGroupsAfterVarTransmit.has(groupId)) continue;
-                queueTransmit(
-                    node,
-                    node.eventHandlers?.onInvTransmit,
-                    node.onInvTransmit,
-                    "onInvTransmit",
-                );
-            }
-        }
-
-        // Reset dirty flags after processing
-        resetTransmitDirtyFlags();
+        this.widgetTransmitProcessor.processWidgetTransmits();
     }
 
-    /**
-     * Apply master volume multiplier to all audio systems.
-     * Called when master volume changes (deviceoption 19).
-     * The actual volume = individual volume * master volume.
-     */
     private applyMasterVolume(): void {
-        const master = this.masterVolume;
-        if (this.musicSystem) {
-            this.musicSystem.setVolume(this._musicVolume * master);
-        }
-        if (this.soundEffectSystem) {
-            this.soundEffectSystem.setVolume(this._sfxVolume * master);
-            this.soundEffectSystem.setAmbientVolume(this._ambientVolume * master);
-        }
-    }
-
-    private refreshUiScalingLayout(): void {
-        try {
-            const renderer = this.renderer;
-            const canvas = renderer?.canvas;
-            if (!renderer || !canvas) return;
-            const width = canvas.width | 0;
-            const height = canvas.height | 0;
-            if (width <= 0 || height <= 0) return;
-            renderer.onResize(width, height);
-        } catch (error) {
-            console.log("[OsrsClient] Failed to refresh UI scaling layout", { error });
-        }
+        this.audioVarp.applyMasterVolume();
     }
 
     private applyInterfaceScalingPercentDeviceOption(value: number): void {
-        setOsrsInterfaceScalingPercent(value | 0);
-        this.refreshUiScalingLayout();
+        this.audioVarp.applyInterfaceScalingPercentDeviceOption(value);
     }
 
     private applyAudioVarpChange(varpId: number, value: number): void {
-        const percent = clamp(value | 0, 0, 100);
-        const curved = Math.round((percent * percent) / 100);
-
-        if (varpId === VARP_MUSIC_VOLUME) {
-            const scaled = Math.round((curved * 255) / 100);
-            this._musicVolume = Math.max(0, Math.min(1, scaled / 255));
-            if (this.musicSystem) {
-                this.musicSystem.setVolume(this._musicVolume * this.masterVolume);
-            }
-            return;
-        }
-
-        if (varpId === VARP_SOUND_EFFECTS_VOLUME) {
-            const scaled = Math.round((curved * 127) / 100);
-            this._sfxVolume = Math.max(0, Math.min(1, scaled / 127));
-            if (this.soundEffectSystem) {
-                this.soundEffectSystem.setVolume(this._sfxVolume * this.masterVolume);
-            }
-            return;
-        }
-
-        if (varpId === VARP_AREA_SOUNDS_VOLUME) {
-            const scaled = Math.round((curved * 127) / 100);
-            this._ambientVolume = Math.max(0, Math.min(1, scaled / 127));
-            if (this.soundEffectSystem) {
-                this.soundEffectSystem.setAmbientVolume(this._ambientVolume * this.masterVolume);
-            }
-            return;
-        }
-
-        if (varpId === VARP_MASTER_VOLUME) {
-            this.masterVolume = Math.max(0, Math.min(1, curved / 100));
-            this.applyMasterVolume();
-        }
+        this.audioVarp.applyAudioVarpChange(varpId, value);
     }
 
-    /**
-     * Trigger initial onVarTransmit handlers for widgets in a group.
-     * When a widget with varTransmitTriggers loads, its onVarTransmit
-     * handler should fire immediately with current varp values, not wait for changes.
-     * This ensures prayer buttons show correct state when the prayer tab first opens.
-     */
     triggerInitialVarTransmitForGroup(groupId: number): void {
-        const instance = this.widgetManager.getGroup(groupId);
-        if (!instance) return;
-
-        const currentVarpCount = this.transmitCycles.changedVarpCount | 0;
-
-        const allRoots = this.widgetManager.getAllGroupRoots(groupId);
-        const stack: any[] = [...allRoots];
-        while (stack.length > 0) {
-            const node = stack.pop();
-            if (!node || typeof node !== "object") continue;
-
-            // Check if widget has varTransmitTriggers (listens for varp changes)
-            const triggers = node.varTransmitTriggers as number[] | undefined;
-            if (triggers && triggers.length > 0) {
-                // Fire onVarTransmit handler once for initial state
-                if (node.eventHandlers?.onVarTransmit) {
-                    this.cs2Vm.invokeEventHandler(node, "onVarTransmit");
-                } else if (Array.isArray(node.onVarTransmit) && node.onVarTransmit.length > 0) {
-                    this.executeScriptListener(node, node.onVarTransmit);
-                }
-                // Keep counter-based var transmit dedupe in sync with the current global count.
-                // Without this, the same handler is re-queued on the next tick from stale history.
-                node.lastChangedVarpCount = currentVarpCount;
-            }
-
-            // Traverse static children
-            const staticChildren = this.widgetManager.getStaticChildrenByParentUid(node.uid);
-            for (let i = staticChildren.length - 1; i >= 0; i--) {
-                stack.push(staticChildren[i]);
-            }
-
-            // Traverse dynamic children
-            if (Array.isArray(node.children)) {
-                for (let i = node.children.length - 1; i >= 0; i--) {
-                    stack.push(node.children[i]);
-                }
-            }
-        }
+        this.widgetTransmitProcessor.triggerInitialVarTransmitForGroup(groupId);
     }
 
-    /**
-     * Trigger onInvTransmit handlers for widgets in a group.
-     *
-     * This is used for server-authored inventory containers like the bank (95),
-     * where the backing container can update after interface onLoad has already
-     * installed transmit handlers. Forcing the group's inventory transmit once
-     * keeps large scripted interfaces in sync with the latest container state.
-     */
     triggerInvTransmitForGroup(groupId: number): void {
         const instance = this.widgetManager.getGroup(groupId);
         if (!instance) return;
@@ -6414,170 +3702,8 @@ export class OsrsClient {
      * This container is used by CS2 scripts like notification_positioning (3351) and
      * notification_display_init (3343) which assume a 178x100 host area.
      */
-    private ensureNotificationDisplayMounted(rootGroupId?: number): void {
-        if (!this.widgetManager) return;
-
-        const root = (rootGroupId ?? this.widgetManager.rootInterface) | 0;
-        if (root === -1) return;
-
-        const targetUid = this.findNotificationsContainerUid(root);
-        if (targetUid === null) return;
-
-        const mounted = this.widgetManager.getSubInterface(targetUid);
-        if (mounted && (mounted.group | 0) === 660) {
-            return;
-        }
-
-        this.widgetManager.openSubInterface(targetUid, 660, 1);
-        this.triggerInitialVarTransmitForGroup(660);
-
-        // toplevel_init calls notification_init(notificationsComponent) which
-        // installs notification_positioning timers when a layer is present. Since we mount
-        // on-demand, run the proc here so positioning/anchoring matches OSRS.
-        try {
-            const NOTIFICATION_INIT = 3349;
-            const init = this.cs2Vm?.context?.loadScript?.(NOTIFICATION_INIT);
-            if (init) {
-                this.cs2Vm.run(init, [targetUid], []);
-            }
-        } catch (e) {
-            // Non-fatal: 3343 will still position the notification container.
-        }
-    }
-
-    /**
-     * Find the toplevel notifications container widget UID for a root interface.
-     * Expected properties (cache/script): type=0, rawWidth=178, rawHeight=100, rawX=0, rawY=10.
-     */
-    private findNotificationsContainerUid(rootGroupId: number): number | null {
-        if (!this.widgetManager) return null;
-        const instance = this.widgetManager.getGroup(rootGroupId);
-        if (!instance) return null;
-
-        // Fast path: known IDs for common root interfaces.
-        // - 161:13 toplevel_osrs_stretch:notifications
-        // - 164:13 toplevel_resizable_classic:notifications
-        // - 548:44 toplevel_fixed:notifications
-        // - 601:17 toplevel_mobile:notifications
-        if (rootGroupId === 161 || rootGroupId === 164) {
-            const uid = (rootGroupId << 16) | 13;
-            if (this.widgetManager.getWidgetByUid(uid)) return uid;
-        } else if (rootGroupId === 548) {
-            const uid = (rootGroupId << 16) | 44;
-            if (this.widgetManager.getWidgetByUid(uid)) return uid;
-        } else if (rootGroupId === 601) {
-            const uid = (rootGroupId << 16) | 17;
-            if (this.widgetManager.getWidgetByUid(uid)) return uid;
-        }
-
-        // Fallback: scan the group for a widget that matches the notification host dimensions.
-        // This avoids hard dependency on file IDs while still matching OSRS assumptions.
-        for (const w of instance.widgetsByUid.values()) {
-            if (!w || ((w.type ?? 0) | 0) !== 0) continue;
-            if (((w.rawWidth ?? 0) | 0) !== 178) continue;
-            if (((w.rawHeight ?? 0) | 0) !== 100) continue;
-            if (((w.rawX ?? 0) | 0) !== 0) continue;
-            if (((w.rawY ?? 0) | 0) !== 10) continue;
-            if (((w.xPositionMode ?? 0) | 0) !== 1) continue;
-            const yMode = (w.yPositionMode ?? 0) | 0;
-            if (yMode !== 0 && yMode !== 2) continue;
-            return (w.uid ?? 0) | 0;
-        }
-
-        return null;
-    }
-
-    private getWorldClickBlockingWidgetAtPoint(px: number, py: number): any | null {
-        if (this.clickedWidget !== null) {
-            return this.clickedWidget;
-        }
-
-        if (this.widgetManager.rootInterface === -1) {
-            return null;
-        }
-
-        const allRoots = this.widgetManager.getAllGroupRoots(this.widgetManager.rootInterface);
-        if (allRoots.length === 0) {
-            return null;
-        }
-
-        const visibleMap = new Map<number, boolean>();
-        const getStaticChildren = (uid: number) =>
-            this.widgetManager.getStaticChildrenByParentUid(uid);
-        const getInterfaceParentRoots = (containerUid: number): any[] => {
-            const group = this.widgetManager.interfaceParents.get(containerUid)?.group;
-            return typeof group === "number" ? this.widgetManager.getAllGroupRoots(group) : [];
-        };
-        const isInputCaptureWidget = (uid: number): boolean => {
-            const parent = this.widgetManager.interfaceParents.get(uid);
-            return !!parent && (parent.type | 0) === 0;
-        };
-
-        const hits = collectWidgetsAtPointAcrossRoots(
-            allRoots,
-            px,
-            py,
-            visibleMap,
-            getStaticChildren,
-            getInterfaceParentRoots,
-            isInputCaptureWidget,
-        );
-        return findBlockingWidgetInHits(hits, {
-            isInputCaptureWidget,
-            getWidgetFlags: (widget) => this.widgetManager?.getWidgetFlags(widget) ?? 0,
-            getWidgetByUid: (uid) => this.widgetManager?.getWidgetByUid(uid),
-        });
-    }
-
-    /**
-     * Cache chatbox scripts render request lines as ordinary text widgets, so
-     * they do not expose a React-style row onClick.  Consume a click on the
-     * rendered type-101 line here and send the native Trade player option.
-     */
-    private handleTradeRequestChatClick(widgets: readonly any[]): boolean {
-        for (let i = widgets.length - 1; i >= 0; i--) {
-            const text = String(widgets[i]?.text ?? "")
-                .replace(/<[^>]*>/g, "")
-                .trim()
-                .toLowerCase();
-            if (!text.includes("wishes to trade with you.")) continue;
-
-            for (const [name, playerId] of this.tradeRequestTargetsByName) {
-                if (!text.includes(name)) continue;
-                sendPlayerOption(playerId, 2);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if a point is over UI that should consume a world click.
-     * Used by WebGLOsrsRenderer for widgets with actual click-capture traits.
-     *
-     * @param px - X coordinate in screen pixels
-     * @param py - Y coordinate in screen pixels
-     * @returns true if the UI at this point should consume the click
-     */
     isPointOverWidget(px: number, py: number): boolean {
-        return this.getWorldClickBlockingWidgetAtPoint(px, py) !== null;
-    }
-
-    private getUiClickRegistry(): ClickRegistry | null {
-        const clicks = (this.renderer?.canvas as any)?.__clicks;
-        return clicks && typeof clicks.pick === "function" ? (clicks as ClickRegistry) : null;
-    }
-
-    private isPointerOverMinimapClickTarget(screenX: number, screenY: number): boolean {
-        const clicks = this.getUiClickRegistry();
-        if (!clicks) return false;
-        const canvasAny: any = this.renderer?.canvas;
-        const scaleXRaw = Number(canvasAny?.__uiInputScaleX ?? 1);
-        const scaleYRaw = Number(canvasAny?.__uiInputScaleY ?? 1);
-        const scaleX = Number.isFinite(scaleXRaw) && scaleXRaw > 0 ? scaleXRaw : 1;
-        const scaleY = Number.isFinite(scaleYRaw) && scaleYRaw > 0 ? scaleYRaw : 1;
-        const hit = clicks.pick(Math.round(screenX * scaleX), Math.round(screenY * scaleY));
-        return hit?.id === "minimap:click-to-walk";
+        return this.widgetInteraction.isPointOverWidget(px, py);
     }
 
     private applyMinimapWheelZoom(deltaY: number): void {
@@ -6585,1790 +3711,12 @@ export class OsrsClient {
         this.minimapZoom = Math.max(2, Math.min(8, this.minimapZoom + -wheelStep * 0.25));
     }
 
-    /** "Press enter to type" chat gating is desktop-only; touch devices keep tap-to-type. */
-    private isEnterToTypeChatEnabled(): boolean {
-        return !isMobileMode && this.isLoggedIn();
-    }
-
-    /** True while the chatbox ignores typing (keys are free for camera/hotkeys). */
-    private isChatInputLocked(): boolean {
-        return this.isEnterToTypeChatEnabled() && !this.chatTypingUnlocked;
-    }
-
-    /**
-     * True while WASD should rotate the camera instead of typing. Any active text
-     * input (chat typing mode, chatbox dialogs, item spawner search) releases WASD
-     * back to typing.
-     */
     isWasdCameraActive(): boolean {
-        return (
-            this.isChatInputLocked() &&
-            this.cs2Vm.inputDialogType === 0 &&
-            !this.itemSpawnerSearchFocused
-        );
-    }
-
-    private setChatTypingUnlocked(unlocked: boolean): void {
-        if (this.chatTypingUnlocked === unlocked) {
-            return;
-        }
-        this.chatTypingUnlocked = unlocked;
-        this.refreshChatPrompt();
-    }
-
-    /**
-     * Re-run [proc,chat_promptinput] so the chat input line reflects the real typed
-     * buffer. While locked, applyChatPromptLockPlaceholder() (run every frame) swaps
-     * the line back to the "Press enter to type" placeholder.
-     */
-    private refreshChatPrompt(): void {
-        try {
-            this.cs2Vm.runScriptEvent(
-                createScriptEvent({ args: [OsrsClient.CHAT_PROMPT_SCRIPT_ID] }),
-            );
-        } catch {}
-    }
-
-    /**
-     * While chat is locked, display "Press enter to type" after the player name in the
-     * chat input line (component 162:57). Runs every frame so it self-heals whenever
-     * chat_promptinput rewrites the line (login, chat rebuilds, name changes).
-     */
-    private applyChatPromptLockPlaceholder(): void {
-        if (!this.isChatInputLocked()) {
-            return;
-        }
-        const widget = this.widgetManager?.findWidget(
-            OsrsClient.CHATBOX_GROUP_ID,
-            OsrsClient.CHATBOX_INPUT_CHILD_ID,
-        );
-        if (!widget) {
-            return;
-        }
-        const text = typeof widget.text === "string" ? widget.text : "";
-        if (text.length === 0 || text.includes(OsrsClient.CHAT_LOCKED_PROMPT)) {
-            return;
-        }
-        // chat_promptinput composes "<col=..>Name<col=..>: typed*</col>"; keep the name
-        // prefix and replace everything after the colon (same approach as RuneLite).
-        const idx = text.indexOf(":");
-        if (idx === -1) {
-            return;
-        }
-        widget.text = `${text.slice(0, idx)}: ${OsrsClient.CHAT_LOCKED_PROMPT}`;
-        markWidgetInteractionDirty(widget);
-        this.widgetManager.invalidateWidgetRender(widget);
-    }
-
-    /**
-     * Enter-to-type state machine, run per key event before widget onKey dispatch.
-     * Returns true when the event is fully consumed (must not reach any widget).
-     */
-    private handleEnterToTypeKeyEvent(
-        keyEvent: { keyTyped: number; keyPressed: number },
-        dialogActive: boolean,
-    ): boolean {
-        if (dialogActive || !this.isEnterToTypeChatEnabled()) {
-            return false;
-        }
-        const OSRS_KEY_ENTER = 84;
-        const OSRS_KEY_ESCAPE = 13;
-
-        if (!this.chatTypingUnlocked) {
-            if (keyEvent.keyTyped === OSRS_KEY_ENTER) {
-                // Consume the unlocking Enter so it does not submit an empty message.
-                this.setChatTypingUnlocked(true);
-                return true;
-            }
-            // "/" and ":" start channel messages — unlock and let the character through.
-            if (keyEvent.keyPressed === 47 || keyEvent.keyPressed === 58) {
-                this.setChatTypingUnlocked(true);
-            }
-            return false;
-        }
-
-        if (keyEvent.keyTyped === OSRS_KEY_ESCAPE) {
-            // Escape cancels typing: clear the buffer and re-lock.
-            this.varManager.setVarcString(335, "");
-            this.setChatTypingUnlocked(false);
-            return true;
-        }
-        return false;
+        return this.enterToTypeChat.isWasdCameraActive(this.cs2Vm.inputDialogType | 0);
     }
 
     handleUiInput() {
-        const input = this.inputManager;
-        const mx = input.mouseX;
-        const my = input.mouseY;
-
-        // Get ALL roots in the same stacking order as rendering.
-        // Base roots (rootInterface) first, then session-managed roots (bank/dialogs/etc.).
-        const allRoots: any[] = [];
-        const baseRoots = this.widgetManager.getAllGroupRoots(this.widgetManager.rootInterface);
-        allRoots.push(...baseRoots);
-        if (allRoots.length === 0) return;
-
-        // Input picking treats widgets as visible unless explicitly hidden.
-        const visibleMap = new Map<number, boolean>();
-
-        // While a widget is clicked/held, it is invalidated every frame so it can be
-        // rendered semi-transparent (and to support drag visuals).
-        // The clicked widget is invalidated so it can be re-rendered semi-transparent.
-        if (this.clickedWidget) {
-            this.widgetManager.invalidateWidgetRender(this.clickedWidget);
-        }
-
-        // callback for static children lookup
-        const getStaticChildren = (uid: number) =>
-            this.widgetManager.getStaticChildrenByParentUid(uid);
-
-        // callback for InterfaceParent lookup (scrollbar widgets shouldn't scroll)
-        const getInterfaceParentRoots = (containerUid: number): any[] => {
-            const group = this.widgetManager.interfaceParents.get(containerUid)?.group;
-            return typeof group === "number" ? this.widgetManager.getAllGroupRoots(group) : [];
-        };
-        const isInputCaptureWidget = (uid: number): boolean => {
-            const parent = this.widgetManager.interfaceParents.get(uid);
-            return !!parent && (parent.type | 0) === 0;
-        };
-
-        // widget flags accessor with runtime overrides applied.
-        const getWidgetFlags = (w: any): number => this.widgetManager.getWidgetFlags(w);
-
-        // Primary click should use the same default entry selection rules as the menu.
-        const getPrimaryWidgetAction = (
-            w: any,
-        ): { option: string; target: string; slot?: number; itemId?: number; opIndex?: number } => {
-            const uid = typeof w?.uid === "number" ? w.uid | 0 : 0;
-            const ids = this.resolveWidgetIdentifiers(w);
-            const resolvedWidgetId = (ids?.widgetId ?? uid) | 0;
-            const resolvedGroupId =
-                (ids?.groupId ??
-                    (typeof w?.groupId === "number" ? w.groupId | 0 : (uid >>> 16) | 0)) | 0;
-            // For dynamic children (fileId === -1), widgetId refers to the PARENT widget id.
-            const resolvedFileId = resolvedWidgetId & 0xffff;
-
-            // Prefer deriving options from the parent widget for dynamic children only when the parent
-            // holds the ops (e.g., equipped item icons inside equipment slot components).
-            // For dynamic children (fileId=-1), check if parent has menu ops.
-            // Menu options show if transmit flag OR onOp handler.
-            // Must check actions, targetVerb, AND onOp handler (not just actions/targetVerb).
-            const menuWidget = (() => {
-                const isDynamic = (w?.fileId | 0) === -1;
-                const parentUid = (w as any)?.parentUid;
-                if (isDynamic && typeof parentUid === "number" && parentUid !== -1) {
-                    const parent = this.widgetManager?.getWidgetByUid?.(parentUid);
-                    if (parent) {
-                        const parentHasOps =
-                            (Array.isArray((parent as any).actions) &&
-                                (parent as any).actions.some((a: any) => !!sanitizeText(a))) ||
-                            !!sanitizeText((parent as any).targetVerb) ||
-                            (this.getWidgetTargetMask(parent) > 0 &&
-                                !!sanitizeText((parent as any).spellActionName)) ||
-                            !!((parent as any).onOp || (parent as any).eventHandlers?.onOp);
-                        const selfHasOps =
-                            (Array.isArray((w as any).actions) &&
-                                (w as any).actions.some((a: any) => !!sanitizeText(a))) ||
-                            !!sanitizeText((w as any).targetVerb) ||
-                            (this.getWidgetTargetMask(w) > 0 &&
-                                !!sanitizeText((w as any).spellActionName)) ||
-                            !!((w as any).onOp || (w as any).eventHandlers?.onOp);
-                        if (parentHasOps && !selfHasOps) return parent;
-                    }
-                }
-                return w;
-            })();
-
-            let entryOption: string | undefined;
-            let entryTarget: string | undefined;
-            let entryOpIndex: number | undefined;
-            const getWidgetByUidLocal = (uid: number) => this.widgetManager?.getWidgetByUid(uid);
-            try {
-                const derived = deriveMenuEntriesForWidget(
-                    menuWidget,
-                    false,
-                    getWidgetFlags,
-                    getWidgetByUidLocal,
-                ) as any[];
-
-                // Fallback: pick the first actionable entry from the derived list (matches hover label).
-                const fallback = Array.isArray(derived)
-                    ? derived.find((e) => {
-                          const lower = String(e?.option || "").toLowerCase();
-                          return (
-                              lower &&
-                              lower !== "cancel" &&
-                              lower !== "examine" &&
-                              lower !== "inspect" &&
-                              lower !== "walk here"
-                          );
-                      })
-                    : undefined;
-                if (fallback?.option) {
-                    entryOption = String(fallback.option);
-                    entryTarget = fallback.target;
-                    entryOpIndex =
-                        typeof fallback.opIndex === "number" ? fallback.opIndex | 0 : undefined;
-                }
-
-                // Widget menu entries are already in OSRS display order (top-to-bottom).
-                // normalizeMenuEntries expects OSRS insertion order and would reverse widget ops
-                // (e.g., minimap orbs), breaking primary click selection.
-                const normalized = derived as any[];
-                const isShiftHeld = input.isShiftDown();
-                const hasSelection =
-                    ClientState.isSpellSelected || ClientState.isItemSelected === 1;
-                // shift-click uses the item's configured shiftClickIndex (opcode 42) when enabled.
-                // Inventory shift-click drop only applies to the inventory interface (group 149).
-                let shiftClickActionIndex: number | undefined;
-                if (
-                    isShiftHeld &&
-                    this.settings.shiftClickEnabled &&
-                    (resolvedGroupId | 0) === 149 &&
-                    typeof w?.itemId === "number" &&
-                    (w.itemId | 0) > 0
-                ) {
-                    try {
-                        const obj = this.objTypeLoader?.load?.(w.itemId | 0);
-                        const idx = getShiftClickActionIndex(obj);
-                        if (idx >= 0) shiftClickActionIndex = idx;
-                    } catch {}
-                }
-                const state: DefaultChoiceState = {
-                    hasSelectedSpell: ClientState.isSpellSelected,
-                    hasSelectedItem: ClientState.isItemSelected === 1,
-                    isShiftHeld,
-                    shiftClickActionIndex,
-                };
-                const chosen = chooseDefaultMenuEntry(normalized, state);
-                const lower = String(chosen?.option || "").toLowerCase();
-                const isNonAction =
-                    lower === "cancel" ||
-                    lower === "examine" ||
-                    lower === "inspect" ||
-                    lower === "walk here";
-                if (chosen && !isNonAction) {
-                    entryOption = String(chosen.option);
-                    entryTarget = chosen.target;
-                    entryOpIndex =
-                        typeof (chosen as any).opIndex === "number"
-                            ? (chosen as any).opIndex | 0
-                            : undefined;
-                }
-
-                // Shift-click drop overrides the inventory item's primary option only when
-                // no spell/item selection is active.
-                if (
-                    isShiftHeld &&
-                    this.settings.shiftClickEnabled &&
-                    !hasSelection &&
-                    (resolvedGroupId | 0) === 149
-                ) {
-                    const dropEntry = Array.isArray(normalized)
-                        ? (normalized as any[]).find((e) => {
-                              const l = String(e?.option || "").toLowerCase();
-                              return l === "drop" || l === "destroy" || l === "release";
-                          })
-                        : undefined;
-                    if (dropEntry?.option) {
-                        entryOption = String(dropEntry.option);
-                        entryTarget = dropEntry.target;
-                        entryOpIndex =
-                            typeof dropEntry.opIndex === "number"
-                                ? dropEntry.opIndex | 0
-                                : undefined;
-                    }
-                }
-            } catch {}
-            const fallbackActionFromWidgetActions = (): string | undefined => {
-                const actions: Array<string | null | undefined> = Array.isArray(w?.actions)
-                    ? w.actions
-                    : [];
-                for (const a of actions) {
-                    const p = sanitizeText(a);
-                    if (p) return p;
-                }
-                return undefined;
-            };
-            const option =
-                sanitizeText(entryOption) ??
-                fallbackActionFromWidgetActions() ??
-                sanitizeText(w?.targetVerb) ??
-                (this.getWidgetTargetMask(w) > 0 ? sanitizeText(w?.spellActionName) : undefined) ??
-                "Ok";
-            const target =
-                (sanitizeText(entryTarget) ? String(entryTarget).trim() : undefined) ??
-                getWidgetTargetLabelForMenu(menuWidget) ??
-                "";
-            const slot = typeof w?.childIndex === "number" ? w.childIndex | 0 : undefined;
-            const itemId = typeof w?.itemId === "number" && w.itemId > 0 ? w.itemId | 0 : undefined;
-            return { option, target, slot, itemId, opIndex: entryOpIndex };
-        };
-
-        // Helper to collect widgets from all roots
-        const collectFromAllRoots = (px: number, py: number): any[] => {
-            return collectWidgetsAtPointAcrossRoots(
-                allRoots,
-                px,
-                py,
-                visibleMap,
-                getStaticChildren,
-                getInterfaceParentRoots,
-                isInputCaptureWidget,
-            );
-        };
-
-        // MouseOver/MouseLeave handling
-        // PERF: Cache hit test results - only recompute when mouse moves
-        let hits: any[];
-        if (mx === this._lastHoverHitX && my === this._lastHoverHitY && this._cachedHoverHits) {
-            hits = this._cachedHoverHits;
-        } else {
-            hits = collectFromAllRoots(mx, my);
-            this._lastHoverHitX = mx;
-            this._lastHoverHitY = my;
-            this._cachedHoverHits = hits;
-        }
-
-        const hoverCycle = this.transmitCycles.cycleCntr | 0;
-        // widget event traversal runs once per client cycle.
-        // Avoid dispatching hover listeners multiple times when render FPS exceeds 50Hz.
-        if (this._lastHoverListenerCycle !== hoverCycle) {
-            this._lastHoverListenerCycle = hoverCycle;
-            try {
-                this.updateWorldMapIconHover(mx, my);
-            } catch {}
-
-            // hover state is tracked per-widget.
-            // Multiple widgets (parents + children) can be hovered at once and receive onMouseRepeat.
-            const nextHoveredUids = new Set<number>();
-            const nextHoveredWidgetsByUid = new Map<number, any>();
-            const hasHoverHandlers = (w: any): boolean => {
-                // mouse listener dispatch is in the IF3 event branch.
-                if (!w || w.isIf3 === false) return false;
-                // If the cache/runtime explicitly marked this widget as "no listeners", skip.
-                if (w.hasListeners === false) return false;
-                return !!(
-                    w.eventHandlers?.onMouseOver ||
-                    w.eventHandlers?.onMouseLeave ||
-                    w.eventHandlers?.onMouseRepeat ||
-                    (Array.isArray(w.onMouseOver) && w.onMouseOver.length > 0) ||
-                    (Array.isArray(w.onMouseLeave) && w.onMouseLeave.length > 0) ||
-                    (Array.isArray(w.onMouseRepeat) && w.onMouseRepeat.length > 0)
-                );
-            };
-            for (let i = 0; i < hits.length; i++) {
-                const w = hits[i];
-                if (!hasHoverHandlers(w)) continue;
-                const uid = (w.uid ?? 0) | 0;
-                if (uid === 0) continue;
-                nextHoveredUids.add(uid);
-                nextHoveredWidgetsByUid.set(uid, w);
-            }
-
-            // Create mouse event context - relative to widget's absolute screen position
-            // Uses _absX/_absY set by collectWidgetsAtPoint, falls back to relative x/y.
-            const createMouseEventContext = (widget: any): Partial<ScriptEvent> => {
-                const widgetX = widget._absX ?? widget.x ?? 0;
-                const widgetY = widget._absY ?? widget.y ?? 0;
-                return {
-                    mouseX: mx - widgetX,
-                    mouseY: my - widgetY,
-                };
-            };
-
-            // Fire mouseLeave for widgets that were hovered last cycle but aren't now.
-            for (const uid of this.hoveredWidgetUids) {
-                if (nextHoveredUids.has(uid)) continue;
-                const old = this.hoveredWidgetsByUid.get(uid);
-                if (!old) continue;
-                const eventCtx = createMouseEventContext(old);
-                if (old.eventHandlers?.onMouseLeave) {
-                    this.cs2Vm.invokeEventHandler(old, "onMouseLeave", eventCtx);
-                } else if (Array.isArray(old.onMouseLeave) && old.onMouseLeave.length > 0) {
-                    this.executeScriptListener(old, old.onMouseLeave, eventCtx);
-                }
-            }
-
-            // Fire mouseOver for newly hovered widgets (in draw order: parent before child).
-            for (let i = 0; i < hits.length; i++) {
-                const w = hits[i];
-                if (!hasHoverHandlers(w)) continue;
-                const uid = (w.uid ?? 0) | 0;
-                if (uid === 0) continue;
-                if (!nextHoveredUids.has(uid) || this.hoveredWidgetUids.has(uid)) continue;
-                const eventCtx = createMouseEventContext(w);
-                if (w.eventHandlers?.onMouseOver) {
-                    this.cs2Vm.invokeEventHandler(w, "onMouseOver", eventCtx);
-                } else if (Array.isArray(w.onMouseOver) && w.onMouseOver.length > 0) {
-                    this.executeScriptListener(w, w.onMouseOver, eventCtx);
-                }
-            }
-
-            // onMouseRepeat fires once per client cycle while hovered.
-            for (let i = 0; i < hits.length; i++) {
-                const w = hits[i];
-                if (!hasHoverHandlers(w)) continue;
-                const uid = (w.uid ?? 0) | 0;
-                if (uid === 0) continue;
-                if (!nextHoveredUids.has(uid)) continue;
-                const eventCtx = createMouseEventContext(w);
-                if (w.eventHandlers?.onMouseRepeat) {
-                    this.cs2Vm.invokeEventHandler(w, "onMouseRepeat", eventCtx);
-                } else if (Array.isArray(w.onMouseRepeat) && w.onMouseRepeat.length > 0) {
-                    this.executeScriptListener(w, w.onMouseRepeat, eventCtx);
-                }
-            }
-
-            this.hoveredWidgetUids = nextHoveredUids;
-            this.hoveredWidgetsByUid = nextHoveredWidgetsByUid;
-        }
-
-        // While the Choose Option menu is open, the wheel scrolls oversized
-        // menus/submenus instead of reaching widget onScroll or camera zoom.
-        // The submenu is checked first, then the parent menu.
-        if (input.wheelDeltaY !== 0) {
-            const menuUiState = (this.renderer?.canvas as any)?.__ui;
-            const openMenu = menuUiState?.menu;
-            const menuRt = menuUiState?.__menuRt;
-            if (openMenu?.open && menuRt) {
-                const canvasAny: any = this.renderer?.canvas;
-                const inputScaleX = Number(canvasAny?.__uiInputScaleX ?? 1) || 1;
-                const inputScaleY = Number(canvasAny?.__uiInputScaleY ?? 1) || 1;
-                const menuMouseX = Math.round(input.mouseX * inputScaleX);
-                const menuMouseY = Math.round(input.mouseY * inputScaleY);
-                const rotation = input.wheelDeltaY > 0 ? 1 : -1;
-                const margin = menuRt.closeMargin | 0 || 10;
-                const withinRect = (r: any): boolean =>
-                    !!r &&
-                    menuMouseX >= r.x - margin &&
-                    menuMouseX <= r.x + r.w + margin &&
-                    menuMouseY >= r.y - margin &&
-                    menuMouseY <= r.y + r.h + margin;
-                if (
-                    menuRt.submenuScrollMax > 0 &&
-                    menuRt.openSubMenuIndex > -1 &&
-                    withinRect(menuRt.subRect)
-                ) {
-                    menuRt.submenuScroll = Math.min(
-                        Math.max(menuRt.submenuScroll + rotation, 0),
-                        menuRt.submenuScrollMax,
-                    );
-                    input.wheelDeltaY = 0;
-                } else if (menuRt.menuScrollMax > 0 && withinRect(menuRt.mainRect)) {
-                    menuRt.menuScroll = Math.min(
-                        Math.max(menuRt.menuScroll + rotation, 0),
-                        menuRt.menuScrollMax,
-                    );
-                    input.wheelDeltaY = 0;
-                }
-            }
-        }
-
-        if (
-            input.wheelDeltaY !== 0 &&
-            this.minimapZoomEnabled &&
-            !this.menuOpen &&
-            !(this.renderer?.canvas as any)?.__ui?.menu?.open
-        ) {
-            if (this.isPointerOverMinimapClickTarget(mx, my)) {
-                this.applyMinimapWheelZoom(input.wheelDeltaY);
-                input.wheelDeltaY = 0;
-            } else {
-                for (let i = hits.length - 1; i >= 0; i--) {
-                    const w = hits[i];
-                    if (((w?.contentType ?? 0) | 0) !== 1338) continue;
-                    const uid = (w?.uid ?? 0) | 0;
-                    if (uid !== 0 && this.widgetManager.isEffectivelyHidden(uid)) continue;
-                    this.applyMinimapWheelZoom(input.wheelDeltaY);
-                    input.wheelDeltaY = 0;
-                    break;
-                }
-            }
-        }
-
-        // IF1 scrollbar interaction (Skills.nv).
-        // Handles arrows, track dragging, and wheel over content+scrollbar region.
-        if (!this.isDraggingWidget) {
-            this.if1AlternativeScrollbarWidth = this.if1ScrollbarDragging ? 32 : 0;
-            this.if1ScrollbarDragging = false;
-
-            const isLeftHeld = input.clickMode2 === ClickMode.LEFT;
-            const if1WheelDelta = input.wheelDeltaY;
-            if (isLeftHeld || if1WheelDelta !== 0) {
-                const SCROLLBAR_WIDTH = 16;
-                const ARROW_HEIGHT = 16;
-                let handledWheel = false;
-
-                const handleIf1Scrollbars = (
-                    widget: any,
-                    parentAbsX: number,
-                    parentAbsY: number,
-                ): boolean => {
-                    if (!widget) return false;
-                    const uid = (widget.uid ?? 0) | 0;
-                    if (uid !== 0 && this.widgetManager.isEffectivelyHidden(uid)) return false;
-                    if (widget.hidden || widget.hide) return false;
-
-                    const absX = (parentAbsX + (widget.x ?? 0)) | 0;
-                    const absY = (parentAbsY + (widget.y ?? 0)) | 0;
-
-                    const widgetType = ((widget.type ?? 0) | 0) as number;
-                    const widgetWidth = (widget.width ?? 0) | 0;
-                    const widgetHeight = (widget.height ?? 0) | 0;
-                    const scrollHeight = (widget.scrollHeight ?? 0) | 0;
-                    const isIf1Scrollable =
-                        widgetType === 0 && widget.isIf3 === false && scrollHeight > widgetHeight;
-
-                    if (isIf1Scrollable) {
-                        const scrollbarX = absX + widgetWidth;
-                        const maxScrollY = Math.max(0, scrollHeight - widgetHeight);
-                        const clampScrollY = (value: number): number =>
-                            Math.min(Math.max(0, value | 0), maxScrollY);
-
-                        if (isLeftHeld) {
-                            if (
-                                mx >= scrollbarX &&
-                                mx < scrollbarX + SCROLLBAR_WIDTH &&
-                                my >= absY &&
-                                my < absY + ARROW_HEIGHT
-                            ) {
-                                widget.scrollY = clampScrollY((widget.scrollY ?? 0) - 4);
-                                this.widgetManager.invalidateScroll(widget);
-                                return true;
-                            }
-                            if (
-                                mx >= scrollbarX &&
-                                mx < scrollbarX + SCROLLBAR_WIDTH &&
-                                my >= absY + widgetHeight - ARROW_HEIGHT &&
-                                my < absY + widgetHeight
-                            ) {
-                                widget.scrollY = clampScrollY((widget.scrollY ?? 0) + 4);
-                                this.widgetManager.invalidateScroll(widget);
-                                return true;
-                            }
-                            if (
-                                mx >= scrollbarX - this.if1AlternativeScrollbarWidth &&
-                                mx <
-                                    scrollbarX +
-                                        SCROLLBAR_WIDTH +
-                                        this.if1AlternativeScrollbarWidth &&
-                                my >= absY + ARROW_HEIGHT &&
-                                my < absY + widgetHeight - ARROW_HEIGHT
-                            ) {
-                                let thumbHeight = Math.floor(
-                                    (widgetHeight * (widgetHeight - 32)) / scrollHeight,
-                                );
-                                if (thumbHeight < 8) thumbHeight = 8;
-                                const clickPosY = my - absY - ARROW_HEIGHT - (thumbHeight >> 1);
-                                const trackHeight = widgetHeight - 32 - thumbHeight;
-                                widget.scrollY = clampScrollY(
-                                    trackHeight > 0
-                                        ? Math.floor(
-                                              (clickPosY * (scrollHeight - widgetHeight)) /
-                                                  trackHeight,
-                                          )
-                                        : 0,
-                                );
-                                this.widgetManager.invalidateScroll(widget);
-                                this.if1ScrollbarDragging = true;
-                                return true;
-                            }
-                        }
-
-                        if (
-                            !handledWheel &&
-                            if1WheelDelta !== 0 &&
-                            mx >= scrollbarX - widgetWidth &&
-                            my >= absY &&
-                            mx < scrollbarX + SCROLLBAR_WIDTH &&
-                            my <= absY + widgetHeight
-                        ) {
-                            widget.scrollY = clampScrollY(
-                                (widget.scrollY ?? 0) + if1WheelDelta * 45,
-                            );
-                            this.widgetManager.invalidateScroll(widget);
-                            handledWheel = true;
-                        }
-                    }
-
-                    const childBaseX = absX - ((widget.scrollX ?? 0) | 0);
-                    const childBaseY = absY - ((widget.scrollY ?? 0) | 0);
-
-                    if (widget.uid !== undefined) {
-                        const staticChildren = getStaticChildren(widget.uid);
-                        for (let i = staticChildren.length - 1; i >= 0; i--) {
-                            if (handleIf1Scrollbars(staticChildren[i], childBaseX, childBaseY)) {
-                                return true;
-                            }
-                        }
-                    }
-                    if (Array.isArray(widget.children)) {
-                        for (let i = widget.children.length - 1; i >= 0; i--) {
-                            const child = widget.children[i];
-                            if (handleIf1Scrollbars(child, childBaseX, childBaseY)) return true;
-                        }
-                    }
-                    return false;
-                };
-
-                for (let i = allRoots.length - 1; i >= 0; i--) {
-                    if (handleIf1Scrollbars(allRoots[i], 0, 0)) break;
-                }
-                if (handledWheel) {
-                    input.wheelDeltaY = 0;
-                }
-            }
-        }
-
-        // Handle scroll wheel events on widgets with onScroll handlers
-        // (IF1 default wheel scrolling is handled by the IF1 scrollbar path above).
-        const wheelDelta = input.wheelDeltaY;
-        if (wheelDelta !== 0 && hits.length > 0 && !this.isDraggingWidget) {
-            let consumedWheel = false;
-            let blockedByVisibleWidget = false;
-
-            for (let i = hits.length - 1; i >= 0; i--) {
-                const w = hits[i];
-
-                // Skip effectively hidden widgets
-                const wUid = (w.uid ?? 0) | 0;
-                if (this.widgetManager.isEffectivelyHidden(wUid)) continue;
-
-                // noScrollThrough blocks scroll from reaching widgets behind
-                if (w.noScrollThrough && w.isIf3 !== false) {
-                    break;
-                }
-
-                // Camera zoom blocking is based on actual visible widget surfaces.
-                // Listener-only widgets (for example buff_bar transmit children) must not block.
-                if (!blockedByVisibleWidget && getVisibleWidgetSurfaceReason(w)) {
-                    blockedByVisibleWidget = true;
-                }
-
-                const hasScrollHandler =
-                    w.eventHandlers?.onScroll ||
-                    (Array.isArray(w.onScroll) && w.onScroll.length > 0);
-                if (!hasScrollHandler) continue;
-
-                const wheelStep = wheelDelta > 0 ? 1 : -1;
-                const scrollCtx: Partial<ScriptEvent> = {
-                    mouseX: mx - (w._absX ?? w.x ?? 0),
-                    mouseY: wheelStep,
-                };
-
-                if (w.eventHandlers?.onScroll) {
-                    this.cs2Vm.invokeEventHandler(w, "onScroll", scrollCtx);
-                } else if (Array.isArray(w.onScroll) && w.onScroll.length > 0) {
-                    this.executeScriptListener(w, w.onScroll, scrollCtx);
-                }
-
-                consumedWheel = true;
-                break;
-            }
-
-            // Block camera zoom if scroll was consumed or the pointer is over a zoom-blocking widget.
-            if (consumedWheel || blockedByVisibleWidget) {
-                input.wheelDeltaY = 0;
-            }
-        }
-
-        // Click/Hold/Release handling (widget-level, not menu-level)
-        // IMPORTANT: Skip widget click handling when the right-click menu is open.
-        // The menu is not a widget, so clicks would pass through to widgets behind it.
-        // Menu clicks are handled by ClickRegistry in processWidgetUiInput.
-        // Check both world menu (this.menuOpen) and widget menu (ui.menu?.open)
-        const uiMenu = (this.renderer?.canvas as any)?.__ui?.menu;
-        if (this.menuOpen || uiMenu?.open) {
-            return;
-        }
-
-        // Skip input processing for one frame after menu closes to prevent
-        // the menu-selecting click from being processed as a widget click
-        if (this.menuJustClosed) {
-            this.menuJustClosed = false;
-            return;
-        }
-
-        const isNewClick = input.leftClickX !== -1 && input.leftClickY !== -1;
-        const isHolding = input.isDragging(); // Left button held
-        this.handleWorldMapDragInput(hits, mx, my, isNewClick, isHolding);
-
-        if (isNewClick) {
-            // New click - reset drag state
-            this.widgetDragDuration = 0;
-            this.isDraggingWidget = false;
-            this.dragClickX = input.leftClickX;
-            this.dragClickY = input.leftClickY;
-            this.clickedWidgetParent = null;
-            this.draggedOnWidget = null;
-            // PERF: Reset drag hit cache
-            this._lastDragHitX = -1;
-            this._lastDragHitY = -1;
-            // PERF: Invalidate hover cache - click may change widget visibility
-            this._cachedHoverHits = null;
-
-            if (!this.clickedWidget) {
-                // Find widget with click handlers
-                const clickHits = collectFromAllRoots(input.leftClickX, input.leftClickY);
-                if (this.handleTradeRequestChatClick(clickHits)) {
-                    return;
-                }
-                for (let i = clickHits.length - 1; i >= 0; i--) {
-                    const w = clickHits[i];
-                    const hitWidgetGroupId =
-                        (w.groupId ?? (typeof w.uid === "number" ? w.uid >>> 16 : 0)) | 0;
-                    const hasInventoryItem =
-                        hitWidgetGroupId === 149 &&
-                        typeof (w as any).itemId === "number" &&
-                        (w as any).itemId > 0;
-                    // Check for actual handlers, not just empty arrays
-                    // Empty arrays are truthy but shouldn't count as having handlers
-                    const hasActions = Array.isArray(w.actions) && w.actions.length > 0;
-                    const getWidgetByUid = (uid: number) => this.widgetManager?.getWidgetByUid(uid);
-                    const isPauseButtonWidget = isPauseButtonWidgetUtil(
-                        w,
-                        getWidgetFlags,
-                        getWidgetByUid,
-                    );
-                    // widgets can be clickable purely via IF_SETEVENTS transmit flags
-                    // (bits 1-10 for op1..op10), even if they have no actions[] or scripts attached.
-                    // This is required for interfaces like PlayerDesign (679) where button widgets
-                    // are often empty containers with only transmit flags set.
-                    const flags = getWidgetFlags(w) | 0;
-                    const hasTransmitOps = (flags & 0x7fe) !== 0;
-                    // spell widgets are actionable when target mask is non-zero
-                    // and spellActionName exists (Widget_getSpellActionName).
-                    const targetMask = (flags >>> 11) & 0x3f;
-                    const hasSpellAction =
-                        targetMask > 0 &&
-                        !!sanitizeText((w as any).spellActionName ?? (w as any).targetVerb);
-                    const isDynamicWidget = ((w as any).fileId | 0) === -1;
-                    const hasHandlers = !!(
-                        w.eventHandlers?.onClick ||
-                        w.eventHandlers?.onClickRepeat ||
-                        w.eventHandlers?.onHold ||
-                        w.eventHandlers?.onRelease ||
-                        w.eventHandlers?.onOp ||
-                        w.onClick ||
-                        w.onClickRepeat ||
-                        w.onHold ||
-                        w.onRelease ||
-                        w.onOp ||
-                        hasActions ||
-                        hasInventoryItem ||
-                        // OSRS: any widget can be a drag source if it has drag listener or implicit drag
-                        w.eventHandlers?.onDrag ||
-                        w.onDrag ||
-                        w.isDraggable ||
-                        isPauseButtonWidget ||
-                        // IF_SETEVENTS transmit bits can make otherwise-empty STATIC widgets
-                        // clickable (e.g., server-authoritative tab controls). For dynamic children,
-                        // transmit-only hit targets can incorrectly steal clicks from scripted row widgets.
-                        (!isDynamicWidget && hasTransmitOps) ||
-                        hasSpellAction
-                    );
-                    if (hasHandlers) {
-                        this.clickedWidget = w;
-                        this.clickedWidgetParent = this.resolveClickedWidgetParent(w);
-                        // Use absolute position (from hit detection) for event_mousey calculation
-                        this.clickedWidgetX = input.leftClickX - (w._absX ?? w.x ?? 0);
-                        this.clickedWidgetY = input.leftClickY - (w._absY ?? w.y ?? 0);
-                        // Mark the clicked widget dirty immediately so the held-click
-                        // translucency is visible on the same frame.
-                        this.widgetManager.invalidateWidgetRender(w);
-
-                        // Check for spell targeting BEFORE CS2 handlers run
-                        // Spellbook widgets (group 218) with targetMask should enter targeting mode
-                        const clickGroupId = (w.groupId ?? w.uid >>> 16) | 0;
-                        const clickChildId = (w.fileId ?? w.uid & 0xffff) | 0;
-                        const isSpellbookWidget = clickGroupId === 218 && clickChildId > 0;
-
-                        if (isSpellbookWidget) {
-                            // Get targetVerb from widget or use "Cast" as fallback for spell widgets
-                            let targetVerb = w.targetVerb || w.spellActionName;
-
-                            // Only enter targeting mode if targetMask > 0 (spell needs a target)
-                            // Teleport spells have targetMask === 0 and should cast immediately.
-                            const targetMask = this.getWidgetTargetMask(w);
-                            const needsTarget = targetMask > 0;
-
-                            if (
-                                !needsTarget &&
-                                targetVerb &&
-                                (w.name || w.opBase || w.spriteId >= 0)
-                            ) {
-                                // No-target spell (e.g., teleport) - send directly to server
-                                console.log(
-                                    `[OsrsClient] No-target spell clicked: widget=${w.uid}, name="${
-                                        w.name || w.opBase
-                                    }", group=${clickGroupId}, child=${clickChildId}`,
-                                );
-
-                                // Send widget action to server for teleport handling
-                                sendWidgetAction({
-                                    widgetId: w.uid,
-                                    groupId: clickGroupId,
-                                    childId: clickChildId,
-                                    option: "Cast",
-                                    target: w.name || w.opBase || "",
-                                    opId: 1,
-                                });
-                                break;
-                            }
-
-                            if (!targetVerb && needsTarget) {
-                                targetVerb = "null";
-                            }
-
-                            if (targetVerb && needsTarget) {
-                                const spellSelection = this.resolveSpellSelectionFromWidget(
-                                    w,
-                                    w.uid,
-                                    clickChildId,
-                                    -1,
-                                );
-                                // Clicking the currently selected spell deselects it.
-                                if (
-                                    ClientState.isSpellSelected &&
-                                    ClientState.selectedSpellWidget === spellSelection.widgetId
-                                ) {
-                                    console.log(
-                                        `[OsrsClient] Spell widget re-clicked while active, clearing selection: widget=${spellSelection.widgetId}`,
-                                    );
-                                    this.clearSelectedSpell();
-                                    break;
-                                }
-
-                                // Enter spell targeting mode (for combat spells that need a target)
-                                ClientState.clearItemSelection();
-                                try {
-                                    this.inventory?.setSelectedSlot?.(null);
-                                } catch {}
-                                ClientState.isSpellSelected = true;
-                                ClientState.selectedSpellWidget = spellSelection.widgetId;
-                                ClientState.selectedSpellChildIndex = spellSelection.childIndex;
-                                ClientState.selectedSpellItemId = spellSelection.itemId;
-                                ClientState.selectedSpellActionName = targetVerb;
-                                ClientState.selectedSpellName =
-                                    w.opBase || w.dataText || w.name || "";
-                                // Track when spell targeting was entered to prevent casting on same click
-                                ClientState.spellTargetEnteredFrame = Date.now();
-                                // Store the spell's target mask
-                                ClientState.selectedSpellTargetMask = targetMask;
-
-                                const clickGroupId = (spellSelection.widgetId >> 16) & 0xffff;
-                                console.log(
-                                    `[OsrsClient] Spell targeting mode entered: widget=${
-                                        spellSelection.widgetId
-                                    }, verb="${targetVerb}", name="${
-                                        ClientState.selectedSpellName
-                                    }", group=${clickGroupId}, child=${
-                                        spellSelection.childIndex
-                                    }, targetMask=0x${ClientState.selectedSpellTargetMask.toString(
-                                        16,
-                                    )}`,
-                                );
-
-                                // Fire onTargetEnter on the source widget ( - use widget child ID, not hardcoded spell ID)
-                                this.setSelectedSpell(
-                                    {
-                                        spellId: spellSelection.childIndex,
-                                        spellName: ClientState.selectedSpellName,
-                                        spellLevel: 1,
-                                    },
-                                    w,
-                                );
-
-                                // IMPORTANT: Stop processing this click after entering spell targeting mode
-                                // Don't continue to onClick/onOp handlers which may switch tabs and trigger other actions
-                                break;
-                            }
-                        }
-
-                        // Pause button widgets send RESUME_PAUSEBUTTON and do not go through
-                        // generic widget action dispatch.
-                        // Pause button widgets send RESUME_PAUSEBUTTON - menu shows "Continue" with empty target
-                        if (isPauseButtonWidget) {
-                            // Only send if not already waiting for response
-                            if (this.widgetManager?.canSendResumePauseButton(w) ?? true) {
-                                const widgetUid =
-                                    (typeof (w as any).id === "number"
-                                        ? (w as any).id
-                                        : (w.uid ?? 0)) | 0;
-                                const childIndex =
-                                    (typeof w.childIndex === "number" && (w.childIndex | 0) >= 0
-                                        ? w.childIndex | 0
-                                        : typeof w.fileId === "number" && w.fileId >= 0
-                                          ? w.fileId | 0
-                                          : widgetUid & 0xffff) | 0;
-                                // Send RESUME_PAUSEBUTTON packet to server
-                                const pkt = createPacket(ClientPacketId.RESUME_PAUSEBUTTON);
-                                pkt.packetBuffer.writeShortAddLE(childIndex);
-                                pkt.packetBuffer.writeInt(widgetUid);
-                                queuePacket(pkt);
-                                // Set meslayerContinueWidget to show "Please wait..."
-                                if (this.widgetManager) {
-                                    this.widgetManager.meslayerContinueWidget = w;
-                                    this.widgetManager.invalidateWidgetRender(w);
-                                }
-                            }
-                            this.clickedWidgetHandled = true;
-                            break;
-                        }
-
-                        // For draggable widgets, DON'T fire onClick on mousedown
-                        // Wait until mouseup to determine if it was a click or a drag
-                        // onClick only fires on release if not dragging
-                        if (this.isWidgetDraggable(w)) {
-                            // Don't fire onClick yet - wait for mouseup to see if it's a drag
-                            // The onClick will be fired in the release handler if no drag occurred
-                            break;
-                        }
-
-                        // resolve the primary menu action before any onClick/onOp handlers run.
-                        // Handlers can mutate widget ops (e.g., Mute -> Unmute), but the transmitted action
-                        // should reflect what was clicked pre-mutation.
-                        const primaryAction = getPrimaryWidgetAction(w);
-
-                        // Trade item slots are draggable and reach handleWidgetAction on mouse-up,
-                        // but the native Accept/Decline buttons are not. Route these primary button
-                        // clicks through the same authoritative trade protocol before their cache
-                        // onOp handlers can consume the click as a generic widget action.
-                        const primaryWidgetGroupId =
-                            (typeof w.groupId === "number" ? w.groupId : w.uid >>> 16) | 0;
-                        const primaryWidgetChildId =
-                            (typeof w.fileId === "number" && w.fileId >= 0
-                                ? w.fileId
-                                : typeof w.childIndex === "number"
-                                  ? w.childIndex
-                                  : w.uid & 0xffff) | 0;
-                        if (
-                            this.handleTradeWidgetAction(
-                                w,
-                                primaryAction,
-                                primaryWidgetGroupId,
-                                primaryWidgetChildId,
-                            )
-                        ) {
-                            this.clickedWidgetHandled = true;
-                            break;
-                        }
-
-                        // If the GL widgets layer is active, defer primary click handling to it.
-                        // Primary left-click handling is driven by the game loop
-                        // (clickedWidget + menuAction semantics), not by the GL widget click registry.
-
-                        // Non-draggable widgets: Fire onClick immediately on press
-                        const meslayerBeforePrimaryClick =
-                            this.widgetManager?.meslayerContinueWidget ?? null;
-                        const clickCtx: Partial<ScriptEvent> = {
-                            mouseX: this.clickedWidgetX,
-                            mouseY: this.clickedWidgetY,
-                            opIndex: 1,
-                        };
-                        let handled = false;
-                        let invokedAnyHandler = false;
-
-                        // Try onClick first
-                        if (w.eventHandlers?.onClick) {
-                            invokedAnyHandler = true;
-                            handled = this.cs2Vm.invokeEventHandler(w, "onClick", clickCtx);
-                        }
-
-                        // Fall back to onOp if onClick didn't handle it (tabs use onOp)
-                        if (!handled && w.eventHandlers?.onOp) {
-                            invokedAnyHandler = true;
-                            handled = this.cs2Vm.invokeEventHandler(w, "onOp", clickCtx);
-                        }
-
-                        // Try legacy handlers
-                        if (!handled && w.onClick) {
-                            invokedAnyHandler = true;
-                            this.executeScriptListener(w, w.onClick, clickCtx);
-                            handled = true;
-                        }
-
-                        if (!handled && w.onOp) {
-                            invokedAnyHandler = true;
-                            this.executeScriptListener(w, w.onOp, clickCtx);
-                            handled = true;
-                        }
-
-                        // CS2 handlers can mutate widgets (hide/text/position/etc). Ensure a repaint.
-                        // This matches the behavior we already do for server-driven run_script events.
-                        if (invokedAnyHandler && this.widgetManager) {
-                            this.widgetManager.invalidateAll();
-                        }
-
-                        // If click handlers resumed a pause button, skip generic IF_BUTTON send.
-                        const resumePauseTriggeredByHandler =
-                            meslayerBeforePrimaryClick === null &&
-                            (this.widgetManager?.meslayerContinueWidget ?? null) !== null;
-                        if (resumePauseTriggeredByHandler) {
-                            this.clickedWidgetHandled = true;
-                            break;
-                        }
-
-                        // Mark that we already fired CS2 handlers for this widget click
-                        // This prevents handleWidgetAction from firing them again on mouseup
-                        if (handled) {
-                            this.clickedWidgetHandled = true;
-                        }
-
-                        // Only transmit widget ops to the server when the transmit flag is set
-                        // for the action (IF_SETEVENTS / Client.widgetFlags).
-                        // Avoid double-send when the GL widget system already dispatches onWidgetAction.
-                        const { option, target, slot, itemId, opIndex } = primaryAction;
-                        try {
-                            const payload = this.buildWidgetActionPayload({
-                                widget: w,
-                                option,
-                                target,
-                                source: "primary",
-                                cursorX: this.clickedWidgetX,
-                                cursorY: this.clickedWidgetY,
-                                slot,
-                                itemId,
-                                opIndex,
-                            });
-                            if (payload) {
-                                // PlayerDesign (679): handle locally and do not transmit arrow/button ops.
-                                // Confirm sends the OSRS appearance packet separately.
-                                const groupId = (payload.widgetId >>> 16) & 0xffff;
-                                const childId = payload.widgetId & 0xffff;
-                                if ((groupId | 0) === 679) {
-                                    if (this.handlePlayerDesignWidgetAction(childId | 0)) {
-                                        break;
-                                    }
-                                }
-
-                                const transmitFlagWidget = this.resolveTransmitFlagWidget(
-                                    w,
-                                    payload,
-                                );
-                                const flags =
-                                    this.widgetManager?.getWidgetFlags?.(transmitFlagWidget) ??
-                                    transmitFlagWidget?.flags ??
-                                    0;
-                                const opId = payload.opId ?? 0;
-                                const actionIndex = opId > 0 ? opId - 1 : -1;
-                                if (
-                                    actionIndex >= 0 &&
-                                    actionIndex <= 9 &&
-                                    !shouldTransmitAction(flags, actionIndex)
-                                ) {
-                                    break;
-                                }
-                                sendWidgetAction(payload);
-                            }
-                        } catch (err) {
-                            console.warn("[OsrsClient] widget action send failed", err);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Modal click-through prevention is handled in the world interaction layer
-        // (WebGLOsrsRenderer.checkInteractions). Do not mutate clickMode3 here, since
-        // the GL UI click system (Choose Option, dialog click targets) relies on it.
-
-        // Drag handling - drag only initiates for widgets with drag capability
-        if (this.clickedWidget && isHolding && this.isWidgetDraggable(this.clickedWidget)) {
-            this.widgetDragDuration++;
-
-            // Check for drag initiation if not yet dragging
-            if (!this.isDraggingWidget) {
-                const dx = mx - this.dragClickX;
-                const dy = my - this.dragClickY;
-                const dist = Math.max(Math.abs(dx), Math.abs(dy));
-                const zone = this.clickedWidget.dragZoneSize ?? 0;
-                const threshold = this.clickedWidget.dragThreshold ?? 0;
-
-                if (this.widgetDragDuration > threshold && dist > zone) {
-                    this.isDraggingWidget = true;
-                    this.dragSourceWidget = this.clickedWidget;
-
-                    // Initialize offsets if needed (matches old logic)
-                    if ((this.clickedWidget as any)._dragPickupOffsetX === undefined) {
-                        (this.clickedWidget as any)._dragPickupOffsetX =
-                            this.dragClickX - (this.clickedWidget._absX ?? 0);
-                    }
-                    if ((this.clickedWidget as any)._dragPickupOffsetY === undefined) {
-                        (this.clickedWidget as any)._dragPickupOffsetY =
-                            this.dragClickY - (this.clickedWidget._absY ?? 0);
-                    }
-
-                    // clickedWidgetParent defines clamp/coordinate space.
-                    // Ensure it's resolved before we cache absolute coordinates for drag math.
-                    if (!this.clickedWidgetParent) {
-                        this.clickedWidgetParent = this.resolveClickedWidgetParent(
-                            this.clickedWidget,
-                        );
-                    }
-                    const renderArea = this.clickedWidgetParent ?? this.clickedWidget;
-                    // Cache absolute position of clickedWidgetParent for coord calculations
-                    let renderAreaAbsX: number;
-                    let renderAreaAbsY: number;
-                    if (renderArea._absX !== undefined && renderArea._absY !== undefined) {
-                        renderAreaAbsX = renderArea._absX;
-                        renderAreaAbsY = renderArea._absY;
-                    } else if (
-                        this.clickedWidget._absX !== undefined &&
-                        this.clickedWidget._absY !== undefined
-                    ) {
-                        // Derive parent's absolute position from the child's absolute position
-                        renderAreaAbsX = this.clickedWidget._absX - (this.clickedWidget.x ?? 0);
-                        renderAreaAbsY = this.clickedWidget._absY - (this.clickedWidget.y ?? 0);
-                    } else {
-                        renderAreaAbsX = renderArea.x ?? 0;
-                        renderAreaAbsY = renderArea.y ?? 0;
-                    }
-                    (this as any)._dragRenderAreaAbsX = renderAreaAbsX;
-                    (this as any)._dragRenderAreaAbsY = renderAreaAbsY;
-                }
-            }
-
-            // Execute onDrag if dragging is active
-            if (this.isDraggingWidget) {
-                const w = this.clickedWidget;
-
-                // clickedWidgetParent defines clamp/coordinate space.
-                // If null, widget can be dragged freely without clamping (like bank items).
-                if (!this.clickedWidgetParent) {
-                    this.clickedWidgetParent = this.resolveClickedWidgetParent(w);
-                }
-                const renderArea = this.clickedWidgetParent;
-                const hasExplicitDragParent = renderArea !== null;
-
-                const widgetWidth = w.width ?? 0;
-                const widgetHeight = w.height ?? 0;
-
-                // UI render scale: maps logical widget coordinates to canvas pixel coordinates.
-                // All absolute positions (_absX/_absY, mouse coords) are in pixel space,
-                // but widget dimensions (width/height) and CS2 script coordinates are in
-                // logical space. We need the scale to convert between them.
-                const [renderScaleX, renderScaleY] = this.getUiRenderScale();
-
-                // Calculate target absolute position (Mouse - Offset)
-                let targetAbsX = mx - this.clickedWidgetX;
-                let targetAbsY = my - this.clickedWidgetY;
-
-                // Only clamp to parent bounds if there's an explicit drag parent
-                // Widgets without explicit drag parent (like bank items) can drag freely
-                let parentAbsX = 0;
-                let parentAbsY = 0;
-                let parentScrollX = 0;
-                let parentScrollY = 0;
-
-                if (hasExplicitDragParent) {
-                    parentAbsX = renderArea._absX ?? (this as any)._dragRenderAreaAbsX ?? 0;
-                    parentAbsY = renderArea._absY ?? (this as any)._dragRenderAreaAbsY ?? 0;
-                    const parentWidth = renderArea.width ?? 0;
-                    const parentHeight = renderArea.height ?? 0;
-                    parentScrollX = renderArea.scrollX ?? 0;
-                    parentScrollY = renderArea.scrollY ?? 0;
-
-                    // Clamp to parent bounds (only when explicit drag parent is set)
-                    // parentAbsX/Y are in pixel space; widget dimensions are logical so
-                    // scale them to pixel space for consistent clamping.
-                    const widgetPixelW = widgetWidth * renderScaleX;
-                    const widgetPixelH = widgetHeight * renderScaleY;
-                    const parentPixelW = parentWidth * renderScaleX;
-                    const parentPixelH = parentHeight * renderScaleY;
-                    if (targetAbsX < parentAbsX) targetAbsX = parentAbsX;
-                    if (targetAbsX + widgetPixelW > parentAbsX + parentPixelW)
-                        targetAbsX = parentAbsX + parentPixelW - widgetPixelW;
-
-                    if (targetAbsY < parentAbsY) targetAbsY = parentAbsY;
-                    if (targetAbsY + widgetPixelH > parentAbsY + parentPixelH)
-                        targetAbsY = parentAbsY + parentPixelH - widgetPixelH;
-                }
-
-                // Calculate visual position relative to the widget's ACTUAL RENDER PARENT
-                // The drag render area (used for clamping and script coords) may be different
-                // from the widget's parent (e.g., scrollbar dragger clamps to track but renders
-                // as a child of the scrollbar container).
-                //
-                // OSRS uses the clamped absolute position directly for rendering.
-                // Our renderer does: finalPos = parentOffset + visualPos
-                // So we need visualPos relative to the actual parent, not the drag render area.
-                let actualParent =
-                    w.parentUid !== undefined && w.parentUid !== -1
-                        ? this.widgetManager.getWidgetByUid(w.parentUid)
-                        : null;
-
-                // Get the actual parent's absolute position (or fallback to drag render area)
-                const actualParentAbsX = actualParent?._absX ?? parentAbsX;
-                const actualParentAbsY = actualParent?._absY ?? parentAbsY;
-
-                // Visual position is relative to actual parent (for renderer)
-                const visualPosX = targetAbsX - actualParentAbsX;
-                const visualPosY = targetAbsY - actualParentAbsY;
-
-                // Script coordinates for CS2 event_mousex/event_mousey.
-                // Position within the drag render area plus its scroll offset.
-                //
-                // For widgets without explicit drag parent (like bank items),
-                // use the actual parent's position for script coordinates. The script
-                // (e.g., bankmain_dragscroll) subtracts if_gety(container) which returns
-                // position relative to parent, so event_mousey must also be relative to
-                // the same coordinate space.
-                //
-                // The pixel-space difference is divided by renderScale to convert to logical
-                // widget coordinates, which is what CS2 scripts expect. Scroll offsets are
-                // already in logical space.
-                const scriptParentAbsX = hasExplicitDragParent ? parentAbsX : actualParentAbsX;
-                const scriptParentAbsY = hasExplicitDragParent ? parentAbsY : actualParentAbsY;
-                const scriptParentScrollX = hasExplicitDragParent
-                    ? parentScrollX
-                    : (actualParent?.scrollX ?? 0);
-                const scriptParentScrollY = hasExplicitDragParent
-                    ? parentScrollY
-                    : (actualParent?.scrollY ?? 0);
-                const scriptX =
-                    ((targetAbsX - scriptParentAbsX) / renderScaleX + scriptParentScrollX) | 0;
-                const scriptY =
-                    ((targetAbsY - scriptParentAbsY) / renderScaleY + scriptParentScrollY) | 0;
-
-                // Store visual position for renderer to use
-                // The widget's actual .x/.y stays unchanged until dragComplete
-                // Visual position is parent-relative (no scroll) so renderer can do: ox + visualX
-                //
-                // Note: In Java client, dragRenderBehaviour (isScrollBar) only affects whether
-                // the widget is rendered semi-transparent. All dragged widgets follow the cursor.
-                // dragRenderBehaviour values:
-                //   0 = hide during drag (but we still want to track position)
-                //   1 = follow cursor (scrollbar style, opaque)
-                //   other = follow cursor with transparency (inventory item style)
-                //
-                // We always set the visual position - the renderer decides visibility/transparency
-                // Also store absolute position for deferred rendering (avoids scroll offset issues)
-                (w as any)._dragAbsX = targetAbsX;
-                (w as any)._dragAbsY = targetAbsY;
-
-                // Store visual position in LOGICAL (widget-layout) coordinates so it uses
-                // the same coordinate space as CS2 script positions (event_mousey, cc_setposition).
-                //
-                // When the drag parent differs from the actual parent (e.g.,
-                // scrollbar dragger clamped to track but parented to container), scriptY and
-                // the naive logicalVisualY are truncated independently from different reference
-                // points. At fractional pixel offsets this causes ±1 logical pixel misalignment
-                // between the dragged widget and script-positioned siblings (cap sprites).
-                // Fix: derive logicalVisualY from scriptY + the drag parent's logical offset
-                // from the actual parent, sharing one truncation point.
-                let logicalVisualX: number;
-                let logicalVisualY: number;
-                if (hasExplicitDragParent && actualParent && renderArea !== actualParent) {
-                    const scriptParentLogicalY = (renderArea as any)?._absLogicalY ?? 0;
-                    const actualParentLogicalY = (actualParent as any)?._absLogicalY ?? 0;
-                    const scriptParentLogicalX = (renderArea as any)?._absLogicalX ?? 0;
-                    const actualParentLogicalX = (actualParent as any)?._absLogicalX ?? 0;
-                    logicalVisualX =
-                        scriptX -
-                        scriptParentScrollX +
-                        (scriptParentLogicalX - actualParentLogicalX);
-                    logicalVisualY =
-                        scriptY -
-                        scriptParentScrollY +
-                        (scriptParentLogicalY - actualParentLogicalY);
-                } else {
-                    logicalVisualX = (visualPosX / renderScaleX) | 0;
-                    logicalVisualY = (visualPosY / renderScaleY) | 0;
-                }
-
-                // PERF: Only invalidate render if position actually changed
-                const prevVisualX = (w as any)._dragVisualX;
-                const prevVisualY = (w as any)._dragVisualY;
-                const positionChanged =
-                    prevVisualX !== logicalVisualX || prevVisualY !== logicalVisualY;
-
-                (w as any)._dragVisualX = logicalVisualX;
-                (w as any)._dragVisualY = logicalVisualY;
-                (w as any)._isDragActive = true;
-
-                // dragged widget is invalidated every tick during drag (FaceNormal.invalidateWidget).
-                // Our overlay renderer uses dirty-region tracking, so force a redraw while the cursor moves.
-                // PERF: Only invalidate when position has actually changed
-                if (positionChanged) {
-                    try {
-                        this.widgetManager?.invalidateWidgetRender?.(w);
-                    } catch {}
-                }
-
-                // Track draggedOnWidget - the widget under the cursor that can receive drops.
-                // This is updated every frame while dragging, checking widgets under mouse.
-                //
-                // PERF: Only recalculate when mouse has actually moved
-                if (mx !== this._lastDragHitX || my !== this._lastDragHitY) {
-                    this._lastDragHitX = mx;
-                    this._lastDragHitY = my;
-
-                    // PERF: Use optimized findDropTarget instead of collecting all hits
-                    const getFlags = (widget: any) =>
-                        (this.widgetManager?.getWidgetFlags?.(widget) ?? widget?.flags ?? 0) | 0;
-                    this.draggedOnWidget = findDropTarget(
-                        allRoots,
-                        mx,
-                        my,
-                        visibleMap,
-                        getStaticChildren,
-                        getFlags,
-                        w.uid,
-                        getInterfaceParentRoots,
-                    );
-                }
-
-                const dragCtx: Partial<ScriptEvent> = {
-                    mouseX: scriptX,
-                    mouseY: scriptY,
-                };
-
-                if (w.eventHandlers?.onDrag) {
-                    this.cs2Vm.invokeEventHandler(w, "onDrag", dragCtx);
-                } else if (w.onDrag) {
-                    this.executeScriptListener(w, w.onDrag, dragCtx);
-                }
-            }
-        }
-
-        // Fire onClickRepeat / onHold for ANY held widget, not just draggable ones.
-        // onHold fires every tick while the widget is held (e.g., scrollbar arrows).
-        // onHoldListener is processed independently of drag state.
-        // hold events are suppressed while a widget drag is active.
-        if (this.clickedWidget && isHolding && !this.isDraggingWidget) {
-            const holdCtx: Partial<ScriptEvent> = {
-                mouseX: mx - (this.clickedWidget._absX ?? this.clickedWidget.x ?? 0),
-                mouseY: my - (this.clickedWidget._absY ?? this.clickedWidget.y ?? 0),
-            };
-
-            // onClickRepeat requires isClicked (set by onClick on the previous frame).
-            // On the first frame of a click, onClick fires and sets isClicked — onClickRepeat
-            // only starts firing from the next frame onward. Using !isNewClick as the guard
-            // achieves the same one-frame delay.
-            if (!isNewClick) {
-                if (this.clickedWidget.eventHandlers?.onClickRepeat) {
-                    this.cs2Vm.invokeEventHandler(this.clickedWidget, "onClickRepeat", holdCtx);
-                } else if (this.clickedWidget.onClickRepeat) {
-                    this.executeScriptListener(
-                        this.clickedWidget,
-                        this.clickedWidget.onClickRepeat,
-                        holdCtx,
-                    );
-                }
-            }
-
-            if (this.clickedWidget.eventHandlers?.onHold) {
-                this.cs2Vm.invokeEventHandler(this.clickedWidget, "onHold", holdCtx);
-            } else if (this.clickedWidget.onHold) {
-                this.executeScriptListener(this.clickedWidget, this.clickedWidget.onHold, holdCtx);
-            }
-        }
-
-        // Release
-        if (this.clickedWidget && !isHolding) {
-            // Drag complete
-            if (this.isDraggingWidget) {
-                const w = this.clickedWidget;
-                // Use draggedOnWidget tracked during drag ()
-                const dragTarget = this.draggedOnWidget;
-                // Ensure clickedWidgetParent is resolved for final clamp/coords.
-                if (!this.clickedWidgetParent) {
-                    this.clickedWidgetParent = this.resolveClickedWidgetParent(w);
-                }
-                const renderArea = this.clickedWidgetParent;
-                const hasExplicitDragParent = renderArea !== null;
-
-                const widgetWidth = w.width ?? 0;
-                const widgetHeight = w.height ?? 0;
-                const [renderScaleX, renderScaleY] = this.getUiRenderScale();
-
-                let targetAbsX = mx - this.clickedWidgetX;
-                let targetAbsY = my - this.clickedWidgetY;
-
-                // Only clamp to parent bounds if there's an explicit drag parent
-                let parentAbsX = 0;
-                let parentAbsY = 0;
-                let parentScrollX = 0;
-                let parentScrollY = 0;
-
-                if (hasExplicitDragParent) {
-                    parentAbsX = renderArea._absX ?? (this as any)._dragRenderAreaAbsX ?? 0;
-                    parentAbsY = renderArea._absY ?? (this as any)._dragRenderAreaAbsY ?? 0;
-                    const parentWidth = renderArea.width ?? 0;
-                    const parentHeight = renderArea.height ?? 0;
-                    parentScrollX = renderArea.scrollX ?? 0;
-                    parentScrollY = renderArea.scrollY ?? 0;
-
-                    // Scale logical dimensions to pixel space for consistent clamping
-                    const widgetPixelW = widgetWidth * renderScaleX;
-                    const widgetPixelH = widgetHeight * renderScaleY;
-                    const parentPixelW = parentWidth * renderScaleX;
-                    const parentPixelH = parentHeight * renderScaleY;
-                    if (targetAbsX < parentAbsX) targetAbsX = parentAbsX;
-                    if (targetAbsX + widgetPixelW > parentAbsX + parentPixelW)
-                        targetAbsX = parentAbsX + parentPixelW - widgetPixelW;
-                    if (targetAbsY < parentAbsY) targetAbsY = parentAbsY;
-                    if (targetAbsY + widgetPixelH > parentAbsY + parentPixelH)
-                        targetAbsY = parentAbsY + parentPixelH - widgetPixelH;
-                }
-
-                // Convert pixel-space difference to logical coordinates for CS2 scripts
-                const scriptX = ((targetAbsX - parentAbsX) / renderScaleX + parentScrollX) | 0;
-                const scriptY = ((targetAbsY - parentAbsY) / renderScaleY + parentScrollY) | 0;
-
-                const dragCompleteCtx: Partial<ScriptEvent> = {
-                    mouseX: scriptX,
-                    mouseY: scriptY,
-                    dragTarget,
-                };
-
-                if (w.eventHandlers?.onDragComplete) {
-                    this.cs2Vm.invokeEventHandler(w, "onDragComplete", dragCompleteCtx);
-                } else if (w.onDragComplete) {
-                    this.executeScriptListener(w, w.onDragComplete, dragCompleteCtx);
-                }
-
-                // Handle inventory slot drag-drop
-                // Check if source is an inventory slot (group 149)
-                const sourceGroupId = (w.uid >>> 16) & 0xffff;
-                const sourceSlot = (w as any).childIndex ?? -1;
-
-                if (sourceGroupId === 149 && sourceSlot >= 0) {
-                    // Prefer OSRS-style targeting via draggedOnWidget (destination slot widget).
-                    const targetSlotFromWidget = (dragTarget as any)?.childIndex;
-                    const targetGroupId = dragTarget ? (dragTarget.uid >>> 16) & 0xffff : -1;
-                    if (
-                        typeof targetSlotFromWidget === "number" &&
-                        targetGroupId === 149 &&
-                        targetSlotFromWidget >= 0 &&
-                        targetSlotFromWidget < 28
-                    ) {
-                        const targetSlot = targetSlotFromWidget | 0;
-                        if (targetSlot !== sourceSlot) {
-                            this.handleInventorySlotMove(sourceSlot, targetSlot);
-                        }
-                    } else {
-                        // Fallback: derive slot from mouse position (legacy behaviour, less accurate).
-                        const invContainer = this.widgetManager.getWidgetByUid(9764864); // 149 << 16
-                        const firstSlot = invContainer?.children?.[0];
-                        if (
-                            invContainer &&
-                            firstSlot &&
-                            invContainer._absX !== undefined &&
-                            invContainer._absY !== undefined
-                        ) {
-                            const gridOriginX = invContainer._absX + (firstSlot.x || 0);
-                            const gridOriginY = invContainer._absY + (firstSlot.y || 0);
-                            const relX = mx - gridOriginX;
-                            const relY = my - gridOriginY;
-                            const slotWidth = 42; // 36px slot + 6px gap
-                            const slotHeight = 36; // 32px slot + 4px gap
-                            const cols = 4;
-                            const rows = 7;
-
-                            const col = Math.floor(relX / slotWidth);
-                            const row = Math.floor(relY / slotHeight);
-
-                            if (col >= 0 && col < cols && row >= 0 && row < rows) {
-                                const targetSlot = row * cols + col;
-                                if (
-                                    targetSlot !== sourceSlot &&
-                                    targetSlot >= 0 &&
-                                    targetSlot < 28
-                                ) {
-                                    this.handleInventorySlotMove(sourceSlot, targetSlot);
-                                }
-                            }
-                        }
-                    }
-                } else if (dragTarget != null) {
-                    // Non-inventory drag-drop - send IF_BUTTOND packet
-                    // For dynamically created children (fileId === -1),
-                    // send the PARENT container's UID, not the child's own UID.
-                    // The childIndex is the slot within the container.
-                    const resolvedSourceParent =
-                        (w as any).fileId === -1 ? this.resolveDynamicWidgetParentId(w) : undefined;
-                    const resolvedTargetParent =
-                        (dragTarget as any).fileId === -1
-                            ? this.resolveDynamicWidgetParentId(dragTarget)
-                            : undefined;
-                    const sourceWidgetId =
-                        (w as any).fileId === -1 ? (resolvedSourceParent ?? w.uid) : w.uid;
-                    const targetWidgetId =
-                        (dragTarget as any).fileId === -1
-                            ? (resolvedTargetParent ?? dragTarget.uid)
-                            : dragTarget.uid;
-
-                    const targetSlot = (dragTarget as any).childIndex ?? -1;
-                    const sourceItemId = (w as any).itemId ?? -1;
-                    const targetItemId = (dragTarget as any).itemId ?? -1;
-
-                    // Send IF_BUTTOND packet for widget drag operations (bank, etc.)
-                    sendWidgetDrag(
-                        sourceWidgetId,
-                        sourceSlot,
-                        sourceItemId,
-                        targetWidgetId,
-                        targetSlot,
-                        targetItemId,
-                    );
-                }
-
-                // Clear deferred action - drag completed so we don't want the "Use" action
-                this.deferredWidgetAction = null;
-
-                this.dragSourceWidget = null; // Clear legacy tracker
-                this.isDraggingWidget = false;
-                this.draggedOnWidget = null;
-                this.clickedWidgetParent = null;
-                delete (this as any)._dragRenderAreaAbsX;
-                delete (this as any)._dragRenderAreaAbsY;
-                if ((w as any)._dragPickupOffsetX !== undefined)
-                    delete (w as any)._dragPickupOffsetX;
-                if ((w as any)._dragPickupOffsetY !== undefined)
-                    delete (w as any)._dragPickupOffsetY;
-                // Clear drag visual state
-                delete (w as any)._dragVisualX;
-                delete (w as any)._dragVisualY;
-                delete (w as any)._dragAbsX;
-                delete (w as any)._dragAbsY;
-                delete (w as any)._isDragActive;
-            } else {
-                // Mouse button released without dragging - fire onClick (for draggable widgets) and onRelease
-                const releaseCtx: Partial<ScriptEvent> = {
-                    mouseX: mx - (this.clickedWidget._absX ?? this.clickedWidget.x ?? 0),
-                    mouseY: my - (this.clickedWidget._absY ?? this.clickedWidget.y ?? 0),
-                    opIndex: 1,
-                };
-
-                // For draggable widgets, onClick fires on release (not mousedown)
-                // Check if this was a draggable widget that we deferred onClick for
-                if (this.isWidgetDraggable(this.clickedWidget)) {
-                    const { option, target, slot, itemId, opIndex } = getPrimaryWidgetAction(
-                        this.clickedWidget,
-                    );
-                    this.handleWidgetAction({
-                        widget: this.clickedWidget,
-                        option,
-                        target,
-                        source: "primary",
-                        cursorX: releaseCtx.mouseX,
-                        cursorY: releaseCtx.mouseY,
-                        slot,
-                        itemId,
-                        opIndex,
-                    });
-                }
-
-                // Fire onRelease
-                if (this.clickedWidget.eventHandlers?.onRelease) {
-                    this.cs2Vm.invokeEventHandler(this.clickedWidget, "onRelease", releaseCtx);
-                } else if (this.clickedWidget.onRelease) {
-                    this.executeScriptListener(
-                        this.clickedWidget,
-                        this.clickedWidget.onRelease,
-                        releaseCtx,
-                    );
-                }
-            }
-
-            this.clickedWidget = null;
-            this.clickedWidgetParent = null;
-            this.clickedWidgetHandled = false;
-            this.widgetDragDuration = 0;
-
-            // Process deferred widget action on mouse release (if no drag occurred)
-            if (this.deferredWidgetAction && !this.isDraggingWidget) {
-                const deferredEvent = this.deferredWidgetAction;
-                this.deferredWidgetAction = null;
-                // Re-call handleWidgetAction - mouse is now released so it will process
-                this.handleWidgetAction(deferredEvent);
-            } else {
-                // Clear deferred action if drag occurred
-                this.deferredWidgetAction = null;
-            }
-        }
-        // OSRS dispatches key events to all widgets with onKey handlers, not just mouse-hovered ones
-        if (input.keyEvents.length > 0) {
-            // When inputDialogType > 0, keyboard input is captured for the dialog
-            // Type 0 = no dialog, Type 1 = default, Type 2 = interface-scoped, Type 3 = widget-scoped
-            const dialogActive = this.cs2Vm.inputDialogType > 0;
-            const itemSpawnerSearchHandled =
-                !dialogActive && this.handleItemSpawnerSearchKeyEvents(input.keyEvents);
-
-            // Process keyboard input for active dialog before widget handlers
-            if (dialogActive) {
-                for (const keyEvent of input.keyEvents) {
-                    // OSRS internal key codes: 84 = Enter, 85 = Backspace, 13 = Escape
-                    const OSRS_KEY_ENTER = 84;
-                    const OSRS_KEY_BACKSPACE = 85;
-                    const OSRS_KEY_ESCAPE = 13;
-
-                    if (keyEvent.keyTyped === OSRS_KEY_BACKSPACE) {
-                        // Backspace - remove last character
-                        if (this.cs2Vm.inputDialogString.length > 0) {
-                            this.cs2Vm.inputDialogString = this.cs2Vm.inputDialogString.slice(
-                                0,
-                                -1,
-                            );
-                            // Update VarC string 335 (chatbox input) for CS2 scripts to read
-                            this.varManager.setVarcString(335, this.cs2Vm.inputDialogString);
-                            // The native chatbox input overlay reads VarC 335.
-                            // Do not inject a history line for pending trade X input.
-                            if (!this.pendingTradeQuantityAction) {
-                                chatHistory.addMessage(
-                                    "game",
-                                    `Enter amount: ${this.cs2Vm.inputDialogString}_`,
-                                );
-                            }
-                        }
-                    } else if (keyEvent.keyTyped === OSRS_KEY_ESCAPE) {
-                        // Escape - cancel dialog
-                        this.cs2Vm.inputDialogType = 0;
-                        this.cs2Vm.inputDialogWidgetId = -1;
-                        this.cs2Vm.inputDialogString = "";
-                        this.varManager.setVarcString(335, "");
-                        // Clear any pending widget action since user cancelled
-                        if (this.pendingInputDialogAction || this.pendingTradeQuantityAction) {
-                            chatHistory.addMessage("game", "Input cancelled.");
-                            console.log("[InputDialog] Cancelled, clearing pending action");
-                            this.pendingInputDialogAction = null;
-                            this.pendingTradeQuantityAction = null;
-                        }
-                    } else if (keyEvent.keyTyped === OSRS_KEY_ENTER) {
-                        // Enter - submit dialog
-                        if (
-                            this.cs2Vm.inputDialogString.length > 0 &&
-                            this.cs2Vm.onInputDialogComplete
-                        ) {
-                            const value = parseInt(this.cs2Vm.inputDialogString, 10) || 0;
-                            console.log(`[InputDialog] Submitting value: ${value}`);
-                            this.cs2Vm.onInputDialogComplete("count", value);
-                        } else if (this.pendingInputDialogAction || this.pendingTradeQuantityAction) {
-                            // No input but pending action - cancel
-                            chatHistory.addMessage("game", "No amount entered.");
-                            this.pendingInputDialogAction = null;
-                            this.pendingTradeQuantityAction = null;
-                        }
-                        // Clear dialog state
-                        this.cs2Vm.inputDialogType = 0;
-                        this.cs2Vm.inputDialogWidgetId = -1;
-                        this.cs2Vm.inputDialogString = "";
-                        this.varManager.setVarcString(335, "");
-                    } else if (keyEvent.keyPressed > 0) {
-                        // Regular character input - only accept digits for quantity dialogs
-                        const char = String.fromCharCode(keyEvent.keyPressed);
-                        // For bank quantity dialogs, only accept digits
-                        if (
-                            (this.pendingInputDialogAction || this.pendingTradeQuantityAction) &&
-                            !/^\d$/.test(char)
-                        ) {
-                            continue; // Skip non-digit characters
-                        }
-                        // Limit input length (OSRS limits vary by dialog type, 12 for counts, 80 for names)
-                        const maxLen = this.cs2Vm.inputDialogType === 3 ? 80 : 12;
-                        if (this.cs2Vm.inputDialogString.length < maxLen) {
-                            this.cs2Vm.inputDialogString += char;
-                            // Update VarC string 335 for CS2 scripts to read
-                            this.varManager.setVarcString(335, this.cs2Vm.inputDialogString);
-                            // The native chatbox input overlay reads VarC 335.
-                            if (!this.pendingTradeQuantityAction) {
-                                chatHistory.addMessage(
-                                    "game",
-                                    `Enter amount: ${this.cs2Vm.inputDialogString}_`,
-                                );
-                            }
-                        }
-                    }
-                }
-
-                // The dialog above is the sole owner of these key events.
-                // Do not forward them to widget onKey listeners as well: the
-                // chatbox input script would append the same digit a second time.
-                return;
-            }
-
-            if (itemSpawnerSearchHandled) {
-                return;
-            }
-
-            // Collect ALL widgets with onKey handlers from all roots.
-            // Note: some widget trees can reference the same widget via multiple traversal paths
-            // (e.g., legacy IF1 `children` plus parentUid-indexed children), so de-duplicate by uid.
-            const keyWidgetsByUid = new Map<number, any>();
-            for (const root of allRoots) {
-                const keyWidgets = collectWidgetsWithKeyHandlers(
-                    root,
-                    visibleMap,
-                    getStaticChildren,
-                );
-                for (const w of keyWidgets) {
-                    const uid = (w?.uid ?? 0) | 0;
-                    if (uid !== 0) keyWidgetsByUid.set(uid, w);
-                }
-            }
-            // Also dispatch keys to InterfaceParent-mounted sub-interfaces
-            // (e.g., chatbox input handlers). Mounted interfaces are separate widget trees.
-            for (const [containerUid, parent] of this.widgetManager.interfaceParents) {
-                if (!parent) continue;
-                // Skip if the container (or any ancestor) is hidden.
-                if (this.widgetManager.isEffectivelyHidden(containerUid)) continue;
-                // Root interface is already covered by allRoots.
-                if ((parent.group | 0) === (this.widgetManager.rootInterface | 0)) continue;
-
-                const subRoots = this.widgetManager.getAllGroupRoots(parent.group);
-                for (const root of subRoots) {
-                    const keyWidgets = collectWidgetsWithKeyHandlers(
-                        root,
-                        visibleMap,
-                        getStaticChildren,
-                    );
-                    for (const w of keyWidgets) {
-                        const uid = (w?.uid ?? 0) | 0;
-                        if (uid !== 0) keyWidgetsByUid.set(uid, w);
-                    }
-                }
-            }
-
-            // Process all key events for all widgets with onKey handlers
-            for (const keyEvent of input.keyEvents) {
-                // Enter-to-type gate (desktop): Enter/Escape toggle chat typing mode and
-                // are consumed; while locked, no keys are delivered to chatbox widgets.
-                if (this.handleEnterToTypeKeyEvent(keyEvent, dialogActive)) {
-                    continue;
-                }
-                const blockChatboxKeys = !dialogActive && this.isChatInputLocked();
-                for (const w of keyWidgetsByUid.values()) {
-                    if (blockChatboxKeys && (w?.uid ?? 0) >>> 16 === OsrsClient.CHATBOX_GROUP_ID) {
-                        continue;
-                    }
-                    const keyCtx: Partial<ScriptEvent> = {
-                        mouseX: mx - (w._absX ?? w.x ?? 0),
-                        mouseY: my - (w._absY ?? w.y ?? 0),
-                        keyTyped: keyEvent.keyTyped,
-                        keyPressed: keyEvent.keyPressed,
-                    };
-                    if (w.eventHandlers?.onKey) {
-                        this.cs2Vm.invokeEventHandler(w, "onKey", keyCtx);
-                    } else if (w.onKey) {
-                        this.executeScriptListener(w, w.onKey, keyCtx);
-                    }
-                }
-                // Enter while typing sends the message (handled by the chatbox scripts
-                // above); re-lock so movement keys are captured again (RuneLite behavior).
-                if (
-                    !dialogActive &&
-                    this.chatTypingUnlocked &&
-                    this.isEnterToTypeChatEnabled() &&
-                    keyEvent.keyTyped === 84
-                ) {
-                    this.setChatTypingUnlocked(false);
-                }
-            }
-        }
+        this.widgetInputController.handleUiInput();
     }
 
     /**
@@ -8467,601 +3815,92 @@ export class OsrsClient {
         return !widget.hidden;
     }
 
-    private resolveSpellButtonComponentFromObject(itemId: number | undefined): number | undefined {
-        if (typeof itemId !== "number" || (itemId | 0) <= 0) return undefined;
-        try {
-            const obj = this.objTypeLoader?.load?.(itemId | 0) as any;
-            const componentHash = obj?.params?.get?.(SPELL_BUTTON_PARAM_ID);
-            return typeof componentHash === "number" && (componentHash | 0) > 0
-                ? componentHash | 0
-                : undefined;
-        } catch {
-            return undefined;
-        }
+
+    clearSelectedSpell(): void {
+        this.spellSelectionController.clearSelectedSpell();
     }
 
-    private resolveWidgetItemId(widgetId: number, childIndex: number): number | undefined {
-        const direct = this.widgetManager?.getWidgetByUid?.(widgetId | 0) as any;
-        if (typeof direct?.itemId === "number" && (direct.itemId | 0) > 0) {
-            return direct.itemId | 0;
-        }
-
-        if (direct && Array.isArray(direct.children) && childIndex >= 0) {
-            const child = direct.children[childIndex | 0];
-            if (typeof child?.itemId === "number" && (child.itemId | 0) > 0) {
-                return child.itemId | 0;
-            }
-        }
-
-        const groupId = (widgetId >>> 16) & 0xffff;
-        if (!SPELLBOOK_GROUP_IDS.has(groupId)) {
-            return undefined;
-        }
-        const groupWidgets = this.widgetManager?.getWidgetsForGroup?.(groupId) ?? [];
-        for (const parent of groupWidgets as any[]) {
-            if (!Array.isArray(parent?.children) || childIndex < 0) continue;
-            const child = parent.children[childIndex | 0];
-            if (typeof child?.itemId === "number" && (child.itemId | 0) > 0) {
-                return child.itemId | 0;
-            }
-        }
-
-        return undefined;
+    setSelectedSpell(spell: SelectedSpellInfo | null, sourceWidget?: any): void {
+        this.spellSelectionController.setSelectedSpell(spell, sourceWidget);
     }
 
-    private resolveSpellSelectionFromWidget(
+    resolveSpellSelectionFromWidget(
         widget: any | undefined,
         fallbackWidgetId: number,
         fallbackChildIndex: number,
         fallbackItemId: number,
     ): SpellSelectionState {
-        const itemId =
-            typeof widget?.itemId === "number" && (widget.itemId | 0) > 0
-                ? widget.itemId | 0
-                : (fallbackItemId | 0) > 0
-                  ? fallbackItemId | 0
-                  : (this.resolveWidgetItemId(fallbackWidgetId | 0, fallbackChildIndex | 0) ??
-                    fallbackItemId | 0);
-        const componentHash = this.resolveSpellButtonComponentFromObject(itemId);
-        if (componentHash !== undefined) {
-            return {
-                widgetId: componentHash,
-                childIndex: componentHash & 0xffff,
-                itemId,
-            };
-        }
-        return {
-            widgetId: fallbackWidgetId | 0,
-            childIndex: fallbackChildIndex | 0,
-            itemId: fallbackItemId | 0,
-        };
+        return this.spellSelectionController.resolveSpellSelectionFromWidget(
+            widget,
+            fallbackWidgetId,
+            fallbackChildIndex,
+            fallbackItemId,
+        );
     }
 
     private normalizeSelectedSpellState(): void {
-        if (!ClientState.isSpellSelected || ClientState.selectedSpellWidget <= 0) return;
-        const selection = this.resolveSpellSelectionFromWidget(
-            undefined,
-            ClientState.selectedSpellWidget,
-            ClientState.selectedSpellChildIndex,
-            ClientState.selectedSpellItemId,
-        );
-        ClientState.selectedSpellWidget = selection.widgetId;
-        ClientState.selectedSpellChildIndex = selection.childIndex;
-        ClientState.selectedSpellItemId = selection.itemId;
+        this.spellSelectionController.normalizeSelectedSpellState();
     }
 
-    /**
-     * target mask comes from bits 11-16 of current widget flags
-     * (cache flags overridden by IF_SETEVENTS when present).
-     */
     private getWidgetTargetMask(widget: any): number {
-        if (!widget) return 0;
-        const flags =
-            this.widgetManager?.getWidgetFlags?.(widget) ??
-            (typeof widget.flags === "number" ? widget.flags | 0 : 0);
-        return (flags >>> 11) & 0x3f;
-    }
-
-    /**
-     * Resolve the widget key used for transmit-flag checks (IF_SETEVENTS).
-     * Dynamic widget actions are keyed by (parentId, childIndex), so when an event surfaces
-     * the static parent we must map to the dynamic child slot before checking flags.
-     */
-    private resolveTransmitFlagWidget(eventWidget: any, payload: WidgetActionClientPayload): any {
-        const slot = typeof payload.slot === "number" ? payload.slot | 0 : -1;
-        if (slot < 0) return eventWidget;
-
-        const eventIsExactDynamicChild =
-            (eventWidget?.fileId | 0) === -1 &&
-            typeof eventWidget?.childIndex === "number" &&
-            (eventWidget.childIndex | 0) === slot;
-        if (eventIsExactDynamicChild) return eventWidget;
-
-        const parentId = payload.widgetId | 0;
-        const parent = this.widgetManager?.getWidgetByUid?.(parentId);
-        if (parent && Array.isArray((parent as any).children)) {
-            const child = (parent as any).children[slot];
-            if (
-                child &&
-                (child.fileId | 0) === -1 &&
-                typeof child.childIndex === "number" &&
-                (child.childIndex | 0) === slot
-            ) {
-                return child;
-            }
-        }
-
-        // Fallback synthetic key: allows getWidgetFlags override lookup by (id, childIndex).
-        return { id: parentId, childIndex: slot, flags: 0 };
-    }
-
-    private buildWidgetActionPayload(event: {
-        widget?: any;
-        option?: string;
-        target?: string;
-        source?: "menu" | "primary";
-        cursorX?: number;
-        cursorY?: number;
-        slot?: number;
-        itemId?: number;
-        opIndex?: number;
-        opSubIndex?: number;
-    }): WidgetActionClientPayload | undefined {
-        const widget = event.widget;
-        if (!widget) return undefined;
-        const ids = this.resolveWidgetIdentifiers(widget);
-        if (!ids) return undefined;
-        const option = sanitizeText(event.option) ?? event.option?.trim() ?? "";
-        const target = sanitizeText(event.target) ?? event.target?.trim() ?? "";
-        const payload: WidgetActionClientPayload = {
-            widgetId: ids.widgetId,
-            groupId: ids.groupId,
-            childId: ids.childId,
-        };
-        if (option.length) payload.option = option;
-        if (target.length) payload.target = target;
-        const opId =
-            event.opIndex ?? this.inferWidgetOpId(widget, option.length ? option : undefined);
-        if (typeof opId === "number") payload.opId = opId;
-        if (typeof event.opSubIndex === "number" && event.opSubIndex >= 1) {
-            payload.subOpId = event.opSubIndex | 0;
-        }
-        if (typeof event.cursorX === "number") payload.cursorX = event.cursorX;
-        if (typeof event.cursorY === "number") payload.cursorY = event.cursorY;
-        // Slot is only meaningful for inventory actions (item slot) and dynamic widgets (CC_CREATE childIndex).
-        // For static widgets, omit slot so the wire packet uses 65535 ("no slot").
-        const explicitSlot = typeof event.slot === "number" ? event.slot | 0 : undefined;
-        const dynamicSlot =
-            (widget.fileId | 0) === -1 && typeof widget.childIndex === "number"
-                ? widget.childIndex | 0
-                : undefined;
-        let slot =
-            explicitSlot !== undefined && explicitSlot >= 0
-                ? explicitSlot
-                : dynamicSlot !== undefined && dynamicSlot >= 0
-                  ? dynamicSlot
-                  : undefined;
-        const recoverSlotByOptionTarget = (parent: any): number | undefined => {
-            if (!parent || !Array.isArray(parent.children) || option.length === 0) return undefined;
-            const optionLower = option.toLowerCase();
-            const targetLower = target.length > 0 ? target.toLowerCase() : undefined;
-            for (const child of parent.children as any[]) {
-                if (!child || (child.fileId | 0) !== -1) continue;
-                if (typeof child.childIndex !== "number" || (child.childIndex | 0) < 0) continue;
-
-                const childActions: Array<string | null | undefined> = Array.isArray(child.actions)
-                    ? child.actions
-                    : [];
-                const childHasOption = childActions.some((action) => {
-                    const sanitized = sanitizeText(action)?.toLowerCase();
-                    return !!sanitized && sanitized === optionLower;
-                });
-                if (!childHasOption) continue;
-
-                if (targetLower) {
-                    const childTarget = getWidgetTargetLabel(child).toLowerCase();
-                    if (!childTarget || childTarget !== targetLower) continue;
-                }
-                return child.childIndex | 0;
-            }
-            return undefined;
-        };
-
-        const recoverSlotByPosition = (parent: any, sourceWidget: any): number | undefined => {
-            if (
-                !parent ||
-                !Array.isArray(parent.children) ||
-                typeof event.cursorX !== "number" ||
-                typeof event.cursorY !== "number"
-            ) {
-                return undefined;
-            }
-
-            let localX = event.cursorX | 0;
-            let localY = event.cursorY | 0;
-
-            const sourceAbsX =
-                typeof sourceWidget?._absX === "number"
-                    ? (sourceWidget._absX as number) | 0
-                    : undefined;
-            const sourceAbsY =
-                typeof sourceWidget?._absY === "number"
-                    ? (sourceWidget._absY as number) | 0
-                    : undefined;
-            const parentAbsX =
-                typeof parent?._absX === "number" ? (parent._absX as number) | 0 : undefined;
-            const parentAbsY =
-                typeof parent?._absY === "number" ? (parent._absY as number) | 0 : undefined;
-
-            if (
-                parent !== sourceWidget &&
-                sourceAbsX !== undefined &&
-                sourceAbsY !== undefined &&
-                parentAbsX !== undefined &&
-                parentAbsY !== undefined
-            ) {
-                // Convert source-widget local coords -> absolute -> parent local coords.
-                localX = localX + sourceAbsX - parentAbsX;
-                localY = localY + sourceAbsY - parentAbsY;
-            } else {
-                const parentW =
-                    typeof parent.width === "number" ? Math.max(0, parent.width | 0) : 0;
-                const parentH =
-                    typeof parent.height === "number" ? Math.max(0, parent.height | 0) : 0;
-                const looksRelative =
-                    localX >= 0 &&
-                    localY >= 0 &&
-                    (parentW <= 0 || localX < parentW) &&
-                    (parentH <= 0 || localY < parentH);
-                if (!looksRelative && parentAbsX !== undefined && parentAbsY !== undefined) {
-                    localX -= parentAbsX;
-                    localY -= parentAbsY;
-                }
-            }
-
-            const scrollX = typeof parent.scrollX === "number" ? parent.scrollX | 0 : 0;
-            const scrollY = typeof parent.scrollY === "number" ? parent.scrollY | 0 : 0;
-
-            for (let i = parent.children.length - 1; i >= 0; i--) {
-                const child = parent.children[i];
-                if (!child || (child.fileId | 0) !== -1) continue;
-                if (typeof child.childIndex !== "number" || (child.childIndex | 0) < 0) continue;
-                if (child.hidden || child.hide) continue;
-
-                const childX = (typeof child.x === "number" ? child.x | 0 : 0) - scrollX;
-                const childY = (typeof child.y === "number" ? child.y | 0 : 0) - scrollY;
-                const childW = Math.max(1, typeof child.width === "number" ? child.width | 0 : 0);
-                const childH = Math.max(1, typeof child.height === "number" ? child.height | 0 : 0);
-                if (
-                    localX < childX ||
-                    localY < childY ||
-                    localX >= childX + childW ||
-                    localY >= childY + childH
-                ) {
-                    continue;
-                }
-
-                const childFlags =
-                    this.widgetManager?.getWidgetFlags?.(child) ??
-                    (typeof child.flags === "number" ? child.flags | 0 : 0);
-                const hasTransmitOps = (childFlags & 0x7fe) !== 0;
-                const childActions: Array<string | null | undefined> = Array.isArray(child.actions)
-                    ? child.actions
-                    : [];
-                const hasAction = childActions.some((action) => !!sanitizeText(action));
-                const hasOpHandler = !!(child.onOp || child.eventHandlers?.onOp);
-                if (!hasTransmitOps && !hasAction && !hasOpHandler) continue;
-
-                return child.childIndex | 0;
-            }
-            return undefined;
-        };
-
-        const candidateParents: any[] = [];
-        if ((widget.fileId | 0) !== -1) {
-            candidateParents.push(widget);
-            const canonicalParent = this.widgetManager?.getWidgetByUid?.(ids.widgetId | 0);
-            if (canonicalParent && canonicalParent !== widget) {
-                candidateParents.push(canonicalParent);
-            }
-        }
-
-        for (const parent of candidateParents) {
-            if (slot === undefined) slot = recoverSlotByOptionTarget(parent);
-            if (slot === undefined) slot = recoverSlotByPosition(parent, widget);
-            if (typeof slot === "number" && slot >= 0) break;
-        }
-
-        if (typeof slot === "number" && slot >= 0) payload.slot = slot;
-        if (typeof event.itemId === "number") payload.itemId = event.itemId;
-        if (event.source) payload.isPrimary = event.source === "primary";
-        return payload;
-    }
-
-    private resolveWidgetIdentifiers(
-        widget: any,
-    ): { widgetId: number; groupId: number; childId: number } | undefined {
-        if (!widget) return undefined;
-        // Dynamic widgets created via CC_CREATE / CC_COPY:
-        // OSRS identifies these via (parent widget id, childIndex). They do NOT have a stable
-        // cache fileId, and any runtime uid we assign is an implementation detail.
-        if ((widget.fileId | 0) === -1) {
-            // Some input layers may pass a shallow widget snapshot that omits `id` but keeps `parentUid`.
-            // OSRS packets use the PARENT widget id for dynamic children; the dynamic child's own id/uid
-            // is not transmitted (only childIndex is carried in the packet slot).
-            const parentId = this.resolveDynamicWidgetParentId(widget);
-            if (parentId === undefined) {
-                // Fall through to UID-derived identifiers (best-effort)
-            } else {
-                const widgetId = parentId | 0;
-                const groupId = (widgetId >>> 16) | 0;
-                const childId = widgetId & 0xffff;
-                return { widgetId, groupId, childId };
-            }
-        }
-        const hasUid = typeof widget.uid === "number";
-        const groupId =
-            typeof widget.groupId === "number"
-                ? widget.groupId | 0
-                : hasUid
-                  ? (widget.uid >>> 16) | 0
-                  : undefined;
-        if (groupId === undefined) return undefined;
-        // fileId of -1 means "not set", so only use it if it's >= 0
-        const childId =
-            typeof widget.fileId === "number" && widget.fileId >= 0
-                ? widget.fileId | 0
-                : hasUid
-                  ? widget.uid & 0xffff
-                  : 0;
-        const widgetId = ((groupId & 0xffff) << 16) | (childId & 0xffff);
-        return { widgetId, groupId, childId };
-    }
-
-    private resolveDynamicWidgetParentId(widget: any): number | undefined {
-        const validParentId = (value: unknown): number | undefined => {
-            if (typeof value !== "number") return undefined;
-            const id = value | 0;
-            return id > 0 ? id : undefined;
-        };
-
-        const widgetUid = typeof widget?.uid === "number" ? widget.uid | 0 : undefined;
-        const directParentUid = validParentId(widget?.parentUid);
-        const directId = validParentId(widget?.id);
-        const direct =
-            directParentUid ??
-            (directId !== undefined && directId !== widgetUid ? directId : undefined);
-        if (direct !== undefined) return direct;
-
-        const uid = validParentId(widget?.uid);
-        const canonical =
-            uid !== undefined ? this.widgetManager?.getWidgetByUid?.(uid | 0) : undefined;
-        const canonicalParent =
-            validParentId((canonical as any)?.parentUid) ?? validParentId((canonical as any)?.id);
-        if (canonicalParent !== undefined) return canonicalParent;
-
-        const childIndex =
-            typeof widget?.childIndex === "number"
-                ? widget.childIndex | 0
-                : typeof (canonical as any)?.childIndex === "number"
-                  ? ((canonical as any).childIndex as number) | 0
-                  : -1;
-        if (childIndex < 0) return undefined;
-
-        const groupId =
-            typeof widget?.groupId === "number"
-                ? widget.groupId | 0
-                : typeof (canonical as any)?.groupId === "number"
-                  ? ((canonical as any).groupId as number) | 0
-                  : uid !== undefined
-                    ? (uid >>> 16) & 0xffff
-                    : undefined;
-        if (groupId === undefined) return undefined;
-
-        const groupWidgets = this.widgetManager?.getWidgetsForGroup?.(groupId) ?? [];
-        for (const parent of groupWidgets as any[]) {
-            const child = Array.isArray(parent?.children) ? parent.children[childIndex] : undefined;
-            if (!child) continue;
-            if (
-                child === widget ||
-                child === canonical ||
-                (uid !== undefined && typeof child.uid === "number" && (child.uid | 0) === uid)
-            ) {
-                return validParentId(parent.uid) ?? validParentId(parent.id);
-            }
-        }
-
-        return undefined;
-    }
-
-    private inferWidgetOpId(widget: any, option?: string): number | undefined {
-        const normalized = sanitizeText(option)?.toLowerCase();
-        if (!normalized) return undefined;
-        const verb = sanitizeText(widget?.targetVerb)?.toLowerCase();
-        if (verb && normalized === verb) return 0;
-        const actions: Array<string | null | undefined> = Array.isArray(widget?.actions)
-            ? widget.actions
-            : [];
-        for (let i = 0; i < actions.length; i++) {
-            const act = sanitizeText(actions[i])?.toLowerCase();
-            if (act && act === normalized) {
-                // Align with OSRS numbering where OP1 corresponds to the first entry
-                return i + 1;
-            }
-        }
-        return undefined;
+        return this.spellSelectionController.getWidgetTargetMask(widget);
     }
 
     setRunMode(on: boolean, force: boolean = false): void {
-        const normalized = !!on;
-        const currentVarp = this.varManager?.getVarp(VARP_OPTION_RUN) ?? 0;
-        const currentRunOn = currentVarp !== 0;
-        if (!force && normalized === currentRunOn) return;
-
-        // Set varp - this triggers onVarpChange which:
-        // 1. Syncs this.runMode
-        // 2. Sends varp_transmit to server (since varp 173 is in TRANSMIT_VARPS)
-        this.varManager?.setVarp(VARP_OPTION_RUN, normalized ? 1 : 0);
-
-        // Update ECS running state
-        try {
-            const idx = this.playerEcs.getIndexForServerId(this.controlledPlayerServerId);
-            if (idx !== undefined) {
-                this.playerEcs.setRunning(idx, normalized);
-            }
-        } catch {}
+        this.combatOptions.setRunMode(on, force);
     }
 
     getSpecialEnergy(): number {
-        return this.specialEnergyPercent;
+        return this.combatOptions.getSpecialEnergy();
     }
 
     isSpecialAttackEnabled(): boolean {
-        return this.specialAttackEnabled;
+        return this.combatOptions.isSpecialAttackEnabled();
     }
 
     setSpecialAttackEnabled(on: boolean, opts: { fromServer?: boolean } = {}): void {
-        const normalized = !!on;
-        this.specialAttackEnabled = normalized;
-        // CS2 reads %sa_attack (varp 301) for special attack toggle state
-        this.varManager?.setVarp(301, normalized ? 1 : 0);
-        if (opts.fromServer) return;
+        this.combatOptions.setSpecialAttackEnabled(on, opts);
     }
 
     toggleSpecialAttack(): void {
-        this.setSpecialAttackEnabled(!this.specialAttackEnabled);
+        this.combatOptions.toggleSpecialAttack();
     }
 
     updateSpecialEnergy(percent: number): void {
-        this.specialEnergyPercent = Math.max(0, Math.min(100, Math.floor(percent)));
-        // CS2 reads %sa_energy (varp 300) which stores 0-1000 (divides by 10 for percentage display)
-        this.varManager?.setVarp(300, this.specialEnergyPercent * 10);
+        this.combatOptions.updateSpecialEnergy(percent);
     }
 
     setAutoRetaliate(on: boolean, fromServer: boolean = false): void {
-        const normalized = !!on;
-        if (!fromServer && normalized === this.autoRetaliateEnabled) return;
-        this.autoRetaliateEnabled = normalized;
+        this.combatOptions.setAutoRetaliate(on, fromServer);
     }
 
     setCombatStyleSlot(
         style: number,
         opts: { fromServer?: boolean; category?: number } = {},
     ): void {
-        const normalized = Math.max(0, style | 0);
-        const category = opts.category ?? this.combatWeaponCategory;
-        this.combatStyleSlot = normalized;
-        // CRITICAL: Update varp 43 so CS2 scripts know the selected combat style
-        // This affects which button is highlighted in the combat options interface
-        if (this.varManager) {
-            this.varManager.setVarp(VARP_ATTACK_STYLE, normalized);
-        }
-        if (opts.fromServer) return;
+        this.combatOptions.setCombatStyleSlot(style, opts);
     }
 
     setActivePrayers(
-        prayers: Iterable<string | PrayerName>,
+        prayers: Iterable<string>,
         opts: { fromServer?: boolean } = {},
     ): void {
-        const normalized = Array.from(prayers ?? [])
-            .map((p) => String(p) as PrayerName)
-            .filter((name): name is PrayerName => PRAYER_NAME_SET.has(name));
-        const unique = Array.from(new Set(normalized));
-        const prev = this.activePrayers;
-        const changed = unique.length !== prev.size || unique.some((entry) => !prev.has(entry));
-        if (changed || opts.fromServer) {
-            this.activePrayers = new Set(unique);
-            // Sync prayer varbits for CS2 scripts
-            this.syncPrayerVarbits();
-            this.syncLocalPrayerHeadIcon();
-        }
-        if (opts.fromServer || !changed) return;
-    }
-
-    /**
-     * The controlled player does not always receive its own appearance mask.
-     * Mirror the server-confirmed prayer set into the local render entity so
-     * its overhead icon changes immediately as it does for nearby players.
-     */
-    private syncLocalPrayerHeadIcon(): void {
-        const serverId = this.controlledPlayerServerId | 0;
-        if (serverId < 0) return;
-        const index = this.playerEcs.getIndexForServerId(serverId);
-        if (index === undefined) return;
-
-        let icon = -1;
-        if (this.activePrayers.has("protect_from_melee")) icon = 0;
-        else if (this.activePrayers.has("protect_from_missiles")) icon = 1;
-        else if (this.activePrayers.has("protect_from_magic")) icon = 2;
-        else if (this.activePrayers.has("retribution")) icon = 3;
-        else if (this.activePrayers.has("redemption")) icon = 4;
-        else if (this.activePrayers.has("smite")) icon = 5;
-
-        this.playerEcs.setHeadIconPrayer(index, icon);
-    }
-
-    /** Sync prayer state to varbits for CS2 scripts (prayer_op, prayer_redraw, etc.) */
-    private syncPrayerVarbits(): void {
-        if (!this.varManager) return;
-
-        // Set individual prayer varbits (4104-4129, 5464-5466)
-        // Each prayer has its own 1-bit varbit that shares an underlying varp
-        // CS2 scripts read %prayer_allactive which is the raw varp containing all bits
-        for (const [prayerName, varbitId] of Object.entries(PRAYER_NAME_TO_VARBIT)) {
-            const isActive = this.activePrayers.has(prayerName as PrayerName) ? 1 : 0;
-            this.varManager.setVarbit(varbitId, isActive);
-        }
-    }
-
-    /** Sync quick prayer state to varbits for CS2 scripts */
-    private syncQuickPrayerVarbits(): void {
-        if (!this.varManager) return;
-
-        // Sync quick-prayer selected bitmask for setup UI scripts.
-        // quickprayer_selected uses the same bit positions as prayer_allactive.
-        this.varManager.setVarbit(
-            PrayerVarbits.QUICKPRAYER_SELECTED,
-            prayerSetToBitmask(this.quickPrayers),
-        );
-
-        // Set QUICKPRAYER_ACTIVE flag (varbit 4103) - whether quick prayers are enabled
-        this.varManager.setVarbit(
-            PrayerVarbits.QUICKPRAYER_ACTIVE,
-            this.quickPrayersEnabled ? 1 : 0,
-        );
+        this.combatOptions.setActivePrayers(prayers, opts);
     }
 
     setQuickPrayers(
-        prayers: Iterable<string | PrayerName>,
+        prayers: Iterable<string>,
         opts: { fromServer?: boolean } = {},
     ): void {
-        const normalized = Array.from(prayers ?? [])
-            .map((p) => String(p) as PrayerName)
-            .filter((name): name is PrayerName => PRAYER_NAME_SET.has(name));
-        const unique = Array.from(new Set(normalized));
-        const prev = this.quickPrayers;
-        const changed = unique.length !== prev.size || unique.some((entry) => !prev.has(entry));
-        if (changed || opts.fromServer) {
-            this.quickPrayers = new Set(unique);
-            // Sync quick prayer varbits for CS2 scripts
-            this.syncQuickPrayerVarbits();
-        }
-        if (opts.fromServer || !changed) return;
+        this.combatOptions.setQuickPrayers(prayers, opts);
     }
 
     setQuickPrayersEnabled(enabled: boolean, opts: { fromServer?: boolean } = {}): void {
-        const normalized = !!enabled;
-        if (this.quickPrayersEnabled === normalized && !opts.fromServer) return;
-        this.quickPrayersEnabled = normalized;
-        // Sync quick prayer varbits for CS2 scripts
-        this.syncQuickPrayerVarbits();
+        this.combatOptions.setQuickPrayersEnabled(enabled, opts);
     }
 
     setCombatSpell(spellId: number | null, opts: { fromServer?: boolean } = {}): void {
-        const normalized =
-            spellId != null && Number.isFinite(spellId) && (spellId | 0) > 0 ? spellId | 0 : -1;
-        this.combatSpellId = normalized;
-        if (opts.fromServer) return;
+        this.combatOptions.setCombatSpell(spellId, opts);
     }
 
     private resolveNpcActionOpNum(
@@ -9320,116 +4159,6 @@ export class OsrsClient {
         this.equipment.setSnapshot(slots);
         // Mark inv cycle for equipment (94) - handlers fire during processWidgetTransmits()
         markInvTransmit(94);
-    }
-
-    setSelectedSpell(spell: SelectedSpellInfo | null, sourceWidget?: any): void {
-        // DEBUG: Log setSelectedSpell call
-        console.log(
-            `[setSelectedSpell] Called with spell=${spell?.spellName}, sourceWidget=${sourceWidget?.uid}`,
-        );
-
-        // Fire onTargetLeave on previous source widget if we're switching targets
-        if (ClientState.selectedSpellSourceWidget) {
-            this.fireOnTargetLeave(ClientState.selectedSpellSourceWidget);
-            try {
-                this.widgetManager.invalidateWidgetRender(
-                    ClientState.selectedSpellSourceWidget,
-                    "spell-target-leave",
-                );
-            } catch {}
-        }
-
-        if (spell) {
-            // Set all spell selection state in ClientState (single source of truth)
-            ClientState.isSpellSelected = true;
-            ClientState.selectedSpellId = spell.spellId | 0;
-            ClientState.selectedSpellName = spell.spellName;
-            ClientState.selectedSpellLevel = spell.spellLevel ?? 0;
-            ClientState.selectedSpellRunes =
-                spell.runes?.map((r) => ({
-                    itemId: r.itemId | 0,
-                    quantity: r.quantity | 0,
-                    name: r.name,
-                })) ?? [];
-            ClientState.selectedSpellSourceWidget = sourceWidget ?? spell.sourceWidget ?? null;
-            // Set target mask from current widget flags (if not already set)
-            // This determines what entity types the spell can target.
-            if (ClientState.selectedSpellTargetMask === 0 && sourceWidget) {
-                ClientState.selectedSpellTargetMask = this.getWidgetTargetMask(sourceWidget);
-            }
-        } else {
-            ClientState.clearSpellSelection();
-        }
-
-        // Fire onTargetEnter on the new source widget
-        console.log(
-            `[setSelectedSpell] After set: isSpellSelected=${ClientState.isSpellSelected}, sourceWidget=${ClientState.selectedSpellSourceWidget?.uid}`,
-        );
-        if (ClientState.selectedSpellSourceWidget) {
-            this.fireOnTargetEnter(ClientState.selectedSpellSourceWidget);
-            try {
-                this.widgetManager.invalidateWidgetRender(
-                    ClientState.selectedSpellSourceWidget,
-                    "spell-target-enter",
-                );
-            } catch {}
-        } else {
-            console.log(`[setSelectedSpell] No sourceWidget to fire onTargetEnter`);
-        }
-    }
-
-    clearSelectedSpell(): void {
-        const sourceWidget = ClientState.selectedSpellSourceWidget;
-        // Fire onTargetLeave on the source widget before clearing
-        if (sourceWidget) {
-            this.fireOnTargetLeave(sourceWidget);
-        }
-        ClientState.clearSpellSelection();
-        if (sourceWidget) {
-            try {
-                this.widgetManager.invalidateWidgetRender(sourceWidget, "spell-target-leave");
-            } catch {}
-        }
-    }
-
-    /**
-     * Fire onTargetEnter event on a widget when entering targeting mode
-     */
-    private fireOnTargetEnter(widget: any): void {
-        if (!widget) return;
-
-        // DEBUG: Log onTargetEnter info
-        console.log(
-            `[onTargetEnter] Widget uid=${widget.uid}, hasEventHandlers=${!!widget.eventHandlers
-                ?.onTargetEnter}, hasOnTargetEnter=${
-                Array.isArray(widget.onTargetEnter) && widget.onTargetEnter.length > 0
-            }`,
-        );
-
-        // Check for runtime-set handler first
-        if (widget.eventHandlers?.onTargetEnter) {
-            console.log(`[onTargetEnter] Invoking eventHandlers.onTargetEnter`);
-            this.cs2Vm.invokeEventHandler(widget, "onTargetEnter");
-        } else if (Array.isArray(widget.onTargetEnter) && widget.onTargetEnter.length > 0) {
-            console.log(`[onTargetEnter] Executing script listener`, widget.onTargetEnter);
-            this.executeScriptListener(widget, widget.onTargetEnter);
-        } else {
-            console.log(`[onTargetEnter] No handler found for widget`);
-        }
-    }
-
-    /**
-     * Fire onTargetLeave event on a widget when leaving targeting mode
-     */
-    private fireOnTargetLeave(widget: any): void {
-        if (!widget) return;
-
-        // Check for runtime-set handler first
-        if (widget.eventHandlers?.onTargetLeave) {
-            this.cs2Vm.invokeEventHandler(widget, "onTargetLeave");
-        } else if (Array.isArray(widget.onTargetLeave) && widget.onTargetLeave.length > 0) {
-            this.executeScriptListener(widget, widget.onTargetLeave);
-        }
     }
 
     private handleSpellResult(payload: SpellResultPayload): void {
@@ -10121,7 +4850,7 @@ export class OsrsClient {
         // Setup new state
         if (newState === GameState.LOGIN_SCREEN) {
             // Chat starts locked ("press enter to type") on the next login.
-            this.chatTypingUnlocked = false;
+            this.enterToTypeChat?.reset();
             this.loginState.networkState = 0;
             // Reset loading tracker on return to login
             this.loadingTracker.reset();
@@ -10858,8 +5587,8 @@ export class OsrsClient {
                 this.npcEcs.updateClient(1);
             } catch {}
             try {
-                this.applyPendingWorldMapDrag();
-                if (this.worldMapState?.cycle?.()) {
+                this.worldMap.applyPendingWorldMapDrag();
+                if (this.worldMap.cycle()) {
                     this.widgetManager?.invalidateAll?.();
                 }
             } catch {}
@@ -10879,7 +5608,7 @@ export class OsrsClient {
                 console.warn("Script event processing failed", err);
             }
             try {
-                this.tickItemSpawnerSearchUi();
+                this.itemSpawnerUi.tick();
             } catch {}
             try {
                 this.tryWriteVarcs();
@@ -10899,7 +5628,7 @@ export class OsrsClient {
         }
 
         this.loadedCache = cache;
-        this.cs2ScriptCache.clear();
+        this.clientScripts.clear();
 
         // Create CacheSystem - may have no indices yet if using deferred loading
         // Indices will be added incrementally during runPhasedLoading
@@ -10908,7 +5637,8 @@ export class OsrsClient {
         // Initialize worker pool early - it needs cache files but not indices
         this.workerPool.initCache(cache, []);
 
-        this.clearNpcInstancesLocal();
+        this.initWorldMapController();
+        this.npcInstances.clearLocal();
         this.clearMinimapImageUrls();
         this.clearWorldMapImages();
         this.setWorldMapState(WorldMapState.empty());
@@ -11056,20 +5786,19 @@ export class OsrsClient {
             await showPhase(65, "Loading variables...");
             this.inventory.clear();
             this.inventorySeededFromServer = false;
-            this.applyNpcInstanceNameOverrides();
+            this.npcInstances.applyNameOverrides();
             this.writeVarcs();
-            this.varcsUnwrittenChanges = false;
-            this.varcsLastWriteTimeMs = 0;
+            this.varcPersistence.resetWriteTracking();
             this.varManager = new VarManager(
                 this.loaderFactory.getVarBitTypeLoader(),
                 this.loaderFactory.getVarcIntTypeLoader(),
             );
-            this.varcsStorageKey = getBrowserVarcsStorageKey(cache.info);
-            this.varManager.restorePersistentVarcs(loadBrowserVarcs(this.varcsStorageKey));
+            this.varcPersistence.initStorageKey(cache.info);
+            this.varcPersistence.restoreFromBrowser();
             this.accountTypeVarbitAvailable = undefined;
 
-            this.varManager.setVarp(300, 1000); // Special attack energy
-            this.syncPrayerVarbits();
+            this.initCombatOptionsController();
+            this.combatOptions.initVarDefaults();
 
             this.varManager.onVarpChange = (varpId, _oldValue, newValue) => {
                 if (this.cs2Vm?.isRunning()) {
@@ -11143,7 +5872,7 @@ export class OsrsClient {
             this.mapFileIndex = mapFileLoader.mapFileIndex;
             this.isNewTextureAnim = cache.info.game === "runescape" && cache.info.revision >= 681;
             this.setWorldMapState(WorldMapState.load(this.cacheSystem));
-            this.initWorldMapArchiveRenderer();
+            this.worldMap.initArchiveRenderer();
 
             // Phase 9: Preparing interface
             await showPhase(90, "Preparing interface...");
@@ -11163,9 +5892,7 @@ export class OsrsClient {
 
             this.startClientTickLoop();
             this.renderer.initCache();
-            this.flushPendingHitsplats();
-            this.flushPendingPlayerHealthBars();
-            this.flushPendingNpcHealthBars();
+            this.hitsplatFlush.flushAll();
             this.initCacheDependent();
 
             // Phase 10: Loading overlays (hitsplat/health bar sprites and fonts)
@@ -11472,80 +6199,11 @@ export class OsrsClient {
     /** Route the native trade widget's actions into the dedicated trade protocol. */
     private handleTradeWidgetAction(
         widget: any,
-        event: {
-            option?: string;
-            slot?: number;
-            itemId?: number;
-        },
+        event: { option?: string; slot?: number; itemId?: number },
         groupId: number,
         childId: number,
     ): boolean {
-        if (![334, 335, 336].includes(groupId) || !this.tradeState?.open) return false;
-
-        const option = String(event.option ?? "").trim();
-        const optionKey = option.toLowerCase().replace(/[ _-]+/g, "");
-        if (optionKey === "accept") {
-            if (this.tradeState.stage === "confirm") sendTradeConfirmAccept();
-            else sendTradeAccept();
-            return true;
-        }
-        if (optionKey === "decline") {
-            if (this.tradeState.stage === "confirm") sendTradeConfirmDecline();
-            else sendTradeDecline();
-            return true;
-        }
-        if (optionKey === "close") {
-            if (this.tradeState.stage === "confirm") sendTradeConfirmDecline();
-            else sendTradeDecline();
-            return true;
-        }
-        if (optionKey === "examine") {
-            this.examineWidgetItem({
-                itemId: event.itemId ?? widget?.itemId,
-            });
-            return true;
-        }
-
-        const isOffer = optionKey.startsWith("offer");
-        const isRemove = optionKey.startsWith("remove");
-        if (!isOffer && !isRemove) return false;
-        if ((isOffer && groupId !== 336) || (isRemove && groupId !== 335)) return false;
-
-        const slot = event.slot ?? widget?.childIndex ?? childId;
-        if (!Number.isInteger(slot) || slot < 0 || slot >= Inventory.SLOT_COUNT) return true;
-
-        const source = isOffer ? this.inventory : this.tradeOfferInventory;
-        const entry = source.getSlot(slot);
-        const itemId =
-            entry && entry.itemId > 0 ? entry.itemId : (event.itemId ?? widget?.itemId ?? -1);
-        const available = isOffer ? this.inventory.count(itemId) : (entry?.quantity ?? 0);
-        if (optionKey.endsWith("x")) {
-            if (!(itemId > 0) || available <= 0) return true;
-            this.pendingTradeQuantityAction = {
-                action: isOffer ? "offer" : "remove",
-                slot,
-                itemId,
-                maximum: Math.max(1, Math.min(2_147_483_647, Math.floor(available))),
-            };
-            // Rendering is owned by WidgetsOverlay's single trade-input pass.
-            // Do not invoke chatbox_open_input here: it draws a second prompt
-            // over the explicit overlay and makes the bitmap font look bold.
-            this.cs2Vm.inputDialogType = 1;
-            this.cs2Vm.inputDialogWidgetId = -1;
-            this.cs2Vm.inputDialogString = "";
-            this.varManager.setVarcString(335, "");
-            return true;
-        }
-        const quantity = resolveTradeActionQuantity(optionKey, available);
-        if (!quantity || quantity <= 0) return true;
-
-        if (isOffer) {
-            if (!(itemId > 0)) return true;
-            sendTradeOffer(slot, itemId, quantity);
-        } else {
-            sendTradeRemove(slot, quantity);
-        }
-        return true;
+        return this.widgetActionRouter.handleTradeWidgetAction(widget, event, groupId, childId);
     }
 
     private findNpcServerId(
@@ -12095,7 +6753,7 @@ export class OsrsClient {
                     tick: loopCycle | 0,
                 };
                 if (this.renderer) this.renderer.registerHitsplat(payload);
-                else this.pendingHitsplats.push(payload);
+                else this.hitsplatFlush.queueHitsplat(payload);
             }
         }
 
@@ -12105,7 +6763,7 @@ export class OsrsClient {
                 if (this.renderer) {
                     (this.renderer as any).registerNpcHealthBarUpdate?.(entry);
                 } else {
-                    this.pendingNpcHealthBars.push(entry);
+                    this.hitsplatFlush.queueNpcHealthBar(entry);
                 }
             }
         }
@@ -12153,7 +6811,7 @@ export class OsrsClient {
     ): void {
         const sid = serverId | 0;
         const key = `sid:${sid}`;
-        const prev = this.npcInstanceMap.get(key);
+        const prev = this.npcInstances.instanceMap.get(key);
         const nextWorldViewId =
             typeof worldViewId === "number"
                 ? worldViewId >= 0
@@ -12173,8 +6831,8 @@ export class OsrsClient {
         if (prev) {
             const prevMapId = this.getNpcInstanceRenderMapId(prev);
             if (prevMapId !== mapId) {
-                this.npcInstanceMapsPendingReload.add(prevMapId);
-                this.npcInstanceMapsPendingReload.add(mapId);
+                this.npcInstances.markMapPendingReload(prevMapId);
+                this.npcInstances.markMapPendingReload(mapId);
             }
             prev.typeId = nextInstance.typeId;
             prev.x = nextInstance.x;
@@ -12183,17 +6841,17 @@ export class OsrsClient {
             prev.serverId = sid;
             prev.worldViewId = nextInstance.worldViewId;
         } else {
-            this.npcInstanceMap.set(key, nextInstance);
-            this.npcInstanceMapsPendingReload.add(mapId);
+            this.npcInstances.instanceMap.set(key, nextInstance);
+            this.npcInstances.markMapPendingReload(mapId);
         }
-        this.scheduleNpcInstanceFlush();
+        this.npcInstances.scheduleFlush();
     }
 
     private despawnNpcBinary(serverId: number): void {
         const sid = serverId | 0;
         if (sid <= 0) return;
         const instanceKey = `sid:${sid}`;
-        const existingInstance = this.npcInstanceMap.get(instanceKey);
+        const existingInstance = this.npcInstances.instanceMap.get(instanceKey);
         // Keep OSRS-style global NPC index array in sync for menuAction packet gates.
         ClientState.npcs[sid] = null;
         try {
@@ -12203,182 +6861,16 @@ export class OsrsClient {
         if (ecsId !== undefined) {
             this.npcEcs.destroyNpc(ecsId);
         }
-        this.npcInstanceMap.delete(instanceKey);
+        this.npcInstances.instanceMap.delete(instanceKey);
         if (existingInstance) {
             const mapId = this.getNpcInstanceRenderMapId(existingInstance);
-            this.npcInstanceMapsPendingReload.add(mapId);
-            this.scheduleNpcInstanceFlush();
+            this.npcInstances.markMapPendingReload(mapId);
+            this.npcInstances.scheduleFlush();
         }
     }
 
     notifyRendererReady(): void {
-        if (this.npcInstanceMapsPendingReload.size > 0) {
-            this.scheduleNpcInstanceFlush();
-        }
-    }
-
-    private scheduleNpcInstanceFlush(): void {
-        if (this.npcInstanceFlushScheduled) return;
-        this.npcInstanceFlushScheduled = true;
-        Promise.resolve().then(() => {
-            this.npcInstanceFlushScheduled = false;
-            this.flushNpcInstances().catch((err) => {
-                console.warn("[OsrsClient] failed to flush NPC instances", err);
-            });
-        });
-    }
-
-    private scheduleNpcInstanceFlushFallback(): void {
-        if (this.npcInstanceFlushFallbackTimer) return;
-        if (this.npcInstanceMapsPendingReload.size === 0) {
-            this.npcInstanceFlushFallbackAttempt = 0;
-            return;
-        }
-        const attempt = this.npcInstanceFlushFallbackAttempt | 0;
-        if (attempt >= 8) return;
-        const delayMs = Math.min(2000, 50 * (1 << attempt));
-        this.npcInstanceFlushFallbackAttempt = (attempt + 1) | 0;
-        this.npcInstanceFlushFallbackTimer = setTimeout(() => {
-            this.npcInstanceFlushFallbackTimer = undefined;
-            this.scheduleNpcInstanceFlush();
-        }, delayMs);
-    }
-
-    private resetNpcInstanceFlushFallback(): void {
-        this.npcInstanceFlushFallbackAttempt = 0;
-        if (!this.npcInstanceFlushFallbackTimer) return;
-        try {
-            clearTimeout(this.npcInstanceFlushFallbackTimer);
-        } catch {}
-        this.npcInstanceFlushFallbackTimer = undefined;
-    }
-
-    private async flushNpcInstances(): Promise<void> {
-        const instances = Array.from(this.npcInstanceMap.values());
-        await this.workerPool.setNpcInstances(instances);
-
-        this.applyNpcInstanceNameOverrides();
-
-        if (this.npcInstanceMapsPendingReload.size === 0) {
-            this.resetNpcInstanceFlushFallback();
-            return;
-        }
-
-        const renderer: any = this.renderer;
-        const rendererReady =
-            !!renderer &&
-            !!renderer.app &&
-            !!renderer.npcProgram &&
-            !!renderer.textureArray &&
-            !!renderer.textureMaterials &&
-            !!renderer.waterTextures &&
-            !!renderer.sceneUniformBuffer;
-        const mapManager = renderer?.mapManager as MapManager<any> | undefined;
-        const mapManagerReady =
-            !!mapManager && (mapManager.currentMapX | 0) >= 0 && (mapManager.currentMapY | 0) >= 0;
-
-        if (!rendererReady || !mapManagerReady) {
-            // Defer until the renderer + map manager have a stable current map. This is normally
-            // driven by event hooks (renderer-ready + map-loaded); keep a bounded fallback retry
-            // in case those events are missed during startup on some platforms.
-            this.scheduleNpcInstanceFlushFallback();
-            return;
-        }
-
-        // We have the prerequisites; clear any pending fallback retry.
-        this.resetNpcInstanceFlushFallback();
-
-        const pending = Array.from(this.npcInstanceMapsPendingReload);
-        const remaining = new Set<number>();
-
-        const geometryPromises: Array<Promise<{ mapId: number; ok: boolean }>> = [];
-
-        for (const mapId of pending) {
-            const mapX = (mapId >> 8) & 0xff;
-            const mapY = mapId & 0xff;
-
-            // Skip maps that are not in the current streaming grid.
-            const isWorldEntityOverlay = mapManager.worldEntityMapIds.has(mapId);
-            if (!isWorldEntityOverlay && !mapManager.isMapInCurrentGrid(mapX, mapY)) {
-                remaining.add(mapId);
-                continue;
-            }
-
-            const map = mapManager.getMap(mapX, mapY);
-            if (!map) {
-                mapManager.loadMap(mapX, mapY);
-                remaining.add(mapId);
-                continue;
-            }
-
-            geometryPromises.push(
-                (async () => {
-                    try {
-                        const npcGeometry = await this.workerPool.queueNpcGeometry(
-                            mapX,
-                            mapY,
-                            renderer.maxLevel ?? 3,
-                            Array.from(renderer.loadedTextureIds ?? []),
-                        );
-                        if (!npcGeometry) return { mapId, ok: false };
-                        renderer.updateTextureArray?.(npcGeometry.loadedTextures);
-                        (map as any).refreshNpcGeometry?.(
-                            renderer.app,
-                            renderer.npcProgram,
-                            renderer.textureArray,
-                            renderer.textureMaterials,
-                            renderer.waterTextures,
-                            renderer.sceneUniformBuffer,
-                            this.seqTypeLoader,
-                            this.seqFrameLoader,
-                            this.npcTypeLoader,
-                            this.basTypeLoader,
-                            npcGeometry,
-                        );
-                        return { mapId, ok: true };
-                    } catch (err) {
-                        console.warn(
-                            "[OsrsClient] failed to refresh NPC geometry",
-                            mapX,
-                            mapY,
-                            err,
-                        );
-                        return { mapId, ok: false };
-                    }
-                })(),
-            );
-        }
-
-        const results = await Promise.all(geometryPromises);
-        for (const res of results) {
-            if (!res.ok) remaining.add(res.mapId | 0);
-        }
-
-        this.npcInstanceMapsPendingReload = remaining;
-    }
-
-    private clearNpcInstancesLocal(): void {
-        this.npcInstanceMap.clear();
-        this.npcInstanceMapsPendingReload.clear();
-        this.npcInstanceFlushScheduled = false;
-        this.resetNpcInstanceFlushFallback();
-    }
-
-    private applyNpcInstanceNameOverrides(): void {
-        if (!this.npcTypeLoader) return;
-        try {
-            for (const instance of this.npcInstanceMap.values()) {
-                if (!instance.name) continue;
-                try {
-                    const npcType = this.npcTypeLoader.load(instance.typeId);
-                    npcType.name = instance.name;
-                } catch (err) {
-                    console.warn("Failed to apply NPC name override", instance.typeId, err);
-                }
-            }
-        } catch (err) {
-            console.warn("Failed to apply NPC instance name overrides", err);
-        }
+        this.npcInstances.notifyRendererReady();
     }
 
     handleInventorySlotMove(fromSlot: number, toSlot: number): void {
@@ -12482,9 +6974,7 @@ export class OsrsClient {
         this.renderer = renderer;
         this.applyDisplayDefaults();
         this.renderer.initCache();
-        this.flushPendingHitsplats();
-        this.flushPendingPlayerHealthBars();
-        this.flushPendingNpcHealthBars();
+        this.hitsplatFlush.flushAll();
         this.resetMenu();
     }
 
@@ -12542,243 +7032,13 @@ export class OsrsClient {
         return isTouchDevice ? OsrsClient.MAX_MINIMAP_URLS_MOBILE : OsrsClient.MAX_MINIMAP_URLS;
     }
 
-    private getWorldMapImageLimit(): number {
-        return isTouchDevice ? OsrsClient.MAX_WORLDMAP_URLS_MOBILE : OsrsClient.MAX_WORLDMAP_URLS;
-    }
-
-    private getWorldMapImagePendingLimit(): number {
-        const baseLimit = isTouchDevice
-            ? OsrsClient.BASE_PENDING_WORLDMAP_TILE_LOADS_MOBILE
-            : OsrsClient.BASE_PENDING_WORLDMAP_TILE_LOADS;
-        const maxLimit = isTouchDevice
-            ? OsrsClient.MAX_PENDING_WORLDMAP_TILE_LOADS_MOBILE
-            : OsrsClient.MAX_PENDING_WORLDMAP_TILE_LOADS;
-        return Math.max(baseLimit, Math.min(maxLimit, this.retainedWorldMapImageIds.size));
-    }
-
-    private getWorldMapImageCount(): number {
-        return this.worldMapImageTiles.size;
-    }
-
-    private hasWorldMapImage(mapId: number): boolean {
-        return this.worldMapImageTiles.has(mapId);
-    }
-
-    private getWorldMapImageIds(): number[] {
-        return Array.from(this.worldMapImageTiles.keys());
-    }
-
-    private getWorldMapImageKey(mapX: number, mapY: number, level: number = 0): number {
-        const baseKey = this.getMinimapImageKey(mapX, mapY, level);
-        const pixelsPerTile = Math.max(
-            1,
-            Math.min(8, Math.ceil(this.worldMapState.getZoomScale?.() ?? 1)),
-        );
-        const areaId = Math.max(0, this.worldMapState.getCurrentMapAreaId() | 0) & 0x1ff;
-        return baseKey | ((pixelsPerTile & 0xf) << 18) | (areaId << 22);
-    }
-
-    private getFailedWorldMapIdLimit(): number {
-        return isTouchDevice
-            ? OsrsClient.MAX_FAILED_WORLDMAP_IDS_MOBILE
-            : OsrsClient.MAX_FAILED_WORLDMAP_IDS;
-    }
-
-    private invalidateWorldMapIconCacheForId(mapId: number): void {
-        this.worldMapIconCache.delete(mapId);
-    }
-
-    private clearWorldMapIconCache(): void {
-        this.worldMapIconCache.clear();
-        this.worldMapIconCacheAreaId = this.worldMapState.getCurrentMapAreaId();
-    }
-
-    private clearWorldMapRenderCaches(): void {
-        const host = this as any;
-        delete host.__worldMapVisibleTileCache;
-        host.__worldMapElementCache?.clear?.();
-        host.__worldMapLabelMetricsCache?.clear?.();
-        this.renderedWorldMapIcons = [];
-        this.hoveredWorldMapIcons.clear();
-    }
-
-    private findWorldMapWidgetForRepaint(): any | undefined {
-        const manager = this.widgetManager;
-        if (!manager) return undefined;
-
-        if (this.worldMapWidgetUid !== -1) {
-            const cached = manager.getWidgetByUid?.(this.worldMapWidgetUid);
-            if (cached && (((cached as any).contentType ?? 0) | 0) === 1400) {
-                return cached;
-            }
-            this.worldMapWidgetUid = -1;
-        }
-
-        const scanGroup = (groupId: number): any | undefined => {
-            if (groupId < 0 || typeof manager.getWidgetsForGroup !== "function") return undefined;
-            const widgets = manager.getWidgetsForGroup(groupId | 0);
-            for (const widget of widgets) {
-                if ((((widget as any)?.contentType ?? 0) | 0) === 1400) {
-                    this.worldMapWidgetUid = ((widget as any).uid ?? -1) | 0;
-                    return widget;
-                }
-            }
-            return undefined;
-        };
-
-        const rootWidget = scanGroup(manager.rootInterface ?? -1);
-        if (rootWidget) return rootWidget;
-
-        for (const parent of manager.interfaceParents?.values?.() ?? []) {
-            const widget = scanGroup((parent as any)?.group ?? -1);
-            if (widget) return widget;
-        }
-        return undefined;
-    }
-
-    private scheduleWorldMapImageRepaint(): void {
-        if (this.worldMapImageRepaintQueued) return;
-        this.worldMapImageRepaintQueued = true;
-        const repaint = () => {
-            this.worldMapImageRepaintQueued = false;
-            const widget = this.findWorldMapWidgetForRepaint();
-            if (widget) {
-                const manager = this.widgetManager as any;
-                if (typeof manager?.invalidateWidgetRect === "function") {
-                    manager.invalidateWidgetRect(widget, "worldmap-tile");
-                } else {
-                    manager?.invalidateWidgetRender?.(widget, "worldmap-tile");
-                }
-            } else {
-                this.widgetManager?.invalidateAll?.();
-            }
-        };
-        if (typeof requestAnimationFrame === "function") {
-            requestAnimationFrame(repaint);
-        } else {
-            setTimeout(repaint, 0);
-        }
-    }
-
-    private updateWorldMapImageRequestEpoch(): number {
-        const zoomBucket = Math.max(1, Math.round((this.worldMapState.zoomPercentage || 100) / 25));
-        const viewportKey = [
-            this.worldMapState.getCurrentMapAreaId(),
-            (this.worldMapState.displayX | 0) >> 6,
-            (this.worldMapState.displayY | 0) >> 6,
-            zoomBucket,
-            (this.worldMapState.displayWidth | 0) >> 6,
-            (this.worldMapState.displayHeight | 0) >> 6,
-        ].join(":");
-        if (viewportKey !== this.worldMapImageRequestViewportKey) {
-            this.worldMapImageRequestViewportKey = viewportKey;
-            this.worldMapImageRequestEpoch = (this.worldMapImageRequestEpoch + 1) | 0;
-            this.failedWorldMapImageIds.clear();
-        }
-        return this.worldMapImageRequestEpoch;
-    }
-
-    private rememberFailedWorldMapImage(mapId: number): void {
-        if (this.failedWorldMapImageIds.has(mapId)) return;
-        const limit = this.getFailedWorldMapIdLimit();
-        while (this.failedWorldMapImageIds.size >= limit) {
-            const first = this.failedWorldMapImageIds.keys().next().value;
-            if (first === undefined) break;
-            this.failedWorldMapImageIds.delete(first);
-        }
-        this.failedWorldMapImageIds.set(mapId, performance.now());
-    }
-
-    private hasRecentlyFailedWorldMapImage(mapId: number): boolean {
-        const failedAt = this.failedWorldMapImageIds.get(mapId);
-        if (failedAt === undefined) return false;
-        if (performance.now() - failedAt < OsrsClient.WORLDMAP_TILE_RETRY_MS) return true;
-        this.failedWorldMapImageIds.delete(mapId);
-        return false;
-    }
-
-    getMinimapImageUrl(mapX: number, mapY: number, level: number = 0): string | undefined {
-        if (mapX < 0 || mapY < 0 || mapX >= MapManager.MAX_MAP_X || mapY >= MapManager.MAX_MAP_Y) {
-            return undefined;
-        }
-        const mapId = this.getMinimapImageKey(mapX, mapY, level);
-        const url = this.minimapImageUrls.get(mapId);
-        if (url) {
-            this.minimapImageAccess.set(mapId, performance.now());
-        }
-        return url;
-    }
-
-    setMinimapImageUrl(mapX: number, mapY: number, url: string, level: number = 0): void {
-        const mapId = this.getMinimapImageKey(mapX, mapY, level);
-        const old = this.minimapImageUrls.get(mapId);
-        if (old) {
-            this.releaseMinimapImageUrl(old);
-            this.minimapImageUrls.delete(mapId);
-            this.minimapImageAccess.delete(mapId);
-        }
-        this.minimapImageUrls.set(mapId, url);
-        this.minimapImageAccess.set(mapId, performance.now());
-        this.pruneMinimapImageUrls();
-    }
-
-    clearMinimapImageUrls(): void {
-        for (const url of this.minimapImageUrls.values()) {
-            this.releaseMinimapImageUrl(url);
-        }
-        this.minimapImageUrls.clear();
-        this.minimapImageAccess.clear();
-    }
-
-    private releaseMinimapImageUrl(url: string): void {
-        const textureCache = (this.renderer?.canvas as any)?.__textureCache;
-        if (textureCache && typeof textureCache.evictUrl === "function") {
-            try {
-                textureCache.evictUrl(url);
-            } catch {}
-        }
-        URL.revokeObjectURL(url);
-    }
-
-    private pruneMinimapImageUrls(): void {
-        const limit = this.getMinimapImageUrlLimit();
-        if (this.minimapImageUrls.size <= limit) return;
-        // Build list sorted by last access (oldest first)
-        const ids = Array.from(this.minimapImageUrls.keys());
-        ids.sort(
-            (a, b) =>
-                (this.minimapImageAccess.get(a) ?? -Infinity) -
-                (this.minimapImageAccess.get(b) ?? -Infinity),
-        );
-        const toRemove = ids.slice(0, this.minimapImageUrls.size - limit);
-        for (const id of toRemove) {
-            const url = this.minimapImageUrls.get(id);
-            if (url) {
-                this.releaseMinimapImageUrl(url);
-            }
-            this.minimapImageUrls.delete(id);
-            this.minimapImageAccess.delete(id);
-        }
-    }
-
     getWorldMapImageTile(
         mapX: number,
         mapY: number,
         level: number = 0,
         accessPriority: number = 0,
     ): { key: string; pixels?: Uint8Array; width: number; height: number } | undefined {
-        if (mapX < 0 || mapY < 0 || mapX >= MapManager.MAX_MAP_X || mapY >= MapManager.MAX_MAP_Y) {
-            return undefined;
-        }
-        this.updateWorldMapImageRequestEpoch();
-        const mapId = this.getWorldMapImageKey(mapX, mapY, level);
-        const tile = this.worldMapImageTiles.get(mapId);
-        if (tile) {
-            this.worldMapImageAccess.set(mapId, performance.now() + Math.max(0, accessPriority));
-            return tile;
-        }
-        this.queueLoadWorldMapImage(mapX, mapY, level, this.worldMapImageCacheEpoch);
-        return undefined;
+        return this.worldMap.getWorldMapImageTile(mapX, mapY, level, accessPriority);
     }
 
     getWorldMapImageSource(
@@ -12787,205 +7047,15 @@ export class OsrsClient {
         level: number = 0,
         accessPriority: number = 0,
     ): { key: string; pixels?: Uint8Array; width: number; height: number } | undefined {
-        if (mapX < 0 || mapY < 0 || mapX >= MapManager.MAX_MAP_X || mapY >= MapManager.MAX_MAP_Y) {
-            return undefined;
-        }
-        this.updateWorldMapImageRequestEpoch();
-        const mapId = this.getWorldMapImageKey(mapX, mapY, level);
-        const accessTime = performance.now() + Math.max(0, accessPriority);
-        const tile = this.worldMapImageTiles.get(mapId);
-        if (tile) {
-            this.worldMapImageAccess.set(mapId, accessTime);
-            return tile;
-        }
-        this.queueLoadWorldMapImage(mapX, mapY, level, this.worldMapImageCacheEpoch);
-        return undefined;
+        return this.worldMap.getWorldMapImageSource(mapX, mapY, level, accessPriority);
     }
 
     markWorldMapImageTextureUploaded(key: string): void {
-        for (const tile of this.worldMapImageTiles.values()) {
-            if (tile.key === key) {
-                delete tile.pixels;
-                return;
-            }
-        }
+        this.worldMap.markWorldMapImageTextureUploaded(key);
     }
 
     getWorldMapIcons(mapX: number, mapY: number, level: number = 0): MinimapIcon[] | undefined {
-        const areaId = this.worldMapState.getCurrentMapAreaId();
-        if (this.worldMapIconCacheAreaId !== areaId) {
-            this.worldMapIconCache.clear();
-            this.worldMapIconCacheAreaId = areaId;
-        }
-        const mapId = this.getWorldMapImageKey(mapX, mapY, level);
-        if (this.worldMapIconCache.has(mapId)) {
-            return this.worldMapIconCache.get(mapId);
-        }
-        const sourceIcons = this.worldMapState.getIconsForTile(mapX, mapY, level);
-        if (sourceIcons.length === 0) {
-            this.worldMapIconCache.set(mapId, undefined);
-            return undefined;
-        }
-
-        const icons: MinimapIcon[] = [];
-        const seen = new Set<string>();
-        for (const icon of sourceIcons) {
-            const coord = unpackWorldMapCoord(icon.coord);
-            const displayCoord =
-                icon.displayCoord !== undefined ? unpackWorldMapCoord(icon.displayCoord) : coord;
-            const localX = displayCoord.x - ((mapX | 0) << 6);
-            const localY = displayCoord.y - ((mapY | 0) << 6);
-            if (localX < 0 || localX >= 64 || localY < 0 || localY >= 64) continue;
-            const displayPos =
-                icon.displayCoord !== undefined
-                    ? { x: displayCoord.x, y: displayCoord.y }
-                    : this.worldMapState.currentArea?.position(coord.plane, coord.x, coord.y);
-            if (!displayPos) continue;
-
-            const key = `${icon.element | 0}:${localX | 0}:${localY | 0}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            let element: any;
-            try {
-                element = this.mapElementTypeLoader?.load?.(icon.element | 0);
-            } catch {
-                element = undefined;
-            }
-
-            icons.push({
-                localX,
-                localY,
-                elementId: icon.element | 0,
-                category: (element?.category ?? icon.category) | 0,
-                spriteId: (element?.spriteId ?? icon.spriteId) | 0,
-                worldMapVisible: element?.worldMapVisible,
-                name: element?.name,
-                textColor: element?.textColor,
-                textSize: element?.textSize,
-                horizontalAlignment: element?.horizontalAlignment,
-                verticalAlignment: element?.verticalAlignment,
-                sourcePlane: coord.plane,
-                sourceX: coord.x | 0,
-                sourceY: coord.y | 0,
-                displayPlane: displayCoord.plane,
-                displayX: displayPos.x,
-                displayY: displayPos.y,
-            });
-        }
-
-        const result = icons.length > 0 ? icons : undefined;
-        this.worldMapIconCache.set(mapId, result);
-        return result;
-    }
-
-    private queueLoadWorldMapImage(
-        mapX: number,
-        mapY: number,
-        level: number,
-        cacheEpoch: number,
-    ): void {
-        const mapId = this.getWorldMapImageKey(mapX, mapY, level);
-        if (this.pendingWorldMapImageIds.has(mapId)) {
-            return;
-        }
-        if (this.hasRecentlyFailedWorldMapImage(mapId)) {
-            return;
-        }
-        if (this.hasWorldMapImage(mapId)) {
-            return;
-        }
-        if (this.pendingWorldMapImageIds.size >= this.getWorldMapImagePendingLimit()) {
-            return;
-        }
-
-        const archiveRenderer = this.worldMapArchiveRenderer;
-        const area = this.worldMapState.currentArea;
-        const pixelsPerTile = Math.ceil(this.worldMapState.getZoomScale?.() ?? 1);
-        if (!archiveRenderer) {
-            this.rememberFailedWorldMapImage(mapId);
-            return;
-        }
-
-        this.pendingWorldMapImageIds.add(mapId);
-        void Promise.resolve()
-            .then(() => archiveRenderer.loadTile(area, mapX | 0, mapY | 0, pixelsPerTile))
-            .then((tile) => {
-                if (cacheEpoch !== this.worldMapImageCacheEpoch) {
-                    return;
-                }
-                if (mapId !== this.getWorldMapImageKey(mapX, mapY, level)) {
-                    return;
-                }
-                const tileWidth = tile?.width;
-                const tileHeight = tile?.height;
-                if (
-                    tile?.pixels &&
-                    typeof tileWidth === "number" &&
-                    typeof tileHeight === "number" &&
-                    (tileWidth | 0) > 0 &&
-                    (tileHeight | 0) > 0
-                ) {
-                    this.setWorldMapImageTile(
-                        mapX | 0,
-                        mapY | 0,
-                        tile.pixels,
-                        tileWidth | 0,
-                        tileHeight | 0,
-                        level | 0,
-                        (tile.icons ?? []) as MinimapIcon[],
-                    );
-                    return;
-                }
-                if (!tile) {
-                    this.rememberFailedWorldMapImage(mapId);
-                    return;
-                }
-                this.rememberFailedWorldMapImage(mapId);
-            })
-            .catch((err) => {
-                if (cacheEpoch !== this.worldMapImageCacheEpoch) {
-                    return;
-                }
-                console.log("[OsrsClient] Failed to load world map image tile", {
-                    mapX,
-                    mapY,
-                    level,
-                    err,
-                });
-                this.rememberFailedWorldMapImage(mapId);
-            })
-            .finally(() => {
-                this.pendingWorldMapImageIds.delete(mapId);
-            });
-    }
-
-    private setWorldMapImageTile(
-        mapX: number,
-        mapY: number,
-        pixels: Uint8Array,
-        width: number,
-        height: number,
-        level: number,
-        icons: MinimapIcon[],
-    ): void {
-        const mapId = this.getWorldMapImageKey(mapX, mapY, level);
-        const oldTile = this.worldMapImageTiles.get(mapId);
-        if (oldTile) {
-            this.releaseWorldMapImageTile(oldTile);
-            this.worldMapImageTiles.delete(mapId);
-            this.worldMapImageAccess.delete(mapId);
-        }
-        this.worldMapImageTiles.set(mapId, {
-            key: `worldmap:${mapId}:${this.worldMapImageCacheEpoch}`,
-            pixels,
-            width: width | 0,
-            height: height | 0,
-        });
-        this.worldMapImageAccess.set(mapId, performance.now());
-        this.worldMapState.setTileIcons(mapX | 0, mapY | 0, level | 0, icons);
-        this.invalidateWorldMapIconCacheForId(mapId);
-        this.pruneWorldMapImages();
-        this.scheduleWorldMapImageRepaint();
+        return this.worldMap.getWorldMapIcons(mapX, mapY, level);
     }
 
     retainWorldMapImageTiles(
@@ -12996,94 +7066,11 @@ export class OsrsClient {
             sourceTile?: { mapX: number; mapY: number; level?: number };
         }>,
     ): void {
-        const retained = new Set<number>();
-        for (const tile of tiles) {
-            const retainedTile = tile.sourceTile ?? tile;
-            const mapX = retainedTile.mapX | 0;
-            const mapY = retainedTile.mapY | 0;
-            if (
-                mapX < 0 ||
-                mapY < 0 ||
-                mapX >= MapManager.MAX_MAP_X ||
-                mapY >= MapManager.MAX_MAP_Y
-            ) {
-                continue;
-            }
-            retained.add(this.getWorldMapImageKey(mapX, mapY, retainedTile.level ?? 0));
-        }
-        this.retainedWorldMapImageIds = retained;
-        this.pruneWorldMapImages();
+        this.worldMap.retainWorldMapImageTiles(tiles);
     }
 
     clearWorldMapImages(): void {
-        this.worldMapImageCacheEpoch = (this.worldMapImageCacheEpoch + 1) | 0;
-        for (const tile of this.worldMapImageTiles.values()) {
-            this.releaseWorldMapImageTile(tile);
-        }
-        this.worldMapImageTiles.clear();
-        this.worldMapImageAccess.clear();
-        this.worldMapState.clearTileIcons();
-        this.clearWorldMapIconCache();
-        this.clearWorldMapRenderCaches();
-        this.pendingWorldMapImageIds.clear();
-        this.failedWorldMapImageIds.clear();
-        this.retainedWorldMapImageIds.clear();
-        this.worldMapImageRequestViewportKey = "";
-        this.worldMapImageRequestEpoch = 0;
-        this.scheduleWorldMapImageRepaint();
-    }
-
-    private clearWorldMapIconsForImageKey(mapId: number): void {
-        const tileKey = mapId & ~0x3c0000;
-        for (const id of this.worldMapImageTiles.keys()) {
-            if (id !== mapId && (id & ~0x3c0000) === tileKey) {
-                this.invalidateWorldMapIconCacheForId(mapId);
-                return;
-            }
-        }
-        const level = (mapId >>> 16) & 0x3;
-        const mapSquare = mapId & 0xffff;
-        const areaId = (mapId >>> 22) & 0x1ff;
-        this.worldMapState.removeTileIcons(
-            (mapSquare >>> 8) & 0xff,
-            mapSquare & 0xff,
-            level,
-            areaId,
-        );
-        this.invalidateWorldMapIconCacheForId(mapId);
-    }
-
-    private releaseWorldMapImageTile(tile: { key: string }): void {
-        const textureCache = (this.renderer?.canvas as any)?.__textureCache;
-        if (textureCache && typeof textureCache.evictTextureKey === "function") {
-            try {
-                textureCache.evictTextureKey(tile.key);
-            } catch {}
-        }
-    }
-
-    private pruneWorldMapImages(): void {
-        const limit = this.getWorldMapImageLimit();
-        const retainedLimit = Math.max(limit, this.retainedWorldMapImageIds.size);
-        const loadedCount = this.getWorldMapImageCount();
-        if (loadedCount <= retainedLimit) return;
-        const ids = this.getWorldMapImageIds();
-        ids.sort(
-            (a, b) =>
-                (this.worldMapImageAccess.get(a) ?? -Infinity) -
-                (this.worldMapImageAccess.get(b) ?? -Infinity),
-        );
-        const removableIds = ids.filter((id) => !this.retainedWorldMapImageIds.has(id));
-        const toRemove = removableIds.slice(0, loadedCount - retainedLimit);
-        for (const id of toRemove) {
-            const tile = this.worldMapImageTiles.get(id);
-            if (tile) {
-                this.releaseWorldMapImageTile(tile);
-            }
-            this.worldMapImageTiles.delete(id);
-            this.worldMapImageAccess.delete(id);
-            this.clearWorldMapIconsForImageKey(id);
-        }
+        this.worldMap.clearWorldMapImages();
     }
 
     /**
@@ -13198,43 +7185,6 @@ export class OsrsClient {
         }
     }
 
-    private showMobileChatKeyboard(hint: string, keyboardType: number): void {
-        if (typeof document === "undefined" || (!isMobileMode && !isTouchDevice)) return;
-        const input = this.ensureMobileChatInput();
-        input.placeholder = hint;
-        input.inputMode = keyboardType === 1 ? "numeric" : "text";
-        input.value = this.varManager.getVarcString(335) ?? "";
-        this.mobileChatLastValue = input.value;
-        this.mobileChatKeyboardOpen = true;
-        input.focus({ preventScroll: true });
-    }
-
-    private hideMobileChatKeyboard(): void {
-        this.mobileChatKeyboardOpen = false;
-        this.mobileChatInput?.blur();
-    }
-
-    private ensureMobileChatInput(): HTMLInputElement {
-        if (this.mobileChatInput?.isConnected) return this.mobileChatInput;
-        const input = document.createElement("input");
-        input.type = "text";
-        input.autocomplete = "off";
-        input.style.cssText = "position:fixed;bottom:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none";
-        input.addEventListener("input", () => {
-            if (!this.mobileChatKeyboardOpen) return;
-            const next = input.value;
-            const prev = this.mobileChatLastValue;
-            for (let i = prev.length; i > 0 && next.length < i; i--) this.inputManager.enqueueOsrsKeyPress(85, "Backspace");
-            for (let i = Math.min(prev.length, next.length); i < next.length; i++) this.inputManager.enqueueTypedChar(next.charCodeAt(i));
-            this.mobileChatLastValue = next;
-        });
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") { event.preventDefault(); this.inputManager.enqueueOsrsKeyPress(84, "Enter"); }
-        });
-        document.body.appendChild(input);
-        this.mobileChatInput = input;
-        return input;
-    }
 
     /**
      * Reset all world/game state - used on disconnect/logout to prevent memory leaks.
@@ -13242,7 +7192,7 @@ export class OsrsClient {
      * @param fullReset If true, also clears chat history, vars, and transmit cycles (for full logout to login screen)
      */
     resetWorld(fullReset: boolean = false): void {
-        this.hideMobileChatKeyboard();
+        this.mobileChatKeyboard?.hide();
         console.log(`[OsrsClient] Resetting world state (fullReset=${fullReset})...`);
 
         // Clear all players
@@ -13264,7 +7214,7 @@ export class OsrsClient {
             console.warn("[OsrsClient] NpcUpdateDecoder reset error:", err);
         }
         this.lastNpcDecodeBase = undefined;
-        this.clearNpcInstancesLocal();
+        this.npcInstances.clearLocal();
 
         // Clear widgets
         try {
@@ -13390,20 +7340,13 @@ export class OsrsClient {
     dispose(): void {
         console.log("[OsrsClient] Disposing...");
         this.cancelPendingLoginMusicStart();
-        this.writeVarcs();
-        if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
-            window.removeEventListener("pagehide", this.handleVarcsPageLifecycleFlush);
-            window.removeEventListener("beforeunload", this.handleVarcsPageLifecycleFlush);
-        }
+        this.varcPersistence.dispose();
 
         // Reset world state first (full reset on dispose)
         this.resetWorld(true);
         try {
             this.varManager?.clear?.();
         } catch {}
-        this.varcsStorageKey = undefined;
-        this.varcsUnwrittenChanges = false;
-        this.varcsLastWriteTimeMs = 0;
 
         // Dispose audio systems (stops playback, closes AudioContext, removes listeners)
         if (this.musicSystem) {

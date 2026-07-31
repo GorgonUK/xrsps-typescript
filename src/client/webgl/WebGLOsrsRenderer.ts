@@ -188,319 +188,22 @@ import {
 } from "./shaders/Shaders";
 import { KNOWN_WATER_TEXTURE_IDS } from "./water/WaterTextureIds";
 
-/** Format a player menu target using the OSRS combat-level colour convention. */
-function formatPlayerCombatLabel(
-    username: string,
-    localCombatLevel: number,
-    targetCombatLevel: number,
-): string {
-    const colour =
-        targetCombatLevel < localCombatLevel
-            ? "00ff00"
-            : targetCombatLevel === localCombatLevel
-              ? "ffff00"
-              : "ff0000";
-    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
-}
-
-const MAX_TEXTURES = 1024;
-const TEXTURE_SIZE = 128;
-const MATERIAL_TEXTURE_ROWS = 6;
-const WATER_FLAG_HAS_FOAM = 1;
-const WATER_FLAG_NORMAL_MAP_2 = 2;
-const WATER_TEXTURE_SIZE = 128;
-const WATER_TEXTURE_ASSETS = [
-    "/images/water/water_normal_map_1.png",
-    "/images/water/water_normal_map_2.png",
-    "/images/water/water_flow_map.png",
-    "/images/water/water_foam.jpg",
-    "/images/water/caustics_map.jpg",
-] as const;
-
-interface WaterMaterialParams {
-    surfaceColor: [number, number, number];
-    foamColor: [number, number, number];
-    depthColor: [number, number, number];
-    baseOpacity: number;
-    fresnelAmount: number;
-    normalStrength: number;
-    specularStrength: number;
-    specularGloss: number;
-    duration: number;
-    hasFoam: boolean;
-    useNormalMap2: boolean;
-}
-
-function waterRgb(hex: number): [number, number, number] {
-    return [((hex >> 16) & 0xff) / 255, ((hex >> 8) & 0xff) / 255, (hex & 0xff) / 255];
-}
-
-function materialByte(value: number): number {
-    return Math.round(clamp(value, 0, 255));
-}
-
-// 117HD water_types.json parameters.
-const DEFAULT_WATER_MATERIAL: WaterMaterialParams = {
-    surfaceColor: waterRgb(0x69809c),
-    foamColor: waterRgb(0xb0a492),
-    depthColor: waterRgb(0x00758e),
-    baseOpacity: 0.5,
-    fresnelAmount: 0.85,
-    normalStrength: 0.09,
-    specularStrength: 0.5,
-    specularGloss: 500,
-    duration: 1,
-    hasFoam: true,
-    useNormalMap2: false,
-};
-const SWAMP_WATER_MATERIAL: WaterMaterialParams = {
-    surfaceColor: waterRgb(0x172114),
-    foamColor: waterRgb(0x737865),
-    depthColor: waterRgb(0x29521a),
-    baseOpacity: 0.8,
-    fresnelAmount: 0.3,
-    normalStrength: 0.05,
-    specularStrength: 0.1,
-    specularGloss: 100,
-    duration: 1.2,
-    hasFoam: true,
-    useNormalMap2: false,
-};
-const ICE_WATER_MATERIAL: WaterMaterialParams = {
-    surfaceColor: waterRgb(0xffffff),
-    foamColor: waterRgb(0x969696),
-    depthColor: waterRgb(0x00758e),
-    baseOpacity: 0.85,
-    fresnelAmount: 1,
-    normalStrength: 0.04,
-    specularStrength: 0.3,
-    specularGloss: 200,
-    duration: 0,
-    hasFoam: true,
-    useNormalMap2: true,
-};
-const VANILLA_WATER_SURFACE_COLORS = new Map<number, [number, number, number]>([
-    [130, waterRgb(0x556f8f)],
-    [131, waterRgb(0x536b88)],
-    [132, waterRgb(0x4d5d81)],
-    [133, waterRgb(0x3c4b71)],
-    [134, waterRgb(0x374467)],
-    [135, waterRgb(0x688b9c)],
-    [136, waterRgb(0x638189)],
-    [137, waterRgb(0x537783)],
-    [138, waterRgb(0x55707f)],
-    [139, waterRgb(0x445c72)],
-    [140, waterRgb(0x4d6b7f)],
-    [141, waterRgb(0x4a6578)],
-    [142, waterRgb(0x446175)],
-    [143, waterRgb(0x425b71)],
-    [144, waterRgb(0x3f586c)],
-    [145, waterRgb(0x6c78a2)],
-    [146, waterRgb(0x606b99)],
-    [147, waterRgb(0x585e8f)],
-    [148, waterRgb(0x473d72)],
-    [149, waterRgb(0x3f3863)],
-    [150, waterRgb(0x68799d)],
-    [151, waterRgb(0x606e90)],
-    [152, waterRgb(0x536489)],
-    [153, waterRgb(0x4f5781)],
-    [154, waterRgb(0x3f4672)],
-    [155, waterRgb(0x6e7595)],
-    [156, waterRgb(0x656b88)],
-    [157, waterRgb(0x596181)],
-    [158, waterRgb(0x585874)],
-    [159, waterRgb(0x484664)],
-    [160, waterRgb(0x7a8da3)],
-    [161, waterRgb(0x728397)],
-    [162, waterRgb(0x667a91)],
-    [163, waterRgb(0x616e8b)],
-    [164, waterRgb(0x505c7a)],
-    [165, waterRgb(0x8898ad)],
-    [166, waterRgb(0x8290a3)],
-    [167, waterRgb(0x79899e)],
-    [168, waterRgb(0x747f99)],
-    [169, waterRgb(0x68728d)],
-    [170, waterRgb(0x7298b4)],
-    [171, waterRgb(0x5f86a3)],
-    [172, waterRgb(0x547a99)],
-    [173, waterRgb(0x496e91)],
-    [174, waterRgb(0x43688b)],
-    [175, waterRgb(0x5d7f72)],
-    [176, waterRgb(0x517c6c)],
-    [177, waterRgb(0x4a686d)],
-    [178, waterRgb(0x4a686d)],
-    [179, waterRgb(0x3d595c)],
-    [180, waterRgb(0x5a7b90)],
-    [181, waterRgb(0x537084)],
-    [182, waterRgb(0x49677b)],
-    [183, waterRgb(0x506574)],
-    [184, waterRgb(0x324e6c)],
-    [185, waterRgb(0x4d5e74)],
-    [186, waterRgb(0x445267)],
-    [187, waterRgb(0x39485e)],
-    [188, waterRgb(0x394d63)],
-    [189, waterRgb(0x314157)],
-    [208, waterRgb(0x262d45)],
-]);
-
-const MAX_HIT_ENTRIES = 256;
-const DEFAULT_NPC_HEALTH = 100;
-const MAX_ESTIMATED_HEALTH = 4000;
-const OVERHEAD_CHAT_COLOR_TABLE = [0xffff00, 0xff0000, 0x00ff00, 0x00ffff, 0xff00ff, 0xffffff];
-const DEFAULT_OVERHEAD_CHAT_COLOR_ID = 0;
-const DEFAULT_OVERHEAD_CHAT_COLOR = OVERHEAD_CHAT_COLOR_TABLE[DEFAULT_OVERHEAD_CHAT_COLOR_ID];
-
-// Limit how many 20ms client ticks we process per frame when catching up.
-const MAX_CLIENT_TICKS_PER_FRAME = 25;
-// Cap outstanding tick debt so we do not spiral on extremely long pauses.
-const MAX_CLIENT_TICK_DEBT = 600;
-interface ColorRgb {
-    r: number;
-    g: number;
-    b: number;
-}
-
-interface LocHighlightTarget {
-    kind: "loc";
-    locId: number;
-    tileX: number;
-    tileY: number;
-    plane: number;
-    locModelType?: number;
-    locRotation?: number;
-    /** Set when the outline model was sourced from an overworld visual proxy
-     *  rather than the loc's own model.  Suppresses world-entity transforms
-     *  and deck-height offsets for the highlight. */
-    overworldProxy?: boolean;
-}
-
-interface NpcHighlightTarget {
-    kind: "npc";
-    ecsId: number;
-    serverId: number;
-    npcTypeId: number;
-    plane: number;
-}
-
-type InteractHighlightTarget = LocHighlightTarget | NpcHighlightTarget;
-
-type LocReloadBatchState = {
-    id: number;
-    mapIds: number[];
-    pendingMapIds: Set<number>;
-    loaded: Map<number, SdMapData>;
-};
-
-type StreamMapBatch = Map<number, SdMapData>;
-
-// Hitsplat and health bar types moved to ../actor/ActorOverlayState.ts
-
-enum TextureFilterMode {
-    DISABLED,
-    BILINEAR,
-    TRILINEAR,
-    ANISOTROPIC_2X,
-    ANISOTROPIC_4X,
-    ANISOTROPIC_8X,
-    ANISOTROPIC_16X,
-}
-
-function getMaxAnisotropy(mode: TextureFilterMode): number {
-    switch (mode) {
-        case TextureFilterMode.ANISOTROPIC_2X:
-            return 2;
-        case TextureFilterMode.ANISOTROPIC_4X:
-            return 4;
-        case TextureFilterMode.ANISOTROPIC_8X:
-            return 8;
-        case TextureFilterMode.ANISOTROPIC_16X:
-            return 16;
-        default:
-            return 1;
-    }
-}
-
-type BrowserQualityProfileKey = "desktop" | "mobile-touch" | "ios-safari";
-
-interface BrowserQualityProfile {
-    key: BrowserQualityProfileKey;
-    label: string;
-    defaultSceneScale: number;
-    fxaaEnabled: boolean;
-    renderDistanceCap: number;
-    lodThresholdCap: number;
-    groundItemOverlayMaxEntries: number;
-    groundItemOverlayRadius: number;
-    hitsplatMaxEntries: number;
-    healthBarMaxEntries: number;
-    overheadTextMaxEntries: number;
-    overheadPrayerMaxEntries: number;
-}
-
-const DESKTOP_QUALITY_PROFILE: BrowserQualityProfile = {
-    key: "desktop",
-    label: "Desktop",
-    defaultSceneScale: 1,
-    fxaaEnabled: false,
-    renderDistanceCap: 90,
-    lodThresholdCap: 90,
-    groundItemOverlayMaxEntries: 40,
-    groundItemOverlayRadius: 12,
-    hitsplatMaxEntries: MAX_HIT_ENTRIES,
-    healthBarMaxEntries: 256,
-    overheadTextMaxEntries: 256,
-    overheadPrayerMaxEntries: 256,
-};
-
-const MOBILE_TOUCH_QUALITY_PROFILE: BrowserQualityProfile = {
-    key: "mobile-touch",
-    label: "Mobile Browser",
-    defaultSceneScale: 1,
-    fxaaEnabled: false,
-    renderDistanceCap: 20,
-    lodThresholdCap: 14,
-    groundItemOverlayMaxEntries: 24,
-    groundItemOverlayRadius: 10,
-    hitsplatMaxEntries: 128,
-    healthBarMaxEntries: 96,
-    overheadTextMaxEntries: 48,
-    overheadPrayerMaxEntries: 32,
-};
-
-const IOS_SAFARI_QUALITY_PROFILE: BrowserQualityProfile = {
-    key: "ios-safari",
-    label: "iPhone Safari",
-    // The canvas backing store runs at 2x DPR for crisp UI/text; 0.5 keeps the
-    // 3D scene framebuffer at CSS resolution, the same GPU cost as a 1x buffer.
-    defaultSceneScale: 0.5,
-    fxaaEnabled: false,
-    renderDistanceCap: 18,
-    lodThresholdCap: 12,
-    groundItemOverlayMaxEntries: 20,
-    groundItemOverlayRadius: 8,
-    hitsplatMaxEntries: 96,
-    healthBarMaxEntries: 72,
-    overheadTextMaxEntries: 32,
-    overheadPrayerMaxEntries: 24,
-};
-
-function optimizeAssumingFlatsHaveSameFirstAndLastData(gl: WebGL2RenderingContext) {
-    const epv = gl.getExtension("WEBGL_provoking_vertex");
-    if (epv) {
-        epv.provokingVertexWEBGL(epv.FIRST_VERTEX_CONVENTION_WEBGL);
-    }
-}
+import * as render from "./render";
+import { RENDER_CONSTANTS } from "./render/constants";
+export type {
+    BrowserQualityProfile,
+    BrowserQualityProfileKey,
+    ColorRgb,
+    InteractHighlightTarget,
+    LocReloadBatchState,
+    StreamMapBatch,
+    TextureFilterMode,
+    WaterMaterialParams,
+} from "./render/constants";
+export { formatPlayerCombatLabel } from "./render/constants";
 
 export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     type: OsrsRendererType = WEBGL;
-
-    /**
-     * Get the GL canvas where the click registry is stored.
-     * Used for cleaning up click targets when interfaces close.
-     */
-    getWidgetsGLCanvas(): HTMLCanvasElement | undefined {
-        return this.widgetsOverlay?.getGLCanvas();
-    }
 
     dataLoader = new SdMapDataLoader();
 
@@ -887,8 +590,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     private effectiveGroundItemOverlayFrame: number = -1;
     private effectiveGroundItemOverlayRadius: number = 12;
     private effectiveGroundItemOverlayRadiusFrame: number = -1;
-    private activeQualityProfile: BrowserQualityProfile = DESKTOP_QUALITY_PROFILE;
-    private activeQualityProfileKey: BrowserQualityProfileKey = DESKTOP_QUALITY_PROFILE.key;
+    private activeQualityProfile: BrowserQualityProfile = RENDER_CONSTANTS.DESKTOP_QUALITY_PROFILE;
+    private activeQualityProfileKey: BrowserQualityProfileKey = RENDER_CONSTANTS.DESKTOP_QUALITY_PROFILE.key;
     private frameRoofFilteredRangeCount: number = 0;
     private frameRoofTotalRangeCount: number = 0;
     private roofFilteredDrawIndices: number[] = [];
@@ -983,13 +686,13 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     playerFixedFrame: number = 0;
 
     // Reserve high-range ids in the interact buffer to represent players
-    static readonly PLAYER_INTERACT_BASE: number = 0x8000;
+    static readonly PLAYER_INTERACT_BASE = RENDER_CONSTANTS.PLAYER_INTERACT_BASE;
 
     // Model-space Y increases down the screen, so a negative value raises an
     // actor. Animated models can extend their soles below their resting bounds,
     // so retain a ten-unit clearance above the terrain to prevent clipping.
     private static readonly ACTOR_GROUND_CLEARANCE_MODEL_UNITS = -10;
-    playerYOffset: number = WebGLOsrsRenderer.ACTOR_GROUND_CLEARANCE_MODEL_UNITS;
+    playerYOffset: number = RENDER_CONSTANTS.ACTOR_GROUND_CLEARANCE_MODEL_UNITS;
 
     // Hover tile devoverlay state
     hoverTileX: number = -1;
@@ -1035,6 +738,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
     // Player interaction state moved to PlayerInteractionSystem
 
+
     constructor(public osrsClient: OsrsClient) {
         super(osrsClient);
         // PERF: Initialize bound toCssEvent function once
@@ -1060,66 +764,31 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         };
     }
 
+    getWidgetsGLCanvas(): HTMLCanvasElement | undefined {
+        return render.getWidgetsGLCanvas(this);
+    }
+
     private clearMinimapIconsForMap(mapX: number, mapY: number): void {
-        for (let level = 0; level < Scene.MAX_LEVELS; level++) {
-            this.minimapIcons.delete(getMapPlaneId(mapX | 0, mapY | 0, level));
-        }
+        return render.clearMinimapIconsForMap(this, mapX, mapY);
     }
 
     private registerMinimapData(mapData: SdMapData): void {
-        const mapX = mapData.mapX | 0;
-        const mapY = mapData.mapY | 0;
-        for (let level = 0; level < Scene.MAX_LEVELS; level++) {
-            const blob = mapData.minimapBlobs?.[level];
-            if (blob) {
-                this.osrsClient.setMinimapImageUrl(mapX, mapY, URL.createObjectURL(blob), level);
-            }
-
-            const key = getMapPlaneId(mapX, mapY, level);
-            const icons = mapData.minimapIcons?.[level] ?? [];
-            if (icons.length > 0) {
-                this.minimapIcons.set(key, icons);
-            } else {
-                this.minimapIcons.delete(key);
-            }
-        }
+        return render.registerMinimapData(this, mapData);
     }
 
     private shouldUseMobileLoginInput(): boolean {
-        const state = this.osrsClient.loginState;
-        return (
-            isMobileMode &&
-            this.osrsClient.isOnLoginScreen() &&
-            state.loginIndex === LoginIndex.LOGIN_FORM &&
-            state.virtualKeyboardVisible === true
-        );
+        return render.shouldUseMobileLoginInput(this);
     }
 
     private getCanvasTouchPos(touch: Touch): { x: number; y: number } {
-        const [x, y] = getMousePos(this.canvas, touch);
-        return {
-            x: x | 0,
-            y: y | 0,
-        };
+        return render.getCanvasTouchPos(this, touch);
     }
 
     private getUiSurfaceCssSize(
         safeBufW: number,
         safeBufH: number,
     ): { cssW: number; cssH: number } {
-        let cssW = 0;
-        let cssH = 0;
-        const canvas = this.canvas;
-        if (canvas) {
-            const cssSize = getCanvasCssSize(canvas);
-            cssW = cssSize.width;
-            cssH = cssSize.height;
-        }
-        if (!Number.isFinite(cssW) || cssW <= 0 || !Number.isFinite(cssH) || cssH <= 0) {
-            cssW = safeBufW;
-            cssH = safeBufH;
-        }
-        return { cssW, cssH };
+        return render.getUiSurfaceCssSize(this, safeBufW, safeBufH);
     }
 
     private getMobileGameplayUiScale(
@@ -1128,22 +797,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         _bufW: number,
         _bufH: number,
     ): number {
-        const safeCssW = Math.max(1, cssW);
-        const safeCssH = Math.max(1, cssH);
-        const shortestCssEdge = Math.max(1, Math.min(safeCssW, safeCssH));
-        const viewportT = clamp(
-            (shortestCssEdge - WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_PHONE_EDGE) /
-            (WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_TABLET_EDGE -
-                WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_PHONE_EDGE),
-            0,
-            1,
-        );
-        const desiredUiScale =
-            WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MIN_SCALE +
-            (WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MAX_SCALE -
-                WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MIN_SCALE) *
-            viewportT;
-        return Math.max(1, desiredUiScale);
+        return render.getMobileGameplayUiScale(this, cssW, cssH, _bufW, _bufH);
     }
 
     private computeUiRenderMetrics(
@@ -1157,82 +811,9 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         renderOffsetX: number;
         renderOffsetY: number;
     } {
-        const safeBufW = Math.max(1, bufW | 0);
-        const safeBufH = Math.max(1, bufH | 0);
-        const gameState = this.osrsClient.gameState;
-        const isLoginLikeState =
-            gameState === GameState.DOWNLOADING || this.osrsClient.isOnLoginScreen();
-        const rootInterface = this.osrsClient.widgetManager?.rootInterface ?? -1;
-        const isMobileGameplayRoot = isMobileMode && !isLoginLikeState && rootInterface === 601;
-        const { cssW, cssH } = this.getUiSurfaceCssSize(safeBufW, safeBufH);
-
-        if (!isLoginLikeState) {
-            if (!isMobileGameplayRoot) {
-                const desktopUiScale = getUiScale(cssW, cssH);
-                // RuneLite stretched mode reduces the logical resizable game size by the
-                // configured factor, then stretches that real size back to the window.
-                // The DPR component of the render scale is snapped to an integer so
-                // bitmap sprites and fonts map 1:N onto device pixels at any OS or
-                // browser scaling (110% -> 1, Retina -> 2, zoomed Retina 2.2 -> 2);
-                // the manual interface-scaling factor stays unsnapped for OSRS parity.
-                // Layout uses ceil so renderScale stays exact — up to one device pixel
-                // at the right/bottom edge is clipped instead of letting the ratio
-                // drift fractional (which made glyph widths uneven by 1px).
-                const dprComponent = Math.max(1, Math.round(safeBufW / Math.max(1, cssW)));
-                const renderScale = dprComponent * desktopUiScale;
-                const layoutW = Math.max(1, Math.ceil(safeBufW / renderScale));
-                const layoutH = Math.max(1, Math.ceil(safeBufH / renderScale));
-                return {
-                    layoutW,
-                    layoutH,
-                    renderScaleX: renderScale,
-                    renderScaleY: renderScale,
-                    renderOffsetX: 0,
-                    renderOffsetY: 0,
-                };
-            }
-
-            // Keep the mobile root in its own logical UI surface so handheld widgets can render
-            // larger than pure scene-space widgets while still compositing into the full buffer.
-            const uiScale = this.getMobileGameplayUiScale(cssW, cssH, safeBufW, safeBufH);
-            const layoutW = Math.max(1, Math.round(cssW * uiScale));
-            const layoutH = Math.max(1, Math.round(cssH * uiScale));
-            return {
-                layoutW,
-                layoutH,
-                renderScaleX: safeBufW / layoutW,
-                renderScaleY: safeBufH / layoutH,
-                renderOffsetX: 0,
-                renderOffsetY: 0,
-            };
-        }
-
-        // The title/login surface gets the same integer device-pixel snapping as the
-        // gameplay branch above so NEAREST-sampled title sprites and bitmap fonts map
-        // 1:N onto device pixels at any OS/browser scaling. The scene itself stays
-        // authored at native fixed-mode size (no interface scaling on the title
-        // screen, matching OSRS). Layout uses ceil so the scale stays exact — up to
-        // one device pixel at the right/bottom edge is clipped instead of letting the
-        // ratio drift fractional (which made login text resample unevenly).
-        const dprComponent = Math.max(1, Math.round(safeBufW / Math.max(1, cssW)));
-        const layoutW = Math.max(1, Math.ceil(safeBufW / dprComponent));
-        const layoutH = Math.max(1, Math.ceil(safeBufH / dprComponent));
-
-        return {
-            layoutW,
-            layoutH,
-            renderScaleX: dprComponent,
-            renderScaleY: dprComponent,
-            renderOffsetX: 0,
-            renderOffsetY: 0,
-        };
+        return render.computeUiRenderMetrics(this, bufW, bufH);
     }
 
-    /**
-     * Public view of the active UI layout metrics so overlays that composite the
-     * login surface (LoginOverlay) author their textures in the exact same space
-     * as input mapping and the widget surface.
-     */
     getUiRenderMetrics(
         bufW: number,
         bufH: number,
@@ -1244,104 +825,39 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         renderOffsetX: number;
         renderOffsetY: number;
     } {
-        return this.computeUiRenderMetrics(bufW, bufH);
+        return render.getUiRenderMetrics(this, bufW, bufH);
     }
 
     override getCanvasResolutionScale(cssWidth: number, cssHeight: number): number {
-        if (typeof window === "undefined") {
-            return 1;
-        }
-
-        const dpr = window.devicePixelRatio || 1;
-        if (!Number.isFinite(dpr) || dpr <= 1) {
-            return 1;
-        }
-
-        const gameState = this.osrsClient.gameState;
-        const isLoginLikeState =
-            gameState === GameState.DOWNLOADING || this.osrsClient.isOnLoginScreen();
-
-        // Render the backing store at the device's real pixel ratio, including
-        // fractional values (125%/150% Windows scaling, browser zoom on Retina),
-        // so the 3D scene is always native-resolution. computeUiRenderMetrics
-        // snaps the widget render scale to an integer device-pixel ratio so
-        // NEAREST-sampled sprites and bitmap fonts stay pixel-perfect.
-        // Handhelds cap at 2 for fill-rate/memory; the iOS scene framebuffer is
-        // compensated via its quality profile so 3D cost stays flat.
-        const maxScale = isLoginLikeState ? 3 : isMobileMode ? 2 : 3;
-        const targetScale = Math.min(dpr, maxScale);
-
-        const safeCssWidth = Number.isFinite(cssWidth) ? Math.max(1, cssWidth) : 1;
-        const safeCssHeight = Number.isFinite(cssHeight) ? Math.max(1, cssHeight) : 1;
-        const maxPixelCount = isTouchDevice ? 6_000_000 : 12_000_000;
-        const targetPixelCount = safeCssWidth * safeCssHeight * targetScale * targetScale;
-        if (targetPixelCount <= maxPixelCount) {
-            return targetScale;
-        }
-
-        const cappedScale = Math.sqrt(maxPixelCount / (safeCssWidth * safeCssHeight));
-        return Math.max(1, Math.min(targetScale, cappedScale));
+        return render.getCanvasResolutionScale(this, cssWidth, cssHeight);
     }
 
     private resolveBrowserQualityProfile(): BrowserQualityProfile {
-        if (!isTouchDevice) {
-            return DESKTOP_QUALITY_PROFILE;
-        }
-        if (isIos) {
-            return IOS_SAFARI_QUALITY_PROFILE;
-        }
-        return MOBILE_TOUCH_QUALITY_PROFILE;
+        return render.resolveBrowserQualityProfile(this);
     }
 
     private syncBrowserQualityProfile(): BrowserQualityProfile {
-        const profile = this.resolveBrowserQualityProfile();
-        this.activeQualityProfile = profile;
-        if (this.activeQualityProfileKey !== profile.key) {
-            this.activeQualityProfileKey = profile.key;
-            this.fxaaEnabled = profile.fxaaEnabled;
-            this.needsFramebufferUpdate = true;
-        }
-        return profile;
+        return render.syncBrowserQualityProfile(this);
     }
 
     getActiveQualityProfileKey(): string {
-        return this.syncBrowserQualityProfile().key;
+        return render.getActiveQualityProfileKey(this);
     }
 
     getActiveQualityProfileLabel(): string {
-        return this.syncBrowserQualityProfile().label;
+        return render.getActiveQualityProfileLabel(this);
     }
 
     private getSceneResolutionScale(): number {
-        if (!isTouchDevice || this.osrsClient.isOnLoginScreen()) {
-            this.osrsClient.mobileEffectiveResolutionScale = 1;
-            return 1;
-        }
-        const profile = this.syncBrowserQualityProfile();
-        const scale = Math.max(0.5, Math.min(1, profile.defaultSceneScale || 1));
-        this.osrsClient.mobileEffectiveResolutionScale = scale;
-        return scale;
+        return render.getSceneResolutionScale(this);
     }
 
     private getSceneRenderSize(): { width: number; height: number } {
-        const scale = this.getSceneResolutionScale();
-        return {
-            width: Math.max(1, Math.round(this.app.width * scale)),
-            height: Math.max(1, Math.round(this.app.height * scale)),
-        };
+        return render.getSceneRenderSize(this);
     }
 
     private syncSceneFramebufferSize(): void {
-        if (!this.app) {
-            return;
-        }
-        const desired = this.getSceneRenderSize();
-        if (
-            (desired.width | 0) !== (this.sceneRenderWidth | 0) ||
-            (desired.height | 0) !== (this.sceneRenderHeight | 0)
-        ) {
-            this.needsFramebufferUpdate = true;
-        }
+        return render.syncSceneFramebufferSize(this);
     }
 
     private scaleViewportRectToSceneBuffer(rect: {
@@ -1350,769 +866,135 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         width: number;
         height: number;
     }): { x: number; y: number; width: number; height: number } {
-        const sceneWidth = Math.max(1, this.sceneRenderWidth | 0);
-        const sceneHeight = Math.max(1, this.sceneRenderHeight | 0);
-        const appWidth = Math.max(1, this.app.width | 0);
-        const appHeight = Math.max(1, this.app.height | 0);
-        return {
-            x: Math.max(0, Math.round((rect.x / appWidth) * sceneWidth)),
-            y: Math.max(0, Math.round((rect.y / appHeight) * sceneHeight)),
-            width: Math.max(1, Math.round((rect.width / appWidth) * sceneWidth)),
-            height: Math.max(1, Math.round((rect.height / appHeight) * sceneHeight)),
-        };
+        return render.scaleViewportRectToSceneBuffer(this, rect);
     }
 
     shouldUseDirectTextureScenePass(): boolean {
-        return false;
+        return render.shouldUseDirectTextureScenePass(this);
     }
 
     private resolveLoginFieldAt(y: number): 0 | 1 | undefined {
-        if (y >= this.LOGIN_FIELD_BASE_Y - 12 && y < this.LOGIN_FIELD_BASE_Y + 3) {
-            return 0;
-        }
-        if (y >= this.LOGIN_FIELD_BASE_Y + 3 && y < this.LOGIN_FIELD_BASE_Y + 18) {
-            return 1;
-        }
-        return undefined;
+        return render.resolveLoginFieldAt(this, y);
     }
 
     private resolveLoginFieldAtCanvasPoint(x: number, y: number): 0 | 1 | undefined {
-        const loginRenderer = this.osrsClient.loginRenderer;
-        const uiMetrics = this.computeUiRenderMetrics(this.canvas.width, this.canvas.height);
-        loginRenderer.syncMobileViewportState(
-            this.osrsClient.loginState,
-            this.isMobileLoginKeyboardOpen(),
-        );
-        loginRenderer.updateLayout(
-            uiMetrics.layoutW,
-            uiMetrics.layoutH,
-            this.canvas.width,
-            this.canvas.height,
-        );
-        loginRenderer.setMousePosition(x, y);
-        const content = loginRenderer.mapPointerToContent(
-            loginRenderer.mouseX,
-            loginRenderer.mouseY,
-        );
-        return this.resolveLoginFieldAt(content.y);
+        return render.resolveLoginFieldAtCanvasPoint(this, x, y);
     }
 
     isMobileLoginInputActive(): boolean {
-        return this.isMobileLoginKeyboardOpen();
+        return render.isMobileLoginInputActive(this);
     }
 
     private readMobileLoginViewportMetrics():
         | { width: number; height: number; offsetLeft: number; offsetTop: number }
         | undefined {
-        if (typeof window === "undefined") {
-            return undefined;
-        }
-
-        const viewport = window.visualViewport;
-        const width = Math.round(viewport?.width ?? window.innerWidth ?? 0);
-        const height = Math.round(viewport?.height ?? window.innerHeight ?? 0);
-        if (!(width > 0) || !(height > 0)) {
-            return undefined;
-        }
-
-        return {
-            width,
-            height,
-            offsetLeft: Math.round(viewport?.offsetLeft ?? 0),
-            offsetTop: Math.round(viewport?.offsetTop ?? 0),
-        };
+        return render.readMobileLoginViewportMetrics(this);
     }
 
     private updateMobileLoginViewportBaseline(force: boolean = false): void {
-        const viewport = this.readMobileLoginViewportMetrics();
-        if (!viewport) {
-            return;
-        }
-
-        const widthChanged =
-            this.mobileLoginViewportBaselineWidth <= 0 ||
-            Math.abs(viewport.width - this.mobileLoginViewportBaselineWidth) > 40;
-        if (
-            force ||
-            widthChanged ||
-            !this.mobileLoginInputFocused ||
-            !this.mobileLoginKeyboardOpen ||
-            viewport.height > this.mobileLoginViewportBaselineHeight
-        ) {
-            this.mobileLoginViewportBaselineWidth = viewport.width;
-            this.mobileLoginViewportBaselineHeight = viewport.height;
-        }
+        return render.updateMobileLoginViewportBaseline(this, force);
     }
 
     private refreshMobileLoginKeyboardState(): boolean {
-        if (!this.mobileLoginInputFocused) {
-            this.mobileLoginKeyboardOpen = false;
-            this.updateMobileLoginViewportBaseline(true);
-            return false;
-        }
-
-        if (typeof window === "undefined") {
-            this.mobileLoginKeyboardOpen = true;
-            return true;
-        }
-
-        const viewport = window.visualViewport;
-        if (!viewport) {
-            this.mobileLoginKeyboardOpen = true;
-            return true;
-        }
-
-        const width = Math.round(viewport.width);
-        const height = Math.round(viewport.height);
-        const offsetTop = Math.round(viewport.offsetTop ?? 0);
-        const widthChanged =
-            this.mobileLoginViewportBaselineWidth <= 0 ||
-            Math.abs(width - this.mobileLoginViewportBaselineWidth) > 40;
-        if (widthChanged) {
-            this.mobileLoginViewportBaselineWidth = width;
-            this.mobileLoginViewportBaselineHeight = height;
-            this.mobileLoginKeyboardOpen = false;
-            return false;
-        }
-
-        if (height >= this.mobileLoginViewportBaselineHeight - 20 && offsetTop < 20) {
-            this.mobileLoginViewportBaselineHeight = height;
-        }
-
-        const heightDelta = this.mobileLoginViewportBaselineHeight - height;
-        this.mobileLoginKeyboardOpen = heightDelta >= 80 || offsetTop >= 40;
-        return this.mobileLoginKeyboardOpen;
+        return render.refreshMobileLoginKeyboardState(this);
     }
 
     private isMobileLoginKeyboardOpen(): boolean {
-        return this.refreshMobileLoginKeyboardState();
+        return render.isMobileLoginKeyboardOpen(this);
     }
 
     private syncMobileLoginInputPosition(): void {
-        const input = this.mobileLoginInput;
-        if (!input) {
-            return;
-        }
-
-        const viewport = this.readMobileLoginViewportMetrics();
-        if (!viewport) {
-            input.style.left = "50%";
-            input.style.top = "46%";
-            input.style.transform = "translate(-50%, -50%)";
-            return;
-        }
-
-        const focusRatioY = 0.46;
-        input.style.left = `${viewport.offsetLeft + Math.round(viewport.width / 2)}px`;
-        input.style.top = `${viewport.offsetTop + Math.round(viewport.height * focusRatioY)}px`;
-        input.style.transform = "translate(-50%, -50%)";
+        return render.syncMobileLoginInputPosition(this);
     }
 
     private requestMobileLoginKeyboard(field: 0 | 1): void {
-        const state = this.osrsClient.loginState;
-        state.currentLoginField = field;
-        state.onMobile = true;
-        state.virtualKeyboardVisible = true;
-        if (!this.mobileLoginInputFocused && !this.mobileLoginKeyboardOpen) {
-            this.updateMobileLoginViewportBaseline(true);
-        }
-        const input = this.ensureMobileLoginInput();
-        if (
-            input &&
-            typeof document !== "undefined" &&
-            document.activeElement === input &&
-            !this.isMobileLoginKeyboardOpen()
-        ) {
-            this.allowMobileLoginInputBlur = true;
-            this.preserveMobileLoginInputModeOnBlur = true;
-            input.blur();
-        }
-        this.syncMobileLoginInput(true);
+        return render.requestMobileLoginKeyboard(this, field);
     }
-
-    private onMobileLoginInputFocus = (): void => {
-        this.mobileLoginInputFocused = true;
-        this.mobileLoginKeyboardOpen = false;
-        this.syncMobileLoginInputPosition();
-        this.refreshMobileLoginKeyboardState();
-    };
-
-    private onMobileLoginInputBlur = (): void => {
-        this.mobileLoginInputFocused = false;
-        this.mobileLoginKeyboardOpen = false;
-
-        const shouldRestoreFocus =
-            !this.allowMobileLoginInputBlur && this.shouldUseMobileLoginInput();
-        const preserveKeyboardMode = this.preserveMobileLoginInputModeOnBlur;
-        this.allowMobileLoginInputBlur = false;
-        this.preserveMobileLoginInputModeOnBlur = false;
-
-        if (shouldRestoreFocus) {
-            const refocus = () => {
-                if (!this.shouldUseMobileLoginInput() || this.mobileLoginInputFocused) {
-                    return;
-                }
-                this.syncMobileLoginInput(true);
-            };
-
-            if (
-                typeof window !== "undefined" &&
-                typeof window.requestAnimationFrame === "function"
-            ) {
-                window.requestAnimationFrame(refocus);
-            } else {
-                setTimeout(refocus, 0);
-            }
-        } else if (
-            !preserveKeyboardMode &&
-            this.osrsClient.isOnLoginScreen() &&
-            this.osrsClient.loginState.loginIndex === LoginIndex.LOGIN_FORM
-        ) {
-            this.osrsClient.loginState.virtualKeyboardVisible = false;
-        }
-
-        this.updateMobileLoginViewportBaseline(true);
-    };
-
-    private onMobileLoginViewportChange = (): void => {
-        this.refreshMobileLoginKeyboardState();
-        this.syncMobileLoginInputPosition();
-    };
 
     private syncLoginRendererLayoutForCanvas(): void {
-        const loginRenderer = this.osrsClient.loginRenderer;
-        const uiMetrics = this.computeUiRenderMetrics(this.canvas.width, this.canvas.height);
-        loginRenderer.syncMobileViewportState(
-            this.osrsClient.loginState,
-            this.isMobileLoginKeyboardOpen(),
-        );
-        loginRenderer.updateLayout(
-            uiMetrics.layoutW,
-            uiMetrics.layoutH,
-            this.canvas.width,
-            this.canvas.height,
-        );
+        return render.syncLoginRendererLayoutForCanvas(this);
     }
 
-    private onCanvasTouchStart = (event: TouchEvent): void => {
-        if (!isMobileMode) return;
-        if (!this.osrsClient.isOnLoginScreen()) return;
-        const state = this.osrsClient.loginState;
-        if (!event.touches || event.touches.length < 1) return;
-
-        const { x, y } = this.getCanvasTouchPos(event.touches[0]);
-        if (state.loginIndex === LoginIndex.WELCOME) {
-            this.syncLoginRendererLayoutForCanvas();
-            const action = this.osrsClient.loginRenderer.handleMouseClick(
-                state,
-                x,
-                y,
-                ClickMode.LEFT,
-                this.osrsClient.gameState,
-            );
-            if (action?.type === "existing_user") {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                this.osrsClient.handleLoginMouseClick(x, y, ClickMode.LEFT);
-                this.requestMobileLoginKeyboard(0);
-                return;
-            }
-        }
-
-        if (state.loginIndex !== LoginIndex.LOGIN_FORM) return;
-        const field = this.resolveLoginFieldAtCanvasPoint(x, y);
-        if (field === undefined) return;
-
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        this.requestMobileLoginKeyboard(field);
-    };
-
     private getActiveLoginFieldValue(): string {
-        const state = this.osrsClient.loginState;
-        return state.currentLoginField === 0 ? state.username : state.password;
+        return render.getActiveLoginFieldValue(this);
     }
 
     private setActiveLoginFieldValue(raw: string): void {
-        const state = this.osrsClient.loginState;
-        if (state.currentLoginField === 0) {
-            state.username = raw.slice(0, 320);
-        } else {
-            state.password = raw.slice(0, 20);
-        }
-        state.savePersistedLoginState();
+        return render.setActiveLoginFieldValue(this, raw);
     }
 
-    private onMobileLoginInput = (_event: Event): void => {
-        const input = this.mobileLoginInput;
-        if (!input) return;
-        if (!this.shouldUseMobileLoginInput()) return;
-
-        this.setActiveLoginFieldValue(input.value ?? "");
-        const normalized = this.getActiveLoginFieldValue();
-        if (input.value !== normalized) {
-            input.value = normalized;
-        }
-    };
-
-    private onMobileLoginKeyDown = (event: KeyboardEvent): void => {
-        if (!this.shouldUseMobileLoginInput()) return;
-
-        const state = this.osrsClient.loginState;
-        if (event.key === "Tab") {
-            event.preventDefault();
-            state.currentLoginField = state.currentLoginField === 0 ? 1 : 0;
-            this.syncMobileLoginInput(true);
-            return;
-        }
-
-        if (event.key === "Enter") {
-            event.preventDefault();
-            if (state.currentLoginField === 0 && state.username.length > 0) {
-                state.currentLoginField = 1;
-                this.syncMobileLoginInput(true);
-                return;
-            }
-
-            if (state.canAttemptLogin()) {
-                state.virtualKeyboardVisible = false;
-                this.syncMobileLoginInput(false);
-                state.savePersistedLoginState();
-                this.osrsClient.updateGameState(GameState.CONNECTING);
-                sendLogin(
-                    state.username.trim(),
-                    state.password,
-                    this.osrsClient.loadedCache?.info?.revision ?? 0,
-                );
-            } else {
-                state.showCredentialValidationError();
-                this.osrsClient.handleLoginKeyInput("Enter", "");
-                this.syncMobileLoginInput(true);
-            }
-        }
-    };
-
     private ensureMobileLoginInput(): HTMLInputElement | undefined {
-        if (!isMobileMode) return undefined;
-
-        const existing = this.mobileLoginInput;
-        if (existing && existing.isConnected) {
-            return existing;
-        }
-
-        if (typeof document === "undefined") return undefined;
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.autocomplete = "off";
-        input.autocapitalize = "none";
-        input.setAttribute("autocorrect", "off");
-        input.spellcheck = false;
-        input.inputMode = "email";
-        (input as any).enterKeyHint = "next";
-        input.tabIndex = -1;
-        input.style.position = "fixed";
-        input.style.width = "16px";
-        input.style.height = "16px";
-        input.style.opacity = "0";
-        input.style.pointerEvents = "none";
-        input.style.border = "0";
-        input.style.margin = "0";
-        input.style.padding = "0";
-        input.style.background = "transparent";
-        input.style.color = "transparent";
-        input.style.caretColor = "transparent";
-        input.style.fontSize = "16px";
-
-        input.addEventListener("input", this.onMobileLoginInput);
-        input.addEventListener("keydown", this.onMobileLoginKeyDown);
-        input.addEventListener("focus", this.onMobileLoginInputFocus);
-        input.addEventListener("blur", this.onMobileLoginInputBlur);
-        document.body.appendChild(input);
-        this.mobileLoginInput = input;
-        this.syncMobileLoginInputPosition();
-        return input;
+        return render.ensureMobileLoginInput(this);
     }
 
     private destroyMobileLoginInput(): void {
-        const input = this.mobileLoginInput;
-        if (!input) return;
-        input.removeEventListener("input", this.onMobileLoginInput);
-        input.removeEventListener("keydown", this.onMobileLoginKeyDown);
-        input.removeEventListener("focus", this.onMobileLoginInputFocus);
-        input.removeEventListener("blur", this.onMobileLoginInputBlur);
-        try {
-            input.remove();
-        } catch {}
-        this.mobileLoginInput = undefined;
-        this.mobileLoginInputFocused = false;
-        this.mobileLoginKeyboardOpen = false;
+        return render.destroyMobileLoginInput(this);
     }
 
     private syncMobileLoginInput(focus: boolean): void {
-        if (!this.shouldUseMobileLoginInput()) {
-            const input = this.mobileLoginInput;
-            if (input && document.activeElement === input) {
-                this.allowMobileLoginInputBlur = true;
-                this.preserveMobileLoginInputModeOnBlur = false;
-                input.blur();
-            }
-            return;
-        }
-
-        const input = this.ensureMobileLoginInput();
-        if (!input) return;
-
-        const state = this.osrsClient.loginState;
-        const wantsPassword = state.currentLoginField === 1;
-        const nextType = wantsPassword ? "password" : "text";
-        if (input.type !== nextType) {
-            input.type = nextType;
-        }
-        input.inputMode = wantsPassword ? "text" : "email";
-        (input as any).enterKeyHint = wantsPassword ? "go" : "next";
-
-        const value = this.getActiveLoginFieldValue();
-        if (input.value !== value) {
-            input.value = value;
-        }
-
-        this.syncMobileLoginInputPosition();
-
-        if (focus && document.activeElement !== input) {
-            try {
-                input.focus({ preventScroll: true });
-            } catch {
-                input.focus();
-            }
-        }
-        if (focus) {
-            const end = input.value.length;
-            input.setSelectionRange(end, end);
-        }
+        return render.syncMobileLoginInput(this, focus);
     }
 
     static isSupported(): boolean {
-        return isWebGL2Supported;
+        return render.isSupported();
     }
 
     private acquireHitsplatEntry(): HitsplatEntry {
-        const entry = this.hitsplatPool.pop() ?? { worldX: 0, worldZ: 0, plane: 0 };
-        entry.style = undefined;
-        entry.spriteName = undefined;
-        entry.type2 = undefined;
-        entry.damage2 = undefined;
-        return entry;
+        return render.acquireHitsplatEntry(this);
     }
 
     private acquireHealthBarEntry(): HealthBarEntry {
-        return (
-            this.healthBarPool.pop() ?? {
-                worldX: 0,
-                worldZ: 0,
-                plane: 0,
-                health: 0,
-                health2: 0,
-                cycle: 0,
-                cycleOffset: 0,
-            }
-        );
+        return render.acquireHealthBarEntry(this);
     }
 
     private acquireOverheadPrayerEntry(): OverheadPrayerEntry {
-        return (
-            this.overheadPrayerPool.pop() ?? {
-                worldX: 0,
-                worldZ: 0,
-                plane: 0,
-                heightOffsetTiles: 0.9,
-                headIconPrayer: -1,
-            }
-        );
+        return render.acquireOverheadPrayerEntry(this);
     }
 
     private acquireOverheadTextEntry(): OverheadTextEntry {
-        const entry = this.overheadTextPool.pop() ?? {
-            worldX: 0,
-            worldZ: 0,
-            plane: 0,
-            heightOffsetTiles: 0.9,
-            text: "",
-            color: DEFAULT_OVERHEAD_CHAT_COLOR >>> 0,
-            colorId: DEFAULT_OVERHEAD_CHAT_COLOR_ID,
-            effect: 0,
-            life: 1,
-            remaining: 0,
-            duration: 1,
-        };
-        entry.modIcon = undefined;
-        entry.pattern = undefined;
-        return entry;
+        return render.acquireOverheadTextEntry(this);
     }
 
     private resetHealthBarOutput(): void {
-        if (this.healthBarOutput.length === 0) return;
-        for (const entry of this.healthBarOutput) {
-            entry.defId = undefined;
-            entry.heightOffsetTiles = undefined;
-            this.healthBarPool.push(entry);
-        }
-        this.healthBarOutput.length = 0;
+        return render.resetHealthBarOutput(this);
     }
 
     private resetOverheadPrayerOutput(): void {
-        if (this.overheadPrayerOutput.length === 0) return;
-        for (const entry of this.overheadPrayerOutput) {
-            entry.headIconPrayer = -1;
-            entry.heightOffsetTiles = 0.9;
-            this.overheadPrayerPool.push(entry);
-        }
-        this.overheadPrayerOutput.length = 0;
+        return render.resetOverheadPrayerOutput(this);
     }
 
     private resetOverheadTextOutput(): void {
-        if (this.overheadTextOutput.length === 0) return;
-        for (const entry of this.overheadTextOutput) {
-            entry.text = "";
-            entry.life = 0;
-            entry.remaining = 0;
-            entry.duration = 0;
-            entry.modIcon = undefined;
-            entry.pattern = undefined;
-            entry.heightOffsetTiles = 0.9;
-            entry.color = DEFAULT_OVERHEAD_CHAT_COLOR >>> 0;
-            entry.colorId = DEFAULT_OVERHEAD_CHAT_COLOR_ID;
-            this.overheadTextPool.push(entry);
-        }
-        this.overheadTextOutput.length = 0;
+        return render.resetOverheadTextOutput(this);
     }
 
     private resetHitsplatOutput(): void {
-        if (this.hitsplatOutput.length === 0) return;
-        for (const entry of this.hitsplatOutput) {
-            entry.style = undefined;
-            entry.spriteName = undefined;
-            this.hitsplatPool.push(entry);
-        }
-        this.hitsplatOutput.length = 0;
+        return render.resetHitsplatOutput(this);
     }
 
-    /**
-     * Get NPC defaultHeight in OSRS units by computing actual model bounding cylinder.
-     * Actor.defaultHeight is set from model.height after calculateBoundsCylinder().
-     */
     private getNpcDefaultHeight(npcTypeId: number): number {
-        // Check cache first
-        let defaultHeight = this.npcDefaultHeightCache.get(npcTypeId);
-        if (defaultHeight !== undefined) {
-            return defaultHeight;
-        }
-
-        // Default fallback (same as Actor constructor: this.defaultHeight = 200)
-        defaultHeight = 200;
-
-        try {
-            const npcType = this.osrsClient.npcTypeLoader.load(npcTypeId | 0);
-            if (npcType && npcType.modelIds && npcType.modelIds.length > 0) {
-                // Load and merge model data
-                const models: ModelData[] = [];
-                for (const modelId of npcType.modelIds) {
-                    const modelData = this.osrsClient.modelLoader.getModel(modelId);
-                    if (modelData) {
-                        models.push(modelData);
-                    }
-                }
-
-                if (models.length > 0) {
-                    const merged = ModelData.merge(models, models.length);
-
-                    // Apply recoloring (needed for proper model construction)
-                    if (npcType.recolorFrom) {
-                        for (let i = 0; i < npcType.recolorFrom.length; i++) {
-                            merged.recolor(npcType.recolorFrom[i], npcType.recolorTo[i]);
-                        }
-                    }
-
-                    // Light the model to get a proper Model instance
-                    const model = merged.light(
-                        this.osrsClient.textureLoader,
-                        (npcType.ambient ?? 0) + 64,
-                        (npcType.contrast ?? 0) * 5 + 850,
-                        -30,
-                        -50,
-                        -30,
-                    );
-
-                    // Apply height scaling (OSRS applies widthScale to X/Z, heightScale to Y)
-                    const widthScale = npcType.widthScale ?? 128;
-                    const heightScale = npcType.heightScale ?? 128;
-                    if (widthScale !== 128 || heightScale !== 128) {
-                        model.scale(widthScale, heightScale, widthScale);
-                    }
-
-                    // Calculate bounds cylinder to get actual height
-                    model.calculateBoundsCylinder();
-                    defaultHeight = model.height;
-                }
-            }
-        } catch (e) {
-            // Fall back to default on any error
-            console.warn(`[renderer] Failed to compute NPC height for ${npcTypeId}:`, e);
-        }
-
-        // Cache and return
-        this.npcDefaultHeightCache.set(npcTypeId, defaultHeight);
-        return defaultHeight;
+        return render.getNpcDefaultHeight(this, npcTypeId);
     }
 
-    /**
-     * Resolve NPC overlay anchor and logical height from the current animated model.
-     * This mirrors Actor.logicalHeight / NPC.heightOffset semantics more closely than type-only lookup.
-     */
     private resolveNpcOverlayAnchor(
         ecsId: number,
         baseWorldX: number,
         baseWorldZ: number,
         npcTypeId: number | undefined,
     ): { worldX: number; worldZ: number; logicalHeightTiles: number } {
-        let worldX = baseWorldX;
-        let worldZ = baseWorldZ;
-        let defaultHeight = npcTypeId != null ? this.getNpcDefaultHeight(npcTypeId) : 200;
-        let logicalHeightTiles = defaultHeight / 128;
-
-        try {
-            if (npcTypeId == null || npcTypeId < 0) {
-                return { worldX, worldZ, logicalHeightTiles };
-            }
-            const npcEcs = this.osrsClient.npcEcs;
-            const npcTypeLoader = this.osrsClient.npcTypeLoader;
-            const npcModelLoader = this.getInteractNpcModelLoader();
-            if (!npcModelLoader || !npcTypeLoader) {
-                return { worldX, worldZ, logicalHeightTiles };
-            }
-
-            let npcType = npcTypeLoader.load(npcTypeId | 0);
-            if (!npcType) {
-                return { worldX, worldZ, logicalHeightTiles };
-            }
-            if (npcType.transforms) {
-                const transformed = npcType.transform(this.osrsClient.varManager, npcTypeLoader);
-                if (transformed) npcType = transformed;
-            }
-
-            const actionSeqId = npcEcs.getSeqId(ecsId) | 0;
-            const actionDelay = npcEcs.getSeqDelay?.(ecsId) | 0;
-            const { movementSeqId, idleSeqId } = this.resolveNpcMovementSequenceIds(npcEcs, ecsId);
-            const actionActive = actionSeqId >= 0 && actionDelay === 0;
-            const seqId = actionActive ? actionSeqId : movementSeqId;
-            const frame = Math.max(
-                0,
-                actionActive
-                    ? npcEcs.getFrameIndex(ecsId) | 0
-                    : npcEcs.getMovementFrameIndex?.(ecsId) | 0,
-            );
-            const movementFrame = Math.max(0, npcEcs.getMovementFrameIndex?.(ecsId) | 0);
-            const overlaySeqId =
-                actionActive &&
-                this.shouldLayerNpcMovementSequence(
-                    actionSeqId | 0,
-                    movementSeqId | 0,
-                    idleSeqId | 0,
-                )
-                    ? movementSeqId | 0
-                    : -1;
-            const overlayFrame = overlaySeqId >= 0 ? movementFrame | 0 : -1;
-            const animHeightOffsetTiles = this.getSequenceVerticalOffsetTiles(seqId);
-
-            let model =
-                seqId >= 0
-                    ? npcModelLoader.getModel(
-                        npcType,
-                        seqId,
-                        frame,
-                        overlaySeqId | 0,
-                        overlayFrame | 0,
-                    )
-                    : undefined;
-            if (!model) {
-                model = npcModelLoader.getModel(npcType, -1, -1);
-            }
-            if (!model) {
-                const baseLogicalHeight =
-                    npcType.heightOffset >= 0 ? npcType.heightOffset : defaultHeight;
-                return {
-                    worldX,
-                    worldZ,
-                    logicalHeightTiles: baseLogicalHeight / 128 + animHeightOffsetTiles,
-                };
-            }
-
-            try {
-                model.calculateBoundsCylinder();
-                defaultHeight = Math.max(1, model.height | 0);
-            } catch {}
-            const baseLogicalHeight =
-                npcType.heightOffset >= 0 ? npcType.heightOffset : defaultHeight;
-            logicalHeightTiles = baseLogicalHeight / 128 + animHeightOffsetTiles;
-
-            // Model-space center can be offset from origin; rotate it like npc.vert.glsl.
-            try {
-                model.calculateBounds();
-                const midX = ((model as any).xMid | 0) as number;
-                const midZ = ((model as any).zMid | 0) as number;
-                const yaw = (npcEcs.getRotation(ecsId) | 0) * RS_TO_RADIANS;
-                const cos = Math.cos(yaw);
-                const sin = Math.sin(yaw);
-                worldX += (midX * cos + midZ * sin) / 128.0;
-                worldZ += (-midX * sin + midZ * cos) / 128.0;
-            } catch {}
-        } catch {}
-
-        return {
-            worldX,
-            worldZ,
-            logicalHeightTiles,
-        };
+        return render.resolveNpcOverlayAnchor(this, ecsId, baseWorldX, baseWorldZ, npcTypeId);
     }
 
     private getEffectiveControlledPlayerId(): number {
-        const actual = this.osrsClient.controlledPlayerServerId | 0;
-        if (actual > 0) {
-            if (
-                this.pendingControlledPlayerServerId !== undefined &&
-                this.pendingControlledPlayerServerId !== actual
-            ) {
-                this.pendingControlledPlayerServerId = undefined;
-            }
-            return actual;
-        }
-        if (this.pendingControlledPlayerServerId !== undefined) {
-            return this.pendingControlledPlayerServerId | 0;
-        }
-        return 0;
+        return render.getEffectiveControlledPlayerId(this);
     }
 
     private ensureHitsplatState(
         map: Map<number, ActorHitsplatState>,
         serverId: number,
     ): ActorHitsplatState {
-        let state = map.get(serverId);
-        if (state) return state;
-        state = createActorHitsplatState();
-        map.set(serverId, state);
-        return state;
+        return render.ensureHitsplatState(this, map, serverId);
     }
 
-    /**
-     *
-     * - All cycle values are in CLIENT CYCLES (20ms each), NOT server ticks
-     * - hitSplatCycles stores: currentCycle + displayCycles + delayCycles (the END cycle)
-     * - Start visibility is calculated at render time: hitSplatCycles - displayCycles
-     * - delayCycles delays when the hitsplat becomes visible (syncs with animation impact)
-     *
-     * @param currentCycle Current client cycle (from getClientCycle(), 20ms per cycle)
-     * @param delayCycles Additional delay in client cycles before visibility
-     */
     private addHitSplatOsrs(
         state: ActorHitsplatState,
         type: number,
@@ -2122,230 +1004,41 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         currentCycle: number,
         delayCycles: number,
     ): void {
-        // Mirror Actor.addHitSplat exactly
-        let allExpired = true; // var7
-        let allActive = true; // var8
-        for (let i = 0; i < 4; i++) {
-            if ((state.hitSplatCycles[i] | 0) > (currentCycle | 0)) {
-                allExpired = false;
-            } else {
-                allActive = false;
-            }
-        }
-
-        let slot = -1; // var9
-        let compareType = -1;
-        let displayCycles = 0;
-        if ((type | 0) >= 0) {
-            const def = this.hitsplatOverlay?.getDefinition?.(type | 0);
-            if (def) {
-                compareType = (def.compareType ?? -1) | 0;
-                displayCycles = (def.displayCycles ?? 70) | 0;
-            } else {
-                compareType = -1;
-                displayCycles = 70;
-            }
-        }
-
-        if (allActive) {
-            // All 4 slots are active, need to replace one based on compareType
-            if ((compareType | 0) === -1) {
-                return; // No replacement priority defined, skip this hitsplat
-            }
-            slot = 0;
-            let best = 0;
-            // compareType 0 = replace oldest (lowest cycle), 1 = replace lowest damage
-            if ((compareType | 0) === 0) best = state.hitSplatCycles[0] | 0;
-            else if ((compareType | 0) === 1) best = state.hitSplatValues[0] | 0;
-            for (let i = 1; i < 4; i++) {
-                if ((compareType | 0) === 0) {
-                    const v = state.hitSplatCycles[i] | 0;
-                    if (v < best) {
-                        slot = i;
-                        best = v;
-                    }
-                } else if ((compareType | 0) === 1) {
-                    const v = state.hitSplatValues[i] | 0;
-                    if (v < best) {
-                        slot = i;
-                        best = v;
-                    }
-                }
-            }
-            // If compareType=1 and new value is <= existing lowest, don't replace
-            if ((compareType | 0) === 1 && (best | 0) >= (value | 0)) {
-                return;
-            }
-        } else {
-            // At least one slot is expired, find an empty one
-            if (allExpired) {
-                state.hitSplatCount = 0;
-            }
-            for (let i = 0; i < 4; i++) {
-                const idx = state.hitSplatCount & 3;
-                state.hitSplatCount = (state.hitSplatCount + 1) & 3;
-                if ((state.hitSplatCycles[idx] | 0) <= (currentCycle | 0)) {
-                    slot = idx;
-                    break;
-                }
-            }
-        }
-
-        if (slot >= 0) {
-            state.hitSplatTypes[slot] = type | 0;
-            state.hitSplatValues[slot] = value | 0;
-            state.hitSplatTypes2[slot] = type2 | 0;
-            state.hitSplatValues2[slot] = value2 | 0;
-            // OSRS: hitSplatCycles[slot] = currentCycle + displayCycles + delayCycles
-            // This stores the END cycle (when hitsplat expires)
-            // Start visibility = hitSplatCycles - displayCycles (calculated at render time)
-            state.hitSplatCycles[slot] = (currentCycle + displayCycles + delayCycles) | 0;
-        }
+        return render.addHitSplatOsrs(this, state, type, value, type2, value2, currentCycle, delayCycles);
     }
 
-    /**
-     * Check if a hitsplat slot is visible and calculate its animation progress.
-     *
-     *
-     * - Visibility: hitSplatCycles - displayCycles <= currentCycle < hitSplatCycles
-     * - Animation progress: (displayCycles - remainingCycles) / displayCycles
-     *
-     * @returns undefined if not visible, or animProgress (0..1) if visible
-     */
     private getHitsplatVisibility(
         state: ActorHitsplatState,
         slot: number,
         clientCycle: number,
     ): number | undefined {
-        const endCycle = state.hitSplatCycles[slot] | 0;
-        const type = state.hitSplatTypes[slot] | 0;
-
-        // Type < 0 means unused slot
-        if (type < 0) return undefined;
-
-        // Check if expired: hitSplatCycles <= currentCycle
-        if (endCycle <= clientCycle) return undefined;
-
-        // Get displayCycles from definition
-        const def = this.hitsplatOverlay?.getDefinition?.(type);
-        const displayCycles = (def?.displayCycles ?? 70) | 0;
-
-        // Calculate start cycle: endCycle - displayCycles
-        const startCycle = endCycle - displayCycles;
-
-        // Check if not yet visible: startCycle > currentCycle
-        if (startCycle > clientCycle) return undefined;
-
-        // Calculate animation progress (0 = just started, 1 = about to expire)
-        // remainingCycles = endCycle - currentCycle
-        // elapsedCycles = displayCycles - remainingCycles = currentCycle - startCycle
-        // animProgress = elapsedCycles / displayCycles
-        const remainingCycles = endCycle - clientCycle;
-        const elapsedCycles = displayCycles - remainingCycles;
-        const animProgress = Math.max(0, Math.min(1, elapsedCycles / displayCycles));
-
-        return animProgress;
+        return render.getHitsplatVisibility(this, state, slot, clientCycle);
     }
 
     private trimHitsplats(tick: number): void {
-        const playerEcs = this.osrsClient.playerEcs;
-        const controlledId = this.getEffectiveControlledPlayerId();
-        for (const [playerId, state] of this.playerHitsplats) {
-            let active = false;
-            for (let i = 0; i < 4; i++) {
-                if ((state.hitSplatCycles[i] | 0) > (tick | 0)) {
-                    active = true;
-                    break;
-                }
-            }
-            const isControlledPlayer = controlledId > 0 && (playerId | 0) === controlledId;
-            const missingEcsEntry = playerEcs.getIndexForServerId(playerId) === undefined;
-            if (!active || (missingEcsEntry && !isControlledPlayer)) {
-                this.playerHitsplats.delete(playerId);
-            }
-        }
-        const npcEcs = this.osrsClient.npcEcs;
-        for (const [serverId, state] of this.npcHitsplats) {
-            let active = false;
-            for (let i = 0; i < 4; i++) {
-                if ((state.hitSplatCycles[i] | 0) > (tick | 0)) {
-                    active = true;
-                    break;
-                }
-            }
-            const ecsId = npcEcs.getEcsIdForServer(serverId);
-            if (!active || ecsId === undefined || !npcEcs.isActive(ecsId)) {
-                this.npcHitsplats.delete(serverId);
-            }
-        }
+        return render.trimHitsplats(this, tick);
     }
 
     private resolveHealthBarDefinition(defId: number): HealthBarDefinitionState {
-        const def = this.healthBarOverlay?.getDefinition?.(defId | 0);
-        return {
-            defId: defId | 0,
-            int1: (def?.int1 ?? 255) | 0,
-            int2: (def?.int2 ?? 255) | 0,
-            int3: (def?.int3 ?? -1) | 0,
-            stepIncrement: (def?.stepIncrement ?? 1) | 0,
-            int5: (def?.int5 ?? 70) | 0,
-            width: Math.max(1, Math.min(255, def?.width ?? 30)) | 0,
-            widthPadding: Math.max(0, def?.widthPadding ?? 0) | 0,
-        };
+        return render.resolveHealthBarDefinition(this, defId);
     }
 
     private ensureActorHealthBars(
         map: Map<number, ActorHealthBarsState>,
         serverId: number,
     ): ActorHealthBarsState {
-        let state = map.get(serverId);
-        if (state) return state;
-        state = createActorHealthBarsState();
-        map.set(serverId, state);
-        return state;
+        return render.ensureActorHealthBars(this, map, serverId);
     }
 
     private healthBarPut(bar: HealthBarBarState, update: HealthBarUpdateState): void {
-        const cycle = update.cycle | 0;
-        // Update existing entry at the same cycle.
-        for (let i = 0; i < bar.updates.length; i++) {
-            if ((bar.updates[i].cycle | 0) === cycle) {
-                bar.updates[i] = update;
-                return;
-            }
-        }
-        // Insert to keep ascending order by cycle (oldest first).
-        let insert = bar.updates.length;
-        for (let i = 0; i < bar.updates.length; i++) {
-            if ((bar.updates[i].cycle | 0) > cycle) {
-                insert = i;
-                break;
-            }
-        }
-        bar.updates.splice(insert, 0, update);
-        // keep at most 4 updates; drop the oldest.
-        if (bar.updates.length > 4) bar.updates.shift();
+        return render.healthBarPut(this, bar, update);
     }
 
     private healthBarGet(
         bar: HealthBarBarState,
         clientCycle: number,
     ): HealthBarUpdateState | undefined {
-        const now = clientCycle | 0;
-        if (bar.updates.length === 0) return undefined;
-        if ((bar.updates[0].cycle | 0) > now) return undefined;
-        // Promote to the newest update with cycle <= now by removing older entries.
-        while (bar.updates.length > 1 && (bar.updates[1].cycle | 0) <= now) {
-            bar.updates.shift();
-        }
-        const current = bar.updates[0];
-        const def = bar.def;
-        // HealthBarDefinition timings are defined in client cycles (20ms).
-        if ((def.int5 | 0) + (current.cycleOffset | 0) + (current.cycle | 0) <= now) {
-            bar.updates.shift();
-            return undefined;
-        }
-        return current;
+        return render.healthBarGet(this, bar, clientCycle);
     }
 
     private actorAddHealthBar(
@@ -2353,58 +1046,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         defId: number,
         update: HealthBarUpdateState,
     ): void {
-        const bars = state.bars;
-        // Existing bar -> update its timeline.
-        for (const b of bars) {
-            if ((b.def.defId | 0) === (defId | 0)) {
-                this.healthBarPut(b, update);
-                return;
-            }
-        }
-
-        const def = this.resolveHealthBarDefinition(defId);
-        const existingCount = bars.length | 0;
-        // only add a 5th bar if we can evict an existing bar with int2 > new.int2
-        // (Actor.addHealthBar).
-        let removable: HealthBarBarState | undefined = undefined;
-        let maxInt2 = def.int2 | 0;
-        for (const b of bars) {
-            const int2 = b.def.int2 | 0;
-            if (int2 > maxInt2) {
-                maxInt2 = int2;
-                removable = b;
-            }
-        }
-        if (existingCount >= 4 && !removable) return;
-
-        const newBar: HealthBarBarState = { def, updates: [] };
-        // Keep bars sorted by definition.int1 descending (Actor.addHealthBar).
-        let insertIndex = bars.length;
-        for (let i = 0; i < bars.length; i++) {
-            if ((bars[i].def.int1 | 0) <= (def.int1 | 0)) {
-                insertIndex = i;
-                break;
-            }
-        }
-        bars.splice(insertIndex, 0, newBar);
-
-        // If we exceeded the cap, remove the bar with the highest int2.
-        if (existingCount >= 4 && removable) {
-            const idx = bars.indexOf(removable);
-            if (idx >= 0) bars.splice(idx, 1);
-        }
-
-        this.healthBarPut(newBar, update);
+        return render.actorAddHealthBar(this, state, defId, update);
     }
 
     private actorRemoveHealthBar(state: ActorHealthBarsState, defId: number): void {
-        const bars = state.bars;
-        for (let i = 0; i < bars.length; i++) {
-            if ((bars[i].def.defId | 0) === (defId | 0)) {
-                bars.splice(i, 1);
-                return;
-            }
-        }
+        return render.actorRemoveHealthBar(this, state, defId);
     }
 
     private trimActorHealthBars(
@@ -2412,51 +1058,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         tick: number,
         opts: { kind: "player" | "npc" },
     ): void {
-        if (map.size === 0) return;
-        const now = tick | 0;
-        const playerEcs = this.osrsClient.playerEcs;
-        const npcEcs = this.osrsClient.npcEcs;
-        const controlledId = this.getEffectiveControlledPlayerId();
-
-        const removeIds: number[] = [];
-        for (const [serverId, state] of map) {
-            // Drop entries for despawned actors.
-            if (opts.kind === "player") {
-                const isControlledPlayer =
-                    controlledId > 0 && (serverId | 0) === (controlledId | 0);
-                const missing = playerEcs.getIndexForServerId(serverId) === undefined;
-                if (missing && !isControlledPlayer) {
-                    removeIds.push(serverId);
-                    continue;
-                }
-            } else {
-                const ecsId = npcEcs.getEcsIdForServer(serverId);
-                if (ecsId === undefined || !npcEcs.isActive(ecsId)) {
-                    removeIds.push(serverId);
-                    continue;
-                }
-            }
-
-            const bars = state.bars;
-            for (let i = bars.length - 1; i >= 0; i--) {
-                const bar = bars[i];
-                // Use `get` semantics to expire old updates; remove empty bars.
-                const got = this.healthBarGet(bar, now);
-                if (!got && bar.updates.length === 0) {
-                    bars.splice(i, 1);
-                }
-            }
-            if (state.bars.length === 0) {
-                removeIds.push(serverId);
-            }
-        }
-        for (const id of removeIds) {
-            map.delete(id);
-        }
+        return render.trimActorHealthBars(this, map, tick, opts);
     }
 
     private makeActorGroupKey(isNpc: boolean, serverId: number): number {
-        return ((isNpc ? 1 : 0) << 24) | ((serverId | 0) & 0xffffff) | 0;
+        return render.makeActorGroupKey(this, isNpc, serverId);
     }
 
     private appendPlayerOverheadText(
@@ -2465,39 +1071,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         maxEntries: number,
         playerDefaultHeightTiles: number | undefined,
     ): void {
-        if (output.length >= maxEntries) return;
-        if (!this.shouldRenderPlayerIndex(index)) return;
-        const pe = this.osrsClient.playerEcs;
-        const chatState = pe.getOverheadChat(index);
-        if (!chatState) return;
-        const text = chatState.text;
-        if (!text || text.length === 0) return;
-
-        const overhead = this.acquireOverheadTextEntry();
-        overhead.worldX = (pe.getX(index) | 0) / 128.0;
-        overhead.worldZ = (pe.getY(index) | 0) / 128.0;
-        overhead.plane = pe.getLevel(index) | 0;
-        overhead.footprintRadius = WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS;
-        overhead.groupKey = this.makeActorGroupKey(false, pe.getServerIdForIndex?.(index) ?? 0);
-        overhead.text = text;
-        overhead.color = this.mapOverheadColor(chatState.color);
-        overhead.colorId =
-            typeof chatState.color === "number" && chatState.color >= 0 && chatState.color < 0x100
-                ? chatState.color | 0
-                : undefined;
-        overhead.effect = chatState.effect ?? 0;
-        overhead.modIcon = this.resolveModIcon(chatState.modIcon);
-        overhead.pattern = chatState.pattern;
-        const duration = chatState.duration && chatState.duration > 0 ? chatState.duration : 1;
-        const remaining = Math.max(0, Math.min(duration, chatState.remaining ?? duration));
-        overhead.duration = duration;
-        overhead.remaining = remaining;
-        overhead.life = this.computeOverheadAlpha(overhead);
-        overhead.heightOffsetTiles = this.resolvePlayerLogicalHeightTiles(
-            index,
-            playerDefaultHeightTiles,
-        );
-        output.push(overhead);
+        return render.appendPlayerOverheadText(this, index, output, maxEntries, playerDefaultHeightTiles);
     }
 
     private appendActorHealthBars(
@@ -2513,160 +1087,52 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         clientCycle: number,
         maxOutput: number,
     ): void {
-        if (output.length >= maxOutput) return;
-        const state = map.get(serverId);
-        if (!state) return;
-        const groupKey = this.makeActorGroupKey(kind === "npc", serverId);
-        // Iterate from the tail of the deque.
-        for (let i = state.bars.length - 1; i >= 0; i--) {
-            if (output.length >= maxOutput) break;
-            const bar = state.bars[i];
-            const update = this.healthBarGet(bar, clientCycle);
-            if (!update) {
-                if (bar.updates.length === 0) {
-                    state.bars.splice(i, 1);
-                }
-                continue;
-            }
-            const entry = this.acquireHealthBarEntry();
-            entry.worldX = worldX;
-            entry.worldZ = worldZ;
-            entry.plane = plane;
-            entry.footprintRadius = footprintRadius | 0;
-            // Health bar at logicalHeightWithAnimationOffset + 15 units.
-            // No additional offset needed - baseHeightTiles already includes the +15 offset
-            entry.heightOffsetTiles = baseHeightTiles ?? 0;
-            entry.health = update.health | 0;
-            entry.health2 = update.health2 | 0;
-            entry.cycle = update.cycle | 0;
-            entry.cycleOffset = update.cycleOffset | 0;
-            entry.defId = bar.def.defId | 0;
-            entry.groupKey = groupKey;
-            output.push(entry);
-        }
-        if (state.bars.length === 0) {
-            map.delete(serverId);
-        }
+        return render.appendActorHealthBars(this, map, serverId, kind, worldX, worldZ, plane, footprintRadius, baseHeightTiles, output, clientCycle, maxOutput);
     }
 
     private mapOverheadColor(rawColor: number | undefined): number {
-        if (rawColor == null) return DEFAULT_OVERHEAD_CHAT_COLOR >>> 0;
-        const colorId = rawColor | 0;
-        if (colorId >= 0 && colorId < OVERHEAD_CHAT_COLOR_TABLE.length) {
-            return OVERHEAD_CHAT_COLOR_TABLE[colorId] >>> 0;
-        }
-        if (colorId > 0) {
-            return colorId >>> 0;
-        }
-        return DEFAULT_OVERHEAD_CHAT_COLOR >>> 0;
+        return render.mapOverheadColor(this, rawColor);
     }
 
     private resolveModIcon(modIcon: number | undefined): number | undefined {
-        if (modIcon == null) return undefined;
-        const idx = modIcon | 0;
-        return idx >= 0 ? idx : undefined;
+        return render.resolveModIcon(this, modIcon);
     }
 
     private getSequenceVerticalOffsetTiles(seqId: number | undefined): number {
-        const id = seqId == null ? -1 : seqId | 0;
-        if (id < 0) return 0;
-        try {
-            const seqType = this.osrsClient.seqTypeLoader?.load?.(id) as
-                | { verticalOffset?: number }
-                | undefined;
-            const offset = (seqType?.verticalOffset ?? 0) | 0;
-            return offset / 128.0;
-        } catch {
-            return 0;
-        }
+        return render.getSequenceVerticalOffsetTiles(this, seqId);
     }
 
     private resolvePlayerAnimationHeightOffsetTiles(index: number): number {
-        const playerEcs = this.osrsClient.playerEcs;
-        const actionSeqId =
-            playerEcs.getAnimActionSeqId?.(index) ?? playerEcs.getAnimSeqId?.(index) ?? -1;
-        const actionDelay = playerEcs.getAnimSeqDelay?.(index) ?? 0;
-        if ((actionSeqId | 0) >= 0 && (actionDelay | 0) === 0) {
-            return this.getSequenceVerticalOffsetTiles(actionSeqId);
-        }
-        const movementSeqId = playerEcs.getAnimMovementSeqId?.(index) ?? -1;
-        return this.getSequenceVerticalOffsetTiles(movementSeqId);
+        return render.resolvePlayerAnimationHeightOffsetTiles(this, index);
     }
 
     private resolvePlayerLogicalHeightTiles(index: number, fallback?: number): number {
-        const ecsHeight = this.osrsClient.playerEcs.getDefaultHeightTiles?.(index);
-        const base =
-            typeof ecsHeight === "number" && Number.isFinite(ecsHeight) && ecsHeight > 0
-                ? ecsHeight
-                : typeof fallback === "number" && Number.isFinite(fallback) && fallback > 0
-                    ? fallback
-                    : this.playerDefaultHeightTiles;
-        return Math.max(0.5, base + this.resolvePlayerAnimationHeightOffsetTiles(index));
+        return render.resolvePlayerLogicalHeightTiles(this, index, fallback);
     }
 
     private resolvePlayerHitsplatOffset(index: number, fallback?: number): number {
-        return this.resolvePlayerLogicalHeightTiles(index, fallback) * 0.5;
+        return render.resolvePlayerHitsplatOffset(this, index, fallback);
     }
 
     private resolvePlayerHeadIconOffset(index: number, fallback?: number): number {
-        // OSRS actor2d draws player icons at logicalHeight + 15 world units.
-        return this.resolvePlayerLogicalHeightTiles(index, fallback) + 15 / 128;
+        return render.resolvePlayerHeadIconOffset(this, index, fallback);
     }
 
-    // Overhead text displays at full opacity until its cycle ends.
     private computeOverheadAlpha(entry: OverheadTextEntry): number {
-        if (entry.duration <= 0) return 1;
-        return entry.remaining > 0 ? 1 : 0;
+        return render.computeOverheadAlpha(this, entry);
     }
 
     private getNpcTypeIdForServer(serverId: number): number | undefined {
-        try {
-            const ecs = this.osrsClient.npcEcs;
-            const ecsId = ecs.getEcsIdForServer(serverId);
-            if (ecsId === undefined) return undefined;
-            return ecs.getNpcTypeId(ecsId) | 0;
-        } catch {
-            return undefined;
-        }
+        return render.getNpcTypeIdForServer(this, serverId);
     }
 
     private estimateNpcMaxHp(npcTypeId: number | undefined): number {
-        let estimate = DEFAULT_NPC_HEALTH;
-        if (typeof npcTypeId === "number" && npcTypeId >= 0) {
-            try {
-                const loader = this.osrsClient.npcTypeLoader;
-                const type = loader?.load?.(npcTypeId);
-                if (type) {
-                    const params = type.params;
-                    const hpParam =
-                        params && typeof params.get === "function" ? params.get(10) : undefined;
-                    if (typeof hpParam === "number" && hpParam > 0) {
-                        estimate = Math.max(estimate, hpParam | 0);
-                    }
-                    const combat = type.combatLevel | 0;
-                    if (combat > 0) {
-                        estimate = Math.max(estimate, Math.round(combat * 1.5 + 10));
-                    }
-                    const size = type.size | 0;
-                    if (size > 1) {
-                        estimate = Math.max(estimate, estimate + size * 10);
-                    }
-                }
-            } catch {}
-        }
-        return Math.min(MAX_ESTIMATED_HEALTH, Math.max(10, estimate));
+        return render.estimateNpcMaxHp(this, npcTypeId);
     }
 
     private trimHealthBars(tick: number): void {
-        this.trimActorHealthBars(this.playerHealthBars, tick, { kind: "player" });
-        this.trimActorHealthBars(this.npcHealthBars, tick, { kind: "npc" });
+        return render.trimHealthBars(this, tick);
     }
-
-    private onServerTick = (tick: number): void => {
-        const clientCycle = getClientCycle() | 0;
-        this.trimHitsplats(clientCycle);
-        this.trimHealthBars(clientCycle);
-    };
 
     registerPlayerHealthBarUpdate(event: {
         serverId: number;
@@ -2679,25 +1145,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             removed?: boolean;
         };
     }): void {
-        const serverId = event.serverId | 0;
-        if (serverId <= 0) return;
-        const bar = event.bar;
-        const defId = bar.id | 0;
-        const actor = this.playerHealthBars.get(serverId);
-        if (bar.removed === true) {
-            if (!actor) return;
-            this.actorRemoveHealthBar(actor, defId);
-            if (actor.bars.length === 0) this.playerHealthBars.delete(serverId);
-            return;
-        }
-
-        const state = actor ?? this.ensureActorHealthBars(this.playerHealthBars, serverId);
-        this.actorAddHealthBar(state, defId, {
-            cycle: bar.cycle | 0,
-            health: bar.health | 0,
-            health2: bar.health2 | 0,
-            cycleOffset: bar.cycleOffset | 0,
-        });
+        return render.registerPlayerHealthBarUpdate(this, event);
     }
 
     registerNpcHealthBarUpdate(event: {
@@ -2711,95 +1159,23 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             removed?: boolean;
         };
     }): void {
-        const serverId = event.serverId | 0;
-        if (serverId <= 0) return;
-        const bar = event.bar;
-        const defId = bar.id | 0;
-        const actor = this.npcHealthBars.get(serverId);
-        if (bar.removed === true) {
-            if (!actor) return;
-            this.actorRemoveHealthBar(actor, defId);
-            if (actor.bars.length === 0) this.npcHealthBars.delete(serverId);
-            return;
-        }
-
-        const state = actor ?? this.ensureActorHealthBars(this.npcHealthBars, serverId);
-        this.actorAddHealthBar(state, defId, {
-            cycle: bar.cycle | 0,
-            health: bar.health | 0,
-            health2: bar.health2 | 0,
-            cycleOffset: bar.cycleOffset | 0,
-        });
+        return render.registerNpcHealthBarUpdate(this, event);
     }
 
     clearNpcHealthBars(serverId: number): void {
-        this.npcHealthBars.delete(serverId | 0);
+        return render.clearNpcHealthBars(this, serverId);
     }
 
     clearPlayerHealthBars(serverId: number): void {
-        this.playerHealthBars.delete(serverId | 0);
+        return render.clearPlayerHealthBars(this, serverId);
     }
 
     override registerHitsplat(event: HitsplatEventPayload): void {
-        // Use CLIENT CYCLES (20ms each) for hitsplat timing.
-        // Client.cycle in OSRS is a client-side counter incrementing every 20ms.
-        const clientCycle = getClientCycle() | 0;
-
-        // `delayCycles` is already in client-cycle units (see Actor.addHitSplat var6).
-        const delayCycles =
-            typeof event.delayCycles === "number" ? Math.max(0, event.delayCycles | 0) : 0;
-
-        // Preserve raw value parity (`-1` is meaningful for sentinel no-type hitsplats).
-        const damage = event.damage | 0;
-        const type = typeof event.style === "number" ? event.style | 0 : -1;
-        const type2 = typeof event.type2 === "number" ? event.type2 | 0 : -1;
-        const damage2 = typeof event.damage2 === "number" ? event.damage2 | 0 : -1;
-        const targetId = event.targetId | 0;
-        if (event.targetType === "player") {
-            if (targetId > 0) {
-                const controlledId = this.osrsClient.controlledPlayerServerId | 0;
-                if (controlledId <= 0) {
-                    this.pendingControlledPlayerServerId = targetId;
-                } else if (this.pendingControlledPlayerServerId !== undefined) {
-                    this.pendingControlledPlayerServerId = undefined;
-                }
-            }
-            const state = this.ensureHitsplatState(this.playerHitsplats, targetId);
-            this.addHitSplatOsrs(state, type, damage, type2, damage2, clientCycle, delayCycles);
-        } else {
-            const state = this.ensureHitsplatState(this.npcHitsplats, targetId);
-            this.addHitSplatOsrs(state, type, damage, type2, damage2, clientCycle, delayCycles);
-        }
-        // Use client cycle for trim operations too
-        this.trimHitsplats(clientCycle);
-        this.trimHealthBars(clientCycle);
+        return render.registerHitsplat(this, event);
     }
 
     override registerSpotAnimation(event: PlayerSpotAnimationEvent): void {
-        try {
-            const sid = event.serverId | 0;
-            const spotId = event.spotId | 0;
-            if (spotId < 0) {
-                this.gfxManager?.clearAttachedSlotPlayer(
-                    sid,
-                    typeof event.slot === "number" ? (event.slot | 0) & 0xff : 0,
-                );
-                return;
-            }
-            const heightUnits = (event.height ?? 0) | 0;
-            const offsetTiles = heightUnits / 128;
-            this.gfxManager?.spawnAttachedToPlayer(
-                spotId,
-                sid,
-                offsetTiles !== 0 ? "offset" : "ground",
-                offsetTiles !== 0 ? offsetTiles : undefined,
-                false,
-                event.startCycle | 0,
-                typeof event.slot === "number" ? (event.slot | 0) & 0xff : undefined,
-            );
-        } catch (err) {
-            console.warn("[renderer] registerSpotAnimation error", err);
-        }
+        return render.registerSpotAnimation(this, event);
     }
 
     registerNpcSpotAnimation(event: {
@@ -2809,28 +1185,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         startCycle: number;
         slot?: number;
     }): void {
-        try {
-            const sid = event.npcServerId | 0;
-            const spotId = event.spotId | 0;
-            const slot = typeof event.slot === "number" ? (event.slot | 0) & 0xff : 0;
-            if (spotId < 0) {
-                this.gfxManager?.clearAttachedSlotNpc(sid, slot);
-                return;
-            }
-            const heightUnits = (event.height ?? 0) | 0;
-            const offsetTiles = heightUnits / 128;
-            this.gfxManager?.spawnAttachedToNpc(
-                spotId,
-                sid,
-                offsetTiles !== 0 ? "offset" : "ground",
-                offsetTiles !== 0 ? offsetTiles : undefined,
-                false,
-                event.startCycle | 0,
-                slot,
-            );
-        } catch (err) {
-            console.warn("[renderer] registerNpcSpotAnimation error", err);
-        }
+        return render.registerNpcSpotAnimation(this, event);
     }
 
     registerWorldSpotAnimation(event: {
@@ -2839,1357 +1194,39 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         height?: number;
         startCycle: number;
     }): void {
-        try {
-            const heightUnits = Number(event.height ?? 0) | 0;
-            const heightTiles = heightUnits !== 0 ? heightUnits / 128 : undefined;
-            this.gfxManager?.spawnAtTile(
-                event.spotId | 0,
-                {
-                    x: event.tile.x | 0,
-                    y: event.tile.y | 0,
-                    level: event.tile.level ?? 0,
-                },
-                {
-                    heightTiles,
-                    startCycle: event.startCycle | 0,
-                },
-            );
-        } catch (err) {
-            console.warn("[renderer] registerWorldSpotAnimation error", err);
-        }
+        return render.registerWorldSpotAnimation(this, event);
     }
 
     async init(): Promise<void> {
-        await super.init();
-        this.canvas.addEventListener("touchstart", this.onCanvasTouchStart, {
-            passive: false,
-            capture: true,
-        });
-        if (isMobileMode) {
-            this.ensureMobileLoginInput();
-            this.updateMobileLoginViewportBaseline();
-            window.addEventListener("resize", this.onMobileLoginViewportChange);
-            window.addEventListener("orientationchange", this.onMobileLoginViewportChange);
-            window.visualViewport?.addEventListener("resize", this.onMobileLoginViewportChange);
-            window.visualViewport?.addEventListener("scroll", this.onMobileLoginViewportChange);
-        }
-
-        this.app = PicoGL.createApp(this.canvas);
-        // Ensure app dimensions are initialized from canvas
-        (this.app as any).width = this.canvas.width;
-        (this.app as any).height = this.canvas.height;
-        this.gl = this.app.gl as WebGL2RenderingContext;
-
-        // Initialize widget manager with the active UI layout space.
-        if (this.osrsClient.widgetManager) {
-            const metrics = this.computeUiRenderMetrics(
-                this.canvas.width | 0,
-                this.canvas.height | 0,
-            );
-            this.osrsClient.widgetManager.resize(metrics.layoutW, metrics.layoutH);
-        }
-
-        this.hitsplatTickUnsub = subscribeTick((tick) => this.onServerTick(tick));
-
-        // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#use_webgl_provoking_vertex_when_its_available
-        optimizeAssumingFlatsHaveSameFirstAndLastData(this.gl);
-
-        this.timer = this.app.createTimer();
-
-        // Prefer the multi-draw extension when available; fall back to explicit single draws otherwise.
-        const state: any = this.app.state;
-        const ext = this.gl.getExtension("WEBGL_multi_draw");
-        PicoGL.WEBGL_INFO.MULTI_DRAW_INSTANCED = ext;
-        state.extensions.multiDrawInstanced = ext;
-
-        this.hasMultiDraw = !!ext;
-        this.drawBackend?.dispose();
-        this.drawBackend = createDrawBackend(this.hasMultiDraw);
-        this.drawBackend.init(this.app, this.gl);
-
-        if (!ext) {
-            console.warn(
-                "WEBGL_multi_draw extension not available! Rendering may not work correctly. " +
-                "Falling back to single-draw rendering; this is slower but supported.",
-            );
-        }
-
-        this.osrsClient.workerPool.initLoader(this.dataLoader);
-
-        this.gl.getExtension("EXT_float_blend");
-
-        this.app.enable(PicoGL.CULL_FACE);
-        this.app.enable(PicoGL.DEPTH_TEST);
-        this.app.depthFunc(PicoGL.LEQUAL);
-
-        this.app.enable(PicoGL.BLEND);
-        this.app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
-        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
-
-        this.quadPositions = this.app.createVertexBuffer(
-            PicoGL.FLOAT,
-            2,
-            new Float32Array([-1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1]),
-        );
-        this.quadArray = this.app.createVertexArray().vertexAttributeBuffer(0, this.quadPositions);
-
-        this.shadersPromise = this.initShaders();
-
-        this.sceneUniformBuffer = this.app.createUniformBuffer([
-            PicoGL.FLOAT_MAT4, // mat4 u_viewProjMatrix;
-            PicoGL.FLOAT_MAT4, // mat4 u_viewMatrix;
-            PicoGL.FLOAT_MAT4, // mat4 u_projectionMatrix;
-            PicoGL.FLOAT_VEC4, // vec4 u_skyColor;
-            PicoGL.FLOAT_VEC4, // vec4 u_sceneHslOverride;
-            PicoGL.FLOAT_VEC2, // vec2 u_cameraPos;
-            PicoGL.FLOAT_VEC2, // vec2 u_playerPos;
-            PicoGL.FLOAT, // float u_renderDistance;
-            PicoGL.FLOAT, // float u_fogDepth;
-            PicoGL.FLOAT, // float u_currentTime;
-            PicoGL.FLOAT, // float u_brightness;
-            PicoGL.FLOAT, // float u_colorBanding;
-            PicoGL.FLOAT, // float u_isNewTextureAnim;
-        ]);
-
-        this.initFramebuffers();
-        await this.initWaterTextures();
-
-        this.initTextures();
-
-        console.log("Renderer init");
-
-        // Build player geometry once (uses current cache + textures)
-        try {
-            await this.playerRenderer.initGeometry();
-        } catch (e) {
-            console.warn("Failed to init player geometry", e);
-        }
-
-        // Initialize dynamic NPC animation loader ( - load animations at render time)
-        this.initDynamicNpcAnimLoader();
-
-        try {
-            this.osrsClient.notifyRendererReady();
-        } catch {}
+        return render.init(this);
     }
 
     private clearDynamicNpcAnimRuntimeState(): void {
-        this.dynamicNpcAnimLoader?.clear();
-        this.dynamicNpcDrawCall = undefined;
-        this.dynamicNpcVertexArray?.delete();
-        this.dynamicNpcVertexArray = undefined;
-        this.dynamicNpcInterleavedBuffer?.delete();
-        this.dynamicNpcInterleavedBuffer = undefined;
-        this.dynamicNpcIndexBuffer?.delete();
-        this.dynamicNpcIndexBuffer = undefined;
-        this.dynamicNpcBufferVertexSize = 0;
-        this.dynamicNpcBufferIndexSize = 0;
-        this.dynamicNpcUploadedGeometryKey = undefined;
+        return render.clearDynamicNpcAnimRuntimeState(this);
     }
 
     private disposeDynamicNpcAnimState(): void {
-        this.clearDynamicNpcAnimRuntimeState();
-        this.dynamicNpcAnimLoader = undefined;
+        return render.disposeDynamicNpcAnimState(this);
     }
 
     private initDynamicNpcAnimLoader(): void {
-        this.disposeDynamicNpcAnimState();
-        try {
-            this.dynamicNpcAnimLoader = new DynamicNpcAnimLoader(
-                this.osrsClient.npcTypeLoader,
-                this.osrsClient.modelLoader,
-                this.osrsClient.textureLoader,
-                this.osrsClient.seqTypeLoader,
-                this.osrsClient.seqFrameLoader,
-                this.osrsClient.skeletalSeqLoader,
-                this.osrsClient.varManager,
-            );
-            this.dynamicNpcAnimLoader.setTextureIdIndexMap(this.textureIdIndexMap);
-        } catch (e) {
-            console.warn("Failed to init dynamic NPC animation loader", e);
-        }
+        return render.initDynamicNpcAnimLoader(this);
     }
 
     async initPlayerGeometry(): Promise<void> {
-        if (!this.playerProgram || !this.textureArray || !this.textureMaterials) {
-            await this.shadersPromise;
-        }
-        if (!this.playerProgram || !this.textureArray || !this.textureMaterials) {
-            return;
-        }
-        // Prepare empty dynamic GPU resources for player rendering. Base-model building is
-        // handled in PlayerEcs and PlayerRenderer uploads per-frame geometry.
-        const interleavedBuffer = this.app.createInterleavedBuffer(12, new Int32Array(0));
-        const indexBuffer = this.app.createIndexBuffer(PicoGL.UNSIGNED_INT, new Int32Array(0));
-        const vertexArray = this.app
-            .createVertexArray()
-            .vertexAttributeBuffer(0, interleavedBuffer, {
-                type: PicoGL.UNSIGNED_INT,
-                size: 3,
-                stride: 12,
-                integer: true as any,
-            })
-            .indexBuffer(indexBuffer);
-
-        const drawCall = this.app
-            .createDrawCall(this.playerProgramOpaque ?? this.playerProgram!, vertexArray)
-            .uniformBlock("SceneUniforms", this.sceneUniformBuffer!)
-            .uniform("u_timeLoaded", -1.0)
-            .texture("u_textures", this.textureArray!)
-            .texture("u_textureMaterials", this.textureMaterials!);
-
-        // Transparent path: keep separate buffers (initially empty)
-        const interleavedBufferAlpha = this.app.createInterleavedBuffer(12, new Int32Array(0));
-        const indexBufferAlpha = this.app.createIndexBuffer(PicoGL.UNSIGNED_INT, new Int32Array(0));
-        const vertexArrayAlpha = this.app
-            .createVertexArray()
-            .vertexAttributeBuffer(0, interleavedBufferAlpha, {
-                type: PicoGL.UNSIGNED_INT,
-                size: 3,
-                stride: 12,
-                integer: true as any,
-            })
-            .indexBuffer(indexBufferAlpha);
-        const drawCallAlpha = this.app
-            .createDrawCall(this.playerProgram!, vertexArrayAlpha)
-            .uniformBlock("SceneUniforms", this.sceneUniformBuffer!)
-            .uniform("u_timeLoaded", -1.0)
-            .texture("u_textures", this.textureArray!)
-            .texture("u_textureMaterials", this.textureMaterials!);
-
-        this.playerVertexArray = vertexArray;
-        this.playerInterleavedBuffer = interleavedBuffer as any;
-        this.playerIndexBuffer = indexBuffer as any;
-        this.playerInterleavedBufferAlpha = interleavedBufferAlpha as any;
-        this.playerIndexBufferAlpha = indexBufferAlpha as any;
-        this.playerVertexArrayAlpha = vertexArrayAlpha;
-        this.playerDrawCall = drawCall;
-        this.playerDrawCallAlpha = drawCallAlpha;
-        this.playerDrawRanges = [newDrawRange(0, 0, 1)];
-        this.playerDrawRangesAlpha = [newDrawRange(0, 0, 1)];
+        return render.initPlayerGeometry(this);
     }
 
     async initShaders(): Promise<Program[]> {
-        const supportsMultiDraw = this.drawBackend?.supportsMultiDraw ?? false;
-        const programs = await this.app.createPrograms(
-            createMainProgram(false, supportsMultiDraw),
-            createMainProgram(true, supportsMultiDraw),
-            createNpcProgram(true, supportsMultiDraw),
-            createNpcProgram(false, supportsMultiDraw),
-            createProjectileProgram(true, supportsMultiDraw),
-            createProjectileProgram(false, supportsMultiDraw),
-            createPlayerProgram(true, supportsMultiDraw),
-            createPlayerProgram(false, supportsMultiDraw),
-            FRAME_PROGRAM,
-            FRAME_FXAA_PROGRAM,
-            // hover line program (added at end)
-            [
-                `#version 300 es\n\nlayout(std140, column_major) uniform;\n\nprecision highp float;\n\n// Inline SceneUniforms (can't use #include in runtime strings)\nuniform SceneUniforms {\n    mat4 u_viewProjMatrix;\n    mat4 u_viewMatrix;\n    mat4 u_projectionMatrix;\n    vec4 u_skyColor;\n    vec4 u_sceneHslOverride;\n    vec2 u_cameraPos;\n    vec2 u_playerPos;\n    float u_renderDistance;\n    float u_fogDepth;\n    float u_currentTime;\n    float u_brightness;\n    float u_colorBanding;\n    float u_isNewTextureAnim;\n};\n\nlayout(location=0) in vec3 a_position;\n\nvoid main(){\n    vec4 pos = u_viewMatrix * vec4(a_position, 1.0);\n    gl_Position = u_projectionMatrix * pos;\n}`,
-                `#version 300 es\n\nprecision mediump float;\n\nuniform vec4 u_color;\n\nout vec4 fragColor;\nvoid main(){\n    fragColor = u_color;\n}`,
-            ],
-            // hitsplat textured quad anchored in world (clip-space offset)
-            [
-                `#version 300 es\n\nlayout(std140, column_major) uniform;\nprecision highp float;\n\nuniform SceneUniforms {\n    mat4 u_viewProjMatrix;\n    mat4 u_viewMatrix;\n    mat4 u_projectionMatrix;\n    vec4 u_skyColor;\n    vec4 u_sceneHslOverride;\n    vec2 u_cameraPos;\n    vec2 u_playerPos;\n    float u_renderDistance;\n    float u_fogDepth;\n    float u_currentTime;\n    float u_brightness;\n    float u_colorBanding;\n    float u_isNewTextureAnim;\n};\n\nlayout(location=0) in vec2 a_position; // pixel offset from anchor\nlayout(location=1) in vec2 a_texCoord;\n\nout vec2 v_uv;\n\nuniform vec2 u_screenSize;\nuniform vec3 u_centerWorld;\n\nvoid main(){\n    vec4 centerClip = u_projectionMatrix * (u_viewMatrix * vec4(u_centerWorld, 1.0));\n    if (centerClip.w <= 0.0) {\n        gl_Position = vec4(2.0, 2.0, 1.0, 1.0);\n        v_uv = a_texCoord;\n        return;\n    }\n\n    vec2 snappedOffset = floor(a_position + vec2(0.5, 0.5));\n    vec2 px = snappedOffset / u_screenSize;\n    vec2 ndcOffset = vec2(px.x * 2.0, -px.y * 2.0);\n    gl_Position = vec4(centerClip.xy + ndcOffset * centerClip.w, centerClip.z, centerClip.w);\n    v_uv = a_texCoord;\n}`,
-                `#version 300 es\n\nprecision mediump float;\n\nin vec2 v_uv;\n\nuniform sampler2D u_sprite;\nuniform vec4 u_tint;\n\nout vec4 fragColor;\n\nvoid main(){\n    vec4 c = texture(u_sprite, v_uv);\n    if (c.a < 0.01) discard;\n    fragColor = vec4(c.rgb * u_tint.rgb, c.a * u_tint.a);\n}`,
-            ],
-            // screen-space textured quad for UI overlays
-            [
-                `#version 300 es\n\nlayout(location=0) in vec2 a_position;\nlayout(location=1) in vec2 a_texCoord;\n\nuniform vec2 u_screenSize;\n\nout vec2 v_uv;\n\nvoid main(){\n    vec2 px = (a_position + vec2(0.5, 0.5)) / u_screenSize;\n    vec2 ndc = vec2(px.x * 2.0 - 1.0, 1.0 - px.y * 2.0);\n    gl_Position = vec4(ndc, 0.0, 1.0);\n    v_uv = a_texCoord;\n}`,
-                `#version 300 es\n\nprecision mediump float;\n\nin vec2 v_uv;\n\nuniform sampler2D u_sprite;\nuniform vec4 u_tint;\n\nout vec4 fragColor;\n\nvoid main(){\n    vec4 c = texture(u_sprite, v_uv);\n    if (c.a < 0.01) discard;\n    fragColor = vec4(c.rgb * u_tint.rgb, c.a * u_tint.a);\n}`,
-            ],
-        );
-
-        const [
-            mainProgram,
-            mainAlphaProgram,
-            npcProgram,
-            npcProgramOpaque,
-            projectileProgram,
-            projectileProgramOpaque,
-            playerProgram,
-            playerProgramOpaque,
-            frameProgram,
-            frameFxaaProgram,
-            hoverLineProgram,
-            hitsplatProgram,
-            uiTabsProgram,
-        ] = programs;
-        this.mainProgram = mainProgram;
-        this.mainAlphaProgram = mainAlphaProgram;
-        this.npcProgram = npcProgram;
-        this.npcProgramOpaque = npcProgramOpaque;
-        this.projectileProgram = projectileProgram;
-        this.projectileProgramOpaque = projectileProgramOpaque;
-        this.playerProgram = playerProgram;
-        this.playerProgramOpaque = playerProgramOpaque;
-        this.frameProgram = frameProgram;
-        this.frameFxaaProgram = frameFxaaProgram;
-        this.hoverLineProgram = hoverLineProgram;
-        this.hitsplatProgram = hitsplatProgram;
-
-        this.frameDrawCall = this.app.createDrawCall(frameProgram, this.quadArray);
-        this.frameFxaaDrawCall = this.app.createDrawCall(frameFxaaProgram, this.quadArray);
-
-        if (this.hoverLineProgram && this.sceneUniformBuffer) {
-            this.overlayManager = new OverlayManager();
-            this.overlayManager.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-        }
-
-        // Init GFX manager/renderer (spot animations)
-        try {
-            this.gfxManager = new GfxManager(this);
-            this.gfxRenderer = new GfxRenderer(this, this.gfxManager);
-        } catch {}
-
-        // Init projectile manager and renderer
-        try {
-            this.projectileManager = new ProjectileManager(this);
-            this.projectileRenderer = new ProjectileRenderer(this, this.projectileManager);
-        } catch {}
-
-        // Create hitsplat overlay now; register it later so it renders after
-        // the plugin/world post-present overlays but before widgets.
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const hs = new HitsplatOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                    getLoadedCacheInfo: () => this.osrsClient.loadedCache?.info,
-                    getVarValue: (varbitId: number, varpId: number) => {
-                        try {
-                            if (varbitId !== -1)
-                                return this.osrsClient.varManager.getVarbit(varbitId) | 0;
-                            if (varpId !== -1)
-                                return this.osrsClient.varManager.getVarp(varpId) | 0;
-                        } catch {}
-                        return -1;
-                    },
-                });
-                this.hitsplatOverlay = hs;
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    hs.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Create health bar overlay now; register it later so it renders after
-        // the plugin/world post-present overlays but before widgets.
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const hb = new HealthBarOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                    getLoadedCacheInfo: () => this.osrsClient.loadedCache?.info,
-                });
-                this.healthBarOverlay = hb;
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    hb.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Add overhead chat overlay to manager if available
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const oh = new OverheadTextOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                });
-                this.overheadTextOverlay = oh;
-                this.overlayManager.add(oh);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    oh.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Create overhead prayer overlay now; registered after the health bar overlay
-        // so head icons stack above bars in the shared per-actor offset chain.
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const op = new OverheadPrayerOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                    getLoadedCacheInfo: () => this.osrsClient.loadedCache?.info,
-                });
-                this.overheadPrayerOverlay = op;
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    op.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Spot animation overlay removed; will be reimplemented later.
-
-        // Add login screen overlay
-        try {
-            if (this.overlayManager && this.sceneUniformBuffer) {
-                this.loginOverlay = new LoginOverlay(this.osrsClient);
-                this.overlayManager.add(this.loginOverlay);
-                this.loginOverlay.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-            }
-        } catch (e) {
-            console.warn("[WebGLOsrsRenderer] Failed to init login overlay:", e);
-        }
-
-        // Add loading message overlay ("Loading - please wait." during LOADING_GAME state)
-        // Pass state machine for synchronous state updates
-        try {
-            if (this.overlayManager && this.sceneUniformBuffer) {
-                this.loadingMessageOverlay = new LoadingMessageOverlay(
-                    this.osrsClient.stateMachine,
-                );
-                this.overlayManager.add(this.loadingMessageOverlay);
-                this.loadingMessageOverlay.init({
-                    app: this.app,
-                    sceneUniforms: this.sceneUniformBuffer,
-                });
-            }
-        } catch (e) {
-            console.warn("[WebGLOsrsRenderer] Failed to init loading message overlay:", e);
-        }
-
-        // Add server-path overlay (numbers over tiles returned by pathfind)
-        /*try {
-            if (this.overlayManager && this.hoverLineProgram && this.sceneUniformBuffer) {
-                const { PathOverlay } = await import("../../ui/devoverlay/PathOverlay");
-                const pov = new PathOverlay(this.hoverLineProgram, {
-                    getPath: () =>
-                        this.osrsClient.showServerPathOverlay
-                            ? this.osrsClient.getServerPathWaypoints()
-                            : undefined,
-                });
-                this.overlayManager.add(pov);
-                pov.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-            }
-        } catch {}*/
-
-        // Add object id devoverlay (labels for loc ids around player)
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const { ObjectIdOverlay } = await import("../../ui/devoverlay/ObjectIdOverlay");
-                const objOv = new ObjectIdOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                    getLocIdsAtTileAllLevels: (tx: number, ty: number) =>
-                        this.getLocIdsAtTileAllLevels(tx, ty),
-                    isLocInteractable: (id: number) => {
-                        try {
-                            let lt = this.osrsClient.locTypeLoader.load(id);
-                            if (lt.transforms) {
-                                const t = lt.transform(
-                                    this.osrsClient.varManager,
-                                    this.osrsClient.locTypeLoader,
-                                );
-                                if (t) lt = t;
-                            }
-                            if (lt.actions) {
-                                for (const a of lt.actions) if (a && a.length > 0) return true;
-                            }
-                            return (lt.isInteractive | 0) === 1;
-                        } catch {
-                            return false;
-                        }
-                    },
-                });
-                objOv.scale = 1.0;
-                objOv.color = 0xffffff;
-                objOv.radius = Math.max(1, (this.osrsClient.renderDistance / 8) | 0);
-                this.objectIdOverlay = objOv;
-                this.overlayManager.add(objOv);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    objOv.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Add collision devoverlay (walkable tiles around player)
-        try {
-            if (this.overlayManager && this.hoverLineProgram && this.sceneUniformBuffer) {
-                const { WalkableOverlay } = await import("../../ui/devoverlay/WalkableOverlay");
-                const walk = new WalkableOverlay(this.hoverLineProgram);
-                walk.radius = 12;
-                walk.enabled = !!this.osrsClient.showCollisionOverlay;
-                this.overlayManager.add(walk);
-                walk.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                this.walkableOverlay = walk;
-            }
-        } catch {}
-
-        // Add tile marker overlay (hover, destination, and current true tile outline)
-        try {
-            if (this.overlayManager && this.hoverLineProgram && this.sceneUniformBuffer) {
-                const { TileMarkerOverlay } = await import("../../ui/devoverlay/TileMarkerOverlay");
-                const marker = new TileMarkerOverlay(this.hoverLineProgram);
-                this.tileMarkerOverlay = marker;
-                this.overlayManager.add(marker);
-                marker.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-            }
-        } catch {}
-
-        // Add tile text overlay (3D coordinate labels for hover/dest/player tiles)
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const tileText = new TileTextOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                });
-                this.tileTextOverlay = tileText;
-                this.overlayManager.add(tileText);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    tileText.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Add click cross devoverlay (sprite id 299 frames 0..3)
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const cross = new ClickCrossOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                });
-                this.clickCrossOverlay = cross;
-                this.overlayManager.add(cross);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    cross.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        try {
-            if (this.overlayManager && this.hitsplatProgram && this.sceneUniformBuffer) {
-                const ground = new GroundItemOverlay(this.hitsplatProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                });
-                this.groundItemOverlay = ground;
-                this.overlayManager.add(ground);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    ground.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        try {
-            if (this.overlayManager && this.sceneUniformBuffer) {
-                const interact = new InteractHighlightOverlay({
-                    getTargets: () => this.getInteractHighlightDrawTargets(),
-                });
-                this.interactHighlightOverlay = interact;
-                this.overlayManager.add(interact);
-                try {
-                    interact.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-            }
-        } catch {}
-
-        // Draw actor damage overlays after the plugin/world post-present overlays so they
-        // cannot cover them, but before widgets so game UI still stays on top. Keep
-        // Per-actor element order: health bars, then head icons, then hitsplats on top.
-        try {
-            if (this.overlayManager && this.healthBarOverlay) {
-                this.overlayManager.add(this.healthBarOverlay);
-            }
-            if (this.overlayManager && this.overheadPrayerOverlay) {
-                this.overlayManager.add(this.overheadPrayerOverlay);
-            }
-            if (this.overlayManager && this.hitsplatOverlay) {
-                this.overlayManager.add(this.hitsplatOverlay);
-            }
-        } catch {}
-
-        // Add widgets overlay for UI rendering
-        console.log(
-            "[WidgetsOverlay init] overlayManager:",
-            !!this.overlayManager,
-            "uiTabsProgram:",
-            !!uiTabsProgram,
-            "sceneUniformBuffer:",
-            !!this.sceneUniformBuffer,
-        );
-        try {
-            if (this.overlayManager && uiTabsProgram && this.sceneUniformBuffer) {
-                // Import necessary modules dynamically
-                const { BitmapFont } = await import("../../rs/font/BitmapFont");
-                const { ItemIconRenderer } = await import("../../ui/item/ItemIconRenderer");
-                const { WidgetLoader } = await import("../../ui/widgets/WidgetLoader");
-
-                // Get required loaders from OsrsClient
-                const objLoader = this.osrsClient.objTypeLoader;
-                const modelLoader = this.osrsClient.modelLoader;
-                const textureLoader = this.osrsClient.textureLoader;
-                const idkLoader = this.osrsClient.idkTypeLoader;
-
-                // Create item icon renderer if we have the necessary loaders
-                // Will be reinitialized in initOverlays() if not available now
-                if (objLoader && modelLoader && textureLoader && !this.itemIconRenderer) {
-                    this.itemIconRenderer = new ItemIconRenderer(
-                        objLoader,
-                        modelLoader,
-                        textureLoader,
-                        this.osrsClient.cacheSystem,
-                    );
-                }
-                if (modelLoader && textureLoader && idkLoader) {
-                    this.playerChatheadFactory = new PlayerChatheadFactory(
-                        modelLoader,
-                        textureLoader,
-                        idkLoader,
-                    );
-                }
-
-                // Root interface is set by the server via set_root widget event
-                let resolvedGroupId: number | undefined;
-                if (!this.osrsClient.widgetManager && this.osrsClient.cacheSystem) {
-                    this.osrsClient.widgetManager = new WidgetManager(this.osrsClient.cacheSystem);
-                }
-
-                const computeWidgetRoots = (): any[] => {
-                    const manager = this.osrsClient.widgetManager;
-                    const roots: any[] = [];
-
-                    // NOTE: beginFrame() is now called at the END of draw, not here.
-                    // This ensures dirty flags set during the frame are visible to the dirty check.
-
-                    // Widget layout runs in renderer-defined UI space and renders directly into the
-                    // canvas buffer.
-                    const bufW = this.app.width;
-                    const bufH = this.app.height;
-                    const metrics = this.computeUiRenderMetrics(bufW, bufH);
-                    const layoutW = metrics.layoutW;
-                    const layoutH = metrics.layoutH;
-                    const widgetRenderScaleX = metrics.renderScaleX;
-                    const widgetRenderScaleY = metrics.renderScaleY;
-                    const widgetRenderOffsetX = metrics.renderOffsetX;
-                    const widgetRenderOffsetY = metrics.renderOffsetY;
-
-                    // Keep CS2 IF_GETCANVASSIZE / widget manager dimensions aligned with the active
-                    // widget layout space.
-                    manager?.resize(layoutW, layoutH);
-
-                    // Get the current root interface (set by server via IF_OPENTOPLEVEL)
-                    // OSRS interfaces can have multiple root widgets (parentUid=-1)
-                    // All of them need to be rendered as top-level layers
-                    const currentRootInterface = manager?.rootInterface ?? -1;
-                    if (currentRootInterface !== -1) {
-                        const allRoots = manager?.getAllGroupRoots(currentRootInterface) ?? [];
-
-                        // Helper to count children (both dynamic from children array AND static from parentUid)
-                        const getChildCount = (w: any): number => {
-                            const dynamicCount = w.children?.length ?? 0;
-                            // also count static children from parentUid filtering
-                            const staticCount =
-                                manager?.getStaticChildrenByParentUid(w.uid)?.length ?? 0;
-                            return dynamicCount + staticCount;
-                        };
-
-                        for (const viewportRoot of allRoots) {
-                            if (viewportRoot) {
-                                // Layout each root independently in the current UI layout space.
-                                // Pass static children callback for
-                                const getStaticChildren = (uid: number) =>
-                                    manager?.getStaticChildrenByParentUid(uid) ?? [];
-                                layoutWidgets(
-                                    viewportRoot,
-                                    layoutW | 0,
-                                    layoutH | 0,
-                                    getStaticChildren,
-                                );
-
-                                // Skip empty layer roots from rendering
-                                const childCount = getChildCount(viewportRoot);
-                                const hasMountedInterface =
-                                    manager?.interfaceParents.has(viewportRoot.uid) === true;
-                                const hasVisualContent =
-                                    viewportRoot.type !== 0 ||
-                                    childCount > 0 ||
-                                    hasMountedInterface ||
-                                    (typeof viewportRoot.spriteId === "number" &&
-                                        viewportRoot.spriteId >= 0) ||
-                                    (typeof viewportRoot.spriteId2 === "number" &&
-                                        viewportRoot.spriteId2 >= 0) ||
-                                    viewportRoot.filled;
-
-                                if (!hasVisualContent) {
-                                    continue;
-                                }
-
-                                // Register root widget for dirty tracking
-                                const rootAny = viewportRoot as any;
-                                rootAny.__widgetRenderScale = widgetRenderScaleX;
-                                rootAny.__widgetRenderScaleX = widgetRenderScaleX;
-                                rootAny.__widgetRenderScaleY = widgetRenderScaleY;
-                                rootAny.__widgetRenderOffsetX = widgetRenderOffsetX;
-                                rootAny.__widgetRenderOffsetY = widgetRenderOffsetY;
-                                const rootX = (viewportRoot.x ?? 0) | 0;
-                                const rootY = (viewportRoot.y ?? 0) | 0;
-                                const rootW = (viewportRoot.width ?? layoutW) | 0;
-                                const rootH = (viewportRoot.height ?? layoutH) | 0;
-                                const drawX = Math.round(
-                                    rootX * widgetRenderScaleX + widgetRenderOffsetX,
-                                );
-                                const drawY = Math.round(
-                                    rootY * widgetRenderScaleY + widgetRenderOffsetY,
-                                );
-                                const drawRight = Math.round(
-                                    (rootX + rootW) * widgetRenderScaleX + widgetRenderOffsetX,
-                                );
-                                const drawBottom = Math.round(
-                                    (rootY + rootH) * widgetRenderScaleY + widgetRenderOffsetY,
-                                );
-                                manager?.registerRootWidget(
-                                    viewportRoot,
-                                    drawX,
-                                    drawY,
-                                    Math.max(1, drawRight - drawX),
-                                    Math.max(1, drawBottom - drawY),
-                                );
-
-                                roots.push(viewportRoot);
-                            }
-                        }
-                        if (allRoots.length > 0 && resolvedGroupId !== currentRootInterface) {
-                            resolvedGroupId = currentRootInterface;
-                        }
-                    }
-
-                    return roots;
-                };
-
-                const widgets = new WidgetsOverlay(uiTabsProgram, {
-                    getCacheSystem: () => this.osrsClient.cacheSystem,
-                    getWidgetManager: () => this.osrsClient.widgetManager,
-                    getGameContext: () => ({
-                        osrsClient: this.osrsClient,
-                        playerEcs: this.osrsClient.playerEcs,
-                        controlledPlayerServerId: this.osrsClient.controlledPlayerServerId,
-                        combatWeaponCategory: this.osrsClient.combatWeaponCategory,
-                        combatWeaponItemId: this.osrsClient.combatWeaponItemId,
-                        sendEmote,
-                    }),
-                    getFontLoader: () => {
-                        // PERF: Cache loaded BitmapFonts (loading parses cache archives/sprites).
-                        const cache = new Map<number, ReturnType<typeof BitmapFont.tryLoad>>();
-                        return (id: number) => {
-                            const cacheSystem = this.osrsClient.cacheSystem;
-                            if (!cacheSystem) return undefined;
-                            const key = id | 0;
-                            if (cache.has(key)) return cache.get(key);
-                            const font = BitmapFont.tryLoad(cacheSystem, key);
-                            // Do not memoize missing fonts forever. During startup the widget overlay
-                            // can probe a font before the cache data is fully ready, and a permanent
-                            // cached undefined would make all later CS2 text for that font invisible.
-                            if (font) {
-                                cache.set(key, font);
-                            }
-                            return font;
-                        };
-                    },
-                    getWidgetRoots: () => computeWidgetRoots(),
-                    getWidgetRoot: () => {
-                        const roots = computeWidgetRoots();
-                        return roots.length > 0 ? roots[roots.length - 1] : undefined;
-                    },
-                    getItemIconCanvas:
-                        () =>
-                            (
-                                itemId: number,
-                                qty?: number,
-                                outline?: number,
-                                shadow?: number,
-                                quantityMode?: number,
-                            ) => {
-                                // Use ItemIconRenderer to render item icons
-                                if (this.itemIconRenderer) {
-                                    return this.itemIconRenderer.renderToCanvas(itemId, qty ?? 1, {
-                                        outline,
-                                        shadow,
-                                        quantityMode,
-                                    });
-                                }
-                                return undefined;
-                            },
-                    getObjLoader: () => {
-                        // Return the object loader from OsrsClient
-                        return this.osrsClient.objTypeLoader;
-                    },
-                    getRenderModelCanvas:
-                        () => (modelId: number, params: any, width: number, height: number) => {
-                            if (!this.model2DRenderer) {
-                                this.model2DRenderer = new Model2DRenderer(
-                                    this.osrsClient.objTypeLoader,
-                                    this.osrsClient.modelLoader,
-                                    this.osrsClient.textureLoader,
-                                    this.osrsClient.seqTypeLoader,
-                                    this.osrsClient.seqFrameLoader,
-                                    this.osrsClient.skeletalSeqLoader,
-                                );
-                            }
-
-                            if (params.widget) {
-                                const isPlayerModelWidget =
-                                    ((params.widget.contentType ?? 0) | 0) === 328 ||
-                                    ((params.widget.modelType ?? 0) | 0) === 7 ||
-                                    (params.widget as any).isPlayerModel === true;
-                                if (isPlayerModelWidget) {
-                                    const haveLoaders =
-                                        this.osrsClient.modelLoader &&
-                                        this.osrsClient.textureLoader &&
-                                        this.osrsClient.idkTypeLoader &&
-                                        this.osrsClient.objTypeLoader;
-                                    if (!this.playerModelLoader2D && haveLoaders) {
-                                        this.playerModelLoader2D = new PlayerModelLoader(
-                                            this.osrsClient.idkTypeLoader,
-                                            this.osrsClient.objTypeLoader,
-                                            this.osrsClient.modelLoader,
-                                            this.osrsClient.textureLoader,
-                                        );
-                                    }
-
-                                    const wAny = params.widget as any;
-                                    const keepEquipment =
-                                        typeof wAny.playerModelKeepEquipment === "boolean"
-                                            ? (wAny.playerModelKeepEquipment as boolean)
-                                            : true;
-                                    // contentType=328 renders the local player model.
-                                    // Prefer the ECS local-player appearance so server-driven updates
-                                    // (PlayerDesign arrows) reflect immediately, even if the widget
-                                    // has a stale `playerAppearance` snapshot.
-                                    const localAppearance = (() => {
-                                        const idx = this.osrsClient.playerEcs.getIndexForServerId(
-                                            this.osrsClient.controlledPlayerServerId,
-                                        );
-                                        return idx !== undefined
-                                            ? this.osrsClient.playerEcs.getAppearance(idx)
-                                            : undefined;
-                                    })();
-                                    const appearanceSrc =
-                                        ((params.widget as any).contentType | 0) === 328
-                                            ? localAppearance || wAny.playerAppearance
-                                            : wAny.playerAppearance || localAppearance;
-
-                                    if (this.playerModelLoader2D && appearanceSrc) {
-                                        const gender =
-                                            typeof appearanceSrc.gender === "number"
-                                                ? appearanceSrc.gender | 0
-                                                : 0;
-                                        const colors = Array.isArray(appearanceSrc.colors)
-                                            ? appearanceSrc.colors
-                                                .slice(0, 5)
-                                                .map((n: any) =>
-                                                    Number.isFinite(n) ? (n | 0) & 0xff : 0,
-                                                )
-                                            : [0, 0, 0, 0, 0];
-                                        const kits = Array.isArray(appearanceSrc.kits)
-                                            ? appearanceSrc.kits
-                                                .slice(0, 7)
-                                                .map((n: any) =>
-                                                    Number.isFinite(n) ? n | 0 : -1,
-                                                )
-                                            : new Array(7).fill(-1);
-                                        const equip = Array.isArray(appearanceSrc.equip)
-                                            ? appearanceSrc.equip
-                                                .slice(0, 14)
-                                                .map((n: any) =>
-                                                    Number.isFinite(n) ? n | 0 : -1,
-                                                )
-                                            : new Array(14).fill(-1);
-                                        if (!keepEquipment) {
-                                            for (let i = 0; i < equip.length; i++) equip[i] = -1;
-                                        }
-                                        const pa = new PlayerAppearance(
-                                            gender,
-                                            colors,
-                                            kits,
-                                            equip,
-                                        );
-
-                                        // contentType=328 uses KeyHandler.localPlayer.getModel().
-                                        // Our ECS base-model pipeline applies additional alignment (to NPC "man")
-                                        // which is correct for in-world rendering, but skews UI preview offsets.
-                                        // For widget rendering, prefer the raw PlayerComposition model build.
-                                        let model: any | undefined;
-                                        if (this.playerModelLoader2D) {
-                                            model =
-                                                this.playerModelLoader2D.buildStaticModelFromEquipment(
-                                                    pa,
-                                                    pa.equip,
-                                                );
-                                        }
-                                        if (model) {
-                                            // Widget type-6 models render into the *parent clip*,
-                                            // not the widget bounds. This means player models can overflow the
-                                            // widget rectangle (e.g., equipment/league summary) and still be visible.
-                                            //
-                                            // Render to tight extents and let the widget scissor stack (container clip)
-                                            // match the client's behaviour.
-                                            return this.model2DRenderer.renderModelInstanceToCanvasExtents(
-                                                model,
-                                                params,
-                                            );
-                                        }
-                                    }
-                                }
-
-                                if (
-                                    params.widget.isNpcChathead &&
-                                    typeof params.widget.npcTypeId === "number"
-                                ) {
-                                    if (!this.chatheadFactory) {
-                                        this.chatheadFactory = new ChatheadFactory(
-                                            this.osrsClient.modelLoader,
-                                            this.osrsClient.textureLoader,
-                                        );
-                                    }
-                                    const npcTypeId = params.widget.npcTypeId;
-                                    const baseNpcType =
-                                        this.osrsClient.npcTypeLoader.load(npcTypeId);
-                                    const npcType =
-                                        baseNpcType?.transform?.(
-                                            this.osrsClient.varManager,
-                                            this.osrsClient.npcTypeLoader,
-                                        ) ?? baseNpcType;
-                                    if (
-                                        npcType &&
-                                        npcType.chatheadModelIds &&
-                                        npcType.chatheadModelIds.length > 0
-                                    ) {
-                                        const chatModel = this.chatheadFactory.get(npcType);
-                                        if (chatModel) {
-                                            return this.model2DRenderer.renderModelInstanceToCanvasExtents(
-                                                chatModel,
-                                                params,
-                                            );
-                                        }
-                                    }
-                                } else if (params.widget.isPlayerChathead) {
-                                    const haveLoaders =
-                                        this.osrsClient.modelLoader &&
-                                        this.osrsClient.textureLoader &&
-                                        this.osrsClient.idkTypeLoader &&
-                                        this.osrsClient.objTypeLoader;
-
-                                    // Recreate factory if missing or if it was built before objTypeLoader was ready
-                                    if (
-                                        !this.playerChatheadFactory ||
-                                        !(this.playerChatheadFactory as any)["objTypeLoader"]
-                                    ) {
-                                        if (haveLoaders) {
-                                            this.playerChatheadFactory = new PlayerChatheadFactory(
-                                                this.osrsClient.modelLoader,
-                                                this.osrsClient.textureLoader,
-                                                this.osrsClient.idkTypeLoader,
-                                                this.osrsClient.objTypeLoader,
-                                            );
-                                        }
-                                    }
-                                    const appearance =
-                                        params.widget.playerAppearance ||
-                                        (() => {
-                                            const idx =
-                                                this.osrsClient.playerEcs.getIndexForServerId(
-                                                    this.osrsClient.controlledPlayerServerId,
-                                                );
-                                            return idx !== undefined
-                                                ? this.osrsClient.playerEcs.getAppearance(idx)
-                                                : undefined;
-                                        })();
-                                    if (this.playerChatheadFactory && appearance) {
-                                        const chatModel =
-                                            this.playerChatheadFactory.get(appearance);
-                                        if (chatModel) {
-                                            return this.model2DRenderer.renderModelInstanceToCanvasExtents(
-                                                chatModel,
-                                                params,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-
-                            const widgetAny = params.widget as any;
-                            const itemId = widgetAny?.itemId;
-                            if (typeof itemId === "number" && itemId >= 0) {
-                                try {
-                                    const qty = (widgetAny?.itemQuantity ?? 0) | 0 || 1;
-                                    return this.model2DRenderer.renderItemToCanvasExtents(
-                                        itemId | 0,
-                                        qty,
-                                        params,
-                                        width,
-                                        height,
-                                    );
-                                } catch {}
-                            }
-
-                            if (modelId < 0) {
-                                return undefined;
-                            }
-
-                            return this.model2DRenderer.renderToCanvasExtents(
-                                modelId,
-                                params,
-                                width,
-                                height,
-                            );
-                        },
-                });
-                this.widgetsOverlay = widgets;
-                this.overlayManager.add(widgets);
-                // Init may fail if cache not ready - will be reinitialized in initOverlays()
-                try {
-                    widgets.init({ app: this.app, sceneUniforms: this.sceneUniformBuffer });
-                } catch {}
-                console.log(
-                    "WebGLOsrsClientRenderer: WidgetsOverlay initialized and added to overlay manager",
-                );
-            }
-        } catch (e) {
-            console.error("Failed to initialize WidgetsOverlay:", e);
-        }
-
-        return programs;
+        return render.initShaders(this);
     }
 
-    // ===== Dynamic Player Animation Helpers =====
     private _resolvePlayerSeqIdForMode(): number {
-        try {
-            const ecsIndex = this.osrsClient.playerEcs.getIndexForServerId(
-                this.osrsClient.controlledPlayerServerId,
-            );
-            if (ecsIndex === undefined) return -1;
-            if (this.osrsClient.playerEcs.size() <= ecsIndex) return -1;
-            if (this.playerIdleSeqId >= 0) {
-                return this.playerIdleSeqId | 0;
-            }
-
-            const pe: any = this.osrsClient.playerEcs as any;
-            const animSeq = (key: PlayerAnimKey): number => {
-                const specific = pe.getAnimSeq?.(ecsIndex, key);
-                if (typeof specific === "number" && specific >= 0) return specific | 0;
-                const global = this.osrsClient.serverPlayerSeqs?.[key];
-                return typeof global === "number" && global >= 0 ? global | 0 : -1;
-            };
-            const pick = (...candidates: Array<number | undefined>): number => {
-                for (const c of candidates) {
-                    if (typeof c === "number" && c >= 0) return c | 0;
-                }
-                return -1;
-            };
-            const rotBase = pe.getRotation?.(ecsIndex);
-            const rotFallback = rotBase ?? pe.rotation?.[ecsIndex];
-            const rot: number = ((rotFallback ?? 0) as number) | 0;
-
-            const resolveFromAnimSet = (): number => {
-                // Movement blocking is handled in `PlayerEcs` (). This resolver is mode-only.
-                if (this.playerAnimMode === "idle") {
-                    const desired =
-                        (pe.getTargetRotation?.(ecsIndex) ?? pe.targetRot?.[ecsIndex] ?? rot) | 0;
-                    const delta = (desired - rot) & 2047;
-                    if (delta !== 0) {
-                        const rotationCounter = (pe.getRotationCounter?.(ecsIndex) ?? 0) | 0;
-                        const rotationSpeed = (pe.getRotationSpeed?.(ecsIndex) ?? 32) | 0;
-                        // Turn anims play while the rotation is still in progress
-                        // this tick; the counter only extends them past the final
-                        // snap step (the di > 25 case). Falls back to the walk
-                        // animation when no idle-rotate sequence exists.
-                        const stillTurning =
-                            delta >= rotationSpeed && delta <= 2048 - rotationSpeed;
-                        if (rotationSpeed > 0 && (stillTurning || rotationCounter > 25)) {
-                            const turnSeq = pick(
-                                delta > 1024 ? animSeq("turnLeft") : animSeq("turnRight"),
-                                animSeq("walk"),
-                            );
-                            if (turnSeq >= 0) return turnSeq;
-                        }
-                    }
-                    const idleSeq = animSeq("idle");
-                    if (idleSeq >= 0) return idleSeq;
-                    return -1;
-                }
-
-                const cx: number = (pe.getX?.(ecsIndex) ?? 0) | 0;
-                const cy: number = (pe.getY?.(ecsIndex) ?? 0) | 0;
-                const tx: number = (pe.getTargetX?.(ecsIndex) ?? cx) | 0;
-                const ty: number = (pe.getTargetY?.(ecsIndex) ?? cy) | 0;
-                let moveOri = rot | 0;
-                if (cx < tx) {
-                    if (cy < ty) moveOri = 1280;
-                    else if (cy > ty) moveOri = 1792;
-                    else moveOri = 1536;
-                } else if (cx > tx) {
-                    if (cy < ty) moveOri = 768;
-                    else if (cy > ty) moveOri = 256;
-                    else moveOri = 512;
-                } else if (cy < ty) moveOri = 1024;
-                else if (cy > ty) moveOri = 0;
-                let delta = (moveOri - rot) & 2047;
-                if (delta > 1024) delta -= 2048;
-                const margin = 64;
-                const straight = delta >= -256 - margin && delta <= 256 + margin;
-                const right = delta >= 256 + margin && delta < 768 - margin;
-                const left = delta <= -256 - margin && delta > -768 + margin;
-
-                if (this.playerAnimMode === "run") {
-                    return pick(
-                        straight ? pick(animSeq("run"), animSeq("walk")) : undefined,
-                        right
-                            ? pick(
-                                animSeq("runRight"),
-                                animSeq("run"),
-                                animSeq("walkRight"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                        left
-                            ? pick(
-                                animSeq("runLeft"),
-                                animSeq("run"),
-                                animSeq("walkLeft"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                        !straight && !right && !left
-                            ? pick(
-                                animSeq("runBack"),
-                                animSeq("run"),
-                                animSeq("walkBack"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                    );
-                }
-
-                // OSRS crawl animation selection (speed <= 2)
-                // Reference: player-animation.md lines 387-398
-                if (this.playerAnimMode === "crawl") {
-                    return pick(
-                        straight ? pick(animSeq("crawl"), animSeq("walk")) : undefined,
-                        right
-                            ? pick(
-                                animSeq("crawlRight"),
-                                animSeq("crawl"),
-                                animSeq("walkRight"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                        left
-                            ? pick(
-                                animSeq("crawlLeft"),
-                                animSeq("crawl"),
-                                animSeq("walkLeft"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                        !straight && !right && !left
-                            ? pick(
-                                animSeq("crawlBack"),
-                                animSeq("crawl"),
-                                animSeq("walkBack"),
-                                animSeq("walk"),
-                            )
-                            : undefined,
-                    );
-                }
-
-                return pick(
-                    straight ? pick(animSeq("walk"), animSeq("run")) : undefined,
-                    right
-                        ? pick(
-                            animSeq("walkRight"),
-                            animSeq("walk"),
-                            animSeq("runRight"),
-                            animSeq("run"),
-                        )
-                        : undefined,
-                    left
-                        ? pick(
-                            animSeq("walkLeft"),
-                            animSeq("walk"),
-                            animSeq("runLeft"),
-                            animSeq("run"),
-                        )
-                        : undefined,
-                    !straight && !right && !left
-                        ? pick(
-                            animSeq("walkBack"),
-                            animSeq("walk"),
-                            animSeq("runBack"),
-                            animSeq("run"),
-                        )
-                        : undefined,
-                );
-            };
-
-            try {
-                const seqFromAnim = resolveFromAnimSet();
-                if (seqFromAnim >= 0) return seqFromAnim;
-            } catch {}
-            try {
-                const seqs = this.osrsClient.serverPlayerSeqs;
-                if (seqs) {
-                    // If idle but rotating, use turn sequences if provided
-                    if (this.playerAnimMode === "idle") {
-                        try {
-                            const pe: any = this.osrsClient.playerEcs as any;
-                            const rot: number =
-                                (pe.getRotation?.(ecsIndex) ?? pe.rotation?.[ecsIndex] ?? 0) | 0;
-                            const desired: number =
-                                (pe.getTargetRotation?.(ecsIndex) ??
-                                    pe.targetRot?.[ecsIndex] ??
-                                    rot) | 0;
-                            let delta = (desired - rot) & 2047;
-                            if (delta !== 0 && typeof seqs.turnLeft === "number") {
-                                const isRight = delta < 1024 && delta > 0;
-                                const isLeft = !isRight;
-                                if (isLeft && typeof seqs.turnLeft === "number")
-                                    return seqs.turnLeft | 0;
-                                if (isRight && typeof seqs.turnRight === "number")
-                                    return (seqs.turnRight ?? seqs.turnLeft)! | 0;
-                            }
-                        } catch {}
-                        if (typeof seqs.idle === "number") return seqs.idle | 0;
-                    }
-                    // Moving: prefer directional sequences when provided
-                    try {
-                        const pe: any = this.osrsClient.playerEcs as any;
-                        const rot: number =
-                            (pe.getRotation?.(ecsIndex) ?? pe.rotation?.[ecsIndex] ?? 0) | 0;
-                        // Compute movement orientation from current position toward target step
-                        const cx: number = (pe.getX?.(ecsIndex) ?? 0) | 0;
-                        const cy: number = (pe.getY?.(ecsIndex) ?? 0) | 0;
-                        const tx: number = (pe.getTargetX?.(ecsIndex) ?? cx) | 0;
-                        const ty: number = (pe.getTargetY?.(ecsIndex) ?? cy) | 0;
-                        let moveOri = rot | 0;
-                        if (cx < tx) {
-                            if (cy < ty) moveOri = 1280;
-                            else if (cy > ty) moveOri = 1792;
-                            else moveOri = 1536;
-                        } else if (cx > tx) {
-                            if (cy < ty) moveOri = 768;
-                            else if (cy > ty) moveOri = 256;
-                            else moveOri = 512;
-                        } else if (cy < ty) moveOri = 1024;
-                        else if (cy > ty) moveOri = 0;
-                        // Direction classification with small hysteresis to reduce flicker
-                        let delta = (moveOri - rot) & 2047;
-                        if (delta > 1024) delta -= 2048; // [-1024,1024]
-                        const margin = 64; // hysteresis margin in RS angle units
-                        const straight = delta >= -256 - margin && delta <= 256 + margin;
-                        const right = delta >= 256 + margin && delta < 768 - margin;
-                        const left = delta <= -256 - margin && delta > -768 + margin;
-                        const useRun = this.playerAnimMode === "run";
-                        if (useRun) {
-                            if (straight && typeof seqs.run === "number") return seqs.run | 0;
-                            if (right && typeof seqs.runRight === "number")
-                                return seqs.runRight | 0;
-                            if (left && typeof seqs.runLeft === "number") return seqs.runLeft | 0;
-                            if (typeof seqs.runBack === "number") return seqs.runBack | 0;
-                        } else {
-                            if (straight && typeof seqs.walk === "number") return seqs.walk | 0;
-                            if (right && typeof seqs.walkRight === "number")
-                                return seqs.walkRight | 0;
-                            if (left && typeof seqs.walkLeft === "number") return seqs.walkLeft | 0;
-                            if (typeof seqs.walkBack === "number") return seqs.walkBack | 0;
-                        }
-                    } catch {}
-                }
-            } catch {}
-            try {
-                const npcTypeLoader = this.osrsClient.npcTypeLoader;
-                let manId = -1;
-                const ncount = npcTypeLoader.getCount();
-                for (let id = 0; id < ncount; id++) {
-                    const t: any = npcTypeLoader.load(id);
-                    if (t && typeof t.name === "string" && t.name.toLowerCase() === "man") {
-                        manId = id;
-                        break;
-                    }
-                }
-                if (manId !== -1) {
-                    const manType: any = npcTypeLoader.load(manId);
-                    // Prefer directional sequences based on rotation delta for NPC movement
-                    try {
-                        const pe: any = this.osrsClient.playerEcs as any;
-                        const has0 = (pe.size?.() ?? (pe as any).size?.() ?? 0) > 0;
-                        if (has0) {
-                            const rot: number =
-                                (pe.getRotation?.(ecsIndex) ?? pe.rotation?.[ecsIndex] ?? 0) | 0;
-                            // Movement orientation from step target vs current rotation
-                            const cx: number = (pe.getX?.(ecsIndex) ?? 0) | 0;
-                            const cy: number = (pe.getY?.(ecsIndex) ?? 0) | 0;
-                            const tx: number = (pe.getTargetX?.(ecsIndex) ?? cx) | 0;
-                            const ty: number = (pe.getTargetY?.(ecsIndex) ?? cy) | 0;
-                            let moveOri = rot | 0;
-                            if (cx < tx) {
-                                if (cy < ty) moveOri = 1280;
-                                else if (cy > ty) moveOri = 1792;
-                                else moveOri = 1536;
-                            } else if (cx > tx) {
-                                if (cy < ty) moveOri = 768;
-                                else if (cy > ty) moveOri = 256;
-                                else moveOri = 512;
-                            } else if (cy < ty) moveOri = 1024;
-                            else if (cy > ty) moveOri = 0;
-                            let delta = (moveOri - rot) & 2047;
-                            if (delta > 1024) delta -= 2048; // [-1024,1024]
-                            const margin = 64;
-                            const useRun = this.playerAnimMode === "run";
-                            const straight = delta >= -256 - margin && delta <= 256 + margin;
-                            const right = delta >= 256 + margin && delta < 768 - margin;
-                            const left = delta <= -256 - margin && delta > -768 + margin;
-                            if (straight) {
-                                const seq = useRun ? manType.runSeqId : manType.walkSeqId;
-                                if (typeof seq === "number" && seq >= 0) return seq | 0;
-                            } else if (right) {
-                                const seq = useRun ? manType.runRightSeqId : manType.walkRightSeqId;
-                                if (typeof seq === "number" && seq >= 0) return seq | 0;
-                            } else if (left) {
-                                const seq = useRun ? manType.runLeftSeqId : manType.walkLeftSeqId;
-                                if (typeof seq === "number" && seq >= 0) return seq | 0;
-                            } else {
-                                const seq = useRun ? manType.runBackSeqId : manType.walkBackSeqId;
-                                if (typeof seq === "number" && seq >= 0) return seq | 0;
-                            }
-                            // If idle but turning in place, prefer turn sequences where possible
-                            if (!useRun) {
-                                const desiredIdle = ((pe.getTargetRotation?.(ecsIndex) ??
-                                    pe.targetRot?.[ecsIndex] ??
-                                    rot) | 0) as number;
-                                const deltaRaw = (desiredIdle - rot) & 2047;
-                                if (deltaRaw !== 0) {
-                                    const turnSeq =
-                                        deltaRaw > 1024
-                                            ? manType.turnLeftSeqId
-                                            : manType.turnRightSeqId;
-                                    if (typeof turnSeq === "number" && turnSeq >= 0)
-                                        return turnSeq | 0;
-                                }
-                            }
-                        }
-                    } catch {}
-                    if (this.playerAnimMode === "run") {
-                        const runSeq = (manType as any).runSeqId ?? -1;
-                        if (runSeq !== -1) return runSeq | 0;
-                    }
-                    if (this.playerAnimMode !== "idle") {
-                        const walkSeq =
-                            (manType as any).walkSeqId ??
-                            manType.getWalkSeqId?.(this.osrsClient.basTypeLoader);
-                        if (typeof walkSeq === "number" && walkSeq !== -1) return walkSeq | 0;
-                    }
-                    const idleSeq = manType.getIdleSeqId(this.osrsClient.basTypeLoader);
-                    if (idleSeq !== -1) return idleSeq | 0;
-                }
-            } catch {}
-        } catch {}
-        return -1;
+        return render._resolvePlayerSeqIdForMode(this);
     }
 
-    // Delegated to PlayerRenderer - kept for backwards compatibility
     private _buildAnimClipMeta(seqId: number): ActorAnimationClip | undefined {
-        return this.playerRenderer.buildAnimClipMeta(seqId);
+        return render._buildAnimClipMeta(this, seqId);
     }
 
     private _resolveNpcAnimation(
@@ -4198,160 +1235,14 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         ecs: NpcEcs,
         ecsId: number,
     ): AnimationFrames {
-        const extraAnimMap = map.npcExtraAnims?.[npcIndex];
-        const seqId = ecs.getSeqId(ecsId) | 0;
-        const seqDelay = ecs.getSeqDelay?.(ecsId) | 0;
-        if (seqId >= 0 && seqDelay === 0) {
-            const extraAnim = extraAnimMap?.[seqId];
-            if (extraAnim) {
-                return extraAnim;
-            }
-        }
-        const movementSeqId = this.resolveNpcMovementSequenceIds(ecs, ecsId).movementSeqId | 0;
-        if (movementSeqId >= 0) {
-            const extraMovementAnim = extraAnimMap?.[movementSeqId];
-            if (extraMovementAnim) {
-                return extraMovementAnim;
-            }
-        }
-        const useWalk = ecs.isWalking(ecsId);
-        return ((useWalk ? map.npcWalkFrames[npcIndex] : undefined) ??
-            map.npcIdleFrames[npcIndex]) as AnimationFrames;
+        return render._resolveNpcAnimation(this, map, npcIndex, ecs, ecsId);
     }
 
     private resolveNpcMovementSequenceIds(
         ecs: NpcEcs,
         ecsId: number,
     ): { movementSeqId: number; idleSeqId: number; walkSeqId: number } {
-        let movementSeqId = -1;
-        let idleSeqId = -1;
-        let walkSeqId = -1;
-        const npcTypeId = ecs.getNpcTypeId?.(ecsId);
-        if (typeof npcTypeId !== "number" || npcTypeId < 0) {
-            return { movementSeqId, idleSeqId, walkSeqId };
-        }
-
-        try {
-            const npcType = this.osrsClient.npcTypeLoader.load(npcTypeId | 0);
-            if (!npcType) {
-                return { movementSeqId, idleSeqId, walkSeqId };
-            }
-
-            const movementSet = npcType.getMovementSeqSet(this.osrsClient.basTypeLoader);
-            idleSeqId = movementSet.idle | 0;
-            walkSeqId = movementSet.walk | 0;
-            const pathLength = ecs.getPathLengthLike?.(ecsId) | 0;
-            if (pathLength <= 0) {
-                movementSeqId = idleSeqId;
-                // Turn-in-place: while still rotating toward the target
-                // orientation, play the idle-rotate sequence (walk fallback).
-                const rot = ecs.getRotation(ecsId) | 0;
-                const targetRot = ecs.getTargetRot(ecsId) | 0;
-                const delta = (targetRot - rot) & 2047;
-                if (delta !== 0) {
-                    const rotSpeed = ecs.getRotationSpeed(ecsId) | 0;
-                    const stillTurning =
-                        rotSpeed > 0 && delta >= rotSpeed && delta <= 2048 - rotSpeed;
-                    if (stillTurning) {
-                        const turnSeq =
-                            delta > 1024 ? movementSet.turnLeft | 0 : movementSet.turnRight | 0;
-                        const resolved = turnSeq >= 0 ? turnSeq : walkSeqId;
-                        if (resolved >= 0) movementSeqId = resolved;
-                    }
-                }
-                return { movementSeqId, idleSeqId, walkSeqId };
-            }
-
-            const movementOrientation = ecs.getCurrentStepRot(ecsId);
-            if (movementOrientation === undefined) {
-                movementSeqId = walkSeqId >= 0 ? walkSeqId : idleSeqId;
-                return { movementSeqId, idleSeqId, walkSeqId };
-            }
-
-            let yaw = ((movementOrientation | 0) - (ecs.getRotation(ecsId) | 0)) & 2047;
-            if (yaw > 1024) yaw -= 2048;
-
-            let nextSeq = movementSet.walkBack | 0;
-            if (yaw >= -256 && yaw <= 256) nextSeq = movementSet.walk | 0;
-            else if (yaw >= 256 && yaw < 768) nextSeq = movementSet.walkRight | 0;
-            else if (yaw >= -768 && yaw <= -256) nextSeq = movementSet.walkLeft | 0;
-            if (nextSeq === -1) {
-                nextSeq = movementSet.walk | 0;
-            }
-
-            let speed = 4;
-            if (!!npcType.isClipped) {
-                if (
-                    (movementOrientation | 0) !== (ecs.getRotation(ecsId) | 0) &&
-                    (ecs.getInteractionIndex?.(ecsId) | 0) < 0 &&
-                    (ecs.getRotationSpeed(ecsId) | 0) !== 0
-                ) {
-                    speed = 2;
-                }
-                if (pathLength > 2) speed = 6;
-                if (pathLength > 3) speed = 8;
-                if ((ecs.getMovementDelayCounter?.(ecsId) | 0) > 0 && pathLength > 1) {
-                    speed = 8;
-                }
-            } else {
-                if (pathLength > 1) speed = 6;
-                if (pathLength > 2) speed = 8;
-                if ((ecs.getMovementDelayCounter?.(ecsId) | 0) > 0 && pathLength > 1) {
-                    speed = 8;
-                }
-            }
-
-            const rawTraversal = ecs.getCurrentStepSpeed(ecsId) | 0;
-            if (rawTraversal >= 8) speed <<= 1;
-            else if (rawTraversal <= 2) speed >>= 1;
-
-            if (speed >= 8) {
-                if (nextSeq === (movementSet.walk | 0) && (movementSet.run | 0) !== -1) {
-                    nextSeq = movementSet.run | 0;
-                } else if (
-                    nextSeq === (movementSet.walkBack | 0) &&
-                    (movementSet.runBack | 0) !== -1
-                ) {
-                    nextSeq = movementSet.runBack | 0;
-                } else if (
-                    nextSeq === (movementSet.walkLeft | 0) &&
-                    (movementSet.runLeft | 0) !== -1
-                ) {
-                    nextSeq = movementSet.runLeft | 0;
-                } else if (
-                    nextSeq === (movementSet.walkRight | 0) &&
-                    (movementSet.runRight | 0) !== -1
-                ) {
-                    nextSeq = movementSet.runRight | 0;
-                }
-            } else if (speed <= 2) {
-                if (nextSeq === (movementSet.walk | 0) && (movementSet.crawl | 0) !== -1) {
-                    nextSeq = movementSet.crawl | 0;
-                } else if (
-                    nextSeq === (movementSet.walkBack | 0) &&
-                    (movementSet.crawlBack | 0) !== -1
-                ) {
-                    nextSeq = movementSet.crawlBack | 0;
-                } else if (
-                    nextSeq === (movementSet.walkLeft | 0) &&
-                    (movementSet.crawlLeft | 0) !== -1
-                ) {
-                    nextSeq = movementSet.crawlLeft | 0;
-                } else if (
-                    nextSeq === (movementSet.walkRight | 0) &&
-                    (movementSet.crawlRight | 0) !== -1
-                ) {
-                    nextSeq = movementSet.crawlRight | 0;
-                }
-            }
-
-            movementSeqId = nextSeq | 0;
-            if (movementSeqId < 0) {
-                movementSeqId = walkSeqId >= 0 ? walkSeqId : idleSeqId;
-            }
-        } catch {}
-
-        return { movementSeqId, idleSeqId, walkSeqId };
+        return render.resolveNpcMovementSequenceIds(this, ecs, ecsId);
     }
 
     private shouldLayerNpcMovementSequence(
@@ -4359,23 +1250,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         movementSeqId: number,
         idleSeqId: number,
     ): boolean {
-        if (
-            (actionSeqId | 0) < 0 ||
-            (movementSeqId | 0) < 0 ||
-            (movementSeqId | 0) === (idleSeqId | 0)
-        ) {
-            return false;
-        }
-
-        try {
-            const seqType = this.osrsClient.seqTypeLoader.load(actionSeqId | 0) as any;
-            if (seqType?.isSkeletalSeq?.()) {
-                return Array.isArray(seqType.skeletalMasks);
-            }
-            return Array.isArray(seqType?.masks) && seqType.masks.length > 0;
-        } catch {
-            return false;
-        }
+        return render.shouldLayerNpcMovementSequence(this, actionSeqId, movementSeqId, idleSeqId);
     }
 
     private stepNpcSequenceTrack(
@@ -4393,115 +1268,9 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         frameAdvanced: boolean;
         cleared: boolean;
     } {
-        let fi = Math.max(0, frameIndex | 0);
-        let tick = Math.max(0, animTick | 0);
-        let loops = Math.max(0, loopCount | 0);
-        const safeFrameCount = Math.max(1, frameCount | 0);
-        let frameAdvanced = false;
-        let cleared = false;
-
-        if (fi >= safeFrameCount) {
-            fi = 0;
-        }
-
-        if (!seqType) {
-            const currLen = ((lengths ? lengths[fi] : 0) ?? 0) | 0;
-            tick = (tick + 1) | 0;
-            if (tick > currLen) {
-                tick = 1;
-                fi++;
-                frameAdvanced = true;
-            }
-            if (fi >= safeFrameCount) {
-                if (clearOnFinish) {
-                    cleared = true;
-                } else {
-                    fi = 0;
-                    tick = 0;
-                    loops = 0;
-                }
-            }
-            return { frameIndex: fi, animTick: tick, loopCount: loops, frameAdvanced, cleared };
-        }
-
-        if (!!seqType?.isSkeletalSeq?.() || (seqType?.skeletalId ?? -1) >= 0) {
-            const frameStep = (seqType.frameStep ?? -1) | 0;
-            const maxLoops = (seqType.maxLoops ?? 0) | 0;
-
-            fi++;
-            tick = 0;
-            frameAdvanced = true;
-
-            if (fi >= safeFrameCount) {
-                if (frameStep > 0) {
-                    fi -= frameStep;
-                    if (clearOnFinish) {
-                        loops++;
-                        cleared = loops >= maxLoops || fi < 0 || fi >= safeFrameCount;
-                    } else {
-                        const looping = !!seqType.looping;
-                        if (looping) loops++;
-                        if (fi < 0 || fi >= safeFrameCount || (looping && loops >= maxLoops)) {
-                            fi = 0;
-                            tick = 0;
-                            loops = 0;
-                        }
-                    }
-                } else if (clearOnFinish) {
-                    cleared = true;
-                } else {
-                    fi = 0;
-                    tick = 0;
-                    loops = 0;
-                }
-            }
-
-            return { frameIndex: fi, animTick: tick, loopCount: loops, frameAdvanced, cleared };
-        }
-
-        const frameStep = (seqType.frameStep ?? -1) | 0;
-        const maxLoops = (seqType.maxLoops ?? 0) | 0;
-        tick = (tick + 1) | 0;
-        const safeFrameIndex = lengths ? Math.min(fi, Math.max(0, lengths.length - 1)) : fi;
-        const currLen = ((lengths ? lengths[safeFrameIndex] : 0) ?? 0) | 0;
-        if (tick > currLen) {
-            tick = 1;
-            fi++;
-            frameAdvanced = true;
-        }
-
-        if (fi >= safeFrameCount) {
-            if (frameStep > 0) {
-                fi -= frameStep;
-                if (clearOnFinish) {
-                    loops++;
-                    cleared = loops >= maxLoops || fi < 0 || fi >= safeFrameCount;
-                } else {
-                    const looping = !!seqType.looping;
-                    if (looping) loops++;
-                    if (fi < 0 || fi >= safeFrameCount || (looping && loops >= maxLoops)) {
-                        fi = 0;
-                        tick = 0;
-                        loops = 0;
-                    }
-                }
-            } else if (clearOnFinish) {
-                cleared = true;
-            } else {
-                fi = 0;
-                tick = 0;
-                loops = 0;
-            }
-        }
-
-        return { frameIndex: fi, animTick: tick, loopCount: loops, frameAdvanced, cleared };
+        return render.stepNpcSequenceTrack(this, frameIndex, animTick, loopCount, frameCount, lengths, seqType, clearOnFinish);
     }
 
-    /**
-     * Resolve dynamic sequence metadata for an NPC.
-     * Dynamic NPC sequences are rendered from current-frame scratch geometry rather
-     * than cached `AnimationFrames`.
-     */
     private ensureNpcDynamicSequenceMeta(
         map: WebGLMapSquare,
         npcIndex: number,
@@ -4509,1251 +1278,133 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         seqId: number,
         forceDynamic: boolean = false,
     ): DynamicNpcSequenceMeta | undefined {
-        const extraAnims = map.npcExtraAnims?.[npcIndex];
-        if (!forceDynamic && extraAnims?.[seqId]) {
-            return undefined;
-        }
-
-        if (!this.dynamicNpcAnimLoader?.isReady()) {
-            return undefined;
-        }
-
-        const meta = this.dynamicNpcAnimLoader.getSequenceMeta(npcTypeId, seqId);
-        if (!meta) {
-            return undefined;
-        }
-
-        if (!map.npcExtraFrameLengths) {
-            map.npcExtraFrameLengths = [];
-        }
-        const extraLengths = map.npcExtraFrameLengths[npcIndex] ?? {};
-        extraLengths[seqId] = meta.frameLengths;
-        map.npcExtraFrameLengths[npcIndex] = extraLengths;
-
-        return meta;
+        return render.ensureNpcDynamicSequenceMeta(this, map, npcIndex, npcTypeId, seqId, forceDynamic);
     }
 
-    /**
-     * Upload current dynamic NPC frame geometry to the shared scratch GPU buffers.
-     */
     private uploadDynamicNpcGeometry(
         geometry: DynamicNpcFrameGeometry,
         transparent: boolean,
     ): number {
-        if (!this.npcProgram) return 0;
-
-        const vertices = transparent ? geometry.alphaVertices : geometry.opaqueVertices;
-        const indices = transparent ? geometry.alphaIndices : geometry.opaqueIndices;
-        if (!vertices || !indices || vertices.length === 0 || indices.length === 0) return 0;
-
-        const uploadKey = `${geometry.key}:${transparent ? "alpha" : "opaque"}`;
-
-        const needsRecreate =
-            !this.dynamicNpcInterleavedBuffer ||
-            vertices.length > (this.dynamicNpcBufferVertexSize ?? 0) ||
-            indices.length > (this.dynamicNpcBufferIndexSize ?? 0);
-
-        if (needsRecreate) {
-            if (this.dynamicNpcInterleavedBuffer) {
-                this.dynamicNpcInterleavedBuffer.delete();
-                this.dynamicNpcIndexBuffer?.delete();
-                this.dynamicNpcVertexArray?.delete();
-                this.dynamicNpcDrawCall = undefined;
-            }
-
-            this.dynamicNpcInterleavedBuffer = this.app.createInterleavedBuffer(12, vertices);
-            this.dynamicNpcIndexBuffer = this.app.createIndexBuffer(PicoGL.UNSIGNED_INT, indices);
-            this.dynamicNpcBufferVertexSize = vertices.length;
-            this.dynamicNpcBufferIndexSize = indices.length;
-            this.dynamicNpcUploadedGeometryKey = undefined;
-
-            this.dynamicNpcVertexArray = this.app
-                .createVertexArray()
-                .vertexAttributeBuffer(0, this.dynamicNpcInterleavedBuffer, {
-                    type: PicoGL.UNSIGNED_INT,
-                    size: 3,
-                    stride: 12,
-                    integer: true as any,
-                })
-                .indexBuffer(this.dynamicNpcIndexBuffer);
-
-            if (this.dynamicNpcVertexArray && this.sceneUniformBuffer) {
-                this.dynamicNpcDrawCall = this.configureDrawCall(
-                    this.app
-                        .createDrawCall(this.npcProgram, this.dynamicNpcVertexArray)
-                        .uniformBlock("SceneUniforms", this.sceneUniformBuffer)
-                        .drawRanges(this.dynamicNpcSingleDrawRange),
-                );
-                if (this.textureArray) {
-                    this.dynamicNpcDrawCall.texture("u_textures", this.textureArray);
-                }
-                if (this.textureMaterials) {
-                    this.dynamicNpcDrawCall.texture("u_textureMaterials", this.textureMaterials);
-                }
-                if (this.waterTextures) {
-                    this.dynamicNpcDrawCall.texture("u_waterTextures", this.waterTextures);
-                }
-            }
-        }
-
-        if (this.dynamicNpcUploadedGeometryKey !== uploadKey) {
-            (this.dynamicNpcInterleavedBuffer as any).data(vertices);
-            (this.dynamicNpcIndexBuffer as any).data(indices);
-            this.dynamicNpcUploadedGeometryKey = uploadKey;
-        }
-
-        return indices.length;
+        return render.uploadDynamicNpcGeometry(this, geometry, transparent);
     }
 
     initFramebuffers(): void {
-        this.initFramebuffer();
-        this.initTextureFramebuffer();
+        return render.initFramebuffers(this);
     }
 
     initFramebuffer(): void {
-        this.framebuffer?.delete();
-        this.colorTarget?.delete();
-        this.depthTarget?.delete();
-
-        const sceneSize = this.getSceneRenderSize();
-        this.sceneRenderWidth = sceneSize.width | 0;
-        this.sceneRenderHeight = sceneSize.height | 0;
-
-        let samples = 0;
-        if (this.msaaEnabled) {
-            samples = this.gl.getParameter(PicoGL.MAX_SAMPLES);
-        }
-
-        this.colorTarget = this.app.createRenderbuffer(
-            this.sceneRenderWidth,
-            this.sceneRenderHeight,
-            PicoGL.RGBA8,
-            samples,
-        );
-        this.depthTarget = this.app.createRenderbuffer(
-            this.sceneRenderWidth,
-            this.sceneRenderHeight,
-            PicoGL.DEPTH_COMPONENT24,
-            samples,
-        );
-        this.framebuffer = this.app
-            .createFramebuffer()
-            .colorTarget(0, this.colorTarget)
-            .depthTarget(this.depthTarget);
-
-        this.needsFramebufferUpdate = false;
+        return render.initFramebuffer(this);
     }
 
     private initTextureFramebuffer(
         width: number = this.app.width,
         height: number = this.app.height,
     ): void {
-        this.textureFramebuffer?.delete();
-        this.textureColorTarget?.delete();
-        this.textureDepthTarget?.delete();
-        this.textureColorTarget = this.app.createTexture2D(width, height, {
-            minFilter: PicoGL.LINEAR,
-            magFilter: PicoGL.LINEAR,
-        });
-        this.textureDepthTarget = this.app.createRenderbuffer(
-            width,
-            height,
-            PicoGL.DEPTH_COMPONENT24,
-            0,
-        );
-        this.textureFramebuffer = this.app
-            .createFramebuffer()
-            .colorTarget(0, this.textureColorTarget)
-            .depthTarget(this.textureDepthTarget);
+        return render.initTextureFramebuffer(this, width, height);
     }
 
     override initCache(): void {
-        super.initCache();
-        if (this.app) {
-            this.initTextures();
-            // Re-initialize player geometry now that textures are loaded
-            // (initial attempt in init() fails because textures aren't ready yet)
-            this.playerRenderer.initGeometry().catch((e) => {
-                console.warn("Failed to reinit player geometry after initCache", e);
-            });
-
-            // Re-initialize DynamicNpcAnimLoader now that loaders are ready
-            // (initial attempt in init() fails because loaders aren't set up yet)
-            this.initDynamicNpcAnimLoader();
-        }
+        return render.initCache(this);
     }
 
-    /**
-     * Initialize overlay assets from the cache.
-     * Called during phased loading after cache is fully available.
-     * Overlays are created during shader setup but can't load cache assets
-     * until the cache is ready, so this re-initializes them.
-     */
     initOverlays(): void {
-        if (!this.app || !this.sceneUniformBuffer) return;
-        const initArgs = { app: this.app, sceneUniforms: this.sceneUniformBuffer };
-        try {
-            this.hitsplatOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init hitsplat overlay", e);
-        }
-        try {
-            this.healthBarOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init health bar overlay", e);
-        }
-        try {
-            this.overheadTextOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init overhead text overlay", e);
-        }
-        try {
-            this.overheadPrayerOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init overhead prayer overlay", e);
-        }
-        try {
-            this.clickCrossOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init click cross overlay", e);
-        }
-        try {
-            this.tileTextOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init tile text overlay", e);
-        }
-        try {
-            this.groundItemOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init ground item overlay", e);
-        }
-        try {
-            this.interactHighlightOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init interact highlight overlay", e);
-        }
-        try {
-            this.objectIdOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init object id overlay", e);
-        }
-        try {
-            this.widgetsOverlay?.init(initArgs);
-        } catch (e) {
-            console.warn("Failed to init widgets overlay", e);
-        }
-        // Initialize ItemIconRenderer if loaders are now available
-        try {
-            const objLoader = this.osrsClient.objTypeLoader;
-            const modelLoader = this.osrsClient.modelLoader;
-            const textureLoader = this.osrsClient.textureLoader;
-            if (objLoader && modelLoader && textureLoader && !this.itemIconRenderer) {
-                import("../../ui/item/ItemIconRenderer").then(({ ItemIconRenderer }) => {
-                    if (!this.itemIconRenderer) {
-                        this.itemIconRenderer = new ItemIconRenderer(
-                            objLoader,
-                            modelLoader,
-                            textureLoader,
-                            this.osrsClient.cacheSystem,
-                        );
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn("Failed to init item icon renderer", e);
-        }
+        return render.initOverlays(this);
     }
 
     initTextures(): void {
-        const textureLoader = this.osrsClient.textureLoader;
-        if (!textureLoader) return;
-
-        const allTextureIds = textureLoader.getTextureIds();
-
-        this.textureIds = allTextureIds
-            .filter((id) => textureLoader.isSd(id))
-            .slice(0, MAX_TEXTURES - 1);
-
-        this.textureIdIndexMap.clear();
-        this.textureFrameCounts.clear();
-        for (let i = 0; i < this.textureIds.length; i++) {
-            const id = this.textureIds[i];
-            this.textureIdIndexMap.set(id, i + 1);
-            this.textureFrameCounts.set(id, 1);
-        }
-        this.textureLayerCount = this.textureIds.length + 1;
-
-        this.initTextureArray();
-        this.initMaterialsTexture();
-
-        // console.log("init textures", this.textureIds, allTextureIds.length);
+        return render.initTextures(this);
     }
 
     private async initWaterTextures(): Promise<void> {
-        let data: Uint8Array;
-        try {
-            data = await this.loadWaterTextureData();
-            this.waterShadingUnavailable = false;
-        } catch (error) {
-            console.log(
-                "[water] Failed to load water textures; water renders with the vanilla texture path",
-                error,
-            );
-            this.waterShadingUnavailable = true;
-            data = new Uint8Array(
-                WATER_TEXTURE_SIZE * WATER_TEXTURE_SIZE * 4 * WATER_TEXTURE_ASSETS.length,
-            );
-        }
-
-        this.waterTextures?.delete();
-        this.waterTextures = createTextureArray(
-            this.app,
-            data,
-            WATER_TEXTURE_SIZE,
-            WATER_TEXTURE_SIZE,
-            WATER_TEXTURE_ASSETS.length,
-            {
-                internalFormat: PicoGL.RGBA8,
-                type: PicoGL.UNSIGNED_BYTE,
-                minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-                magFilter: PicoGL.LINEAR,
-                wrapS: PicoGL.REPEAT,
-                wrapT: PicoGL.REPEAT,
-            },
-        );
+        return render.initWaterTextures(this);
     }
 
     private async loadWaterTextureData(): Promise<Uint8Array> {
-        const images = await Promise.all(
-            WATER_TEXTURE_ASSETS.map((src) => this.loadImageAsset(src)),
-        );
-        const canvas = document.createElement("canvas");
-        canvas.width = WATER_TEXTURE_SIZE;
-        canvas.height = WATER_TEXTURE_SIZE;
-        const context = canvas.getContext("2d", { willReadFrequently: true });
-        if (!context) {
-            throw new Error("Could not create canvas context for water texture upload");
-        }
-
-        const data = new Uint8Array(
-            WATER_TEXTURE_SIZE * WATER_TEXTURE_SIZE * 4 * WATER_TEXTURE_ASSETS.length,
-        );
-        for (let layer = 0; layer < images.length; layer++) {
-            context.clearRect(0, 0, WATER_TEXTURE_SIZE, WATER_TEXTURE_SIZE);
-            context.drawImage(images[layer], 0, 0, WATER_TEXTURE_SIZE, WATER_TEXTURE_SIZE);
-            const imageData = context.getImageData(0, 0, WATER_TEXTURE_SIZE, WATER_TEXTURE_SIZE);
-            data.set(imageData.data, layer * WATER_TEXTURE_SIZE * WATER_TEXTURE_SIZE * 4);
-        }
-        return data;
+        return render.loadWaterTextureData(this);
     }
 
     private loadImageAsset(src: string): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve(image);
-            image.onerror = () => reject(new Error(`Failed to load image asset ${src}`));
-            image.src = src;
-        });
+        return render.loadImageAsset(this, src);
     }
 
     private collectWaterTextureIds(): Set<number> {
-        if (this.waterShadingUnavailable) {
-            return new Set();
-        }
-        this.collectWaterOverlayColors();
-        return new Set(KNOWN_WATER_TEXTURE_IDS);
+        return render.collectWaterTextureIds(this);
     }
 
-    // Water overlays carry their tile colour in primaryRgb; use it as the
-    // surface colour for water textures without a hand-tuned entry.
     private collectWaterOverlayColors(): void {
-        this.waterOverlayColors.clear();
-        const loaderFactory = this.osrsClient.loaderFactory;
-        if (!loaderFactory?.getOverlayTypeLoader) {
-            return;
-        }
-
-        let overlayTypeLoader: ReturnType<typeof loaderFactory.getOverlayTypeLoader>;
-        try {
-            overlayTypeLoader = loaderFactory.getOverlayTypeLoader();
-        } catch {
-            return;
-        }
-
-        const overlayCount = overlayTypeLoader.getCount();
-        for (let overlayId = 0; overlayId < overlayCount; overlayId++) {
-            let overlay: OverlayFloorType;
-            try {
-                overlay = overlayTypeLoader.load(overlayId);
-            } catch {
-                continue;
-            }
-
-            const textureId = overlay?.textureId ?? -1;
-            if (
-                !KNOWN_WATER_TEXTURE_IDS.has(textureId) ||
-                this.waterOverlayColors.has(textureId) ||
-                (overlay.primaryRgb & 0xffffff) === 0
-            ) {
-                continue;
-            }
-            this.waterOverlayColors.set(textureId, waterRgb(overlay.primaryRgb));
-        }
+        return render.collectWaterOverlayColors(this);
     }
 
     private getWaterMaterialParams(textureId: number): WaterMaterialParams {
-        if (textureId === 25) {
-            return SWAMP_WATER_MATERIAL;
-        }
-        if (textureId === 91) {
-            return ICE_WATER_MATERIAL;
-        }
-
-        const surfaceColor =
-            VANILLA_WATER_SURFACE_COLORS.get(textureId) ?? this.waterOverlayColors.get(textureId);
-        if (surfaceColor) {
-            return {
-                ...DEFAULT_WATER_MATERIAL,
-                surfaceColor,
-            };
-        }
-
-        return DEFAULT_WATER_MATERIAL;
+        return render.getWaterMaterialParams(this, textureId);
     }
 
     initTextureArray() {
-        if (this.textureArray) {
-            this.textureArray.delete();
-            this.textureArray = undefined;
-        }
-        this.loadedTextureIds.clear();
-        this.textureLayerCount = this.textureIds.length + 1;
-
-        console.time("load textures");
-
-        const pixelCount = TEXTURE_SIZE * TEXTURE_SIZE;
-
-        const textureCount = this.textureIds.length;
-        const pixels = new Int32Array(this.textureLayerCount * pixelCount);
-
-        // Initialize ALL layers to white so missing textures don't render black
-        // Layer 0 remains white (non-textured faces sample this)
-        pixels.fill(0xffffffff);
-
-        const cacheInfo = this.osrsClient.loadedCache?.info;
-        if (!cacheInfo) return;
-
-        let maxPreloadTextures = textureCount;
-        // we should check if the texture loader is procedural instead
-        if (cacheInfo.game === "runescape" && cacheInfo.revision >= 508) {
-            maxPreloadTextures = 64;
-        }
-
-        for (let i = 0; i < Math.min(textureCount, maxPreloadTextures); i++) {
-            const textureId = this.textureIds[i];
-            try {
-                const texturePixels = this.osrsClient.textureLoader.getPixelsArgb(
-                    textureId,
-                    TEXTURE_SIZE,
-                    true,
-                    1.0,
-                );
-                pixels.set(texturePixels, (i + 1) * pixelCount);
-            } catch (e) {
-                console.error("Failed loading texture", textureId, e);
-            }
-            this.loadedTextureIds.add(textureId);
-        }
-
-        this.textureArray = createTextureArray(
-            this.app,
-            new Uint8Array(pixels.buffer),
-            TEXTURE_SIZE,
-            TEXTURE_SIZE,
-            textureCount + 1,
-            {},
-        );
-
-        this.updateTextureFiltering();
-
-        console.timeEnd("load textures");
+        return render.initTextureArray(this);
     }
 
     updateTextureFiltering(): void {
-        if (!this.textureArray) {
-            throw new Error("Texture array is not initialized");
-        }
-
-        this.textureArray.bind(0);
-
-        if (this.textureFilterMode === TextureFilterMode.DISABLED) {
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MIN_FILTER,
-                PicoGL.NEAREST,
-            );
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MAG_FILTER,
-                PicoGL.NEAREST,
-            );
-        } else if (this.textureFilterMode === TextureFilterMode.BILINEAR) {
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MIN_FILTER,
-                PicoGL.LINEAR_MIPMAP_NEAREST,
-            );
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MAG_FILTER,
-                PicoGL.LINEAR,
-            );
-        } else {
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MIN_FILTER,
-                PicoGL.LINEAR_MIPMAP_LINEAR,
-            );
-            this.gl.texParameteri(
-                PicoGL.TEXTURE_2D_ARRAY,
-                PicoGL.TEXTURE_MAG_FILTER,
-                PicoGL.LINEAR,
-            );
-        }
-
-        const maxAnisotropy = Math.min(
-            getMaxAnisotropy(this.textureFilterMode),
-            PicoGL.WEBGL_INFO.MAX_TEXTURE_ANISOTROPY,
-        );
-
-        this.gl.texParameteri(
-            PicoGL.TEXTURE_2D_ARRAY,
-            PicoGL.TEXTURE_MAX_ANISOTROPY_EXT,
-            maxAnisotropy,
-        );
+        return render.updateTextureFiltering(this);
     }
 
     updateTextureArray(textures: Map<number, Int32Array>): void {
-        if (!this.textureArray) {
-            throw new Error("Texture array is not initialized");
-        }
-        let updatedCount = 0;
-        this.textureArray.bind(0);
-        for (const [id, pixels] of textures) {
-            if (this.loadedTextureIds.has(id)) {
-                continue;
-            }
-            const index = this.textureIdIndexMap.get(id) ?? 0;
-            if (index <= 0) {
-                // Unknown texture id for this array; skip to avoid overwriting the base white layer
-                continue;
-            }
-
-            this.gl.texSubImage3D(
-                PicoGL.TEXTURE_2D_ARRAY,
-                0,
-                0,
-                0,
-                index,
-                TEXTURE_SIZE,
-                TEXTURE_SIZE,
-                1,
-                PicoGL.RGBA,
-                PicoGL.UNSIGNED_BYTE,
-                new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength),
-            );
-            this.loadedTextureIds.add(id);
-            updatedCount++;
-        }
-        if (updatedCount > 0) {
-            // Mipmap generation for a large TEXTURE_2D_ARRAY is expensive and can stall hard.
-            // Defer it and amortize across frames while maps are streaming in.
-            const now = performance.now();
-            this.textureMipmapsDirty = true;
-            this.textureMipmapsDirtyAtMs = now;
-            this.textureMipmapsDirtyUpdates += updatedCount;
-        }
+        return render.updateTextureArray(this, textures);
     }
 
     private maybeRegenerateTextureMipmaps(nowMs: number): void {
-        if (!this.textureMipmapsDirty || !this.textureArray) return;
-        if (this.textureFilterMode === TextureFilterMode.DISABLED) {
-            // No mipmaps required for nearest sampling.
-            this.textureMipmapsDirty = false;
-            this.textureMipmapsDirtyUpdates = 0;
-            return;
-        }
-
-        // Only regenerate when texture streaming settles a bit, or periodically if it never fully settles.
-        const quietForMs = nowMs - this.textureMipmapsDirtyAtMs;
-        const sinceLastGenMs = nowMs - this.textureMipmapsLastGenAtMs;
-        const shouldGen =
-            (quietForMs > 250 && !this.hasPendingMapStreamingWork()) ||
-            (sinceLastGenMs > 750 && this.textureMipmapsDirtyUpdates >= 8);
-
-        if (!shouldGen) return;
-
-        try {
-            this.textureArray.bind(0);
-            this.gl.generateMipmap(PicoGL.TEXTURE_2D_ARRAY);
-            this.textureMipmapsDirty = false;
-            this.textureMipmapsDirtyUpdates = 0;
-            this.textureMipmapsLastGenAtMs = nowMs;
-        } catch (e) {
-            // If mipmap regen fails for any reason, keep it dirty and try again later.
-            console.warn("Texture mipmap regeneration failed", e);
-        }
+        return render.maybeRegenerateTextureMipmaps(this, nowMs);
     }
 
     private getPendingStreamMapCount(): number {
-        let count = 0;
-        for (const batch of this.pendingStreamMapsByGeneration.values()) {
-            count += batch.size;
-        }
-        return count | 0;
+        return render.getPendingStreamMapCount(this);
     }
 
     private hasPendingMapStreamingWork(): boolean {
-        if (this.mapsToLoad.length > 0) return true;
-        if (this.mapManager.loadingMapIds.size > 0) return true;
-        return this.getPendingStreamMapCount() > 0;
+        return render.hasPendingMapStreamingWork(this);
     }
 
     private syncStreamGenerationFromMapManager(): void {
-        const revision = this.mapManager.getGridRevision() | 0;
-        if (revision === this.observedGridRevision) return;
-        const nextExpected = new Set(this.mapManager.getGridMapIdsSnapshot());
-        let carryForward: StreamMapBatch | undefined;
-        for (const [generation, batch] of this.pendingStreamMapsByGeneration.entries()) {
-            if ((generation | 0) >= revision) continue;
-            for (const [mapId, mapData] of batch.entries()) {
-                if (nextExpected.has(mapId)) {
-                    if (!carryForward) carryForward = new Map<number, SdMapData>();
-                    carryForward.set(mapId, mapData);
-                } else {
-                    this.mapManager.loadingMapIds.delete(mapId);
-                }
-            }
-            this.pendingStreamMapsByGeneration.delete(generation);
-        }
-        this.observedGridRevision = revision;
-
-        // Detect cross-region teleport: if none of the new maps are loaded,
-        // skip the fog fade-in so they appear instantly.
-        let hasOverlap = false;
-        for (const mapId of nextExpected) {
-            if (this.mapManager.mapSquares.has(mapId)) {
-                hasOverlap = true;
-                break;
-            }
-        }
-        if (!hasOverlap && nextExpected.size > 0) {
-            this.skipMapFadeIn = true;
-        }
-
-        this.activeStreamGeneration = revision;
-        this.activeStreamExpectedMapIds = nextExpected;
-        if (carryForward && carryForward.size > 0) {
-            const active =
-                this.pendingStreamMapsByGeneration.get(revision) ?? new Map<number, SdMapData>();
-            for (const [mapId, mapData] of carryForward.entries()) {
-                active.set(mapId, mapData);
-            }
-            this.pendingStreamMapsByGeneration.set(revision, active);
-        }
+        return render.syncStreamGenerationFromMapManager(this);
     }
 
     private queueStreamMapData(mapData: SdMapData, streamGeneration?: number): void {
-        // Reject normal map data while an instance scene is active
-        if (this.instanceActive) return;
-
-        const mapId = getMapSquareId(mapData.mapX, mapData.mapY);
-        const inTargetGrid = this.mapManager.isMapInTargetGrid(mapData.mapX, mapData.mapY);
-        if (!inTargetGrid) {
-            this.mapManager.loadingMapIds.delete(mapId);
-            return;
-        }
-
-        const currentGeneration = this.activeStreamGeneration | 0;
-        const queuedGeneration = typeof streamGeneration === "number" ? streamGeneration | 0 : 0;
-        const targetGeneration =
-            queuedGeneration > currentGeneration
-                ? queuedGeneration
-                : queuedGeneration > 0 && queuedGeneration < currentGeneration
-                    ? currentGeneration
-                    : Math.max(currentGeneration, queuedGeneration);
-
-        let batch = this.pendingStreamMapsByGeneration.get(targetGeneration);
-        if (!batch) {
-            batch = new Map<number, SdMapData>();
-            this.pendingStreamMapsByGeneration.set(targetGeneration, batch);
-        }
-        batch.set(mapId, mapData);
+        return render.queueStreamMapData(this, mapData, streamGeneration);
     }
 
     private applyReadyStreamGenerationBatch(time: number): number {
-        const generation = this.activeStreamGeneration | 0;
-        const expected = this.activeStreamExpectedMapIds;
-        const pending = this.pendingStreamMapsByGeneration.get(generation);
-        if (!pending || expected.size === 0) return 0;
-        if (
-            !this.mainProgram ||
-            !this.mainAlphaProgram ||
-            !this.npcProgram ||
-            !this.textureArray ||
-            !this.textureMaterials ||
-            !this.waterTextures ||
-            !this.sceneUniformBuffer
-        ) {
-            return 0;
-        }
-        const mainProgram = this.mainProgram;
-        const mainAlphaProgram = this.mainAlphaProgram;
-        const npcProgram = this.npcProgram;
-        const textureArray = this.textureArray;
-        const textureMaterials = this.textureMaterials;
-        const waterTextures = this.waterTextures;
-        const sceneUniformBuffer = this.sceneUniformBuffer;
-
-        // Apply maps as they arrive, but never apply surrounding chunks before
-        // the player's own chunk (index 0 in the ordered grid).  This ensures the
-        // map square the player is standing on always renders first.
-        let applied = 0;
-        let allReady = true;
-        const orderedMapIds = this.mapManager.getGridMapIdsSnapshot();
-        let playerChunkReady = false;
-        if (orderedMapIds.length > 0) {
-            const firstId = orderedMapIds[0];
-            const firstMx = firstId >> 8;
-            const firstMy = firstId & 0xff;
-            playerChunkReady =
-                !!pending.get(firstId) ||
-                !!this.mapManager.getMap(firstMx, firstMy) ||
-                this.mapManager.invalidMapIds.has(firstId);
-        }
-        for (const mapId of orderedMapIds) {
-            const mapData = pending.get(mapId);
-            if (!mapData) {
-                const mx = mapId >> 8;
-                const my = mapId & 0xff;
-                if (!this.mapManager.getMap(mx, my) && !this.mapManager.invalidMapIds.has(mapId)) {
-                    allReady = false;
-                }
-                continue;
-            }
-            if (!playerChunkReady) {
-                allReady = false;
-                continue;
-            }
-            if (!this.isValidMapData(mapData)) continue;
-            pending.delete(mapId);
-            applied++;
-            this.loadMap(
-                mainProgram,
-                mainAlphaProgram,
-                npcProgram,
-                textureArray,
-                textureMaterials,
-                waterTextures,
-                sceneUniformBuffer,
-                mapData,
-                time,
-            );
-        }
-        if (allReady || pending.size === 0) {
-            this.pendingStreamMapsByGeneration.delete(generation);
-        }
-        if (allReady) {
-            this.skipMapFadeIn = false;
-        }
-        return applied | 0;
+        return render.applyReadyStreamGenerationBatch(this, time);
     }
 
     initMaterialsTexture(): void {
-        if (this.textureMaterials) {
-            this.textureMaterials.delete();
-            this.textureMaterials = undefined;
-        }
-
-        const textureCount = this.textureLayerCount || 1;
-        const waterTextureIds = this.collectWaterTextureIds();
-
-        // Row 0: animU, animV, alphaCutOff, frameCount
-        // Row 1: animSpeed, material flags, water flags, (unused)
-        // Row 2: water surface RGB, base opacity
-        // Row 3: water depth RGB, fresnel amount
-        // Row 4: normal strength, specular strength, specular gloss, duration
-        // Row 5: water foam RGB, (unused)
-        const data = new Int8Array(textureCount * MATERIAL_TEXTURE_ROWS * 4);
-        data[3] = 1; // frameCount for fallback layer 0
-
-        for (let i = 0; i < this.textureIds.length; i++) {
-            const id = this.textureIds[i];
-            try {
-                const material = this.osrsClient.textureLoader.getMaterial(id);
-                const frameCount = this.textureFrameCounts.get(id) ?? material.frameCount ?? 1;
-                const baseLayer = this.textureIdIndexMap.get(id) ?? 0;
-
-                for (
-                    let frame = 0;
-                    frame < frameCount && baseLayer + frame < textureCount;
-                    frame++
-                ) {
-                    const layerIndex = baseLayer + frame;
-                    const row0 = layerIndex * 4;
-                    const row1 = (textureCount + layerIndex) * 4;
-                    const row2 = (textureCount * 2 + layerIndex) * 4;
-                    const row3 = (textureCount * 3 + layerIndex) * 4;
-                    const row4 = (textureCount * 4 + layerIndex) * 4;
-                    const row5 = (textureCount * 5 + layerIndex) * 4;
-                    const isWater = waterTextureIds.has(id);
-
-                    data[row0] = material.animU;
-                    data[row0 + 1] = material.animV;
-                    data[row0 + 2] = materialByte(material.alphaCutOff * 255);
-                    data[row0 + 3] = materialByte(frameCount);
-
-                    data[row1] = material.animSpeed;
-                    data[row1 + 1] = isWater ? 1 : 0;
-
-                    if (isWater) {
-                        const water = this.getWaterMaterialParams(id);
-                        data[row1 + 2] =
-                            (water.hasFoam ? WATER_FLAG_HAS_FOAM : 0) |
-                            (water.useNormalMap2 ? WATER_FLAG_NORMAL_MAP_2 : 0);
-
-                        data[row2] = materialByte(water.surfaceColor[0] * 255);
-                        data[row2 + 1] = materialByte(water.surfaceColor[1] * 255);
-                        data[row2 + 2] = materialByte(water.surfaceColor[2] * 255);
-                        data[row2 + 3] = materialByte(water.baseOpacity * 255);
-
-                        data[row3] = materialByte(water.depthColor[0] * 255);
-                        data[row3 + 1] = materialByte(water.depthColor[1] * 255);
-                        data[row3 + 2] = materialByte(water.depthColor[2] * 255);
-                        data[row3 + 3] = materialByte(water.fresnelAmount * 255);
-
-                        data[row4] = materialByte((water.normalStrength / 0.5) * 255);
-                        data[row4 + 1] = materialByte(water.specularStrength * 255);
-                        data[row4 + 2] = materialByte((water.specularGloss / 500) * 255);
-                        data[row4 + 3] = materialByte((water.duration / 4) * 255);
-
-                        data[row5] = materialByte(water.foamColor[0] * 255);
-                        data[row5 + 1] = materialByte(water.foamColor[1] * 255);
-                        data[row5 + 2] = materialByte(water.foamColor[2] * 255);
-                    }
-                }
-            } catch (e) {
-                console.error("Failed loading texture", id, e);
-            }
-        }
-
-        this.textureMaterials = this.app.createTexture2D(
-            data,
-            textureCount,
-            MATERIAL_TEXTURE_ROWS,
-            {
-                minFilter: PicoGL.NEAREST,
-                magFilter: PicoGL.NEAREST,
-                internalFormat: PicoGL.RGBA8I,
-            },
-        );
+        return render.initMaterialsTexture(this);
     }
 
     private clearControlledPlayerAppearanceCache(): void {
-        try {
-            const controlledId = this.osrsClient.controlledPlayerServerId | 0;
-            if (controlledId < 0) return;
-            const pe = this.osrsClient.playerEcs;
-            const idx = pe.getIndexForServerId(controlledId);
-            if (idx === undefined) return;
-            const app = pe.getAppearance(idx);
-            if (!app) return;
-            const equipKey =
-                app.getEquipKey?.() ??
-                (Array.isArray(app.equip) ? app.equip.slice(0, 14).join(",") : "");
-            const key = app.getCacheKey?.() ?? `${app.getHash?.().toString() ?? "0"}|${equipKey}`;
-            this.playerRenderer.cleanupAppearanceCache(key);
-            pe.cleanupAppearanceCache(key);
-        } catch {}
+        return render.clearControlledPlayerAppearanceCache(this);
     }
 
     private resolvePlayerIdleSeqMaxId(): number {
-        if (this.playerIdleSeqMaxId >= 0) return this.playerIdleSeqMaxId;
-        const fallbackMax = 12000;
-        let maxId = fallbackMax;
-        try {
-            const loader = this.osrsClient.seqTypeLoader;
-            const count = loader?.getCount?.();
-            if (typeof count === "number" && count > 0) {
-                maxId = Math.max(0, (count | 0) - 1);
-            }
-        } catch {}
-        this.playerIdleSeqMaxId = maxId;
-        return maxId;
+        return render.resolvePlayerIdleSeqMaxId(this);
     }
 
     getProjectileManager(): ProjectileManager | undefined {
-        return this.projectileManager;
+        return render.getProjectileManager(this);
     }
 
     getControls(): Schema {
-        // Appearance (clothes + equipment) is server-driven; no local kit lists
-
-        const queueRebuild = () => {
-            this.playerRenderer
-                .initGeometry()
-                .catch((e) => console.warn("Player rebuild failed", e));
-        };
-
-        const schema: any = {
-            Player: folder(
-                {
-                    Plane: {
-                        value: (() => {
-                            const idx = this.osrsClient.playerEcs.getIndexForServerId(
-                                this.osrsClient.controlledPlayerServerId,
-                            );
-                            return idx !== undefined ? this.osrsClient.playerEcs.getLevel(idx) : 0;
-                        })(),
-                        min: 0,
-                        max: 3,
-                        step: 1,
-                        label: "Plane",
-                        onChange: (v: number) => {
-                            const idx = this.osrsClient.playerEcs.getIndexForServerId(
-                                this.osrsClient.controlledPlayerServerId,
-                            );
-                            if (idx === undefined) return;
-                            const next = Math.max(0, Math.min(3, v | 0));
-                            const currentLevel = this.osrsClient.playerEcs.getLevel(idx);
-                            if (currentLevel !== next) {
-                                this.osrsClient.playerEcs.setLevel(idx, next);
-                                // Keep PlayerECS in sync if present so roof logic uses this plane
-                                try {
-                                    const pe = this.osrsClient.playerEcs as any;
-                                    const n = pe?.size?.() ?? 0;
-                                    if (n > 0) pe.setLevel?.(0, next);
-                                } catch {}
-                                // Ensure camera follow and height sampling react immediately
-                                this.osrsClient.camera.updated = true;
-                            }
-                        },
-                    },
-                    AnimMode: {
-                        value: this.playerAnimMode,
-                        options: { Idle: "idle", Walk: "walk", Run: "run", Crawl: "crawl" },
-                        label: "Player Animation",
-                        onChange: (v: "idle" | "walk" | "run" | "crawl") => {
-                            this.playerAnimMode = v;
-                            // Also toggle server run mode to keep speed consistent with UI choice
-                            try {
-                                this.osrsClient.setRunMode(v === "run");
-                            } catch {}
-                            // Update local ECS run flag to reflect toggle immediately
-                            try {
-                                const idx = this.osrsClient.playerEcs.getIndexForServerId(
-                                    this.osrsClient.controlledPlayerServerId,
-                                );
-                                if (idx !== undefined)
-                                    (this.osrsClient.playerEcs as any).running[idx] =
-                                        v === "run" ? 1 : 0;
-                            } catch {}
-                            // Reset frames when switching modes
-                        },
-                    },
-                    DebugDumpVertices: {
-                        value: this.playerDebugDump,
-                        label: "Debug Dump Vertices",
-                        onChange: (v: boolean) => {
-                            this.playerDebugDump = !!v;
-                            queueRebuild();
-                        },
-                    },
-                    FreezeFrame: {
-                        value: this.playerFreezeFrame,
-                        label: "Freeze Frame",
-                        onChange: (v: boolean) => (this.playerFreezeFrame = !!v),
-                    },
-                    FrameIndex: {
-                        value: this.playerFixedFrame,
-                        min: 0,
-                        max: Math.max(this.playerRenderer.getFrameCount() - 1, 0),
-                        step: 1,
-                        onChange: (v: number) => (this.playerFixedFrame = v | 0),
-                    },
-                    IdleSeqId: {
-                        value: this.playerIdleSeqId,
-                        min: -1,
-                        max: this.resolvePlayerIdleSeqMaxId(),
-                        step: 1,
-                        label: "Idle Seq ID (-1:auto)",
-                        onChange: (v: number) => {
-                            this.playerIdleSeqId = v | 0;
-                            this.clearControlledPlayerAppearanceCache();
-                            queueRebuild();
-                        },
-                    },
-                    YOffset: {
-                        value: this.playerYOffset,
-                        min: -32,
-                        max: 64,
-                        step: 1,
-                        label: "Y offset",
-                        onChange: (v: number) => (this.playerYOffset = v | 0),
-                    },
-                    // No local appearance editing (head/torso/arms/hands)
-                    // No local appearance editing (legs/feet)
-                    // No local equip meta introspection
-                },
-                { collapsed: false },
-            ),
-            "Max Level": {
-                value: this.maxLevel,
-                min: 0,
-                max: 3,
-                step: 1,
-                onChange: (v: number) => {
-                    this.setMaxLevel(v);
-                },
-            },
-            Sky: {
-                r: this.skyColor[0] * 255,
-                g: this.skyColor[1] * 255,
-                b: this.skyColor[2] * 255,
-                onChange: (v: ColorRgb) => {
-                    this.setSkyColor(v.r, v.g, v.b);
-                },
-            },
-            Fog: folder(
-                {
-                    Auto: {
-                        value: this.autoFogDepth,
-                        label: "Auto (fogDepth = renderDistance * factor)",
-                        onChange: (v: boolean) => {
-                            this.autoFogDepth = !!v;
-                        },
-                    },
-                    Factor: {
-                        value: this.autoFogDepthFactor,
-                        min: 0,
-                        max: 1,
-                        step: 0.05,
-                        onChange: (v: number) => {
-                            // Keep it sane; fogFactorOSRS clamps against renderDistance anyway.
-                            this.autoFogDepthFactor = Math.max(0, Math.min(1, v));
-                        },
-                    },
-                    Depth: {
-                        value: this.fogDepth,
-                        min: 0,
-                        max: 400,
-                        step: 5,
-                        label: "Manual fog start (tiles)",
-                        onChange: (v: number) => {
-                            this.fogDepth = v;
-                        },
-                    },
-                },
-                { collapsed: true },
-            ),
-            Brightness: {
-                value: 1,
-                min: 0,
-                max: 4,
-                step: 1,
-                onChange: (v: number) => {
-                    this.brightness = 1.0 - v * 0.1;
-                },
-            },
-            "Color Banding": {
-                value: 50,
-                min: 0,
-                max: 100,
-                step: 1,
-                onChange: (v: number) => {
-                    this.colorBanding = 255 - v * 2;
-                },
-            },
-            "Texture Filtering": {
-                value: this.textureFilterMode,
-                options: {
-                    Disabled: TextureFilterMode.DISABLED,
-                    Bilinear: TextureFilterMode.BILINEAR,
-                    Trilinear: TextureFilterMode.TRILINEAR,
-                    "Anisotropic 2x": TextureFilterMode.ANISOTROPIC_2X,
-                    "Anisotropic 4x": TextureFilterMode.ANISOTROPIC_4X,
-                    "Anisotropic 8x": TextureFilterMode.ANISOTROPIC_8X,
-                    "Anisotropic 16x": TextureFilterMode.ANISOTROPIC_16X,
-                },
-                onChange: (v: TextureFilterMode) => {
-                    if (v === this.textureFilterMode) {
-                        return;
-                    }
-                    this.textureFilterMode = v;
-                    this.updateTextureFiltering();
-                },
-            },
-            "Smooth Terrain": {
-                value: this.smoothTerrain,
-                onChange: (v: boolean) => {
-                    this.setSmoothTerrain(v);
-                },
-            },
-            "Cull Back-faces": {
-                value: this.cullBackFace,
-                onChange: (v: boolean) => {
-                    this.cullBackFace = v;
-                },
-            },
-            "Anti-Aliasing": folder(
-                {
-                    MSAA: {
-                        value: this.msaaEnabled,
-                        onChange: (v: boolean) => {
-                            this.setMsaa(v);
-                        },
-                    },
-                    FXAA: {
-                        value: this.fxaaEnabled,
-                        onChange: (v: boolean) => {
-                            this.setFxaa(v);
-                        },
-                    },
-                },
-                { collapsed: true },
-            ),
-            Entity: folder(
-                {
-                    Npcs: {
-                        value: this.loadNpcs,
-                        onChange: (v: boolean) => {
-                            this.setLoadNpcs(v);
-                        },
-                    },
-                },
-                { collapsed: true },
-            ),
-        };
-
-        return schema;
+        return render.getControls(this);
     }
 
     private getMapIdForWorldTile(x: number, y: number): number {
-        return getMapSquareId(Math.floor((x | 0) / 64), Math.floor((y | 0) / 64));
+        return render.getMapIdForWorldTile(this, x, y);
     }
 
     private applyGamemodeWorldLocs(): Set<number> {
-        const affectedMapIds = new Set<number>();
-        const nextOverrideKeys = new Set<string>();
-        const nextSpawnKeys = new Set<string>();
-
-        for (const change of getWorldLocChanges()) {
-            const x = change.x | 0;
-            const y = change.y | 0;
-            const level = change.level | 0;
-            const oldId = change.oldId | 0;
-            const key = `${x},${y},${level},${oldId}`;
-            nextOverrideKeys.add(key);
-            affectedMapIds.add(this.getMapIdForWorldTile(x, y));
-
-            this.locOverrides.set(key, {
-                newId: change.newId | 0,
-                newRotation:
-                    typeof change.newRotation === "number" ? change.newRotation & 0x3 : undefined,
-                moveToX: typeof change.moveToX === "number" ? change.moveToX | 0 : undefined,
-                moveToY: typeof change.moveToY === "number" ? change.moveToY | 0 : undefined,
-                matchType:
-                    typeof change.matchType === "number"
-                        ? (change.matchType as LocModelType)
-                        : undefined,
-                matchRotation:
-                    typeof change.matchRotation === "number"
-                        ? change.matchRotation & 0x3
-                        : undefined,
-            });
-        }
-
-        for (const spawn of getWorldLocSpawns()) {
-            const x = spawn.x | 0;
-            const y = spawn.y | 0;
-            const level = spawn.level | 0;
-            const key = `${x},${y},${level},${spawn.locId | 0},${spawn.shape | 0},${
-                spawn.rotation & 0x3
-            }`;
-            nextSpawnKeys.add(key);
-            affectedMapIds.add(this.getMapIdForWorldTile(x, y));
-
-            this.locSpawns.set(key, {
-                id: spawn.locId | 0,
-                type: spawn.shape | 0,
-                rotation: spawn.rotation & 0x3,
-            });
-        }
-
-        const nextTerrainKeys = new Set<string>();
-        for (const terrain of getWorldTerrainOverrides()) {
-            const x = terrain.x | 0;
-            const y = terrain.y | 0;
-            const level = terrain.level | 0;
-            const key = `${x},${y},${level}`;
-            nextTerrainKeys.add(key);
-            affectedMapIds.add(this.getMapIdForWorldTile(x, y));
-
-            this.terrainOverrides.set(key, {
-                underlay:
-                    typeof terrain.underlay === "number" ? terrain.underlay | 0 : undefined,
-                overlay: typeof terrain.overlay === "number" ? terrain.overlay | 0 : undefined,
-                shape: typeof terrain.shape === "number" ? terrain.shape | 0 : undefined,
-                rotation:
-                    typeof terrain.rotation === "number" ? terrain.rotation & 0x3 : undefined,
-                renderFlags:
-                    typeof terrain.renderFlags === "number"
-                        ? terrain.renderFlags & 0xff
-                        : undefined,
-            });
-        }
-
-        for (const key of this.gamemodeWorldLocOverrideKeys) {
-            if (nextOverrideKeys.has(key)) continue;
-            this.locOverrides.delete(key);
-            const [xRaw, yRaw] = key.split(",");
-            affectedMapIds.add(this.getMapIdForWorldTile(Number(xRaw) | 0, Number(yRaw) | 0));
-        }
-        for (const key of this.gamemodeWorldLocSpawnKeys) {
-            if (nextSpawnKeys.has(key)) continue;
-            this.locSpawns.delete(key);
-            const [xRaw, yRaw] = key.split(",");
-            affectedMapIds.add(this.getMapIdForWorldTile(Number(xRaw) | 0, Number(yRaw) | 0));
-        }
-        for (const key of this.gamemodeWorldTerrainOverrideKeys) {
-            if (nextTerrainKeys.has(key)) continue;
-            this.terrainOverrides.delete(key);
-            const [xRaw, yRaw] = key.split(",");
-            affectedMapIds.add(this.getMapIdForWorldTile(Number(xRaw) | 0, Number(yRaw) | 0));
-        }
-
-        this.gamemodeWorldLocOverrideKeys = nextOverrideKeys;
-        this.gamemodeWorldLocSpawnKeys = nextSpawnKeys;
-        this.gamemodeWorldTerrainOverrideKeys = nextTerrainKeys;
-
-        return affectedMapIds;
+        return render.applyGamemodeWorldLocs(this);
     }
 
     refreshGamemodeWorldLocs(): void {
-        const affectedMapIds = this.applyGamemodeWorldLocs();
-        if (affectedMapIds.size === 0 || !this.osrsClient.loadedCache || this.instanceActive) {
-            return;
-        }
-
-        for (const mapId of affectedMapIds) {
-            if (!this.mapManager.mapSquares.has(mapId) && !this.mapManager.loadingMapIds.has(mapId)) {
-                continue;
-            }
-            const mapX = mapId >> 8;
-            const mapY = mapId & 0xff;
-            this.pendingLocUpdates.add(mapId);
-            this.scheduleLocReload(mapX, mapY);
-        }
+        return render.refreshGamemodeWorldLocs(this);
     }
 
     override async queueLoadMap(
@@ -5762,111 +1413,15 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         streamGeneration?: number,
         locReloadBatchId?: number,
     ): Promise<void> {
-        // Don't try to load maps before cache is initialized
-        if (!this.osrsClient.loadedCache) return;
-
-        // Suppress normal map streaming while an instance scene is active
-        if (this.instanceActive && typeof locReloadBatchId !== "number") return;
-
-        this.applyGamemodeWorldLocs();
-
-        const mapId = getMapSquareId(mapX, mapY);
-        const doorOnly =
-            typeof locReloadBatchId === "number" &&
-            !this.pendingLocUpdates.has(mapId) &&
-            !this.pendingLocGeometryUpdates.has(mapId) &&
-            this.pendingDoorLocUpdates.has(mapId);
-        const locOnly =
-            typeof locReloadBatchId === "number" &&
-            !this.pendingLocUpdates.has(mapId) &&
-            !this.pendingDoorLocUpdates.has(mapId) &&
-            this.pendingLocGeometryUpdates.has(mapId);
-        const input: SdMapLoaderInput = {
-            mapX,
-            mapY,
-            maxLevel: Math.max(0, Math.min(Scene.MAX_LEVELS - 1, this.maxLevel | 0)),
-            loadNpcs: this.loadNpcs,
-            smoothTerrain: this.smoothTerrain,
-            minimizeDrawCalls: !this.hasMultiDraw,
-            doorOnly,
-            locOnly,
-            loadedTextureIds: this.loadedTextureIds,
-            locOverrides: this.locOverrides,
-            extraLocs: this.getExtraLocsForMap(mapX, mapY),
-            locSpawns: this.locSpawns,
-            terrainOverrides: this.terrainOverrides,
-        };
-
-        const mapData = await this.osrsClient.workerPool.queueLoad<
-            SdMapLoaderInput,
-            SdMapData | undefined,
-            SdMapDataLoader
-        >(this.dataLoader, input);
-
-        if (mapData && this.isValidMapData(mapData)) {
-            if (typeof locReloadBatchId === "number") {
-                this.resolveLocReloadBatchMap(locReloadBatchId, mapId, mapData);
-                return;
-            }
-            this.queueStreamMapData(mapData, streamGeneration);
-        } else {
-            if (!mapData) {
-                this.mapManager.addInvalidMap(mapX, mapY);
-            } else {
-                this.mapManager.loadingMapIds.delete(mapId);
-            }
-            this.pendingLocUpdates.delete(mapId);
-            this.pendingLocGeometryUpdates.delete(mapId);
-            this.pendingDoorLocUpdates.delete(mapId);
-            this.queuedLocReloadBatchByMap.delete(mapId);
-            if (typeof locReloadBatchId === "number") {
-                this.resolveLocReloadBatchMap(locReloadBatchId, mapId, undefined);
-            }
-        }
+        return render.queueLoadMap(this, mapX, mapY, streamGeneration, locReloadBatchId);
     }
 
-    /**
-     * Load an instance scene from REBUILD_REGION template chunks.
-     * Queues a single map load with the instance data attached.
-     *
-     * LOC_ADD_CHANGE packets typically arrive after REBUILD_REGION over the
-     * same WebSocket, so they land in addedLocs while the worker builds the
-     * initial scene.  After the first build completes we schedule a deferred
-     * rebuild that picks up any locs that accumulated during the build.
-     */
     async loadInstanceScene(
         templateChunks: number[][][],
         regionX: number,
         regionY: number,
     ): Promise<void> {
-        if (!this.osrsClient.loadedCache) return;
-
-        // Suppress normal map streaming while the instance is active
-        this.instanceActive = true;
-        this.instanceTemplateChunks = templateChunks;
-        this.instanceRegionX = regionX;
-        this.instanceRegionY = regionY;
-
-        // regionX/Y are chunk coordinates from the REBUILD_REGION packet.
-        // The player tile = regionX*8, regionY*8. Map square = tile / 64.
-        const playerMapX = ((regionX * 8) / Scene.MAP_SQUARE_SIZE) | 0;
-        const playerMapY = ((regionY * 8) / Scene.MAP_SQUARE_SIZE) | 0;
-
-        console.log(
-            `[WebGLOsrsRenderer] Loading instance scene at map (${playerMapX}, ${playerMapY}) from region (${regionX}, ${regionY})...`,
-        );
-
-        // Clear existing maps so the instance scene is the only one rendered
-        this.mapManager.clearMaps();
-
-        await this.doInstanceSceneBuild(templateChunks, regionX, regionY, playerMapX, playerMapY);
-
-        // LOC_ADD_CHANGE packets arrive after REBUILD_REGION on the same socket.
-        // By now they are stored in addedLocs. Schedule a deferred rebuild to
-        // include them; the short delay batches any remaining in-flight packets.
-        if (this.addedLocs.size > 0) {
-            this.scheduleInstanceLocRebuild();
-        }
+        return render.loadInstanceScene(this, templateChunks, regionX, regionY);
     }
 
     private async doInstanceSceneBuild(
@@ -5876,108 +1431,22 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         playerMapX: number,
         playerMapY: number,
     ): Promise<void> {
-        const extraLocs = this.getInstanceExtraLocs(playerMapX, playerMapY);
-
-        const input: SdMapLoaderInput = {
-            mapX: playerMapX,
-            mapY: playerMapY,
-            maxLevel: Math.max(0, Math.min(Scene.MAX_LEVELS - 1, this.maxLevel | 0)),
-            loadNpcs: this.loadNpcs,
-            smoothTerrain: this.smoothTerrain,
-            minimizeDrawCalls: !this.hasMultiDraw,
-            loadedTextureIds: this.loadedTextureIds,
-            instance: { templateChunks, regionX, regionY },
-            locOverrides: this.locOverrides,
-            terrainOverrides: this.terrainOverrides,
-            extraLocs,
-        };
-
-        const mapData = await this.osrsClient.workerPool.queueLoad<
-            SdMapLoaderInput,
-            SdMapData | undefined,
-            SdMapDataLoader
-        >(this.dataLoader, input);
-
-        if (mapData) {
-            console.log(
-                `[WebGLOsrsRenderer] Instance scene loaded: vertices=${
-                    mapData.vertices?.length ?? 0
-                } indices=${mapData.indices?.length ?? 0} mapX=${mapData.mapX} mapY=${
-                    mapData.mapY
-                } border=${mapData.borderSize} extraLocs=${extraLocs?.length ?? 0}`,
-            );
-            // Clear any in-flight normal map loads that arrived during the async instance build
-            this.mapsToLoad.clear();
-            this.pendingStreamMapsByGeneration.clear();
-            // Bypass grid/generation checks — instance scenes are always valid
-            this.mapsToLoad.push(mapData);
-            // Register the map in MapManager so it isn't pruned
-            this.mapManager.loadingMapIds.add(getMapSquareId(playerMapX, playerMapY));
-        } else {
-            console.warn("[WebGLOsrsRenderer] Instance scene load returned no data");
-        }
+        return render.doInstanceSceneBuild(this, templateChunks, regionX, regionY, playerMapX, playerMapY);
     }
 
     private getInstanceExtraLocs(
         playerMapX: number,
         playerMapY: number,
     ): SdMapLoaderInput["extraLocs"] {
-        if (this.addedLocs.size === 0) return undefined;
-
-        // Instance scene is built as a single map square at (playerMapX, playerMapY).
-        // Collect all addedLocs — the scene builder will filter by bounds.
-        const locs: Array<{
-            id: number;
-            x: number;
-            y: number;
-            level: number;
-            shape: number;
-            rotation: number;
-        }> = [];
-        for (const loc of this.addedLocs.values()) {
-            locs.push({
-                id: loc.locId,
-                x: loc.x,
-                y: loc.y,
-                level: loc.level,
-                shape: loc.shape,
-                rotation: loc.rotation,
-            });
-        }
-        return locs.length > 0 ? locs : undefined;
+        return render.getInstanceExtraLocs(this, playerMapX, playerMapY);
     }
 
     private scheduleInstanceLocRebuild(): void {
-        if (this.instanceLocRebuildTimer !== null) {
-            clearTimeout(this.instanceLocRebuildTimer);
-        }
-        this.instanceLocRebuildTimer = setTimeout(() => {
-            this.instanceLocRebuildTimer = null;
-            if (!this.instanceActive || !this.instanceTemplateChunks) return;
-            const playerMapX = ((this.instanceRegionX * 8) / Scene.MAP_SQUARE_SIZE) | 0;
-            const playerMapY = ((this.instanceRegionY * 8) / Scene.MAP_SQUARE_SIZE) | 0;
-            console.log(
-                `[WebGLOsrsRenderer] Rebuilding instance scene with ${this.addedLocs.size} extra locs`,
-            );
-            this.doInstanceSceneBuild(
-                this.instanceTemplateChunks,
-                this.instanceRegionX,
-                this.instanceRegionY,
-                playerMapX,
-                playerMapY,
-            );
-        }, 100);
+        return render.scheduleInstanceLocRebuild(this);
     }
 
     clearInstance(): void {
-        this.instanceActive = false;
-        this.instanceTemplateChunks = null;
-        if (this.instanceLocRebuildTimer !== null) {
-            clearTimeout(this.instanceLocRebuildTimer);
-            this.instanceLocRebuildTimer = null;
-        }
-        this.mapManager.clearMaps();
-        console.log("[WebGLOsrsRenderer] Instance cleared, normal map streaming resumed");
+        return render.clearInstance(this);
     }
 
     async loadWorldEntityScene(
@@ -6001,305 +1470,55 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         extraNpcs?: Array<{ id: number; x: number; y: number; level: number }>,
         basePlane: number = 0,
     ): Promise<void> {
-        if (!this.osrsClient.loadedCache) return;
-
-        const loadToken = this.nextWorldEntityLoadToken++;
-        this.worldEntityLoadTokens.set(entityIndex, loadToken);
-        if (this.worldEntityOverlays.has(entityIndex)) {
-            this.clearWorldEntity(entityIndex);
-            this.worldEntityLoadTokens.set(entityIndex, loadToken);
-        }
-
-        const sceneTilesX = (templateChunks[0]?.length ?? 13) * 8;
-        const sceneTilesY = (templateChunks[0]?.[0]?.length ?? 13) * 8;
-        const sceneSizeHalf = sceneTilesX / 2;
-        const entityWorldBaseX = worldX - sceneSizeHalf;
-        const entityWorldBaseY = worldY - sceneTilesY / 2;
-
-        // Use a unique mapX/Y for the overlay that won't collide with real map squares
-        const overlayMapX = 200 + entityIndex;
-        const overlayMapY = 200 + entityIndex;
-        const overlayMapId = getMapSquareId(overlayMapX, overlayMapY);
-        this.mapManager.loadingMapIds.add(overlayMapId);
-
-        console.log(
-            `[WebGLOsrsRenderer] Loading world entity overlay: entity=${entityIndex} config=${configId} source=(${regionX},${regionY}) worldPos=(${worldX},${worldY}) renderBase=(${entityWorldBaseX},${entityWorldBaseY})`,
-        );
-
-        this.worldEntityOverlays.set(entityIndex, {
-            entityIndex,
-            configId,
-            templateChunks,
-            regionX,
-            regionY,
-            worldX,
-            worldY,
-            sizeX,
-            sizeZ,
-            extraLocs,
-            extraNpcs,
-            basePlane,
-        });
-
-        // Register with WorldViewManager
-        this.osrsClient.worldViewManager.createWorldView(entityIndex, sceneTilesX, sceneTilesY, {
-            baseX: Math.floor(entityWorldBaseX),
-            baseY: Math.floor(entityWorldBaseY),
-            configId,
-            templateChunks,
-            regionX,
-            regionY,
-            worldX,
-            worldY,
-            sizeXEntity: sizeX,
-            sizeZEntity: sizeZ,
-            extraLocs,
-            extraNpcs,
-        });
-
-        if (configId >= 0) {
-            this.ensureWorldEntityAnimator();
-            this.worldEntityAnimator?.addEntity(entityIndex, configId, this.lastTick);
-        }
-
-        // Collect extra locs from addedLocs that fall within the source region
-        const CHUNK_SIZE = 8;
-        const sceneBaseX = (regionX - 6) * CHUNK_SIZE;
-        const sceneBaseY = (regionY - 6) * CHUNK_SIZE;
-        const sceneMaxX = sceneBaseX + 13 * CHUNK_SIZE;
-        const sceneMaxY = sceneBaseY + 13 * CHUNK_SIZE;
-        const allExtraLocs: typeof extraLocs = [...extraLocs];
-        for (const loc of this.addedLocs.values()) {
-            if (
-                loc.x >= sceneBaseX &&
-                loc.x < sceneMaxX &&
-                loc.y >= sceneBaseY &&
-                loc.y < sceneMaxY
-            ) {
-                allExtraLocs.push({
-                    id: loc.locId,
-                    x: loc.x,
-                    y: loc.y,
-                    level: loc.level,
-                    shape: loc.shape,
-                    rotation: loc.rotation,
-                });
-            }
-        }
-        console.log(
-            `[WebGLOsrsRenderer] World entity overlay: ${allExtraLocs.length} extra locs, ${
-                extraNpcs?.length ?? 0
-            } extra NPCs`,
-        );
-
-        const input: SdMapLoaderInput = {
-            mapX: overlayMapX,
-            mapY: overlayMapY,
-            maxLevel: Math.max(0, Math.min(Scene.MAX_LEVELS - 1, this.maxLevel | 0)),
-            loadNpcs: this.loadNpcs,
-            smoothTerrain: this.smoothTerrain,
-            minimizeDrawCalls: !this.hasMultiDraw,
-            loadedTextureIds: this.loadedTextureIds,
-            instance: { templateChunks, regionX, regionY },
-            overrideRenderPos: { x: entityWorldBaseX, y: entityWorldBaseY },
-            extraLocs: allExtraLocs.length > 0 ? allExtraLocs : undefined,
-            extraNpcs: extraNpcs && extraNpcs.length > 0 ? extraNpcs : undefined,
-        };
-
-        const mapData = await this.osrsClient.workerPool.queueLoad<
-            SdMapLoaderInput,
-            SdMapData | undefined,
-            SdMapDataLoader
-        >(this.dataLoader, input);
-
-        if (this.worldEntityLoadTokens.get(entityIndex) !== loadToken) {
-            return;
-        }
-
-        if (mapData) {
-            console.log(
-                `[WebGLOsrsRenderer] World entity overlay loaded: entity=${entityIndex} vertices=${
-                    mapData.vertices?.length ?? 0
-                }`,
-            );
-            this.mapsToLoad.push(mapData);
-            this.mapManager.loadingMapIds.add(overlayMapId);
-            this.mapManager.worldEntityMapIds.add(overlayMapId);
-        } else {
-            this.mapManager.loadingMapIds.delete(overlayMapId);
-        }
+        return render.loadWorldEntityScene(this, entityIndex, templateChunks, regionX, regionY, worldX, worldY, sizeX, sizeZ, extraLocs, configId, extraNpcs, basePlane);
     }
 
     private ensureWorldEntityOverlaysLoaded(nowMs: number): void {
-        for (const [entityIndex, overlay] of this.worldEntityOverlays) {
-            const overlayMapX = 200 + entityIndex;
-            const overlayMapY = 200 + entityIndex;
-            const overlayMapId = getMapSquareId(overlayMapX, overlayMapY);
-            if (this.mapManager.mapSquares.has(overlayMapId)) continue;
-            if (this.mapManager.loadingMapIds.has(overlayMapId)) continue;
-
-            const retryAfter = this.worldEntityReloadAfterMs.get(entityIndex) ?? 0;
-            if (nowMs < retryAfter) continue;
-
-            this.worldEntityReloadAfterMs.set(entityIndex, nowMs + 250);
-            console.warn(
-                `[WebGLOsrsRenderer] Missing world entity overlay map, reloading entity=${entityIndex}`,
-            );
-            void this.loadWorldEntityScene(
-                overlay.entityIndex,
-                overlay.templateChunks,
-                overlay.regionX,
-                overlay.regionY,
-                overlay.worldX,
-                overlay.worldY,
-                overlay.sizeX,
-                overlay.sizeZ,
-                overlay.extraLocs,
-                overlay.configId,
-                overlay.extraNpcs,
-                overlay.basePlane,
-            );
-        }
+        return render.ensureWorldEntityOverlaysLoaded(this, nowMs);
     }
 
     scheduleWorldEntityLocRebuild(entityIndex: number): void {
-        if (this.worldEntityLocRebuildTimer !== null) return;
-        this.worldEntityLocRebuildTimer = setTimeout(() => {
-            this.worldEntityLocRebuildTimer = null;
-            const overlay = this.worldEntityOverlays.get(entityIndex);
-            if (!overlay) return;
-            console.log(`[WebGLOsrsRenderer] Rebuilding world entity overlay with deferred locs`);
-            this.loadWorldEntityScene(
-                overlay.entityIndex,
-                overlay.templateChunks,
-                overlay.regionX,
-                overlay.regionY,
-                overlay.worldX,
-                overlay.worldY,
-                overlay.sizeX,
-                overlay.sizeZ,
-                overlay.extraLocs,
-                overlay.configId,
-                overlay.extraNpcs,
-                overlay.basePlane,
-            );
-        }, 150);
+        return render.scheduleWorldEntityLocRebuild(this, entityIndex);
     }
 
     private ensureWorldEntityAnimator(): void {
-        if (this.worldEntityAnimator) return;
-        this.worldEntityAnimator = new WorldEntityAnimator(
-            this.osrsClient.worldEntityTypeLoader,
-            this.osrsClient.seqTypeLoader,
-            this.osrsClient.skeletalSeqLoader,
-        );
+        return render.ensureWorldEntityAnimator(this);
     }
 
     private getWorldEntityIndexForMapId(mapId: number): number | undefined {
-        for (const [entityIndex] of this.worldEntityOverlays) {
-            const overlayMapX = 200 + entityIndex;
-            const overlayMapY = 200 + entityIndex;
-            if (getMapSquareId(overlayMapX, overlayMapY) === mapId) {
-                return entityIndex;
-            }
-        }
-        return undefined;
+        return render.getWorldEntityIndexForMapId(this, mapId);
     }
 
     getOverlayMapForEntity(entityIndex: number): WebGLMapSquare | undefined {
-        const overlayMapId = getMapSquareId(200 + entityIndex, 200 + entityIndex);
-        return this.mapManager.mapSquares.get(overlayMapId);
+        return render.getOverlayMapForEntity(this, entityIndex);
     }
 
     getWorldEntityTransformForMap(map: WebGLMapSquare): Float32Array {
-        if (!this.mapManager.worldEntityMapIds.has(map.id)) {
-            return WebGLMapSquare.IDENTITY_MAT4;
-        }
-        const entityIndex = this.getWorldEntityIndexForMapId(map.id);
-        if (entityIndex === undefined) return WebGLMapSquare.IDENTITY_MAT4;
-        return this.worldEntityAnimator?.getTransform(entityIndex) ?? WebGLMapSquare.IDENTITY_MAT4;
+        return render.getWorldEntityTransformForMap(this, map);
     }
 
     getWorldEntityTransformForMapOrOverlap(map: WebGLMapSquare): Float32Array {
-        const direct = this.getWorldEntityTransformForMap(map);
-        if (direct !== WebGLMapSquare.IDENTITY_MAT4) return direct;
-        for (const [entityIndex, overlay] of this.worldEntityOverlays) {
-            const entityMapX = Math.floor(overlay.worldX / 64) | 0;
-            const entityMapY = Math.floor(overlay.worldY / 64) | 0;
-            if (map.mapX === entityMapX && map.mapY === entityMapY) {
-                return (
-                    this.worldEntityAnimator?.getTransform(entityIndex) ??
-                    WebGLMapSquare.IDENTITY_MAT4
-                );
-            }
-        }
-        return WebGLMapSquare.IDENTITY_MAT4;
+        return render.getWorldEntityTransformForMapOrOverlap(this, map);
     }
 
     getWorldEntityDeckHeight(_overworldTileX: number, _overworldTileY: number): number {
-        for (const [, overlay] of this.worldEntityOverlays) {
-            if (overlay.deckHeight !== undefined && overlay.deckHeight !== 0) {
-                return overlay.deckHeight;
-            }
-        }
-        return 0;
+        return render.getWorldEntityDeckHeight(this, _overworldTileX, _overworldTileY);
     }
 
     private getNpcModelYOffset(deckHeight: number = 0): number {
-        // npc.vert.glsl subtracts this uniform. Invert the shared clearance so
-        // NPCs use the same effective world-space offset as players.
-        return -(deckHeight + WebGLOsrsRenderer.ACTOR_GROUND_CLEARANCE_MODEL_UNITS);
+        return render.getNpcModelYOffset(this, deckHeight);
     }
 
     getWorldEntityTransformForTile(tileX: number, tileY: number): Float32Array {
-        for (const [entityIndex, overlay] of this.worldEntityOverlays) {
-            const halfSize = (overlay.sizeX * 8) / 2;
-            const minX = overlay.worldX - halfSize;
-            const maxX = overlay.worldX + halfSize;
-            const minY = overlay.worldY - halfSize;
-            const maxY = overlay.worldY + halfSize;
-            if (tileX >= minX && tileX < maxX && tileY >= minY && tileY < maxY) {
-                return (
-                    this.worldEntityAnimator?.getTransform(entityIndex) ??
-                    WebGLMapSquare.IDENTITY_MAT4
-                );
-            }
-        }
-        return WebGLMapSquare.IDENTITY_MAT4;
+        return render.getWorldEntityTransformForTile(this, tileX, tileY);
     }
 
     clearWorldEntity(entityIndex: number): void {
-        const overlayMapX = 200 + entityIndex;
-        const overlayMapY = 200 + entityIndex;
-        const overlayMapId = getMapSquareId(overlayMapX, overlayMapY);
-        this.mapManager.worldEntityMapIds.delete(overlayMapId);
-        this.mapManager.loadingMapIds.delete(overlayMapId);
-        this.mapManager.removeMap(overlayMapX, overlayMapY);
-        this.worldEntityOverlays.delete(entityIndex);
-        this.worldEntityLoadTokens.delete(entityIndex);
-        this.worldEntityReloadAfterMs.delete(entityIndex);
-        this.worldEntityAnimator?.removeEntity(entityIndex);
-        this.osrsClient.worldViewManager.removeWorldView(entityIndex);
+        return render.clearWorldEntity(this, entityIndex);
     }
 
     clearAllWorldEntities(): void {
-        for (const [entityIndex] of this.worldEntityOverlays) {
-            const overlayMapX = 200 + entityIndex;
-            const overlayMapY = 200 + entityIndex;
-            const overlayMapId = getMapSquareId(overlayMapX, overlayMapY);
-            this.mapManager.worldEntityMapIds.delete(overlayMapId);
-            this.mapManager.loadingMapIds.delete(overlayMapId);
-            this.mapManager.removeMap(overlayMapX, overlayMapY);
-        }
-        if (this.worldEntityLocRebuildTimer !== null) {
-            clearTimeout(this.worldEntityLocRebuildTimer);
-            this.worldEntityLocRebuildTimer = null;
-        }
-        this.worldEntityOverlays.clear();
-        this.worldEntityLoadTokens.clear();
-        this.worldEntityReloadAfterMs.clear();
-        this.worldEntityAnimator?.clear();
-        this.osrsClient.worldViewManager.clear();
+        return render.clearAllWorldEntities(this);
     }
 
     private resolveLocReloadBatchMap(
@@ -6307,55 +1526,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         mapId: number,
         mapData: SdMapData | undefined,
     ): void {
-        const batch = this.pendingLocReloadBatches.get(batchId);
-        if (!batch) {
-            if (mapData) {
-                this.mapsToLoad.push(mapData);
-            }
-            return;
-        }
-
-        if (mapData) {
-            batch.loaded.set(mapId, mapData);
-        }
-        batch.pendingMapIds.delete(mapId);
-
-        if (batch.pendingMapIds.size > 0) {
-            return;
-        }
-
-        // Commit the whole loc-reload batch together so multi-square gates don't show half-updates.
-        for (const expectedMapId of batch.mapIds) {
-            const ready = batch.loaded.get(expectedMapId);
-            if (!ready) continue;
-            this.mapsToLoad.push(ready);
-            this.queuedLocReloadBatchByMap.set(expectedMapId, batch.id);
-        }
-        this.pendingLocReloadBatches.delete(batchId);
+        return render.resolveLocReloadBatchMap(this, batchId, mapId, mapData);
     }
 
     private beginLocReloadBatch(maps: Array<{ mapX: number; mapY: number }>): void {
-        if (maps.length === 0) return;
-
-        const ordered = maps
-            .map((map) => ({
-                mapX: map.mapX | 0,
-                mapY: map.mapY | 0,
-                mapId: getMapSquareId(map.mapX, map.mapY),
-            }))
-            .sort((a, b) => a.mapId - b.mapId);
-        const mapIds = ordered.map((entry) => entry.mapId);
-        const batchId = this.nextLocReloadBatchId++;
-        this.pendingLocReloadBatches.set(batchId, {
-            id: batchId,
-            mapIds,
-            pendingMapIds: new Set<number>(mapIds),
-            loaded: new Map<number, SdMapData>(),
-        });
-
-        for (const entry of ordered) {
-            void this.queueLoadMap(entry.mapX, entry.mapY, undefined, batchId);
-        }
+        return render.beginLocReloadBatch(this, maps);
     }
 
     loadMap(
@@ -6369,256 +1544,51 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         mapData: SdMapData,
         time: number,
     ): void {
-        const { mapX, mapY } = mapData;
-        const mapId = getMapSquareId(mapX, mapY);
-        const existing = this.mapManager.getMap(mapX, mapY);
-        const isLocUpdate = this.pendingLocUpdates.has(mapId);
-        const isLocGeometryUpdate = !isLocUpdate && this.pendingLocGeometryUpdates.has(mapId);
-        const isDoorOnlyUpdate =
-            !isLocUpdate && !isLocGeometryUpdate && this.pendingDoorLocUpdates.has(mapId);
-
-        // A door-only payload is valid only while the original map square is
-        // still resident and no broader loc update has superseded it.
-        if (mapData.doorOnly && (!isDoorOnlyUpdate || !(existing instanceof WebGLMapSquare))) {
-            this.pendingDoorLocUpdates.delete(mapId);
-            this.pendingLocUpdates.add(mapId);
-            void this.queueLoadMap(mapX, mapY);
-            return;
-        }
-        if (mapData.locOnly && (!isLocGeometryUpdate || !(existing instanceof WebGLMapSquare))) {
-            this.pendingLocGeometryUpdates.delete(mapId);
-            this.pendingLocUpdates.add(mapId);
-            void this.queueLoadMap(mapX, mapY);
-            return;
-        }
-
-        if (
-            (isLocUpdate || isLocGeometryUpdate || isDoorOnlyUpdate) &&
-            existing instanceof WebGLMapSquare
-        ) {
-            if (isDoorOnlyUpdate && mapData.doorOnly) {
-                existing.refreshDoorGeometry(
-                    this.app,
-                    mainProgram,
-                    mainAlphaProgram,
-                    textureArray,
-                    textureMaterials,
-                    waterTextures,
-                    sceneUniformBuffer,
-                    mapData,
-                    existing.timeLoaded,
-                );
-            } else if (isLocGeometryUpdate && mapData.locOnly) {
-                existing.refreshLocGeometry(
-                    this.osrsClient.seqTypeLoader,
-                    this.app,
-                    mainProgram,
-                    mainAlphaProgram,
-                    textureArray,
-                    textureMaterials,
-                    waterTextures,
-                    sceneUniformBuffer,
-                    mapData,
-                    getClientCycle() | 0,
-                    existing.timeLoaded,
-                );
-            } else {
-                existing.refreshSceneGeometry(
-                    this.osrsClient.seqTypeLoader,
-                    this.osrsClient.seqFrameLoader,
-                    this.app,
-                    mainProgram,
-                    mainAlphaProgram,
-                    textureArray,
-                    textureMaterials,
-                    waterTextures,
-                    sceneUniformBuffer,
-                    mapData,
-                    getClientCycle() | 0,
-                    existing.timeLoaded,
-                );
-            }
-
-            if (!mapData.doorOnly) {
-                this.registerMinimapData(mapData);
-            }
-
-            this.mapManager.addMap(mapX, mapY, existing);
-            if (!mapData.doorOnly && !mapData.locOnly) {
-                this.rebuildGroundItemsForMap(existing, this.groundItemStacks.get(mapId));
-            }
-            this.pendingLocUpdates.delete(mapId);
-            this.pendingLocGeometryUpdates.delete(mapId);
-            this.pendingDoorLocUpdates.delete(mapId);
-            this.updateTextureArray(mapData.loadedTextures);
-            return;
-        }
-
-        this.registerMinimapData(mapData);
-
-        const frameCount = this.stats.frameCount;
-        // -1.0 makes loadAlpha = 1.0 immediately in the vertex shader,
-        // skipping the 1-second fog fade-in for teleport-loaded maps.
-        const reuseTime =
-            existing instanceof WebGLMapSquare
-                ? existing.timeLoaded
-                : this.skipMapFadeIn
-                    ? -1.0
-                    : time;
-        const reuseFrame = existing instanceof WebGLMapSquare ? existing.frameLoaded : frameCount;
-
-        const loadedMap = WebGLMapSquare.load(
-            this.osrsClient.seqTypeLoader,
-            this.osrsClient.seqFrameLoader,
-            this.osrsClient.npcTypeLoader,
-            this.osrsClient.basTypeLoader,
-            this.app,
-            mainProgram,
-            mainAlphaProgram,
-            npcProgram,
-            textureArray,
-            textureMaterials,
-            waterTextures,
-            sceneUniformBuffer,
-            mapData,
-            reuseTime,
-            getClientCycle() | 0,
-            reuseFrame,
-            this.osrsClient.npcEcs,
-        );
-
-        // For instances, set base world position for height sampling.
-        // The height data is at source coordinates, not instance coordinates.
-        if (mapData.renderPosX != null) {
-            (loadedMap as any).baseWorldX =
-                (mapData.renderPosX - mapData.borderSize / Scene.MAP_SQUARE_SIZE) *
-                Scene.MAP_SQUARE_SIZE;
-            (loadedMap as any).baseWorldY =
-                (mapData.renderPosY! - mapData.borderSize / Scene.MAP_SQUARE_SIZE) *
-                Scene.MAP_SQUARE_SIZE;
-        }
-        this.mapManager.addMap(mapX, mapY, loadedMap);
-        this.rebuildGroundItemsForMap(loadedMap, this.groundItemStacks.get(mapId));
-
-        this.updateTextureArray(mapData.loadedTextures);
-
-        this.pendingLocUpdates.delete(mapId);
-        this.pendingLocGeometryUpdates.delete(mapId);
-        this.pendingDoorLocUpdates.delete(mapId);
+        return render.loadMap(this, mainProgram, mainAlphaProgram, npcProgram, textureArray, textureMaterials, waterTextures, sceneUniformBuffer, mapData, time);
     }
 
     isValidMapData(mapData: SdMapData): boolean {
-        return (
-            mapData.cacheName === this.osrsClient.loadedCache?.info?.name &&
-            mapData.loadNpcs === this.loadNpcs &&
-            mapData.smoothTerrain === this.smoothTerrain
-        );
+        return render.isValidMapData(this, mapData);
     }
 
     override clearMaps(): void {
-        this.mapManager.cleanUp();
-        this.mapsToLoad.clear();
-        this.pendingStreamMapsByGeneration.clear();
-        this.observedGridRevision = -1;
-        this.skipMapFadeIn = false;
-        this.activeStreamGeneration = 0;
-        this.activeStreamExpectedMapIds.clear();
-        this.pendingLocUpdates.clear();
-        this.pendingLocGeometryUpdates.clear();
-        this.pendingDoorLocUpdates.clear();
-        this.pendingLocReloadMaps.clear();
-        this.pendingLocReloadBatches.clear();
-        this.queuedLocReloadBatchByMap.clear();
-        this.nextLocReloadBatchId = 1;
-        if (this.pendingLocReloadFlushTimer) {
-            clearTimeout(this.pendingLocReloadFlushTimer);
-            this.pendingLocReloadFlushTimer = undefined;
-        }
-        this.minimapIcons.clear();
-        this.clearDynamicNpcAnimRuntimeState();
+        return render.clearMaps(this);
     }
 
-    /**
-     * Get minimap icons for a specific map square.
-     * @param mapX Map square X coordinate
-     * @param mapY Map square Y coordinate
-     * @returns Array of icons with localX, localY, and spriteId, or undefined if not loaded
-     */
     getMinimapIcons(mapX: number, mapY: number, level: number = 0): MinimapIcon[] | undefined {
-        return this.minimapIcons.get(getMapPlaneId(mapX | 0, mapY | 0, level | 0));
+        return render.getMinimapIcons(this, mapX, mapY, level);
     }
 
     setMaxLevel(maxLevel: number): void {
-        const updated = this.maxLevel !== maxLevel;
-        this.maxLevel = maxLevel;
-        if (updated) {
-            this.clearMaps();
-        }
+        return render.setMaxLevel(this, maxLevel);
     }
 
     setSkyColor(r: number, g: number, b: number) {
-        this.skyColor[0] = r / 255;
-        this.skyColor[1] = g / 255;
-        this.skyColor[2] = b / 255;
+        return render.setSkyColor(this, r, g, b);
     }
 
-    /**
-     * Set the scene-level HSL color override.
-     * Tints all rendered geometry by lerping HSL vertex colors toward the target.
-     *
-     * @param hue       Override hue target (-1 = no hue override, 0-63)
-     * @param sat       Override saturation target (-1 = no sat override, 0-7)
-     * @param lum       Override luminance target (-1 = no lum override, 0-127)
-     * @param amount    Override strength (0 = disabled, 1-255 = lerp strength, 127 = full in OSRS)
-     */
     setSceneHslOverride(hue: number, sat: number, lum: number, amount: number): void {
-        this.sceneHslOverride[0] = hue;
-        this.sceneHslOverride[1] = sat;
-        this.sceneHslOverride[2] = lum;
-        this.sceneHslOverride[3] = amount;
+        return render.setSceneHslOverride(this, hue, sat, lum, amount);
     }
 
-    /**
-     * Set the scene-level HSL override from a packed HSL short (as used by WorldEntityConfig.sceneTintHsl).
-     *
-     * @param packedHsl  Packed 16-bit HSL value (hue[15:10], sat[9:7], lum[6:0])
-     * @param amount     Override strength (0-255, typically 127 for full override)
-     */
     setSceneHslOverrideFromPacked(packedHsl: number, amount: number): void {
-        const hue = (packedHsl >> 10) & 63;
-        const sat = (packedHsl >> 7) & 7;
-        const lum = packedHsl & 127;
-        this.setSceneHslOverride(hue, sat, lum, amount);
+        return render.setSceneHslOverrideFromPacked(this, packedHsl, amount);
     }
 
-    /**
-     * Clear the scene-level HSL override (restore normal rendering).
-     */
     clearSceneHslOverride(): void {
-        this.sceneHslOverride[0] = -1;
-        this.sceneHslOverride[1] = -1;
-        this.sceneHslOverride[2] = -1;
-        this.sceneHslOverride[3] = 0;
+        return render.clearSceneHslOverride(this);
     }
 
     setSmoothTerrain(enabled: boolean): void {
-        const updated = this.smoothTerrain !== enabled;
-        this.smoothTerrain = enabled;
-        if (updated) {
-            this.clearMaps();
-        }
+        return render.setSmoothTerrain(this, enabled);
     }
 
     setMsaa(enabled: boolean): void {
-        const updated = this.msaaEnabled !== enabled;
-        this.msaaEnabled = enabled;
-        if (updated) {
-            this.needsFramebufferUpdate = true;
-        }
+        return render.setMsaa(this, enabled);
     }
 
     setFxaa(enabled: boolean): void {
-        this.fxaaEnabled = enabled;
+        return render.setFxaa(this, enabled);
     }
 
     private finishRenderFrame(
@@ -6627,1799 +1597,78 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         showDebugTimer: boolean,
         profileGpuTimer: boolean,
     ): void {
-        profiler.endFrame(deltaTime);
-
-        let geoBytes = 0;
-        for (const map of this.mapManager.mapSquares.values()) {
-            geoBytes += (map.interleavedBuffer as any)?.byteLength ?? 0;
-            geoBytes += (map.indexBuffer as any)?.byteLength ?? 0;
-        }
-        try {
-            const pr: any = this.playerRenderer as any;
-            const vbo = pr.getInterleavedBuffer?.();
-            const ibo = pr.getIndexBuffer?.();
-            if (vbo) geoBytes += (vbo as any).byteLength ?? 0;
-            if (ibo) geoBytes += (ibo as any).byteLength ?? 0;
-        } catch {}
-        this.stats.geometryGpuBytes = geoBytes;
-
-        this.stats.texturesLoaded = this.loadedTextureIds.size;
-        this.stats.texturesTotal = this.textureIds.length;
-        this.stats.width = this.app.width | 0;
-        this.stats.height = this.app.height | 0;
-        this.stats.sceneWidth = this.sceneRenderWidth | 0;
-        this.stats.sceneHeight = this.sceneRenderHeight | 0;
-
-        this.stats.cameraPosX = camera.getPosX();
-        this.stats.cameraPosY = camera.getPosY();
-        this.stats.cameraPosZ = camera.getPosZ();
-        this.stats.cameraPitchRS = camera.pitch | 0;
-        this.stats.cameraYawRS = camera.getYaw() | 0;
-        this.stats.cameraRollRS = 0;
-
-        const debugPlayerIndex = this.getControlledPlayerEcsIndex();
-        if (debugPlayerIndex !== undefined) {
-            this.stats.playerTileX = (this.osrsClient.playerEcs.getX(debugPlayerIndex) / 128) | 0;
-            this.stats.playerTileY = (this.osrsClient.playerEcs.getY(debugPlayerIndex) / 128) | 0;
-            this.stats.playerLevel = this.osrsClient.playerEcs.getLevel(debugPlayerIndex) | 0;
-        }
-
-        if ((showDebugTimer || profileGpuTimer) && this.timer.ready()) {
-            profiler.recordGpuTime(this.timer.gpuTime);
-        }
-
-        if (showDebugTimer && this.timer.ready()) {
-            this.osrsClient.debugText = `Frame Time GL: ${this.timer.gpuTime.toFixed(
-                2,
-            )}ms\n JS: ${this.timer.cpuTime.toFixed(2)}ms`;
-        }
+        return render.finishRenderFrame(this, camera, deltaTime, showDebugTimer, profileGpuTimer);
     }
 
     setLoadNpcs(enabled: boolean): void {
-        const updated = this.loadNpcs !== enabled;
-        this.loadNpcs = enabled;
-        if (updated) {
-            this.clearMaps();
-        }
+        return render.setLoadNpcs(this, enabled);
     }
 
     override onResize(width: number, height: number): void {
-        try {
-            // Guard against resize before init
-            if (!this.app) {
-                return;
-            }
-
-            this.app.resize(width, height);
-
-            // Explicitly update app dimensions in case PicoGL doesn't
-            (this.app as any).width = width;
-            (this.app as any).height = height;
-
-            // Sync widgetManager dimensions with the current UI layout space.
-            const uiMetrics = this.computeUiRenderMetrics(width, height);
-            this.osrsClient?.widgetManager?.resize(uiMetrics.layoutW, uiMetrics.layoutH);
-
-            // All in-world overlays render in buffer pixel space, so their scale must match
-            // renderScaleX (uiScale × DPR) so sprites/text appear the correct physical size.
-            const overlayScale = uiMetrics.renderScaleX;
-            if (this.overheadTextOverlay) this.overheadTextOverlay.scale = overlayScale;
-            if (this.hitsplatOverlay) this.hitsplatOverlay.scale = overlayScale;
-            if (this.clickCrossOverlay) this.clickCrossOverlay.scale = overlayScale;
-            if (this.groundItemOverlay) this.groundItemOverlay.scale = overlayScale;
-            (this.canvas as any).__uiRenderScale = overlayScale;
-
-            // Trigger framebuffer recreation
-            this.needsFramebufferUpdate = true;
-
-            this.initTextureFramebuffer(width, height);
-        } catch (e) {
-            console.warn("[webgl] onResize error", e);
-        }
+        return render.onResize(this, width, height);
     }
 
     override render(time: number, deltaTime: number, resized: boolean): void {
-        profiler.startFrame();
-
-        // One-time initialization of overlay scales. onResize fires before this.app is
-        // initialized (early-return guard at the top of onResize), so overlay scales may not
-        // have been set yet. We set them here on the first render frame where this.app exists.
-        if (!this._overlaysScaleInitialized && this.app) {
-            const bufW = this.canvas.width;
-            const bufH = this.canvas.height;
-            if (bufW > 0 && bufH > 0) {
-                const metrics = this.computeUiRenderMetrics(bufW, bufH);
-                const overlayScale = metrics.renderScaleX;
-                if (this.overheadTextOverlay) this.overheadTextOverlay.scale = overlayScale;
-                if (this.hitsplatOverlay) this.hitsplatOverlay.scale = overlayScale;
-                if (this.clickCrossOverlay) this.clickCrossOverlay.scale = overlayScale;
-                if (this.groundItemOverlay) this.groundItemOverlay.scale = overlayScale;
-                (this.canvas as any).__uiRenderScale = overlayScale;
-                this._overlaysScaleInitialized = true;
-            }
-        }
-
-        const onLoginScreen = this.osrsClient.isOnLoginScreen();
-        const loggedIn = this.osrsClient.isLoggedIn();
-        const loginLikeState = !loggedIn;
-        // When transitioning from login→gameplay, re-sync overlay scales. The first-frame sync
-        // runs during login state (renderScaleX≈1) but gameplay uses a different scale formula.
-        // No onResize fires on this transition so we must re-compute here.
-        if (this._lastLoginLikeState === true && !loginLikeState && this.app) {
-            const bufW = this.canvas.width;
-            const bufH = this.canvas.height;
-            if (bufW > 0 && bufH > 0) {
-                const metrics = this.computeUiRenderMetrics(bufW, bufH);
-                const overlayScale = metrics.renderScaleX;
-                if (this.overheadTextOverlay) this.overheadTextOverlay.scale = overlayScale;
-                if (this.hitsplatOverlay) this.hitsplatOverlay.scale = overlayScale;
-                if (this.clickCrossOverlay) this.clickCrossOverlay.scale = overlayScale;
-                if (this.groundItemOverlay) this.groundItemOverlay.scale = overlayScale;
-                (this.canvas as any).__uiRenderScale = overlayScale;
-            }
-        }
-        this._lastLoginLikeState = loginLikeState;
-        const desiredImageRendering = loginLikeState && isMobileMode ? "pixelated" : "";
-        if (this.canvas.style.imageRendering !== desiredImageRendering) {
-            this.canvas.style.imageRendering = desiredImageRendering;
-        }
-
-        // Reset frame accumulators
-        this._frameIndices = 0;
-        this._frameBatches = 0;
-        const showDebugTimer = this.osrsClient.inputManager.isKeyDown("KeyY");
-        const profileGpuTimer = profiler.enabled;
-
-        if (showDebugTimer || profileGpuTimer) {
-            this.timer.start();
-        }
-
-        const frameCount = this.stats.frameCount;
-
-        const timeSec = time / 1000;
-
-        // Use server tick index for cross-client alignment
-        const serverTick = getCurrentTick() | 0;
-        const ticksElapsed = Math.min(serverTick - this.lastTick, 1);
-        if (ticksElapsed > 0) this.lastTick = serverTick;
-
-        // Use client cycles (20ms each) for hitsplat timing
-        const clientCycle = getClientCycle() | 0;
-
-        // Use server-derived phase to anchor interpolation within the active client tick.
-        // We map the server's millisecond offset onto the local tick cadence so that
-        // render-time blending stays in sync without lagging one whole server cycle.
-        let phaseFromServer = Number.NaN;
-        try {
-            const { phase, tickMs } = getServerTickPhaseNow();
-            const tickLengthMs = Math.max(1, tickMs | 0);
-            const clampedPhase = Math.max(0, Math.min(1, phase));
-            const msIntoServerTick = clampedPhase * tickLengthMs;
-            const clientTickMs = this.clientTickDurationMs;
-            if (clientTickMs > 0) {
-                const msIntoClientTick = msIntoServerTick % clientTickMs;
-                phaseFromServer = msIntoClientTick / clientTickMs;
-            }
-        } catch {
-            phaseFromServer = Number.NaN;
-        }
-        if (!Number.isFinite(phaseFromServer)) {
-            const ticksF = timeSec / this.clientTickDurationSec;
-            const clientTick = Math.floor(ticksF);
-            phaseFromServer = ticksF - clientTick;
-        }
-        this.clientTickPhase = Math.max(0, Math.min(1, phaseFromServer));
-
-        // Maintain local integration pace based on the authoritative client cycle (Client.cycle),
-        // not wallclock-derived render time.
-        const clientTick = clientCycle | 0;
-
-        if (!this.hasClientTickBaseline) {
-            this.lastClientTick = clientTick;
-            this.hasClientTickBaseline = true;
-            this.pendingClientTicks = 0;
-        } else {
-            const deltaTicks = clientTick - this.lastClientTick;
-            if (deltaTicks < 0) {
-                // Client cycle can reset on world hops/login; treat as a new baseline.
-                this.lastClientTick = clientTick;
-                this.pendingClientTicks = 0;
-            } else if (deltaTicks > 0) {
-                this.pendingClientTicks = Math.min(
-                    MAX_CLIENT_TICK_DEBT,
-                    this.pendingClientTicks + deltaTicks,
-                );
-                this.lastClientTick = clientTick;
-            }
-        }
-
-        let clientTicksElapsed = 0;
-        if (this.pendingClientTicks > 0) {
-            clientTicksElapsed = Math.min(MAX_CLIENT_TICKS_PER_FRAME, this.pendingClientTicks);
-            this.pendingClientTicks -= clientTicksElapsed;
-        }
-
-        // ========== Title/Login Rendering (before game resource checks) ==========
-        // Non-game states only need title/login overlays, not world resources like textureArray.
-        const inputManager = this.osrsClient.inputManager;
-        this.syncMobileLoginInput(false);
-        if (!loggedIn) {
-            // Transfer click state for this frame ()
-            inputManager.onFrameStart();
-            const uiMetrics = this.computeUiRenderMetrics(this.app.width, this.app.height);
-            this.osrsClient.loginRenderer.syncMobileViewportState(
-                this.osrsClient.loginState,
-                this.isMobileLoginKeyboardOpen(),
-            );
-            this.osrsClient.loginRenderer.updateLayout(
-                uiMetrics.layoutW,
-                uiMetrics.layoutH,
-                this.app.width,
-                this.app.height,
-            );
-
-            if (onLoginScreen) {
-                // Keep login input mapping in sync with the current canvas dimensions before click handling.
-                // Other non-game states (e.g. cache downloading/loading) still use the title overlay path
-                // but must not drive login-form interaction.
-                let char = inputManager.readChar();
-                while (char !== -1) {
-                    this.osrsClient.handleLoginKeyInput("", String.fromCharCode(char));
-                    char = inputManager.readChar();
-                }
-                // Handle special keys from key events
-                for (const keyEvent of inputManager.keyEvents) {
-                    if (keyEvent.code === "Tab") {
-                        this.osrsClient.handleLoginKeyInput("Tab", "");
-                    } else if (keyEvent.code === "Enter" || keyEvent.code === "NumpadEnter") {
-                        // Enter in login form = login button or field switch
-                        const { loginState } = this.osrsClient;
-                        if (loginState.canAttemptLogin()) {
-                            // Update game state to CONNECTING (hides buttons)
-                            loginState.savePersistedLoginState();
-                            this.osrsClient.updateGameState(GameState.CONNECTING);
-                            sendLogin(
-                                loginState.username.trim(),
-                                loginState.password,
-                                this.osrsClient.loadedCache?.info?.revision ?? 0,
-                            );
-                        } else {
-                            loginState.showCredentialValidationError();
-                            this.osrsClient.handleLoginKeyInput("Enter", "");
-                        }
-                    } else if (keyEvent.code === "Backspace") {
-                        this.osrsClient.handleLoginKeyInput("Backspace", "");
-                    }
-                }
-                inputManager.keyEvents.length = 0; // Clear processed key events
-
-                // Handle mouse clicks for login buttons
-                if (
-                    inputManager.clickMode3 !== 0 &&
-                    inputManager.saveClickX !== -1 &&
-                    inputManager.saveClickY !== -1
-                ) {
-                    const action = this.osrsClient.handleLoginMouseClick(
-                        inputManager.saveClickX,
-                        inputManager.saveClickY,
-                        inputManager.clickMode3,
-                    );
-                    const shouldRefocusMobileLoginInput =
-                        isMobileMode &&
-                        this.osrsClient.loginState.loginIndex === LoginIndex.LOGIN_FORM &&
-                        this.osrsClient.loginState.virtualKeyboardVisible &&
-                        inputManager.isTouch;
-                    if (shouldRefocusMobileLoginInput) {
-                        this.syncMobileLoginInput(true);
-                    } else {
-                        this.syncMobileLoginInput(false);
-                    }
-                    if (action === "connect") {
-                        // Send login message
-                        const { loginState } = this.osrsClient;
-                        loginState.savePersistedLoginState();
-                        sendLogin(
-                            loginState.username.trim(),
-                            loginState.password,
-                            this.osrsClient.loadedCache?.info?.revision ?? 0,
-                        );
-                    }
-                    // Clear click mode to prevent further processing
-                    inputManager.clickMode3 = 0;
-                    inputManager.saveClickX = -1;
-                    inputManager.saveClickY = -1;
-                }
-
-                // Tick login animation
-                this.osrsClient.tickLogin();
-            } else {
-                inputManager.keyEvents.length = 0;
-            }
-
-            // Skip normal world rendering while not logged in.
-            // But still flush packets. The widget overlay lives on a separate canvas,
-            // so explicitly blank it here before we skip the normal post-present pass.
-            this.widgetsOverlay?.clearAndHide();
-            flushPackets();
-
-            // Clear default framebuffer for login screen overlay
-            this.app.defaultDrawFramebuffer();
-            this.app.clearColor(0.0, 0.0, 0.0, 1.0);
-            this.app.clear();
-
-            // Draw login screen overlay only
-            try {
-                if (!this.uiHidden && this.loginOverlay) {
-                    this.loginOverlay.setGameState(this.osrsClient.gameState);
-                    this.loginOverlay.update({
-                        time,
-                        delta: deltaTime,
-                        resolution: { width: this.app.width, height: this.app.height },
-                        state: {
-                            hoverEnabled: false,
-                            playerLevel: 0,
-                            clientTickPhase: 0,
-                        },
-                        helpers: this.getOverlayHelpers(),
-                    });
-                    this.loginOverlay.draw(RenderPhase.PostPresent);
-                }
-            } catch (e) {
-                console.warn("[WebGLOsrsRenderer] Login screen render error:", e);
-            }
-
-            // Also draw loading message overlay during login screen (for testing visibility)
-            // Note: LoadingMessageOverlay subscribes to state machine, so no need to setGameState()
-            try {
-                if (!this.uiHidden && this.loadingMessageOverlay) {
-                    this.loadingMessageOverlay.update({
-                        time,
-                        delta: deltaTime,
-                        resolution: { width: this.app.width, height: this.app.height },
-                        state: {
-                            hoverEnabled: false,
-                            playerLevel: 0,
-                            clientTickPhase: 0,
-                        },
-                        helpers: this.getOverlayHelpers(),
-                    });
-                    this.loadingMessageOverlay.draw(RenderPhase.PostPresent);
-                }
-            } catch (e) {
-                console.warn("[WebGLOsrsRenderer] Loading message overlay error:", e);
-            }
-
-            profiler.endFrame(deltaTime);
-            return; // Skip rest of render while not logged in
-        }
-
-        // ========== Game Resource Checks ==========
-        this.syncSceneFramebufferSize();
-        if (this.needsFramebufferUpdate) {
-            this.initFramebuffer();
-        }
-
-        if (
-            !this.mainProgram ||
-            !this.mainAlphaProgram ||
-            !this.npcProgram ||
-            !this.sceneUniformBuffer ||
-            !this.framebuffer ||
-            !this.textureFramebuffer ||
-            !this.frameDrawCall ||
-            !this.textureArray ||
-            !this.textureMaterials ||
-            !this.waterTextures
-        ) {
-            return;
-        }
-
-        if (resized) {
-            this.resolutionUni[0] = this.app.width;
-            this.resolutionUni[1] = this.app.height;
-        }
-
-        const camera = this.osrsClient.camera;
-
-        profiler.startPhase("input");
-        this.handleInput(deltaTime);
-
-        // Tick mouse cross animation (OSRS-style visual feedback)
-        ClientState.tickMouseCross();
-
-        // Flush any queued binary packets to the server (OSRS-style)
-        flushPackets();
-        profiler.endPhase();
-
-        // Defer follow-camera and matrices until after tick updates to keep player centered
-        if (this.cullBackFace) {
-            this.app.enable(PicoGL.CULL_FACE);
-        } else {
-            this.app.disable(PicoGL.CULL_FACE);
-        }
-
-        const directTextureScenePass = this.shouldUseDirectTextureScenePass();
-        const sceneFramebuffer = directTextureScenePass
-            ? this.textureFramebuffer!
-            : this.framebuffer!;
-
-        this.app.enable(PicoGL.DEPTH_TEST);
-        this.app.depthMask(true);
-
-        this.app.drawFramebuffer(sceneFramebuffer);
-        this.app.viewport(0, 0, this.sceneRenderWidth | 0, this.sceneRenderHeight | 0);
-
-        profiler.startPhase("tick");
-        // Dynamic path always uses current appearance; no NPC fallback rebuild
-        // Always keep dynamic player animation enabled; do not switch to pre-baked clips.
-        // This removes the prebake path entirely for players, even with multiple players present.
-        this.tickPass(timeSec, ticksElapsed, clientTicksElapsed, clientCycle);
-        profiler.endPhase();
-
-        // Now update follow camera and matrices using up-to-date player position
-        if (this.osrsClient.followPlayerCamera && this.osrsClient.playerEcs.size() > 0) {
-            this.updateCameraFollow(deltaTime, timeSec);
-        }
-        camera.applySmoothing(deltaTime);
-        let cameraShakeApplied = false;
-        let restoreCameraX = 0;
-        let restoreCameraY = 0;
-        let restoreCameraZ = 0;
-        let restoreCameraPitch = 0;
-        let restoreCameraYaw = 0;
-        // Ensure camera uses valid dimensions
-        const camWidth = Math.max(1, this.app.width || this.canvas.width || 1);
-        const camHeight = Math.max(1, this.app.height || this.canvas.height || 1);
-        const sceneViewport = this.getSceneViewportWidgetRect();
-        const sceneFramebufferViewport = this.scaleViewportRectToSceneBuffer(sceneViewport);
-        camera.update(
-            camWidth,
-            camHeight,
-            sceneViewport.x,
-            sceneViewport.y,
-            sceneViewport.width,
-            sceneViewport.height,
-        );
-        this.clearSceneFramebuffer(sceneFramebufferViewport);
-        // keep CS2-visible viewport zoom in sync with the viewport widget size
-        // (Client.viewportZoom; i.e., Rasterizer3D.get3dZoom()) so scripts and widget models scale correctly.
-        try {
-            this.osrsClient.cs2Vm.context.viewportZoom = camera.computeViewportZoomForSize(
-                sceneViewport.width,
-                sceneViewport.height,
-            );
-        } catch {}
-
-        // OSRS camera shake is applied as a temporary render perturbation, then restored.
-        try {
-            const shake = this.computeCameraShakeOffsets(clientCycle);
-            if (shake.active) {
-                restoreCameraX = camera.getPosX();
-                restoreCameraY = camera.getPosY();
-                restoreCameraZ = camera.getPosZ();
-                restoreCameraPitch = camera.pitch | 0;
-                restoreCameraYaw = camera.yaw | 0;
-
-                let shakenPitch = restoreCameraPitch;
-                if ((shake.pitch | 0) !== 0) {
-                    let camAngleX = 128 + Math.floor((clamp(shakenPitch, 0, 512) * 255) / 512);
-                    camAngleX = Math.max(128, Math.min(383, camAngleX + (shake.pitch | 0)));
-                    shakenPitch = clamp(Math.floor(((camAngleX - 128) * 512) / 255), 0, 512);
-                }
-                const shakenYaw = (restoreCameraYaw + (shake.yaw | 0)) & 2047;
-
-                camera.snapToPosition(
-                    restoreCameraX + shake.x / 128,
-                    restoreCameraY + shake.y / 128,
-                    restoreCameraZ + shake.z / 128,
-                );
-                camera.snapToPitch(shakenPitch);
-                camera.snapToYaw(shakenYaw);
-                camera.update(
-                    camWidth,
-                    camHeight,
-                    sceneViewport.x,
-                    sceneViewport.y,
-                    sceneViewport.width,
-                    sceneViewport.height,
-                );
-                cameraShakeApplied = true;
-            }
-        } catch {}
-
-        // Update hovered tile using latest camera matrices
-        profiler.startPhase("hover");
-        this.updateHoveredTile();
-        profiler.endPhase();
-
-        // Map manager streaming/visibility update.
-        profiler.startPhase("mapMgr");
-        this.mapManager.update(
-            this.playerPosUni[0],
-            this.playerPosUni[1],
-            camera,
-            frameCount,
-            this.osrsClient.mapRadius,
-            ClientState.baseX | 0,
-            ClientState.baseY | 0,
-            this.osrsClient.expandedMapLoading | 0,
-        );
-        this.syncStreamGenerationFromMapManager();
-        const renderDistance = this.resolveEffectiveRenderDistanceTiles(frameCount | 0);
-        profiler.endPhase();
-
-        // Keep fog tied to configured render distance.
-        // Edge-based fog clamping causes over-aggressive fog collapse near stream boundaries.
-        const { fogEnd, fogDepth } = resolveFogRange({
-            renderDistance,
-            autoFogDepth: this.autoFogDepth,
-            autoFogDepthFactor: this.autoFogDepthFactor,
-            manualFogDepth: this.fogDepth,
-        });
-
-        // Update scene uniform buffer
-        profiler.startPhase("sceneUbo");
-        this.cameraPosUni[0] = camera.getPosX();
-        this.cameraPosUni[1] = camera.getPosZ();
-        this.sceneUniformBuffer
-            .set(0, camera.viewProjMatrix as Float32Array)
-            .set(1, camera.viewMatrix as Float32Array)
-            .set(2, camera.projectionMatrix as Float32Array)
-            .set(3, this.skyColor as Float32Array)
-            .set(4, this.sceneHslOverride as Float32Array)
-            .set(5, this.cameraPosUni as Float32Array)
-            .set(6, this.playerPosUni as Float32Array)
-            .set(7, fogEnd as any)
-            .set(8, fogDepth as any)
-            .set(9, timeSec as any)
-            .set(10, this.brightness as any)
-            .set(11, this.colorBanding as any)
-            .set(12, this.osrsClient.isNewTextureAnim as any)
-            .update();
-        profiler.endPhase();
-
-        // CPU-side interactions with latest camera
-        profiler.startPhase("interact");
-        const leftClickedNow = inputManager.leftClickX !== -1 && inputManager.leftClickY !== -1;
-        const pickedNow = inputManager.pickX !== -1 && inputManager.pickY !== -1;
-        const cycleChanged = (clientCycle | 0) !== (this.lastInteractionClientCycle | 0);
-        const menuStateChanged = this.lastInteractionMenuOpen !== this.osrsClient.menuOpen;
-        const shouldRunInteractionPass =
-            this.osrsClient.tooltips ||
-            leftClickedNow ||
-            pickedNow ||
-            cycleChanged ||
-            menuStateChanged;
-        if (!inputManager.isPointerLock() && shouldRunInteractionPass) {
-            this.checkInteractions();
-            this.lastInteractionClientCycle = clientCycle | 0;
-            this.lastInteractionMenuOpen = !!this.osrsClient.menuOpen;
-        } else {
-            this.lastInteractionRaycastHitCount = 0;
-            this.lastInteractionMenuOptionCount = 0;
-        }
-        profiler.endPhase();
-
-        profiler.startPhase("actorData");
-        const actorIndex = this.updateActorDataTexture();
-        profiler.endPhase();
-
-        // Update projectiles
-        profiler.startPhase("projectiles");
-        this.projectileManager?.update(deltaTime);
-        this.gfxManager?.update();
-        profiler.endPhase();
-
-        const npcDataTextureIndex = actorIndex;
-        const playerDataTextureIndex = actorIndex;
-        const npcDataTexture = this.actorDataTextureBuffer[actorIndex];
-        const playerDataTexture = npcDataTexture;
-
-        profiler.startPhase("roof");
-        this.roofPlaneLimit = this.computeFrameRoofPlaneLimit();
-        profiler.endPhase();
-
-        let opaqueIndices = 0;
-        let opaqueBatches = 0;
-        let opaqueActorIndices = 0;
-        let opaqueActorBatches = 0;
-        let transparentIndices = 0;
-        let transparentBatches = 0;
-        let transparentNpcIndices = 0;
-        let transparentNpcBatches = 0;
-        let transparentPlayerIndices = 0;
-        let transparentPlayerBatches = 0;
-        this.frameRoofFilteredRangeCount = 0;
-        this.frameRoofTotalRangeCount = 0;
-
-        let passStartIndices = this._frameIndices;
-        let passStartBatches = this._frameBatches;
-        this.app.disable(PicoGL.BLEND);
-        profiler.startPhase("opaque");
-        passStartIndices = this._frameIndices;
-        passStartBatches = this._frameBatches;
-        this.renderOpaquePass();
-        opaqueIndices = Math.max(0, this._frameIndices - passStartIndices);
-        opaqueBatches = Math.max(0, this._frameBatches - passStartBatches);
-        profiler.endPhase();
-        profiler.startPhase("opaqueActor");
-        passStartIndices = this._frameIndices;
-        passStartBatches = this._frameBatches;
-        this.renderOpaqueActorPass(playerDataTextureIndex, playerDataTexture);
-        opaqueActorIndices = Math.max(0, this._frameIndices - passStartIndices);
-        opaqueActorBatches = Math.max(0, this._frameBatches - passStartBatches);
-        profiler.endPhase();
-
-        this.app.enable(PicoGL.BLEND);
-        profiler.startPhase("transparent");
-        passStartIndices = this._frameIndices;
-        passStartBatches = this._frameBatches;
-        this.renderTransparentPass();
-        transparentIndices = Math.max(0, this._frameIndices - passStartIndices);
-        transparentBatches = Math.max(0, this._frameBatches - passStartBatches);
-        profiler.endPhase();
-        profiler.startPhase("transpNpc");
-        passStartIndices = this._frameIndices;
-        passStartBatches = this._frameBatches;
-        this.renderTransparentNpcPass(npcDataTextureIndex, npcDataTexture);
-        transparentNpcIndices = Math.max(0, this._frameIndices - passStartIndices);
-        transparentNpcBatches = Math.max(0, this._frameBatches - passStartBatches);
-        profiler.endPhase();
-        profiler.startPhase("transpPlayer");
-        passStartIndices = this._frameIndices;
-        passStartBatches = this._frameBatches;
-        this.renderTransparentPlayerPass(playerDataTextureIndex, playerDataTexture);
-        transparentPlayerIndices = Math.max(0, this._frameIndices - passStartIndices);
-        transparentPlayerBatches = Math.max(0, this._frameBatches - passStartBatches);
-        profiler.endPhase();
-
-        try {
-            this.drawSceneTileOverlays(time, deltaTime);
-        } catch {}
-
-        // Can't sample from the scene renderbuffer, so only blit when the scene pass
-        // didn't already render directly into the texture framebuffer.
-        profiler.startPhase("blit");
-        if (!directTextureScenePass) {
-            this.app.readFramebuffer(this.framebuffer);
-            this.app.drawFramebuffer(this.textureFramebuffer);
-            this.gl.readBuffer(PicoGL.COLOR_ATTACHMENT0);
-            this.app.blitFramebuffer(PicoGL.COLOR_BUFFER_BIT, {
-                srcStartX: 0,
-                srcStartY: 0,
-                srcEndX: this.sceneRenderWidth | 0,
-                srcEndY: this.sceneRenderHeight | 0,
-                dstStartX: 0,
-                dstStartY: 0,
-                dstEndX: this.app.width | 0,
-                dstEndY: this.app.height | 0,
-                filter: PicoGL.LINEAR,
-            });
-        }
-        this.app.viewport(0, 0, this.app.width | 0, this.app.height | 0);
-        profiler.endPhase();
-
-        // Restore baseline camera before actor2d-style overlays (OSRS drawEntities restore semantics).
-        if (cameraShakeApplied) {
-            camera.snapToPosition(restoreCameraX, restoreCameraY, restoreCameraZ);
-            camera.snapToPitch(restoreCameraPitch);
-            camera.snapToYaw(restoreCameraYaw);
-            camera.update(
-                camWidth,
-                camHeight,
-                sceneViewport.x,
-                sceneViewport.y,
-                sceneViewport.width,
-                sceneViewport.height,
-            );
-        }
-
-        // Update overlays and draw pre-present overlays (e.g., hitsplats) into frame texture.
-        profiler.startPhase("overlayFrame");
-        try {
-            this.resetHealthBarOutput();
-            this.resetHitsplatOutput();
-            this.resetOverheadTextOutput();
-            this.resetOverheadPrayerOutput();
-            let playerWorldX: number | undefined = undefined;
-            let playerWorldZ: number | undefined = undefined;
-            let playerLevel = resolveGroundItemStackPlane(this.getPlayerRawPlane() | 0);
-            let playerRawLevel = this.getPlayerRawPlane() | 0;
-            let playerAnchorIdx = 0;
-            const playerFrameCount = this.playerRenderer.getFrameCount();
-            const playerFrameHeights = this.playerRenderer.getFrameHeights();
-            const playerDefaultHeightTiles = this.playerRenderer.getDefaultHeightTiles();
-            const hitsplats = this.hitsplatOutput;
-            const healthBars = this.healthBarOutput;
-            const overheadTexts = this.overheadTextOutput;
-            const overheadPrayers = this.overheadPrayerOutput;
-            const hitsplatMaxEntries = this.getFrameHitsplatMaxEntries();
-            const healthBarMaxEntries = this.getFrameHealthBarMaxEntries();
-            const overheadTextMaxEntries = this.getFrameOverheadTextMaxEntries();
-            const overheadPrayerMaxEntries = this.getFrameOverheadPrayerMaxEntries();
-            const groundOverlayMaxEntries = this.getFrameGroundItemOverlayMaxEntries();
-            const groundOverlayRadius = this.getFrameGroundItemOverlayRadius();
-            let groundOverlayEntries: GroundItemOverlayEntry[] | undefined;
-
-            try {
-                const peHs = this.osrsClient.playerEcs;
-                const nHs = peHs.size?.() ?? (peHs as any).size?.() ?? 0;
-                if (nHs > 0) {
-                    const controlledId = this.osrsClient.controlledPlayerServerId | 0;
-                    const controlledIdx = peHs.getIndexForServerId(controlledId);
-                    playerAnchorIdx = controlledIdx !== undefined ? controlledIdx : 0;
-                    if (this.shouldRenderPlayerIndex(playerAnchorIdx)) {
-                        const px = peHs.getX(playerAnchorIdx) | 0;
-                        const py = peHs.getY(playerAnchorIdx) | 0;
-                        playerWorldX = px / 128.0;
-                        playerWorldZ = py / 128.0;
-                        playerLevel = peHs.getLevel(playerAnchorIdx) | 0;
-                        playerRawLevel = playerLevel;
-                    }
-                }
-            } catch {}
-
-            if (
-                playerWorldX != null &&
-                playerWorldZ != null &&
-                hitsplats.length < hitsplatMaxEntries
-            ) {
-                const localPlayerHeightFallback =
-                    this.osrsClient.playerEcs.getDefaultHeightTiles?.(playerAnchorIdx) ??
-                    playerDefaultHeightTiles ??
-                    this.playerDefaultHeightTiles ??
-                    200 / 128;
-                const hitsplatOffset = this.resolvePlayerHitsplatOffset(
-                    playerAnchorIdx,
-                    localPlayerHeightFallback,
-                );
-                const healthBarOffset =
-                    this.resolvePlayerLogicalHeightTiles(
-                        playerAnchorIdx,
-                        localPlayerHeightFallback,
-                    ) +
-                    15 / 128;
-                const playerServerId = this.getEffectiveControlledPlayerId();
-                const state =
-                    playerServerId > 0 ? this.playerHitsplats.get(playerServerId) : undefined;
-                if (state) {
-                    for (let slot = 0; slot < 4 && hitsplats.length < hitsplatMaxEntries; slot++) {
-                        // Use client cycles and calculate visibility from end cycle
-                        const animProgress = this.getHitsplatVisibility(state, slot, clientCycle);
-                        if (animProgress === undefined) continue;
-                        const entry = this.acquireHitsplatEntry();
-                        entry.worldX = playerWorldX;
-                        entry.worldZ = playerWorldZ;
-                        entry.plane = playerLevel;
-                        entry.footprintRadius = WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS;
-                        entry.heightOffsetTiles = hitsplatOffset;
-                        entry.damage = state.hitSplatValues[slot] | 0;
-                        entry.count = 1;
-                        entry.color = undefined;
-                        entry.scale = 1.0;
-                        entry.variant = slot & 3;
-                        entry.style = state.hitSplatTypes[slot] | 0;
-                        entry.type2 = state.hitSplatTypes2[slot] | 0;
-                        entry.damage2 = state.hitSplatValues2[slot] | 0;
-                        entry.animProgress = animProgress;
-                        hitsplats.push(entry);
-                    }
-                }
-                if (playerServerId > 0) {
-                    this.appendActorHealthBars(
-                        this.playerHealthBars,
-                        playerServerId,
-                        "player",
-                        playerWorldX,
-                        playerWorldZ,
-                        playerLevel,
-                        WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS,
-                        healthBarOffset,
-                        healthBars,
-                        clientCycle,
-                        healthBarMaxEntries,
-                    );
-                }
-            }
-
-            // Other players' overhead text first; the local player's is appended after
-            // NPC text so it settles last in the overlap pass and draws on top.
-            const localPlayerTextIdx = this.getControlledPlayerEcsIndex();
-            try {
-                const pe = this.osrsClient.playerEcs;
-                const count = pe.size?.() ?? (pe as any).size?.() ?? 0;
-                for (let i = 0; i < count; i++) {
-                    if (i === localPlayerTextIdx) continue;
-                    this.appendPlayerOverheadText(
-                        i,
-                        overheadTexts,
-                        overheadTextMaxEntries,
-                        playerDefaultHeightTiles,
-                    );
-                }
-            } catch {}
-
-            // NPC overhead text (forced chat / say)
-            try {
-                const ne = this.osrsClient.npcEcs;
-                ne.forEachActive((ecsId: number) => {
-                    const chatState = ne.getOverheadText(ecsId);
-                    if (!chatState) return;
-                    if (overheadTexts.length >= overheadTextMaxEntries) return;
-                    const text = chatState.text;
-                    if (!text || text.length === 0) return;
-                    const localX = ne.getX(ecsId) | 0;
-                    const localY = ne.getY(ecsId) | 0;
-                    const mid = (ne as any).mapId?.[ecsId] ?? 0;
-                    const mapX = (mid >> 8) & 0xff;
-                    const mapY = mid & 0xff;
-                    const worldX = mapX * 64 + localX / 128.0;
-                    const worldZ = mapY * 64 + localY / 128.0;
-                    const plane = ne.getLevel(ecsId) | 0;
-                    const overhead = this.acquireOverheadTextEntry();
-                    overhead.worldX = worldX;
-                    overhead.worldZ = worldZ;
-                    overhead.plane = plane;
-                    overhead.text = text;
-                    overhead.color = this.mapOverheadColor(0);
-                    overhead.colorId = 0;
-                    overhead.effect = 0;
-                    overhead.modIcon = undefined;
-                    overhead.pattern = undefined;
-                    const duration = 100;
-                    const remaining = Math.max(0, Math.min(duration, chatState.remaining));
-                    overhead.duration = duration;
-                    overhead.remaining = remaining;
-                    overhead.life = this.computeOverheadAlpha(overhead);
-                    const npcTypeId = ne.getNpcTypeId(ecsId) | 0;
-                    const npcHeight = npcTypeId > 0 ? this.getNpcDefaultHeight(npcTypeId) : 200;
-                    overhead.footprintRadius = this.getNpcFootprintRadius(npcTypeId);
-                    overhead.groupKey = this.makeActorGroupKey(true, ne.getServerId(ecsId) | 0);
-                    overhead.heightOffsetTiles = npcHeight / 128.0;
-                    overheadTexts.push(overhead);
-                });
-            } catch {}
-
-            // Local player's overhead text settles last in the overlap pass.
-            try {
-                if (localPlayerTextIdx !== undefined) {
-                    this.appendPlayerOverheadText(
-                        localPlayerTextIdx,
-                        overheadTexts,
-                        overheadTextMaxEntries,
-                        playerDefaultHeightTiles,
-                    );
-                }
-            } catch {}
-
-            // Render overhead prayer icons for all players
-            try {
-                const pe = this.osrsClient.playerEcs;
-                const count = pe.size?.() ?? (pe as any).size?.() ?? 0;
-                if (count > 0) {
-                    for (let i = 0; i < count; i++) {
-                        if (overheadPrayers.length >= overheadPrayerMaxEntries) break;
-                        if (!this.shouldRenderPlayerIndex(i)) continue;
-                        const headIconPrayer = pe.getHeadIconPrayer(i);
-                        if (headIconPrayer < 0) continue;
-
-                        const px = pe.getX(i) | 0;
-                        const py = pe.getY(i) | 0;
-                        const worldX = px / 128.0;
-                        const worldZ = py / 128.0;
-                        const plane = pe.getLevel(i) | 0;
-
-                        const entry = this.acquireOverheadPrayerEntry();
-                        entry.worldX = worldX;
-                        entry.worldZ = worldZ;
-                        entry.plane = plane;
-                        entry.footprintRadius = WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS;
-                        entry.groupKey = this.makeActorGroupKey(
-                            false,
-                            pe.getServerIdForIndex?.(i) ?? 0,
-                        );
-                        entry.headIconPrayer = headIconPrayer;
-                        // Position above the player head, above any health bars/hitsplats
-                        entry.heightOffsetTiles = this.resolvePlayerHeadIconOffset(
-                            i,
-                            playerDefaultHeightTiles,
-                        );
-                        overheadPrayers.push(entry);
-                    }
-                }
-            } catch {}
-
-            // Render hitsplats for other players
-            try {
-                const pe = this.osrsClient.playerEcs;
-                const count = pe.size?.() ?? (pe as any).size?.() ?? 0;
-                if (count > 0 && this.playerHitsplats.size > 0) {
-                    const controlledId = this.getEffectiveControlledPlayerId();
-                    for (let i = 0; i < count; i++) {
-                        if (
-                            hitsplats.length >= hitsplatMaxEntries &&
-                            healthBars.length >= healthBarMaxEntries
-                        ) {
-                            break;
-                        }
-                        if (!this.shouldRenderPlayerIndex(i)) continue;
-
-                        // Get server ID for this player
-                        const serverId = pe.getServerIdForIndex?.(i);
-                        if (!serverId || serverId === controlledId) continue; // Skip controlled player (already rendered above)
-
-                        // Check if this player has hitsplats
-                        const state = this.playerHitsplats.get(serverId);
-                        if (!state) continue;
-
-                        const px = pe.getX(i) | 0;
-                        const py = pe.getY(i) | 0;
-                        const worldX = px / 128.0;
-                        const worldZ = py / 128.0;
-                        const plane = pe.getLevel(i) | 0;
-
-                        const playerHeightFallback = pe.getDefaultHeightTiles?.(i) ?? 200 / 128;
-                        const hitsplatOffset = this.resolvePlayerHitsplatOffset(
-                            i,
-                            playerHeightFallback,
-                        );
-                        const healthBarOffset =
-                            this.resolvePlayerLogicalHeightTiles(i, playerHeightFallback) +
-                            15 / 128;
-
-                        for (
-                            let slot = 0;
-                            slot < 4 && hitsplats.length < hitsplatMaxEntries;
-                            slot++
-                        ) {
-                            // Use client cycles and calculate visibility from end cycle
-                            const animProgress = this.getHitsplatVisibility(
-                                state,
-                                slot,
-                                clientCycle,
-                            );
-                            if (animProgress === undefined) continue;
-                            const entry = this.acquireHitsplatEntry();
-                            entry.worldX = worldX;
-                            entry.worldZ = worldZ;
-                            entry.plane = plane;
-                            entry.footprintRadius = WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS;
-                            entry.heightOffsetTiles = hitsplatOffset;
-                            entry.damage = state.hitSplatValues[slot] | 0;
-                            entry.count = 1;
-                            entry.color = undefined;
-                            entry.scale = 1.0;
-                            entry.variant = slot & 3;
-                            entry.style = state.hitSplatTypes[slot] | 0;
-                            entry.type2 = state.hitSplatTypes2[slot] | 0;
-                            entry.damage2 = state.hitSplatValues2[slot] | 0;
-                            entry.animProgress = animProgress;
-                            hitsplats.push(entry);
-                        }
-
-                        // Add health bar for this player
-                        if (serverId > 0 && healthBars.length < healthBarMaxEntries) {
-                            this.appendActorHealthBars(
-                                this.playerHealthBars,
-                                serverId,
-                                "player",
-                                worldX,
-                                worldZ,
-                                plane,
-                                WebGLOsrsRenderer.PLAYER_FOOTPRINT_RADIUS,
-                                healthBarOffset,
-                                healthBars,
-                                clientCycle,
-                                healthBarMaxEntries,
-                            );
-                        }
-                    }
-                }
-            } catch {}
-
-            try {
-                if (this.objectIdOverlay) {
-                    this.objectIdOverlay.radius = Math.max(
-                        1,
-                        (this.osrsClient.renderDistance / 8) | 0,
-                    );
-                    this.objectIdOverlay.enabled = !!this.osrsClient.showObjectTileIds;
-                }
-                if (this.walkableOverlay) {
-                    this.walkableOverlay.radius = Math.max(
-                        1,
-                        this.osrsClient.collisionOverlayRadius | 0 || 12,
-                    );
-                    this.walkableOverlay.enabled = !!this.osrsClient.showCollisionOverlay;
-                }
-            } catch {}
-
-            const seen = this.hitsplatSeenNpc;
-            seen.clear();
-            const shouldProcessNpcOverlays =
-                !!this.overlayManager &&
-                (this.npcHitsplats.size > 0 || this.npcHealthBars.size > 0);
-            if (shouldProcessNpcOverlays) {
-                try {
-                    const npcEcs = this.osrsClient.npcEcs;
-                    for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-                        if (
-                            hitsplats.length >= hitsplatMaxEntries &&
-                            healthBars.length >= healthBarMaxEntries
-                        ) {
-                            break;
-                        }
-                        const map = this.mapManager.visibleMaps[i];
-                        if (!map?.npcEntityIds || map.npcEntityIds.length === 0) continue;
-                        for (let j = 0; j < map.npcEntityIds.length; j++) {
-                            if (
-                                hitsplats.length >= hitsplatMaxEntries &&
-                                healthBars.length >= healthBarMaxEntries
-                            ) {
-                                break;
-                            }
-                            const ecsId = map.npcEntityIds[j] | 0;
-                            if (ecsId <= 0 || seen.has(ecsId)) continue;
-                            if (!this.shouldRenderNpcFromMap(map, ecsId)) continue;
-                            if (!npcEcs.isActive(ecsId)) continue;
-                            seen.add(ecsId);
-                            const localX = npcEcs.getX(ecsId) | 0;
-                            const localY = npcEcs.getY(ecsId) | 0;
-                            const serverId = npcEcs.getServerId(ecsId) | 0;
-                            if (serverId <= 0) continue;
-                            const state = this.npcHitsplats.get(serverId);
-                            const hb = this.npcHealthBars.get(serverId);
-                            const hasHealth = !!hb && hb.bars.length > 0;
-                            if (!hasHealth && !state) continue;
-                            const npcMapId = npcEcs.getMapId(ecsId) | 0;
-                            const npcMapX = (npcMapId >> 8) & 0xff;
-                            const npcMapY = npcMapId & 0xff;
-                            const baseWorldX = npcMapX * 64 + localX / 128.0;
-                            const baseWorldZ = npcMapY * 64 + localY / 128.0;
-                            // Raw plane: overlay anchor heights apply bridge promotion
-                            // per sample, mirroring the model placement plane.
-                            const plane = npcEcs.getLevel(ecsId) | 0;
-                            const npcTypeId = npcEcs.getNpcTypeId?.(ecsId);
-                            const footprintRadius = this.getNpcFootprintRadius(npcTypeId);
-                            const overlayAnchor = this.resolveNpcOverlayAnchor(
-                                ecsId,
-                                baseWorldX,
-                                baseWorldZ,
-                                npcTypeId,
-                            );
-                            const worldX = overlayAnchor.worldX;
-                            const worldZ = overlayAnchor.worldZ;
-                            const hitsplatOffset = overlayAnchor.logicalHeightTiles * 0.5;
-                            const healthBarOffset = overlayAnchor.logicalHeightTiles + 15 / 128;
-                            if (hasHealth && healthBars.length < healthBarMaxEntries) {
-                                this.appendActorHealthBars(
-                                    this.npcHealthBars,
-                                    serverId,
-                                    "npc",
-                                    worldX,
-                                    worldZ,
-                                    plane,
-                                    footprintRadius,
-                                    healthBarOffset,
-                                    healthBars,
-                                    clientCycle,
-                                    healthBarMaxEntries,
-                                );
-                            }
-                            if (!state) continue;
-                            for (
-                                let slot = 0;
-                                slot < 4 && hitsplats.length < hitsplatMaxEntries;
-                                slot++
-                            ) {
-                                // Use client cycles and calculate visibility from end cycle
-                                const animProgress = this.getHitsplatVisibility(
-                                    state,
-                                    slot,
-                                    clientCycle,
-                                );
-                                if (animProgress === undefined) continue;
-                                const entry = this.acquireHitsplatEntry();
-                                entry.worldX = worldX;
-                                entry.worldZ = worldZ;
-                                entry.plane = plane;
-                                entry.footprintRadius = footprintRadius;
-                                entry.heightOffsetTiles = hitsplatOffset;
-                                entry.damage = state.hitSplatValues[slot] | 0;
-                                entry.count = 1;
-                                entry.color = undefined;
-                                entry.scale = 1.0;
-                                entry.variant = slot & 3;
-                                entry.style = state.hitSplatTypes[slot] | 0;
-                                entry.type2 = state.hitSplatTypes2[slot] | 0;
-                                entry.damage2 = state.hitSplatValues2[slot] | 0;
-                                entry.animProgress = animProgress;
-                                hitsplats.push(entry);
-                            }
-                        }
-                    }
-                } catch {}
-            }
-
-            // Spot animations were previously collected from SpotAnimationManager; no-op now.
-
-            if (playerWorldX != null && playerWorldZ != null) {
-                const overlayEntries = this.withGroundItemOverlayHeights(
-                    this.osrsClient.getGroundItemOverlayEntries(
-                        Math.floor(playerWorldX),
-                        Math.floor(playerWorldZ),
-                        playerLevel,
-                        { radius: groundOverlayRadius, maxEntries: groundOverlayMaxEntries },
-                    ),
-                );
-                if (overlayEntries.length > 0) {
-                    groundOverlayEntries = overlayEntries;
-                } else {
-                    try {
-                        const camX = Math.floor(this.osrsClient.camera.getPosX());
-                        const camY = Math.floor(this.osrsClient.camera.getPosZ());
-                        const camLevel = resolveGroundItemStackPlane(this.getPlayerRawPlane() | 0);
-                        const camEntries = this.withGroundItemOverlayHeights(
-                            this.osrsClient.getGroundItemOverlayEntries(camX, camY, camLevel, {
-                                radius: groundOverlayRadius,
-                                maxEntries: groundOverlayMaxEntries,
-                            }),
-                        );
-                        if (camEntries.length > 0) {
-                            groundOverlayEntries = camEntries;
-                        }
-                    } catch {}
-                }
-            } else {
-                try {
-                    const peHs = this.osrsClient.playerEcs;
-                    const idx = peHs.getIndexForServerId(this.osrsClient.controlledPlayerServerId);
-                    if (idx !== undefined) {
-                        const fallbackX = (peHs.getX(idx) / 128.0) | 0;
-                        const fallbackY = (peHs.getY(idx) / 128.0) | 0;
-                        const fallbackLevel = peHs.getLevel(idx) | 0;
-                        const overlayEntries = this.withGroundItemOverlayHeights(
-                            this.osrsClient.getGroundItemOverlayEntries(
-                                fallbackX,
-                                fallbackY,
-                                fallbackLevel,
-                                {
-                                    radius: groundOverlayRadius,
-                                    maxEntries: groundOverlayMaxEntries,
-                                },
-                            ),
-                        );
-                        if (overlayEntries.length > 0) {
-                            groundOverlayEntries = overlayEntries;
-                        }
-                    }
-                } catch {}
-            }
-
-            // Update login overlay game state
-            if (this.loginOverlay) {
-                this.loginOverlay.setGameState(this.osrsClient.gameState);
-            }
-
-            // Note: LoadingMessageOverlay subscribes to state machine directly,
-            // so no need to manually call setGameState() here
-
-            if (!this.uiHidden) {
-                // Reset the per-actor 2D element offsets before this frame's draws.
-                this.actor2dStacks.clear();
-                this.overlayManager?.update({
-                    time,
-                    delta: deltaTime,
-                    resolution: { width: this.app.width, height: this.app.height },
-                    state: {
-                        hoverEnabled: !!this.osrsClient.hoverOverlayEnabled,
-                        hoverTile: undefined,
-                        playerLevel,
-                        playerRawLevel,
-                        destTile: undefined,
-                        clientTickPhase: this.clientTickPhase,
-                        playerFrameCount,
-                        playerFreezeFrame: this.playerFreezeFrame,
-                        playerFixedFrame: this.playerFixedFrame,
-                        playerFrameHeightTiles: playerFrameHeights,
-                        playerDefaultHeightTiles,
-                        playerWorldX,
-                        playerWorldZ,
-                        hitsplats,
-                        healthBars: healthBars.length > 0 ? healthBars : undefined,
-                        overheadTexts: overheadTexts.length > 0 ? overheadTexts : undefined,
-                        overheadPrayers: overheadPrayers.length > 0 ? overheadPrayers : undefined,
-                        groundItems: groundOverlayEntries,
-                        gameCycle: clientCycle | 0,
-                        actor2dStacks: this.actor2dStacks,
-                        // spotAnimations removed
-                    },
-                    helpers: this.getOverlayHelpers(),
-                });
-                this.overlayManager?.draw(RenderPhase.ToFrameTexture);
-            }
-        } catch {}
-        profiler.endPhase();
-
-        this.app.disable(PicoGL.DEPTH_TEST);
-        this.app.depthMask(false);
-
-        this.app.disable(PicoGL.BLEND);
-
-        profiler.startPhase("present");
-        this.app.clearMask(PicoGL.COLOR_BUFFER_BIT | PicoGL.DEPTH_BUFFER_BIT);
-        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
-        this.app.defaultDrawFramebuffer().clear();
-
-        if (this.frameFxaaDrawCall && this.fxaaEnabled) {
-            this.frameFxaaDrawCall.uniform("u_resolution", this.resolutionUni);
-            this.frameFxaaDrawCall.texture("u_frame", this.textureFramebuffer.colorAttachments[0]);
-            this.frameFxaaDrawCall.draw();
-        } else {
-            this.frameDrawCall.texture("u_frame", this.textureFramebuffer.colorAttachments[0]);
-            this.frameDrawCall.draw();
-        }
-        profiler.endPhase();
-
-        // Update and draw overlays (post-present).
-        profiler.startPhase("overlayPost");
-        try {
-            const playerLevel = this.getPlayerBasePlane() | 0;
-            const playerRawLevel = this.getPlayerRawPlane() | 0;
-            const tileMarkersConfig = this.osrsClient.tileMarkersPlugin.getConfig();
-            // Compute player world position for post-present overlays
-            // Use current position (no interpolation) to match player model rendering
-            let postPlayerWorldX: number | undefined = undefined;
-            let postPlayerWorldZ: number | undefined = undefined;
-            try {
-                const idx = this.getControlledPlayerEcsIndex();
-                if (idx !== undefined) {
-                    const px = this.osrsClient.playerEcs.getX(idx) | 0;
-                    const py = this.osrsClient.playerEcs.getY(idx) | 0;
-                    postPlayerWorldX = px / 128.0;
-                    postPlayerWorldZ = py / 128.0;
-                }
-            } catch {}
-            // Keep devoverlay state synced
-            try {
-                if (this.objectIdOverlay) {
-                    this.objectIdOverlay.radius = Math.max(
-                        1,
-                        (this.osrsClient.renderDistance / 8) | 0,
-                    );
-                    this.objectIdOverlay.enabled = !!this.osrsClient.showObjectTileIds;
-                }
-                if (this.walkableOverlay) {
-                    this.walkableOverlay.radius = Math.max(
-                        1,
-                        this.osrsClient.collisionOverlayRadius | 0 || 12,
-                    );
-                    this.walkableOverlay.enabled = !!this.osrsClient.showCollisionOverlay;
-                }
-                this.syncTileMarkerOverlayConfig(tileMarkersConfig);
-            } catch {}
-            const args = this.ensureOverlayUpdateArgs(false);
-            args.time = time;
-            args.delta = deltaTime;
-            args.resolution.width = this.app.width;
-            args.resolution.height = this.app.height;
-            this.populateTileMarkerOverlayState(
-                args.state,
-                tileMarkersConfig,
-                playerLevel,
-                playerRawLevel,
-            );
-            args.state.clientTickPhase = this.clientTickPhase;
-            args.state.playerWorldX = postPlayerWorldX;
-            args.state.playerWorldZ = postPlayerWorldZ;
-            // Dev overlay: show non-interpolated server tiles for all actors (NPCs + Players)
-            if (args.state.hoverEnabled) {
-                // PERF: Reuse cached array instead of creating new one each frame
-                const actorServerTiles = this.cachedActorServerTiles;
-                this.cachedActorServerTilesCount = 0;
-
-                // Players
-                try {
-                    const pe = this.osrsClient.playerEcs;
-                    const n = pe.size() | 0;
-                    const ms = this.osrsClient.playerMovementSync;
-                    for (let i = 0; i < n; i++) {
-                        const serverId = pe.getServerIdForIndex(i);
-                        if (serverId === undefined || (serverId | 0) <= 0) continue;
-                        const st = ms.getState(serverId | 0);
-                        if (!st) continue;
-                        // PERF: Reuse existing entry or create new one
-                        const idx = this.cachedActorServerTilesCount++;
-                        let entry = actorServerTiles[idx];
-                        if (!entry) {
-                            entry = {
-                                x: 0,
-                                y: 0,
-                                plane: 0,
-                                kind: "player",
-                                serverId: 0,
-                                label: "",
-                            };
-                            actorServerTiles[idx] = entry;
-                        }
-                        entry.x = st.tileX | 0;
-                        entry.y = st.tileY | 0;
-                        entry.plane = st.level | 0;
-                        entry.kind = "player";
-                        entry.serverId = serverId | 0;
-                        entry.label = "";
-                    }
-                } catch {}
-
-                // NPCs (visible maps only, like other devoverlays)
-                try {
-                    const npcEcs = this.osrsClient.npcEcs;
-                    const seen = this.actorServerTilesSeenNpc;
-                    seen.clear();
-                    for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-                        const map = this.mapManager.visibleMaps[i];
-                        if (!map?.npcEntityIds || map.npcEntityIds.length === 0) continue;
-                        for (let j = 0; j < map.npcEntityIds.length; j++) {
-                            const ecsId = map.npcEntityIds[j] | 0;
-                            if (ecsId <= 0) continue;
-                            if (!npcEcs.isActive(ecsId)) continue;
-                            const serverId = npcEcs.getServerId(ecsId) | 0;
-                            if (serverId <= 0) continue;
-                            if (seen.has(serverId)) continue;
-                            seen.add(serverId);
-                            const st = npcEcs.getServerState(ecsId);
-                            if (!st) continue;
-                            let label = "";
-                            try {
-                                const tid = npcEcs.getNpcTypeId?.(ecsId) | 0;
-                                if (tid > 0 && this.osrsClient.npcTypeLoader) {
-                                    const base = this.osrsClient.npcTypeLoader.load(tid);
-                                    let resolved = base;
-                                    try {
-                                        resolved =
-                                            base.transform(
-                                                this.osrsClient.varManager,
-                                                this.osrsClient.npcTypeLoader,
-                                            ) ?? base;
-                                    } catch {}
-                                    const resolvedId = resolved?.id | 0;
-                                    const cached = this.npcNameCache.get(resolvedId);
-                                    if (cached !== undefined) {
-                                        label = cached;
-                                    } else {
-                                        const name =
-                                            typeof resolved?.name === "string" &&
-                                            resolved.name.length > 0 &&
-                                            resolved.name !== "null"
-                                                ? resolved.name
-                                                : "";
-                                        this.npcNameCache.set(resolvedId, name);
-                                        label = name;
-                                    }
-                                }
-                            } catch {}
-                            // PERF: Reuse existing entry or create new one
-                            const idx = this.cachedActorServerTilesCount++;
-                            let entry = actorServerTiles[idx];
-                            if (!entry) {
-                                entry = {
-                                    x: 0,
-                                    y: 0,
-                                    plane: 0,
-                                    kind: "npc",
-                                    serverId: 0,
-                                    label: "",
-                                };
-                                actorServerTiles[idx] = entry;
-                            }
-                            entry.x = st.tileX | 0;
-                            entry.y = st.tileY | 0;
-                            entry.plane = st.plane | 0;
-                            entry.kind = "npc";
-                            entry.serverId = serverId;
-                            entry.label = label;
-                        }
-                    }
-                } catch {}
-
-                // If multiple NPCs share the same name, append server id so each label is trackable.
-                try {
-                    // PERF: Reuse cached Map instead of creating new one each frame
-                    const nameCounts = this.actorServerTilesNameCounts;
-                    nameCounts.clear();
-                    const count = this.cachedActorServerTilesCount;
-                    for (let i = 0; i < count; i++) {
-                        const e = actorServerTiles[i];
-                        if (e.kind !== "npc") continue;
-                        const name = e.label;
-                        if (!name || name.length === 0) continue;
-                        nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
-                    }
-                    for (let i = 0; i < count; i++) {
-                        const e = actorServerTiles[i];
-                        if (e.kind !== "npc") continue;
-                        const name = e.label;
-                        if (!name || name.length === 0) continue;
-                        if ((nameCounts.get(name) ?? 0) > 1) {
-                            e.label = `${name} (${e.serverId | 0})`;
-                        }
-                    }
-                } catch {}
-
-                // PERF: Set array length directly instead of .slice() to avoid allocation
-                const activeCount = this.cachedActorServerTilesCount;
-                if (activeCount > 0) {
-                    // Truncate array length to active count (reused entries beyond this are ignored)
-                    actorServerTiles.length = activeCount;
-                    args.state.actorServerTiles = actorServerTiles;
-                } else {
-                    args.state.actorServerTiles = undefined;
-                }
-            } else {
-                args.state.actorServerTiles = undefined;
-            }
-            if (!this.uiHidden) {
-                this.overlayManager?.update(args);
-                this.overlayManager?.draw(RenderPhase.PostPresent);
-            }
-        } catch {}
-        profiler.endPhase();
-
-        this.ensureWorldEntityOverlaysLoaded(time);
-
-        let mapApplyCount = 0;
-        // Load new map squares
-        profiler.startPhase("mapApply");
-        mapApplyCount += this.applyReadyStreamGenerationBatch(timeSec);
-        const mapData = this.mapsToLoad.shift();
-        if (mapData) {
-            const firstMapId = getMapSquareId(mapData.mapX, mapData.mapY);
-            const firstBatchId = this.queuedLocReloadBatchByMap.get(firstMapId);
-            const toApply: SdMapData[] = [mapData];
-            if (typeof firstBatchId === "number") {
-                this.queuedLocReloadBatchByMap.delete(firstMapId);
-                while (this.mapsToLoad.length > 0) {
-                    const next = this.mapsToLoad.peekFront();
-                    if (!next) break;
-                    const nextMapId = getMapSquareId(next.mapX, next.mapY);
-                    const nextBatchId = this.queuedLocReloadBatchByMap.get(nextMapId);
-                    if (nextBatchId !== firstBatchId) break;
-                    this.mapsToLoad.shift();
-                    this.queuedLocReloadBatchByMap.delete(nextMapId);
-                    toApply.push(next);
-                }
-            }
-
-            for (const pendingMap of toApply) {
-                if (!this.isValidMapData(pendingMap)) {
-                    console.warn(
-                        `[WebGLOsrsRenderer] mapsToLoad rejected: mapX=${pendingMap.mapX} mapY=${pendingMap.mapY} cacheName=${pendingMap.cacheName} loadNpcs=${pendingMap.loadNpcs} smooth=${pendingMap.smoothTerrain}`,
-                    );
-                    continue;
-                }
-                console.log(
-                    `[WebGLOsrsRenderer] mapsToLoad applying: mapX=${pendingMap.mapX} mapY=${pendingMap.mapY} verts=${pendingMap.vertices?.length}`,
-                );
-                mapApplyCount++;
-                this.loadMap(
-                    this.mainProgram,
-                    this.mainAlphaProgram,
-                    this.npcProgram,
-                    this.textureArray,
-                    this.textureMaterials,
-                    this.waterTextures,
-                    this.sceneUniformBuffer,
-                    pendingMap,
-                    this.skipMapFadeIn ? -1.0 : timeSec,
-                );
-
-                // Configure world entity overlay maps: set interactionPlane + deck height
-                for (const [entityIndex, overlay] of this.worldEntityOverlays) {
-                    const overlayMapX = 200 + entityIndex;
-                    const overlayMapY = 200 + entityIndex;
-                    if (pendingMap.mapX !== overlayMapX || pendingMap.mapY !== overlayMapY)
-                        continue;
-                    const overlayMapId = getMapSquareId(overlayMapX, overlayMapY);
-                    const overlayMap = this.mapManager.mapSquares.get(overlayMapId);
-                    if (!overlayMap) continue;
-                    // Use server-provided basePlane (authoritative), fall back to cache
-                    const weType = this.osrsClient.worldEntityTypeLoader?.load(overlay.configId);
-                    const basePlane = overlay.basePlane || (weType?.basePlane ?? 0);
-
-                    // Single source of truth: all interaction/height queries
-                    // on this overlay map use the deck plane.
-                    overlayMap.interactionPlane = basePlane;
-
-                    if (overlay.deckHeight !== undefined && overlay.deckHeight !== 0) continue;
-                    if (basePlane === 0) {
-                        overlay.deckHeight = 0;
-                        continue;
-                    }
-                    if (!overlayMap.heightMapData) continue;
-                    const hmSize = overlayMap.heightMapSize;
-                    const hmX = 48 + 4;
-                    const hmY = 48 + 4;
-                    if (hmX >= 0 && hmX < hmSize && hmY >= 0 && hmY < hmSize) {
-                        const idx = basePlane * hmSize * hmSize + hmY * hmSize + hmX;
-                        const rawVal = overlayMap.heightMapData[idx] ?? 0;
-                        overlay.deckHeight = -(rawVal * 8);
-                    }
-                }
-            }
-        }
-        profiler.endPhase();
-
-        // Amortize expensive texture mipmap rebuilds outside the hot map-load path.
-        profiler.startPhase("mipmaps");
-        this.maybeRegenerateTextureMipmaps(time);
-        profiler.endPhase();
-
-        // Update positions for custom labels
-        profiler.startPhase("labels");
-        this.updateCustomLabels();
-        profiler.endPhase();
-
-        if (showDebugTimer || profileGpuTimer) {
-            this.timer.end();
-        }
-
-        // Update public stats for devoverlay
-        this.stats.drawBatches = this._frameBatches;
-        this.stats.indicesSubmitted = this._frameIndices | 0;
-        this.stats.trianglesSubmitted = (this._frameIndices / 3) | 0;
-        this.stats.verticesSubmitted = this.stats.indicesSubmitted;
-        this.stats.visibleMaps = this.mapManager.visibleMapCount | 0;
-        this.stats.loadedMaps = this.mapManager.mapSquares.size | 0;
-
-        const trackedPassIndices =
-            opaqueIndices +
-            opaqueActorIndices +
-            transparentIndices +
-            transparentNpcIndices +
-            transparentPlayerIndices;
-        const trackedPassBatches =
-            opaqueBatches +
-            opaqueActorBatches +
-            transparentBatches +
-            transparentNpcBatches +
-            transparentPlayerBatches;
-        const untrackedPassIndices = Math.max(0, this._frameIndices - trackedPassIndices);
-        const untrackedPassBatches = Math.max(0, this._frameBatches - trackedPassBatches);
-
-        // Record stats for profiler
-        profiler.recordDrawCall(this.stats.drawBatches | 0, this.stats.trianglesSubmitted);
-        profiler.recordGauge("visibleMaps", this.stats.visibleMaps);
-        profiler.recordGauge("loadedMaps", this.stats.loadedMaps);
-        profiler.recordGauge(
-            "fpsLimit",
-            this.stats.frameBudgetMs > 0 ? 1000 / this.stats.frameBudgetMs : 0,
-        );
-        profiler.recordGauge("frameBudgetMs", this.stats.frameBudgetMs);
-        profiler.recordGauge("callbackDeltaMs", this.stats.callbackDeltaMs);
-        profiler.recordGauge("estimatedRefreshHz", this.stats.estimatedRefreshHz);
-        profiler.recordGauge("limiterSkippedCallbacks", this.stats.limiterSkippedCallbacks);
-        profiler.recordGauge("limiterSkipDebtMs", this.stats.limiterSkipDebtMs);
-        profiler.recordGauge("timeoutScheduler", this.stats.usedTimeoutScheduler ? 1 : 0);
-        profiler.recordGauge(
-            "frameJsMs",
-            Math.max(0, performance.now() - this.stats.frameTimeStart),
-        );
-        profiler.recordGauge(
-            "resolutionScale",
-            this.osrsClient.mobileEffectiveResolutionScale || 1,
-        );
-        profiler.recordGauge("canvasPixelsMp", (this.app.width * this.app.height) / 1_000_000);
-        profiler.recordGauge(
-            "scenePixelsMp",
-            (this.sceneRenderWidth * this.sceneRenderHeight) / 1_000_000,
-        );
-        profiler.recordGauge(
-            "queuedMaps",
-            ((this.mapsToLoad.length | 0) + (this.getPendingStreamMapCount() | 0)) | 0,
-        );
-        profiler.recordGauge("mapApplyCount", mapApplyCount | 0);
-        profiler.recordGauge("pendingLocUpdates", this.pendingLocUpdates.size | 0);
-        profiler.recordGauge("interactionHits", this.lastInteractionRaycastHitCount | 0);
-        profiler.recordGauge("menuOptions", this.lastInteractionMenuOptionCount | 0);
-        profiler.recordGauge("actorRenderCount", this.actorRenderCount | 0);
-        profiler.recordGauge("groundItemMaps", this.groundItemStacks.size | 0);
-        profiler.recordGauge("lodVisibleMaps", this.lastLodVisibleMapCount | 0);
-        profiler.recordGauge("fullDetailVisibleMaps", this.lastFullDetailVisibleMapCount | 0);
-        profiler.recordGauge(
-            "distanceCulledVisibleMaps",
-            this.lastDistanceCulledVisibleMapCount | 0,
-        );
-        profiler.recordGauge("renderDistanceTiles", this.getFrameRenderDistanceTiles() | 0);
-        profiler.recordGauge("renderDistanceBaseTiles", this.osrsClient.renderDistance | 0);
-        profiler.recordGauge("lodThreshold", this.lastLodThreshold | 0);
-        profiler.recordGauge("roofPlaneLimit", this.getRoofPlaneLimit() | 0);
-        profiler.recordGauge("roofFilteredRanges", this.frameRoofFilteredRangeCount | 0);
-        profiler.recordGauge("roofTotalRanges", this.frameRoofTotalRangeCount | 0);
-        profiler.recordGauge(
-            "roofFilterPct",
-            (this.frameRoofFilteredRangeCount / Math.max(1, this.frameRoofTotalRangeCount)) * 100,
-        );
-        profiler.recordGauge("triOpaque", (opaqueIndices / 3) | 0);
-        profiler.recordGauge("triOpaqueActor", (opaqueActorIndices / 3) | 0);
-        profiler.recordGauge("triTransparent", (transparentIndices / 3) | 0);
-        profiler.recordGauge("triTranspNpc", (transparentNpcIndices / 3) | 0);
-        profiler.recordGauge("triTranspPlayer", (transparentPlayerIndices / 3) | 0);
-        profiler.recordGauge("triUntracked", (untrackedPassIndices / 3) | 0);
-        profiler.recordGauge("batchOpaque", opaqueBatches | 0);
-        profiler.recordGauge("batchOpaqueActor", opaqueActorBatches | 0);
-        profiler.recordGauge("batchTransparent", transparentBatches | 0);
-        profiler.recordGauge("batchTranspNpc", transparentNpcBatches | 0);
-        profiler.recordGauge("batchTranspPlayer", transparentPlayerBatches | 0);
-        profiler.recordGauge("batchUntracked", untrackedPassBatches | 0);
-        this.finishRenderFrame(camera, deltaTime, showDebugTimer, profileGpuTimer);
-
-        // Emote timers are advanced per-tick above.
+        return render.render(this, time, deltaTime, resized);
     }
 
     private getControlledPlayerEcsIndex(): number | undefined {
-        const playerEcs = this.osrsClient.playerEcs;
-        const controlledServerId = this.osrsClient.controlledPlayerServerId | 0;
-
-        if (controlledServerId > 0) {
-            try {
-                const controlledIndex = playerEcs.getIndexForServerId(controlledServerId);
-                if (controlledIndex !== undefined) {
-                    return controlledIndex | 0;
-                }
-            } catch {}
-        }
-
-        try {
-            const size = playerEcs.size?.() ?? (playerEcs as any).size?.() ?? 0;
-            if (size > 0) {
-                return 0;
-            }
-        } catch {}
-
-        return undefined;
+        return render.getControlledPlayerEcsIndex(this);
     }
 
-    // Prefer PlayerECS level if available; fallback to Player[0].level
     private getPlayerBasePlane(): number {
-        let rawPlane = 0;
-        const idx = this.getControlledPlayerEcsIndex();
-        if (idx !== undefined) {
-            rawPlane = this.osrsClient.playerEcs.getLevel(idx) | 0;
-        }
-
-        // If the plane above has the bridge flag, the player renders at that plane.
-        const playerTile = this.getPlayerTileXY();
-        if (!playerTile) {
-            return rawPlane; // Can't check for bridges if we don't know the player's tile
-        }
-
-        return resolveBridgePromotedPlane(this.mapManager, rawPlane, playerTile);
+        return render.getPlayerBasePlane(this);
     }
 
     private getPlayerRawPlane(): number {
-        const idx = this.getControlledPlayerEcsIndex();
-        if (idx !== undefined) return this.osrsClient.playerEcs.getLevel(idx) | 0;
-        return 0;
+        return render.getPlayerRawPlane(this);
     }
 
-    // Player current tile (integer), prefer controlled player ECS position.
     private getPlayerTileXY(): { x: number; y: number } {
-        const controlledIndex = this.getControlledPlayerEcsIndex();
-        if (controlledIndex !== undefined) {
-            return {
-                x: (this.osrsClient.playerEcs.getX(controlledIndex) / 128) | 0,
-                y: (this.osrsClient.playerEcs.getY(controlledIndex) / 128) | 0,
-            };
-        }
-        // Fallback to camera tile if no player
-        return {
-            x: Math.floor(this.osrsClient.camera.getPosX()),
-            y: Math.floor(this.osrsClient.camera.getPosZ()),
-        };
+        return render.getPlayerTileXY(this);
     }
 
     private getCameraTileXY(): { x: number; y: number } {
-        return {
-            x: Math.floor(this.osrsClient.camera.getPosX()),
-            y: Math.floor(this.osrsClient.camera.getPosZ()),
-        };
+        return render.getCameraTileXY(this);
     }
 
     private clampCullTileToGridBounds(tile: { x: number; y: number }): { x: number; y: number } {
-        const bounds = this.mapManager.getGridTileBounds();
-        if (!bounds) {
-            return { x: tile.x | 0, y: tile.y | 0 };
-        }
-        const minX = bounds.minX | 0;
-        const minY = bounds.minY | 0;
-        // Grid bounds use exclusive max edge in world tiles.
-        const maxX = Math.max(minX, (bounds.maxX | 0) - 1);
-        const maxY = Math.max(minY, (bounds.maxY | 0) - 1);
-        return {
-            x: Math.max(minX, Math.min(maxX, tile.x | 0)),
-            y: Math.max(minY, Math.min(maxY, tile.y | 0)),
-        };
+        return render.clampCullTileToGridBounds(this, tile);
     }
 
     private getRenderCullTile(): { x: number; y: number } {
-        // Scene draw-distance is camera-anchored, then clamped to the loaded grid bounds.
-        return this.clampCullTileToGridBounds(this.getCameraTileXY());
+        return render.getRenderCullTile(this);
     }
 
     private getRoofTargetTile(
         playerTile: { x: number; y: number },
         cameraTile: { x: number; y: number },
     ): { x: number; y: number } {
-        // In follow mode the camera focal point tracks the player tile. In free-camera
-        // mode there is no focal state, so the camera tile stands in for it.
-        return this.osrsClient.followPlayerCamera ? playerTile : cameraTile;
+        return render.getRoofTargetTile(this, playerTile, cameraTile);
     }
 
-    /** Camera pitch in RS units (128 = lowest, 383 = highest). */
     private getCameraPitchRs(): number {
-        const pitch = clamp(this.osrsClient.camera.pitch | 0, 0, 512);
-        return 128 + Math.floor((pitch * 255) / 512);
+        return render.getCameraPitchRs(this);
     }
 
     private computeFrameRoofPlaneLimit(): number {
-        const cameraTile = this.getCameraTileXY();
-        const playerTile = this.getPlayerTileXY();
-
-        return computeRoofPlaneLimit(this.mapManager, this.maxLevel, {
-            playerRawPlane: this.getPlayerBasePlane() | 0,
-            cameraPitch: this.getCameraPitchRs(),
-            roofsHidden: this.osrsClient.roofsHidden,
-            cameraTile,
-            playerTile,
-            targetTile: this.getRoofTargetTile(playerTile, cameraTile),
-        });
+        return render.computeFrameRoofPlaneLimit(this);
     }
 
     private getRoofPlaneLimit(): number {
-        if (this.roofPlaneLimit === undefined) {
-            this.roofPlaneLimit = this.computeFrameRoofPlaneLimit();
-        }
-        return this.roofPlaneLimit;
+        return render.getRoofPlaneLimit(this);
     }
 
     override invalidateRoofState(): void {
-        this.roofPlaneLimit = undefined;
+        return render.invalidateRoofState(this);
     }
 
     private ensureOverlayUpdateArgs(scenePass: boolean): OverlayUpdateArgs {
-        const key = scenePass ? "cachedSceneOverlayUpdateArgs" : "cachedOverlayUpdateArgs";
-        let args = this[key];
-        if (!args) {
-            args = {
-                time: 0,
-                delta: 0,
-                resolution: { width: 0, height: 0 },
-                state: {
-                    hoverEnabled: false,
-                    hoverTile: { x: 0, y: 0 },
-                    playerLevel: 0,
-                    playerRawLevel: 0,
-                    destTile: undefined,
-                    currentTile: undefined,
-                    tileHighlights: undefined,
-                    clientTickPhase: 0,
-                    playerWorldX: undefined,
-                    playerWorldZ: undefined,
-                    actorServerTiles: undefined,
-                },
-                helpers: this.getOverlayHelpers(),
-            };
-            this[key] = args;
-        }
-        return args;
+        return render.ensureOverlayUpdateArgs(this, scenePass);
     }
 
     private syncTileMarkerOverlayConfig(tileMarkersConfig: TileMarkersPluginConfig): void {
-        if (!this.tileMarkerOverlay) {
-            return;
-        }
-        this.tileMarkerOverlay.setDestinationColor(tileMarkersConfig.destinationTileColor);
-        this.tileMarkerOverlay.setCurrentTileColor(tileMarkersConfig.currentTileColor);
+        return render.syncTileMarkerOverlayConfig(this, tileMarkersConfig);
     }
 
     private populateTileMarkerOverlayState(
@@ -8430,237 +1679,28 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     ): void {
         state.hoverEnabled = !!this.osrsClient.hoverOverlayEnabled;
         if (this.hoverTileX !== -1 && this.hoverTileY !== -1) {
-            if (!state.hoverTile) {
-                state.hoverTile = { x: 0, y: 0 };
-            }
-            state.hoverTile.x = this.hoverTileX | 0;
-            state.hoverTile.y = this.hoverTileY | 0;
-            // Marker height follows the picked surface; without it the overlay
-            // re-derives a plane and can draw on the wrong bridge level. The
-            // picked plane only applies while it describes this exact tile.
-            const picked = this.osrsClient.hoveredTile;
-            state.hoverTile.plane =
-                picked &&
-                (picked.tileX | 0) === state.hoverTile.x &&
-                (picked.tileY | 0) === state.hoverTile.y
-                    ? picked.plane
-                    : undefined;
-        } else {
-            state.hoverTile = undefined;
-        }
-
-        state.playerLevel = playerLevel;
-        state.playerRawLevel = playerRawLevel;
-        state.destTile = undefined;
-        state.currentTile = undefined;
-
-        const destWorldX = ClientState.destinationWorldX | 0;
-        const destWorldY = ClientState.destinationWorldY | 0;
-        let activeDestX = destWorldX;
-        let activeDestY = destWorldY;
-        if (activeDestX === 0 && activeDestY === 0) {
-            const destLocalX = ClientState.destinationX | 0;
-            const destLocalY = ClientState.destinationY | 0;
-            if (destLocalX !== 0 || destLocalY !== 0) {
-                activeDestX = ClientState.localToWorldX(destLocalX) | 0;
-                activeDestY = ClientState.localToWorldY(destLocalY) | 0;
-            }
-        }
-        const hasActiveDestination = activeDestX !== 0 || activeDestY !== 0;
-        const nativeTileHighlights = this.osrsClient.tileHighlightManager.getRenderEntries();
-        const shouldOwnDestinationTile =
-            tileMarkersConfig.enabled &&
-            tileMarkersConfig.showDestinationTile &&
-            hasActiveDestination;
-        const destinationColor = tileMarkersConfig.destinationTileColor & 0xffffff;
-        const defaultNativeDestinationColor = 0xa9a753;
-        const visibleTileHighlights = shouldOwnDestinationTile
-            ? nativeTileHighlights.filter((highlight) => {
-                if ((highlight.slot | 0) === 4) {
-                    return false;
-                }
-                const color = highlight.colorRgb & 0xffffff;
-                return color !== destinationColor && color !== defaultNativeDestinationColor;
-            })
-            : nativeTileHighlights;
-        state.tileHighlights = visibleTileHighlights.length > 0 ? visibleTileHighlights : undefined;
-
-        if (!tileMarkersConfig.enabled) {
-            return;
-        }
-
-        const nativeHasCurrentTile = visibleTileHighlights.some(
-            (highlight) => (highlight.slot | 0) === 3,
-        );
-        if (tileMarkersConfig.showDestinationTile && hasActiveDestination) {
-            if (!state.destTile) {
-                state.destTile = { x: 0, y: 0 };
-            }
-            // Use the corrected client destination as the single source of truth.
-            state.destTile.x = activeDestX;
-            state.destTile.y = activeDestY;
-        }
-
-        if (!tileMarkersConfig.showCurrentTile || nativeHasCurrentTile) {
-            return;
-        }
-
-        const controlledServerId = this.osrsClient.controlledPlayerServerId | 0;
-        if (controlledServerId <= 0) {
-            return;
-        }
-
-        const movementState = this.osrsClient.playerMovementSync?.getState?.(controlledServerId);
-        if (!movementState) {
-            return;
-        }
-
-        const ecsIndex = movementState.ecsIndex | 0;
-        const isMoving = ecsIndex >= 0 && this.osrsClient.playerEcs.isMoving(ecsIndex);
-        if (!isMoving) {
-            return;
-        }
-
-        if (!state.currentTile) {
-            state.currentTile = { x: 0, y: 0, plane: 0 };
-        }
-        state.currentTile.x = movementState.tileX | 0;
-        state.currentTile.y = movementState.tileY | 0;
-        // Resolve bridge promotion at the marker's own tile; the player's render
-        // position sits on a different column while stepping on/off a bridge.
-        state.currentTile.plane = this.getHeightSamplePlaneForTile(
-            movementState.tileX | 0,
-            movementState.tileY | 0,
-            this.getPlayerRawPlane() | 0,
-        );
+        return render.populateTileMarkerOverlayState(this, state, tileMarkersConfig, playerLevel, playerRawLevel);
     }
 
     private drawSceneTileOverlays(time: number, deltaTime: number): void {
-        if (this.uiHidden || !this.overlayManager || !this.tileMarkerOverlay) {
-            return;
-        }
-
-        const tileMarkersConfig = this.osrsClient.tileMarkersPlugin.getConfig();
-        this.syncTileMarkerOverlayConfig(tileMarkersConfig);
-
-        const playerLevel = this.getPlayerBasePlane() | 0;
-        const playerRawLevel = this.getPlayerRawPlane() | 0;
-        const args = this.ensureOverlayUpdateArgs(true);
-        args.time = time;
-        args.delta = deltaTime;
-        args.resolution.width = this.app.width;
-        args.resolution.height = this.app.height;
-        this.populateTileMarkerOverlayState(
-            args.state,
-            tileMarkersConfig,
-            playerLevel,
-            playerRawLevel,
-        );
-        args.state.clientTickPhase = this.clientTickPhase;
-        args.state.playerWorldX = undefined;
-        args.state.playerWorldZ = undefined;
-        args.state.actorServerTiles = undefined;
-        args.state.hitsplats = undefined;
-        args.state.healthBars = undefined;
-        args.state.overheadTexts = undefined;
-        args.state.overheadPrayers = undefined;
-        args.state.groundItems = undefined;
-        this.overlayManager.update(args);
-        this.overlayManager.draw(RenderPhase.ToSceneFramebuffer);
+        return render.drawSceneTileOverlays(this, time, deltaTime);
     }
 
-    // PERF: Lazily create and cache bound helper functions for overlay updates
     private getOverlayHelpers(): NonNullable<WebGLOsrsRenderer["cachedOverlayHelpers"]> {
-        if (!this.cachedOverlayHelpers) {
-            this.cachedOverlayHelpers = {
-                getTileHeightAtPlane: this.getTileHeightAtPlane.bind(this),
-                getMinTileHeightInRadius: this.getMinTileHeightInRadius.bind(this),
-                sampleHeightAtExactPlane: this.sampleHeightAtExactPlane.bind(this),
-                getHeightSamplePlaneForTile: this.getHeightSamplePlaneForTile.bind(this),
-                getEffectivePlaneForTile: this.getEffectivePlaneForTile.bind(this),
-                getOccupancyPlaneForTile: this.getOccupancyPlaneForTile.bind(this),
-                getTileRenderFlagAt: this.getTileRenderFlagAt.bind(this),
-                isBridgeSurfaceTile: this.isBridgeSurfaceTile.bind(this),
-                worldToScreen: this.worldToScreen.bind(this),
-                getCollisionFlagAt: this.getCollisionFlagAt.bind(this),
-            };
-        }
-        return this.cachedOverlayHelpers;
+        return render.getOverlayHelpers(this);
     }
 
-    // Expose raw tileRenderFlags for overlays (debug)
     private getTileRenderFlagAt(level: number, tileX: number, tileY: number): number {
-        return lookupTileRenderFlagAt(this.mapManager, level, tileX, tileY);
+        return render.getTileRenderFlagAt(this, level, tileX, tileY);
     }
 
-    /**
-     * Camera pitch pressure update:
-     * derive a terrain-driven minimum camera pitch from the focal point surroundings.
-     */
     private updateCameraTerrainPitchPressure(
         focalSubX: number,
         focalSubZ: number,
         basePlane: number,
         cycles: number,
     ): void {
-        if (cycles <= 0) {
-            return;
-        }
-        const focalHeight = sampleBridgeHeightForWorldTile(
-            this.mapManager,
-            focalSubX / 128,
-            focalSubZ / 128,
-            basePlane,
-            BridgePlaneStrategy.RENDER,
-        );
-        if (!focalHeight.valid) {
-            return;
-        }
-
-        const focalTileX = focalSubX >> 7;
-        const focalTileY = focalSubZ >> 7;
-        const focalHeightWorldUnits = Math.round(focalHeight.height * 128);
-        let maxDelta = 0;
-
-        for (let tileX = focalTileX - 4; tileX <= focalTileX + 4; tileX++) {
-            for (let tileY = focalTileY - 4; tileY <= focalTileY + 4; tileY++) {
-                let samplePlane = Math.max(0, Math.min(3, basePlane | 0));
-                if (
-                    samplePlane < 3 &&
-                    (lookupTileRenderFlagAt(this.mapManager, 1, tileX, tileY) &
-                        TILE_FLAG_BRIDGE) !==
-                    0
-                ) {
-                    samplePlane++;
-                }
-                const tileHeightWorldUnits = this.sampleTileVertexHeightWorldUnits(
-                    tileX,
-                    tileY,
-                    samplePlane,
-                );
-                if (tileHeightWorldUnits === undefined) continue;
-
-                const delta = focalHeightWorldUnits - tileHeightWorldUnits;
-                if (delta > maxDelta) {
-                    maxDelta = delta;
-                }
-            }
-        }
-
-        let target = maxDelta * 192;
-        if (target > 98048) target = 98048;
-        if (target < 32768) target = 32768;
-
-        for (let i = 0; i < cycles; i++) {
-            const current = this.cameraTerrainPitchPressure | 0;
-            if (target > current) {
-                this.cameraTerrainPitchPressure = current + (((target - current) / 24) | 0);
-            } else if (target < current) {
-                this.cameraTerrainPitchPressure = current + (((target - current) / 80) | 0);
-            } else {
-                break;
-            }
-        }
+        return render.updateCameraTerrainPitchPressure(this, focalSubX, focalSubZ, basePlane, cycles);
     }
 
     private sampleTileVertexHeightWorldUnits(
@@ -8668,23 +1708,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         tileY: number,
         plane: number,
     ): number | undefined {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        if (!map) return undefined;
-
-        const local = this.getMapLocalTile(map, tileX, tileY);
-        if (!local) return undefined;
-
-        const size = map.heightMapSize | 0;
-        if (size <= 0) return undefined;
-        const samplePlane = Math.max(0, Math.min(3, plane | 0));
-        const base = samplePlane * size * size;
-        const ix = local.x + map.borderSize;
-        const iz = local.y + map.borderSize;
-        const data = map.heightMapData as Int16Array;
-        const texel = data[base + iz * size + ix] ?? 0;
-        const worldUnits = (texel * Scene.UNITS_TILE_HEIGHT_BASIS) | 0;
-        // World Y is negative-up.
-        return -worldUnits;
+        return render.sampleTileVertexHeightWorldUnits(this, tileX, tileY, plane);
     }
 
     public setCameraShakeSlot(
@@ -8694,31 +1718,15 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         waveSpeed: number,
         phase: number = 0,
     ): void {
-        const idx = slot | 0;
-        if (idx < 0 || idx >= 5) return;
-        this.cameraShakeEnabled[idx] = true;
-        this.cameraShakeRandomAmplitude[idx] = randomAmplitude | 0;
-        this.cameraShakeWaveAmplitude[idx] = waveAmplitude | 0;
-        this.cameraShakeWaveSpeed[idx] = waveSpeed | 0;
-        this.cameraShakeWavePhase[idx] = phase | 0;
-        this.cameraShakeLastClientCycle = -1;
+        return render.setCameraShakeSlot(this, slot, randomAmplitude, waveAmplitude, waveSpeed, phase);
     }
 
     public clearCameraShakeSlot(slot: number): void {
-        const idx = slot | 0;
-        if (idx < 0 || idx >= 5) return;
-        this.cameraShakeEnabled[idx] = false;
-        this.cameraShakeRandomAmplitude[idx] = 0;
-        this.cameraShakeWaveAmplitude[idx] = 0;
-        this.cameraShakeWaveSpeed[idx] = 0;
-        this.cameraShakeWavePhase[idx] = 0;
+        return render.clearCameraShakeSlot(this, slot);
     }
 
     public clearCameraShake(): void {
-        for (let i = 0; i < 5; i++) {
-            this.clearCameraShakeSlot(i);
-        }
-        this.cameraShakeLastClientCycle = -1;
+        return render.clearCameraShake(this);
     }
 
     private computeCameraShakeOffsets(clientCycle: number): {
@@ -8729,265 +1737,15 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         pitch: number;
         active: boolean;
     } {
-        if (this.cameraShakeLastClientCycle < 0) {
-            this.cameraShakeLastClientCycle = clientCycle;
-        }
-        let cyclesElapsed = (clientCycle - this.cameraShakeLastClientCycle) | 0;
-        if (cyclesElapsed < 0 || cyclesElapsed > 200) {
-            cyclesElapsed = 1;
-        }
-        if (cyclesElapsed > 0) {
-            this.cameraShakeLastClientCycle = clientCycle;
-        }
-
-        let x = 0;
-        let y = 0;
-        let z = 0;
-        let yaw = 0;
-        let pitch = 0;
-        let active = false;
-
-        for (let i = 0; i < 5; i++) {
-            if (!this.cameraShakeEnabled[i]) continue;
-            active = true;
-            if (cyclesElapsed > 0) {
-                this.cameraShakeWavePhase[i] = (this.cameraShakeWavePhase[i] + cyclesElapsed) | 0;
-            }
-            const randomAmp = this.cameraShakeRandomAmplitude[i] | 0;
-            const waveAmp = this.cameraShakeWaveAmplitude[i] | 0;
-            const waveSpeed = this.cameraShakeWaveSpeed[i] | 0;
-            const randomTerm = Math.random() * (randomAmp * 2 + 1) - randomAmp;
-            const waveTerm = Math.sin((this.cameraShakeWavePhase[i] * waveSpeed) / 100.0) * waveAmp;
-            const value = (randomTerm + waveTerm) | 0;
-
-            switch (i) {
-                case 0:
-                    x += value;
-                    break;
-                case 1:
-                    y += value;
-                    break;
-                case 2:
-                    z += value;
-                    break;
-                case 3:
-                    yaw += value;
-                    break;
-                case 4:
-                    pitch += value;
-                    break;
-            }
-        }
-
-        return { x, y, z, yaw, pitch, active };
+        return render.computeCameraShakeOffsets(this, clientCycle);
     }
 
     private updateCameraFollow(deltaTime?: number, timeSec?: number): void {
-        const pe = this.osrsClient.playerEcs;
-        const playerEcsIndex = this.getControlledPlayerEcsIndex();
-        if (playerEcsIndex === undefined) return;
-
-        const px = pe.getX(playerEcsIndex) | 0;
-        const py = pe.getY(playerEcsIndex) | 0;
-        const playerX = px / 128;
-        const playerZ = py / 128;
-
-        // Update player position for fog calculation (use actual player pos)
-        this.playerPosUni[0] = playerX;
-        this.playerPosUni[1] = playerZ;
-
-        // OSRS follow camera uses a smoothed focal point (oculusOrbFocalPointX/Y) that eases toward the player.
-        // Important: update is tick-based (integer math), not frame-delta based; otherwise the camera/focal timebase
-        // diverges from the tick interpolation timebase and introduces visible jitter at high refresh rates.
-        const clientCycle = getClientCycle() | 0;
-        const targetSubX = px;
-        const targetSubZ = py;
-
-        let smoothingCycles = 0;
-        if (!this.followCamFocalInitialized || this.followCamFocalLastClientCycle < 0) {
-            this.followCamFocalXSub = targetSubX;
-            this.followCamFocalZSub = targetSubZ;
-            this.followCamFocalLastClientCycle = clientCycle;
-            this.followCamFocalInitialized = true;
-        } else {
-            const cyclesElapsed = (clientCycle - this.followCamFocalLastClientCycle) | 0;
-            // If we fell behind a lot (tab background / stall), just resync.
-            if (cyclesElapsed < 0 || cyclesElapsed > 32) {
-                this.followCamFocalXSub = targetSubX;
-                this.followCamFocalZSub = targetSubZ;
-                this.followCamFocalLastClientCycle = clientCycle;
-                smoothingCycles = 1;
-            } else if (cyclesElapsed > 0) {
-                smoothingCycles = cyclesElapsed;
-                for (let i = 0; i < cyclesElapsed; i++) {
-                    const dxFocal = targetSubX - this.followCamFocalXSub;
-                    const dzFocal = targetSubZ - this.followCamFocalZSub;
-                    // OSRS: snap focal if >500 sub-units away.
-                    if (dxFocal < -500 || dxFocal > 500 || dzFocal < -500 || dzFocal > 500) {
-                        this.followCamFocalXSub = targetSubX;
-                        this.followCamFocalZSub = targetSubZ;
-                    } else {
-                        // OSRS: focal += (target - focal) / 16 (integer division).
-                        if (dxFocal !== 0) this.followCamFocalXSub += (dxFocal / 16) | 0;
-                        if (dzFocal !== 0) this.followCamFocalZSub += (dzFocal / 16) | 0;
-                    }
-                }
-                this.followCamFocalLastClientCycle = clientCycle;
-            }
-        }
-
-        const focalSubX = this.followCamFocalXSub;
-        const focalSubZ = this.followCamFocalZSub;
-        const basePlane = pe.getLevel(playerEcsIndex) | 0;
-        const onWorldEntity = this.getControlledPlayerWorldViewId() >= 0;
-        // Pitch pressure eases on the client-cycle timebase like the focal point;
-        // per-frame easing would converge several times faster than OSRS at high refresh rates.
-        if (!onWorldEntity) {
-            this.updateCameraTerrainPitchPressure(focalSubX, focalSubZ, basePlane, smoothingCycles);
-        } else {
-            // On a world entity (ship) the deck is flat; let pressure decay to the minimum
-            // so it doesn't artificially restrict the camera pitch.
-            for (let i = 0; i < smoothingCycles; i++) {
-                const current = this.cameraTerrainPitchPressure | 0;
-                if (current <= 32768) break;
-                this.cameraTerrainPitchPressure = current + (((32768 - current) / 80) | 0);
-            }
-        }
-
-        const targetX = focalSubX / 128;
-        const targetZ = focalSubZ / 128;
-
-        // OSRS: vertical follow uses the player's height, not the smoothed focal point height.
-        // (X/Z lag slightly, Y follows the player with camFollowHeight-style offset).
-        const playerHeightSample = sampleBridgeHeightForWorldTile(
-            this.mapManager,
-            playerX,
-            playerZ,
-            basePlane,
-            BridgePlaneStrategy.RENDER,
-        );
-
-        const camera = this.osrsClient.camera;
-        // OSRS uses the effective viewport height after viewport-shape clamping,
-        // not the raw canvas height, to derive follow-camera distance.
-        const sceneViewport = this.getSceneViewportWidgetRect();
-        const viewportWidth = sceneViewport.width || camera.viewportWidth || this.app.width;
-        const viewportHeight = sceneViewport.height || camera.viewportHeight || this.app.height;
-        const { viewportHeight: effectiveViewportHeight } = camera.computeViewportMetricsForSize(
-            viewportWidth,
-            viewportHeight,
-        );
-
-        // OSRS pitch -> distance mapping, with viewport-dependent zoom scaling
-        // zoom = (zoomWidth - zoomHeight) * clamp(viewportHeight - 334, 0..100) / 100 + zoomHeight
-        const v = clamp(effectiveViewportHeight - 334, 0, 100);
-        const zoom =
-            (this.osrsClient.zoomWidth - this.osrsClient.zoomHeight) * (v / 100) +
-            this.osrsClient.zoomHeight;
-        let camAngleX = camera.getScenePitchAngle();
-        const terrainMinCamAngleX = (this.cameraTerrainPitchPressure | 0) >> 8;
-        if (terrainMinCamAngleX > camAngleX) {
-            camAngleX = terrainMinCamAngleX;
-        }
-        // active pitch-shake also raises the minimum camera angle for orbit distance.
-        if (this.cameraShakeEnabled[4]) {
-            const shakeMinCamAngleX = (this.cameraShakeWaveAmplitude[4] | 0) + 128;
-            if (shakeMinCamAngleX > camAngleX) {
-                camAngleX = shakeMinCamAngleX;
-            }
-        }
-
-        const yawRad = (camera.yaw - 1024) * RS_TO_RADIANS;
-        const pitchRad = -camAngleX * RS_TO_RADIANS;
-
-        // Build rotation matrix identical to the scene camera order (no translation).
-        const rot = this.followCamRot;
-        mat4.identity(rot);
-        mat4.rotateY(rot, rot, yawRad);
-        mat4.rotateZ(rot, rot, Math.PI);
-        mat4.rotateX(rot, rot, pitchRad);
-
-        // Camera forward in world space (camera looks down -Z).
-        const forward = this.followCamForward;
-        vec3.transformMat4(forward, this.followCamForwardAxis, rot);
-        vec3.normalize(forward, forward);
-
-        const baseRadius = 600 + 3 * camAngleX; // world units (1 tile = 128 units)
-        const radius = (baseRadius * zoom) / 256; // world units
-        const dist = radius / 128; // tiles
-        let desiredPosX = targetX - forward[0] * dist;
-        let desiredPosZ = targetZ - forward[2] * dist;
-        // Keep camera in integer sub-tile units (1/128 tile) to match OSRS camera math and prevent shimmer.
-        desiredPosX = Math.round(desiredPosX * 128) / 128;
-        desiredPosZ = Math.round(desiredPosZ * 128) / 128;
-
-        // Always snap X/Z for tight player follow (prevents stutter/drift vs player)
-        camera.snapToPosition(desiredPosX, undefined, desiredPosZ);
-
-        // If height data isn't valid yet (map not loaded), skip Y updates entirely.
-        // This prevents the camera from snapping to height=0 then jumping when data loads.
-        if (!playerHeightSample.valid) {
-            return;
-        }
-
-        // Track when height data first became valid, then wait for fog animation to complete
-        // (fog fade-in takes 1 second: smoothstep over u_currentTime - u_timeLoaded)
-        if (!this.mapDataLoadedNotified && timeSec !== undefined) {
-            if (this.heightValidAtTime === undefined) {
-                // First frame with valid height - record the time
-                this.heightValidAtTime = timeSec;
-            } else if (timeSec - this.heightValidAtTime >= 1.0) {
-                // Fog animation complete (1 second elapsed) - notify loading tracker
-                this.mapDataLoadedNotified = true;
-                this.osrsClient.loadingTracker.markComplete(LoadingRequirement.MAP_DATA_LOADED);
-            }
-        }
-
-        const focusHeightTiles = (this.osrsClient.camFollowHeight | 0) / 128.0;
-        const targetY = playerHeightSample.height - focusHeightTiles;
-        // Camera Y is purely the orbit position around the focal point; terrain clipping is
-        // handled by the pitch clamp pressure, never by raising the camera off its orbit.
-        const desiredPosY = Math.round((targetY - forward[1] * dist) * 128) / 128;
-
-        // Tight follow: snap camera height to the computed orbit position to keep the target stable in view.
-        camera.snapToPosition(undefined, desiredPosY, undefined);
+        return render.updateCameraFollow(this, deltaTime, timeSec);
     }
 
     private getSceneViewportWidgetRect(): { x: number; y: number; width: number; height: number } {
-        const widgetManager = this.osrsClient.widgetManager;
-        const viewport = widgetManager?.viewportWidget as any;
-        const fallbackWidth = Math.max(1, (this.app.width || this.canvas.width || 1) | 0);
-        const fallbackHeight = Math.max(1, (this.app.height || this.canvas.height || 1) | 0);
-        const layoutWidth = Math.max(1, (widgetManager?.canvasWidth || fallbackWidth) | 0);
-        const layoutHeight = Math.max(1, (widgetManager?.canvasHeight || fallbackHeight) | 0);
-        const scaleX = fallbackWidth / layoutWidth;
-        const scaleY = fallbackHeight / layoutHeight;
-        const rawX =
-            typeof viewport?._absLogicalX === "number"
-                ? viewport._absLogicalX
-                : typeof viewport?._absX === "number"
-                    ? Math.round(viewport._absX / scaleX)
-                    : typeof viewport?.x === "number"
-                        ? viewport.x
-                        : 0;
-        const rawY =
-            typeof viewport?._absLogicalY === "number"
-                ? viewport._absLogicalY
-                : typeof viewport?._absY === "number"
-                    ? Math.round(viewport._absY / scaleY)
-                    : typeof viewport?.y === "number"
-                        ? viewport.y
-                        : 0;
-        const rawWidth = typeof viewport?.width === "number" ? viewport.width | 0 : fallbackWidth;
-        const rawHeight =
-            typeof viewport?.height === "number" ? viewport.height | 0 : fallbackHeight;
-
-        return {
-            x: Math.round(rawX * scaleX),
-            y: Math.round(rawY * scaleY),
-            width: Math.max(1, Math.round(rawWidth * scaleX)),
-            height: Math.max(1, Math.round(rawHeight * scaleY)),
-        };
+        return render.getSceneViewportWidgetRect(this);
     }
 
     private clearSceneFramebuffer(viewportRect: {
@@ -8996,168 +1754,19 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         width: number;
         height: number;
     }): void {
-        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
-        this.app.clear();
-
-        const left = Math.max(0, viewportRect.x | 0);
-        const top = Math.max(0, viewportRect.y | 0);
-        const right = Math.min(
-            this.sceneRenderWidth | 0,
-            (viewportRect.x + viewportRect.width) | 0,
-        );
-        const bottom = Math.min(
-            this.sceneRenderHeight | 0,
-            (viewportRect.y + viewportRect.height) | 0,
-        );
-        const width = Math.max(0, right - left);
-        const height = Math.max(0, bottom - top);
-        if (width <= 0 || height <= 0) {
-            return;
-        }
-
-        this.gl.enable(this.gl.SCISSOR_TEST);
-        this.gl.scissor(left, (this.sceneRenderHeight | 0) - bottom, width, height);
-        this.gl.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        this.gl.disable(this.gl.SCISSOR_TEST);
+        return render.clearSceneFramebuffer(this, viewportRect);
     }
 
     private updateHoveredTile(): void {
-        const input = this.osrsClient.inputManager;
-        if (!this.osrsClient.hoverOverlayEnabled) {
-            this.hoverTileX = -1;
-            this.hoverTileY = -1;
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-            return;
-        }
-        if (input.isPointerLock()) {
-            this.hoverTileX = -1;
-            this.hoverTileY = -1;
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-            return;
-        }
-        // While the context menu is visible, lock hover to the right-click position
-        const useMenuAnchor = !!this.osrsClient.menuOpen;
-
-        const mouseX = useMenuAnchor ? this.osrsClient.menuX : input.mouseX;
-        const mouseY = useMenuAnchor ? this.osrsClient.menuY : input.mouseY;
-        if ((mouseX === -1 || mouseY === -1) && !useMenuAnchor) {
-            this.hoverTileX = -1;
-            this.hoverTileY = -1;
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-            return;
-        }
-        if (!this.osrsClient.camera.containsScreenPoint(mouseX, mouseY)) {
-            this.hoverTileX = -1;
-            this.hoverTileY = -1;
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-            return;
-        }
-
-        const resolved = this.computeTileAt(mouseX, mouseY);
-        if (!resolved) {
-            this.hoverTileX = -1;
-            this.hoverTileY = -1;
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-            return;
-        }
-        const tileX = resolved.tileX;
-        const tileY = resolved.tileY;
-        const effPlane = resolved.plane;
-        this.hoverTileX = tileX;
-        this.hoverTileY = tileY;
-
-        // Update screen-space label position using tile center
-        const centerX = tileX + 0.5;
-        const centerY = tileY + 0.5;
-        // Use exact plane height without promotion to match the tile we resolved
-        const centerWorldY = this.sampleHeightAtExactPlane(centerX, centerY, effPlane);
-        const screen = this.worldToScreen(centerX, centerWorldY - 0.1, centerY); // small offset up
-        if (screen) {
-            this.osrsClient.hoveredTile = { tileX, tileY, plane: effPlane };
-            this.osrsClient.hoveredTileScreen = {
-                x: screen[0],
-                y: screen[1],
-            };
-        } else {
-            this.osrsClient.hoveredTile = undefined;
-            this.osrsClient.hoveredTileScreen = undefined;
-        }
+        return render.updateHoveredTile(this);
     }
 
-    // Sample height at an exact plane without any bridge promotion
     private sampleHeightAtExactPlane(worldX: number, worldZ: number, plane: number): number {
-        const map = this.getPreferredMapForWorldTile(Math.floor(worldX), Math.floor(worldZ));
-        if (!map || !map.heightMapData) {
-            return 0;
-        }
-
-        const localPxX = Math.floor((worldX - map.getRenderBaseWorldX()) * 128);
-        const localPxZ = Math.floor((worldZ - map.getRenderBaseWorldY()) * 128);
-        const mapTileSpan = map.getLocalTileSpan();
-
-        let tileX = localPxX >> 7;
-        let tileZ = localPxZ >> 7;
-        if (tileX < 0 || tileZ < 0 || tileX >= mapTileSpan || tileZ >= mapTileSpan) {
-            return 0;
-        }
-        tileX = Math.max(0, Math.min(mapTileSpan - 1, tileX));
-        tileZ = Math.max(0, Math.min(mapTileSpan - 1, tileZ));
-
-        const offX = localPxX & 0x7f;
-        const offZ = localPxZ & 0x7f;
-
-        const size = map.heightMapSize as number;
-        // Use the plane directly without any promotion - this is the key difference
-        const samplePlane = Math.max(0, Math.min(3, plane | 0));
-        const base = samplePlane * size * size;
-
-        const ix = tileX + map.borderSize;
-        const iz = tileZ + map.borderSize;
-        const ix1 = Math.min(ix + 1, size - 1);
-        const iz1 = Math.min(iz + 1, size - 1);
-
-        const data = map.heightMapData as Int16Array;
-        // Match GPU height sampling (see `height-map.glsl`): texel * 8 gives world-unit magnitude.
-        // Scale into world units before interpolation to preserve OSRS integer truncation behavior.
-        const h00 = ((data[base + iz * size + ix] || 0) * Scene.UNITS_TILE_HEIGHT_BASIS) | 0;
-        const h10 = ((data[base + iz * size + ix1] || 0) * Scene.UNITS_TILE_HEIGHT_BASIS) | 0;
-        const h01 = ((data[base + iz1 * size + ix] || 0) * Scene.UNITS_TILE_HEIGHT_BASIS) | 0;
-        const h11 = ((data[base + iz1 * size + ix1] || 0) * Scene.UNITS_TILE_HEIGHT_BASIS) | 0;
-
-        const delta0 = (h00 * (128 - offX) + h10 * offX) >> 7;
-        const delta1 = (h01 * (128 - offX) + h11 * offX) >> 7;
-        const hWorld = (delta0 * (128 - offZ) + delta1 * offZ) >> 7;
-        return -(hWorld / 128.0);
+        return render.sampleHeightAtExactPlane(this, worldX, worldZ, plane);
     }
 
     private getWorldEntityAdjustedTerrainRay(ray: Ray, map: WebGLMapSquare): Ray {
-        const weTransform = this.getWorldEntityTransformForMap(map);
-        if (weTransform === WebGLMapSquare.IDENTITY_MAT4) return ray;
-
-        const viewMatrix = this.osrsClient.camera?.viewMatrix;
-        if (!viewMatrix) return ray;
-
-        const weInv = mat4.invert(mat4.create(), weTransform);
-        if (!weInv) return ray;
-        const viewInv = mat4.invert(mat4.create(), viewMatrix);
-        if (!viewInv) return ray;
-
-        const transformInv = mat4.create();
-        mat4.multiply(transformInv, weInv, viewMatrix);
-        mat4.multiply(transformInv, viewInv, transformInv);
-
-        const newOrigin = vec3.transformMat4(vec3.create(), ray.origin, transformInv);
-        const farPoint = vec3.scaleAndAdd(vec3.create(), ray.origin, ray.direction, 1.0);
-        const newFar = vec3.transformMat4(vec3.create(), farPoint, transformInv);
-        const newDir = vec3.subtract(vec3.create(), newFar, newOrigin);
-        vec3.normalize(newDir, newDir);
-        return new Ray(newOrigin, newDir);
+        return render.getWorldEntityAdjustedTerrainRay(this, ray, map);
     }
 
     private intersectTerrainPickTriangle(
@@ -9167,1102 +1776,158 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         baseX: number,
         baseZ: number,
     ): number | undefined {
-        const ax = baseX + vertices[vertexOffset];
-        const ay = vertices[vertexOffset + 1];
-        const az = baseZ + vertices[vertexOffset + 2];
-        const bx = baseX + vertices[vertexOffset + 3];
-        const by = vertices[vertexOffset + 4];
-        const bz = baseZ + vertices[vertexOffset + 5];
-        const cx = baseX + vertices[vertexOffset + 6];
-        const cy = vertices[vertexOffset + 7];
-        const cz = baseZ + vertices[vertexOffset + 8];
-
-        const edge1x = bx - ax;
-        const edge1y = by - ay;
-        const edge1z = bz - az;
-        const edge2x = cx - ax;
-        const edge2y = cy - ay;
-        const edge2z = cz - az;
-
-        const dirx = ray.direction[0];
-        const diry = ray.direction[1];
-        const dirz = ray.direction[2];
-        const px = diry * edge2z - dirz * edge2y;
-        const py = dirz * edge2x - dirx * edge2z;
-        const pz = dirx * edge2y - diry * edge2x;
-        const det = edge1x * px + edge1y * py + edge1z * pz;
-        if (det > -1e-6 && det < 1e-6) return undefined;
-
-        const invDet = 1 / det;
-        const tx = ray.origin[0] - ax;
-        const ty = ray.origin[1] - ay;
-        const tz = ray.origin[2] - az;
-        const u = (tx * px + ty * py + tz * pz) * invDet;
-        if (u < 0 || u > 1) return undefined;
-
-        const qx = ty * edge1z - tz * edge1y;
-        const qy = tz * edge1x - tx * edge1z;
-        const qz = tx * edge1y - ty * edge1x;
-        const v = (dirx * qx + diry * qy + dirz * qz) * invDet;
-        if (v < 0 || u + v > 1) return undefined;
-
-        const t = (edge2x * qx + edge2y * qy + edge2z * qz) * invDet;
-        return t > 1e-6 ? t : undefined;
+        return render.intersectTerrainPickTriangle(this, ray, vertices, vertexOffset, baseX, baseZ);
     }
 
     private computeTerrainTileAt(
         mouseX: number,
         mouseY: number,
     ): { tileX: number; tileY: number; plane: number } | undefined {
-        const ray = this.screenToRay(mouseX, mouseY);
-        if (!ray) return undefined;
-
-        let bestT = Number.POSITIVE_INFINITY;
-        let bestTileX = -1;
-        let bestTileY = -1;
-        let bestPlane = 0;
-        let bestFromOverride = false;
-
-        // A tile is a valid pick target only while it is drawn (draw plane within the
-        // roof plane limit) and not above the player's plane; among the candidates the
-        // nearest hit along the ray wins.
-        const selectLimit = Math.min(this.getPlayerRawPlane() | 0, this.getRoofPlaneLimit() | 0);
-
-        const visibleCount = this.mapManager.visibleMapCount | 0;
-        const visibleMaps = this.mapManager.visibleMaps;
-        for (let i = 0; i < visibleCount; i++) {
-            const map = visibleMaps[i] as WebGLMapSquare | undefined;
-            if (!map) continue;
-
-            const offsets = map.terrainPickTileOffsets;
-            const vertices = map.terrainPickVertices;
-            if (!offsets || !vertices || offsets.length <= 1 || vertices.length === 0) continue;
-
-            const effectiveRay = this.getWorldEntityAdjustedTerrainRay(ray, map);
-            const baseX = map.getRenderBaseWorldX();
-            const baseZ = map.getRenderBaseWorldY();
-            const mapTileSpan = map.getLocalTileSpan();
-            if (offsets.length < mapTileSpan * mapTileSpan + 1) continue;
-            const planeOverride = map.interactionPlane >= 0 ? map.interactionPlane | 0 : -1;
-
-            const hitBox = rayIntersectsBox(
-                effectiveRay,
-                [baseX, -1000, baseZ],
-                [baseX + mapTileSpan, 1000, baseZ + mapTileSpan],
-            );
-            if (!hitBox) continue;
-
-            const tEnter = Math.max(hitBox.tMin, 0);
-            const tExit = Math.min(hitBox.tMax, bestT);
-            if (tEnter > tExit || tExit <= 0) continue;
-
-            const entry = this.tmpTerrainEntryPoint;
-            effectiveRay.at(Math.min(tEnter + 1e-6, tExit), entry);
-
-            let localX = Math.max(0, Math.min(mapTileSpan - 1, Math.floor(entry[0] - baseX)));
-            let localY = Math.max(0, Math.min(mapTileSpan - 1, Math.floor(entry[2] - baseZ)));
-
-            const dirX = effectiveRay.direction[0];
-            const dirZ = effectiveRay.direction[2];
-            const stepX = dirX > 1e-8 ? 1 : dirX < -1e-8 ? -1 : 0;
-            const stepY = dirZ > 1e-8 ? 1 : dirZ < -1e-8 ? -1 : 0;
-            const tDeltaX = stepX !== 0 ? Math.abs(1 / dirX) : Number.POSITIVE_INFINITY;
-            const tDeltaY = stepY !== 0 ? Math.abs(1 / dirZ) : Number.POSITIVE_INFINITY;
-            const nextBoundaryX = baseX + (stepX > 0 ? localX + 1 : localX);
-            const nextBoundaryY = baseZ + (stepY > 0 ? localY + 1 : localY);
-            let tMaxX =
-                stepX !== 0
-                    ? (nextBoundaryX - effectiveRay.origin[0]) / dirX
-                    : Number.POSITIVE_INFINITY;
-            let tMaxY =
-                stepY !== 0
-                    ? (nextBoundaryY - effectiveRay.origin[2]) / dirZ
-                    : Number.POSITIVE_INFINITY;
-            if (tMaxX < tEnter) tMaxX = tEnter;
-            if (tMaxY < tEnter) tMaxY = tEnter;
-
-            const maxSteps = mapTileSpan * 2 + 4;
-            for (let steps = 0; steps < maxSteps; steps++) {
-                if (localX < 0 || localY < 0 || localX >= mapTileSpan || localY >= mapTileSpan) {
-                    break;
-                }
-
-                const tileIndex = localY * mapTileSpan + localX;
-                const triStart = offsets[tileIndex] | 0;
-                const triEnd = offsets[tileIndex + 1] | 0;
-                for (let tri = triStart; tri < triEnd; tri++) {
-                    const packedPlanes = map.terrainPickPlanes[tri] | 0;
-                    if (planeOverride < 0 && packedPlanes >> 2 > selectLimit) {
-                        continue;
-                    }
-                    const t = this.intersectTerrainPickTriangle(
-                        effectiveRay,
-                        vertices,
-                        tri * 9,
-                        baseX,
-                        baseZ,
-                    );
-                    if (t === undefined || t < tEnter - 1e-4 || t > tExit + 1e-4) {
-                        continue;
-                    }
-                    if (t < bestT) {
-                        bestT = t;
-                        bestTileX = (map.getRenderBaseTileX() + localX) | 0;
-                        bestTileY = (map.getRenderBaseTileY() + localY) | 0;
-                        bestPlane = planeOverride >= 0 ? planeOverride : packedPlanes & 0x3;
-                        bestFromOverride = planeOverride >= 0;
-                    }
-                }
-
-                if (tMaxX === Number.POSITIVE_INFINITY && tMaxY === Number.POSITIVE_INFINITY) {
-                    break;
-                }
-                const nextT = Math.min(tMaxX, tMaxY);
-                if (nextT > tExit || nextT > bestT) {
-                    break;
-                }
-                if (tMaxX < tMaxY) {
-                    localX += stepX;
-                    tMaxX += tDeltaX;
-                } else if (tMaxY < tMaxX) {
-                    localY += stepY;
-                    tMaxY += tDeltaY;
-                } else {
-                    localX += stepX;
-                    localY += stepY;
-                    tMaxX += tDeltaX;
-                    tMaxY += tDeltaY;
-                }
-            }
-        }
-
-        if (!Number.isFinite(bestT) || bestTileX < 0 || bestTileY < 0) {
-            return undefined;
-        }
-
-        // Far clicks are pulled toward the player so the target lands at most
-        // 70 tiles away; the pulled tile reports the height plane at the
-        // player's plane instead of the picked triangle's plane.
-        if (!bestFromOverride) {
-            const playerTile = this.getPlayerTileXY();
-            const overDistance =
-                Math.floor(Math.hypot(playerTile.x - bestTileX, playerTile.y - bestTileY)) - 70;
-            if (overDistance > 0) {
-                bestTileX = Math.floor(
-                    (bestTileX * 70 + overDistance * playerTile.x) / (overDistance + 70),
-                );
-                bestTileY = Math.floor(
-                    (bestTileY * 70 + overDistance * playerTile.y) / (overDistance + 70),
-                );
-                bestPlane = this.getHeightSamplePlaneForTile(
-                    bestTileX,
-                    bestTileY,
-                    this.getPlayerRawPlane() | 0,
-                );
-            }
-        }
-
-        return { tileX: bestTileX, tileY: bestTileY, plane: bestPlane };
+        return render.computeTerrainTileAt(this, mouseX, mouseY);
     }
 
-    // Compute tile from a given screen-space position (in canvas coordinates)
     private computeTileAt(
         mouseX: number,
         mouseY: number,
     ): { tileX: number; tileY: number; plane: number } | undefined {
-        return this.computeTerrainTileAt(mouseX, mouseY);
+        return render.computeTileAt(this, mouseX, mouseY);
     }
 
     private worldToScreen(x: number, y: number, z: number): number[] | Float32Array | undefined {
-        const camera = this.osrsClient.camera;
-        const p = vec4.fromValues(x, y, z, 1);
-        const out = vec4.create();
-        vec4.transformMat4(out, p, camera.viewMatrix);
-        vec4.transformMat4(out, out, camera.projectionMatrix);
-        if (out[3] === 0) return undefined;
-        const ndcX = out[0] / out[3];
-        const ndcY = out[1] / out[3];
-        const screenWidth = camera.screenWidth || this.app.width;
-        const screenHeight = camera.screenHeight || this.app.height;
-        const sx = (ndcX + 1) * 0.5 * screenWidth;
-        const sy = (1 - (ndcY + 1) * 0.5) * screenHeight;
-        // Return as array instead of vec2
-        return [sx, sy];
+        return render.worldToScreen(this, x, y, z);
     }
 
-    // Convert a DOM mouse event or current menu/input anchor to canvas coords.
     private toGLClickXY(evt?: MouseEvent): { sx: number; sy: number } {
-        if (evt) {
-            const rect = this.canvas.getBoundingClientRect();
-            const cx = Math.max(0, Math.min(rect.width, evt.clientX - rect.left));
-            const cy = Math.max(0, Math.min(rect.height, evt.clientY - rect.top));
-            return {
-                sx: cx | 0,
-                sy: cy | 0,
-            };
-        }
-        // Prefer pinned menu anchor; else current mouse position
-        // These values are already in canvas coordinates from InputManager.
-        const px =
-            this.osrsClient.menuOpen && this.osrsClient.menuX >= 0
-                ? this.osrsClient.menuX
-                : this.osrsClient.inputManager.leftClickX !== -1
-                    ? this.osrsClient.inputManager.leftClickX
-                    : this.osrsClient.inputManager.mouseX;
-        const py =
-            this.osrsClient.menuOpen && this.osrsClient.menuY >= 0
-                ? this.osrsClient.menuY
-                : this.osrsClient.inputManager.leftClickY !== -1
-                    ? this.osrsClient.inputManager.leftClickY
-                    : this.osrsClient.inputManager.mouseY;
-        return { sx: px | 0, sy: py | 0 };
+        return render.toGLClickXY(this, evt);
     }
 
     private getInteractHighlightDrawTargets(): ReadonlyArray<InteractHighlightDrawTarget> {
-        const out = this.interactHighlightDrawTargets;
-        out.length = 0;
-
-        const config = this.osrsClient.interactHighlightPlugin.getConfig();
-        if (!config.enabled) return out;
-
-        this.syncInteractHighlightActiveTargetFromLocalInteraction();
-        this.maybeExpireInteractHighlightTarget();
-
-        const getWeTransform = (target: InteractHighlightTarget): Float32Array | undefined => {
-            if (target.kind === "npc") {
-                const wvId = this.osrsClient.npcEcs.getWorldViewId?.(target.ecsId) ?? -1;
-                if (wvId >= 0) return this.worldEntityAnimator?.getTransform(wvId);
-            }
-            if (target.kind === "loc" && !target.overworldProxy) {
-                const map = this.getPreferredMapForWorldTile(target.tileX, target.tileY);
-                if (map && this.mapManager.worldEntityMapIds.has(map.id)) {
-                    const weIdx = this.getWorldEntityIndexForMapId(map.id);
-                    if (weIdx !== undefined) return this.worldEntityAnimator?.getTransform(weIdx);
-                }
-            }
-            return undefined;
-        };
-
-        if (config.showInteract && this.interactHighlightActiveTarget) {
-            const trianglePoints = this.buildHighlightTrianglePoints(
-                this.interactHighlightActiveTarget,
-            );
-            if (trianglePoints && trianglePoints.length >= 3) {
-                out.push({
-                    trianglePoints,
-                    color: config.interactColor,
-                    alpha: 0.45,
-                    worldEntityTransform: getWeTransform(this.interactHighlightActiveTarget),
-                });
-            }
-        }
-
-        if (config.showHover && this.interactHighlightHoverTarget) {
-            const showingActive =
-                config.showInteract &&
-                this.isSameInteractHighlightTarget(
-                    this.interactHighlightHoverTarget,
-                    this.interactHighlightActiveTarget,
-                );
-            if (!showingActive) {
-                const trianglePoints = this.buildHighlightTrianglePoints(
-                    this.interactHighlightHoverTarget,
-                );
-                if (trianglePoints && trianglePoints.length >= 3) {
-                    out.push({
-                        trianglePoints,
-                        color: config.hoverColor,
-                        alpha: 0.45,
-                        worldEntityTransform: getWeTransform(this.interactHighlightHoverTarget),
-                    });
-                }
-            }
-        }
-
-        return out;
+        return render.getInteractHighlightDrawTargets(this);
     }
 
     private syncInteractHighlightActiveTargetFromLocalInteraction(): void {
-        const interactionTarget = this.resolveInteractHighlightTargetFromLocalInteraction();
-        if (interactionTarget) {
-            if (
-                !this.isSameInteractHighlightTarget(
-                    interactionTarget,
-                    this.interactHighlightActiveTarget,
-                )
-            ) {
-                this.interactHighlightActiveTarget = interactionTarget;
-            }
-            this.interactHighlightClickTick = -1;
-            this.interactHighlightActiveFromInteraction = true;
-            return;
-        }
-
-        if (this.interactHighlightActiveFromInteraction) {
-            this.clearInteractHighlightActiveTarget();
-        }
+        return render.syncInteractHighlightActiveTargetFromLocalInteraction(this);
     }
 
     private resolveInteractHighlightTargetFromLocalInteraction():
         | InteractHighlightTarget
         | undefined {
-        const controlledServerId = this.osrsClient.controlledPlayerServerId | 0;
-        if (controlledServerId < 0) return undefined;
-
-        const playerEcs = this.osrsClient.playerEcs;
-        const controlledEcsId = playerEcs.getIndexForServerId(controlledServerId);
-        if (controlledEcsId === undefined) return undefined;
-
-        const interactionIndex = playerEcs.getInteractionIndex(controlledEcsId) | 0;
-        if (interactionIndex < 0) return undefined;
-
-        const decoded = decodeInteractionIndex(interactionIndex);
-        if (!decoded) return undefined;
-        if (decoded.type !== "npc") return undefined;
-
-        return this.resolveNpcHighlightTargetFromServerId(decoded.id | 0);
+        return render.resolveInteractHighlightTargetFromLocalInteraction(this);
     }
 
     private maybeExpireInteractHighlightTarget(): void {
-        if (!this.interactHighlightActiveTarget) return;
-        if (this.interactHighlightActiveTarget.kind === "loc") {
-            if (!this.isLocHighlightTargetStillPresent(this.interactHighlightActiveTarget)) {
-                this.clearInteractHighlightActiveTarget();
-                return;
-            }
-        }
-        if (this.interactHighlightActiveFromInteraction) return;
-        const clickTick = this.interactHighlightClickTick | 0;
-        if (clickTick < 0) return;
-        if (!this.hasActiveDestinationMarker() && (getCurrentTick() | 0) > clickTick) {
-            this.clearInteractHighlightActiveTarget();
-        }
+        return render.maybeExpireInteractHighlightTarget(this);
     }
 
     private isLocHighlightTargetStillPresent(target: LocHighlightTarget): boolean {
-        // Clear highlight if the player changed planes (e.g. climbing stairs)
-        if ((this.getPlayerBasePlane() | 0) !== (target.plane | 0)) {
-            return false;
-        }
-        const typeRot = this.resolveLocTypeRotAtTile(
-            target.locId | 0,
-            target.tileX | 0,
-            target.tileY | 0,
-            target.plane | 0,
-        );
-        if (typeof typeRot !== "number") {
-            return false;
-        }
-        target.locModelType = (typeRot & 0x3f) | 0;
-        target.locRotation = ((typeRot >> 6) & 0x3) | 0;
-        return true;
+        return render.isLocHighlightTargetStillPresent(this, target);
     }
 
     private hasActiveDestinationMarker(): boolean {
-        return (ClientState.destinationX | 0) !== 0 || (ClientState.destinationY | 0) !== 0;
+        return render.hasActiveDestinationMarker(this);
     }
 
     private isSameInteractHighlightTarget(
         a: InteractHighlightTarget | undefined,
         b: InteractHighlightTarget | undefined,
     ): boolean {
-        if (!a || !b) return false;
-        if (a.kind !== b.kind) return false;
-        if (a.kind === "loc" && b.kind === "loc") {
-            return (
-                (a.locId | 0) === (b.locId | 0) &&
-                (a.tileX | 0) === (b.tileX | 0) &&
-                (a.tileY | 0) === (b.tileY | 0) &&
-                (a.plane | 0) === (b.plane | 0)
-            );
-        }
-        if (a.kind === "npc" && b.kind === "npc") {
-            return (a.serverId | 0) === (b.serverId | 0);
-        }
-        return false;
+        return render.isSameInteractHighlightTarget(this, a, b);
     }
 
     private buildHighlightTrianglePoints(
         target: InteractHighlightTarget,
     ): ReadonlyArray<readonly [number, number, number]> | undefined {
-        if (target.kind === "loc") {
-            return this.buildLocModelHighlightTriangles(target);
-        }
-        return this.buildNpcModelHighlightTriangles(target);
+        return render.buildHighlightTrianglePoints(this, target);
     }
 
     private getInteractLocModelLoader(): LocModelLoader | undefined {
-        if (this.interactLocModelLoader) {
-            return this.interactLocModelLoader;
-        }
-        const textureLoader = this.osrsClient.textureLoader;
-        const modelLoader = this.osrsClient.modelLoader;
-        const locTypeLoader = this.osrsClient.locTypeLoader;
-        const seqTypeLoader = this.osrsClient.seqTypeLoader;
-        const seqFrameLoader = this.osrsClient.seqFrameLoader;
-        if (!textureLoader || !modelLoader || !locTypeLoader || !seqTypeLoader || !seqFrameLoader) {
-            return undefined;
-        }
-        this.interactLocModelLoader = new LocModelLoader(
-            locTypeLoader,
-            modelLoader,
-            textureLoader,
-            seqTypeLoader,
-            seqFrameLoader,
-            this.osrsClient.skeletalSeqLoader,
-        );
-        return this.interactLocModelLoader;
+        return render.getInteractLocModelLoader(this);
     }
 
     private getInteractNpcModelLoader(): NpcModelLoader | undefined {
-        if (this.interactNpcModelLoader) {
-            return this.interactNpcModelLoader;
-        }
-        const textureLoader = this.osrsClient.textureLoader;
-        const modelLoader = this.osrsClient.modelLoader;
-        const npcTypeLoader = this.osrsClient.npcTypeLoader;
-        const seqTypeLoader = this.osrsClient.seqTypeLoader;
-        const seqFrameLoader = this.osrsClient.seqFrameLoader;
-        if (!textureLoader || !modelLoader || !npcTypeLoader || !seqTypeLoader || !seqFrameLoader) {
-            return undefined;
-        }
-        this.interactNpcModelLoader = new NpcModelLoader(
-            npcTypeLoader,
-            modelLoader,
-            textureLoader,
-            seqTypeLoader,
-            seqFrameLoader,
-            this.osrsClient.skeletalSeqLoader,
-            this.osrsClient.varManager,
-        );
-        return this.interactNpcModelLoader;
+        return render.getInteractNpcModelLoader(this);
     }
 
     private hasNoVisibleFaces(model: Model): boolean {
-        if (!model.faceAlphas) return false;
-        for (let i = 0; i < model.faceAlphas.length; i++) {
-            if ((model.faceAlphas[i] & 0xff) < 254) return false;
-        }
-        return true;
+        return render.hasNoVisibleFaces(this, model);
     }
 
-    /**
-     * Finds a visible animated loc at the same tile to use as outline geometry
-     * for an invisible interaction volume (e.g. gangplank proxy pattern).
-     */
     private findVisualProxyModel(
         locModelLoader: LocModelLoader,
         target: LocHighlightTarget,
         modelType: number,
         modelRotation: number,
     ): Model | undefined {
-        for (let mi = 0; mi < this.mapManager.visibleMapCount; mi++) {
-            const map = this.mapManager.visibleMaps[mi];
-            if (!map) continue;
-            const local = this.getMapLocalTile(map, target.tileX, target.tileY);
-            if (!local) continue;
-            const rsX = (local.x * 128 + 64) | 0;
-            const rsY = (local.y * 128 + 64) | 0;
-            for (const anim of map.locsAnimated) {
-                if (anim.id === (target.locId | 0)) continue;
-                if (anim.x !== rsX || anim.y !== rsY) continue;
-                const proxyType = this.osrsClient.locTypeLoader.load(anim.id);
-                if (!proxyType) continue;
-                const proxyModel =
-                    locModelLoader.getModelAnimated(
-                        proxyType,
-                        LocModelType.NORMAL,
-                        anim.rotation ?? 0,
-                        anim.seqType?.id ?? -1,
-                        anim.frame | 0,
-                    ) ??
-                    locModelLoader.getModelAnimated(
-                        proxyType,
-                        modelType as LocModelType,
-                        modelRotation,
-                        anim.seqType?.id ?? -1,
-                        anim.frame | 0,
-                    );
-                if (proxyModel && !this.hasNoVisibleFaces(proxyModel)) {
-                    return proxyModel;
-                }
-            }
-        }
-        return undefined;
+        return render.findVisualProxyModel(this, locModelLoader, target, modelType, modelRotation);
     }
 
     private buildLocModelHighlightTriangles(
         target: LocHighlightTarget,
     ): ReadonlyArray<readonly [number, number, number]> | undefined {
-        const locModelLoader = this.getInteractLocModelLoader();
-        if (!locModelLoader) return undefined;
-
-        let locType = this.osrsClient.locTypeLoader.load(target.locId | 0);
-        if (!locType) return undefined;
-        let sizeX = Math.max(1, Number(locType.sizeX ?? 1));
-        let sizeY = Math.max(1, Number(locType.sizeY ?? 1));
-        if (locType.transforms) {
-            const transformed = locType.transform(
-                this.osrsClient.varManager,
-                this.osrsClient.locTypeLoader,
-            );
-            if (transformed) {
-                locType = transformed;
-            }
-        }
-
-        const rawType =
-            typeof target.locModelType === "number" ? (target.locModelType | 0) & 0x3f : undefined;
-        const rawRotation =
-            typeof target.locRotation === "number" ? (target.locRotation | 0) & 0x3 : undefined;
-        if (rawType === undefined || rawRotation === undefined) {
-            return undefined;
-        }
-
-        let modelType = rawType;
-        let modelRotation = rawRotation;
-        if (modelType === LocModelType.NORMAL_DIAGIONAL) {
-            modelType = LocModelType.NORMAL;
-            modelRotation = (rawRotation + 4) & 0x7;
-        }
-
-        // Find the current animation frame from the map's animated loc list.
-        // LocAnimated x/y are in RS sub-tile units (localTile * 128 + 64).
-        let seqId = locType.seqId ?? -1;
-        let seqFrame = 0;
-        const locMap = this.getPreferredMapForWorldTile(target.tileX, target.tileY);
-        if (locMap) {
-            const localTile = this.getMapLocalTile(locMap, target.tileX, target.tileY);
-            if (localTile) {
-                const rsX = (localTile.x * 128 + 64) | 0;
-                const rsY = (localTile.y * 128 + 64) | 0;
-                for (const anim of locMap.locsAnimated) {
-                    if (
-                        anim.id === (target.locId | 0) &&
-                        anim.x === rsX &&
-                        anim.y === rsY &&
-                        anim.level === (target.plane | 0)
-                    ) {
-                        seqId = anim.seqType?.id ?? seqId;
-                        seqFrame = anim.frame | 0;
-                        break;
-                    }
-                }
-            }
-        }
-        let model = locModelLoader.getModelAnimated(
-            locType,
-            modelType as LocModelType,
-            modelRotation,
-            seqId,
-            seqFrame,
-        );
-
-        // Invisible interaction volumes (all faces fully transparent) use a
-        // visual proxy loc at the same tile for the highlight outline.
-        if (model && this.hasNoVisibleFaces(model)) {
-            const proxy = this.findVisualProxyModel(
-                locModelLoader,
-                target,
-                modelType,
-                modelRotation,
-            );
-            if (proxy) {
-                model = proxy;
-                target.overworldProxy = true;
-            }
-        }
-
-        if (!model || !model.verticesX || !model.verticesY || !model.verticesZ) {
-            return undefined;
-        }
-
-        if (rawRotation === 1 || rawRotation === 3) {
-            const tmp = sizeX;
-            sizeX = sizeY;
-            sizeY = tmp;
-        }
-        const entityX = (target.tileX << 7) + (sizeX << 6);
-        const entityZ = (target.tileY << 7) + (sizeY << 6);
-        // For world entity overlay locs, sample overworld height (plane 0) — the GPU
-        // renders at the overlay's source plane height which sits at sea level, not a
-        // full UNITS_LEVEL_HEIGHT below.
-        const heightMap = this.getPreferredMapForWorldTile(target.tileX, target.tileY);
-        const isOverlay = !target.overworldProxy && heightMap && heightMap.interactionPlane >= 0;
-        const heightPlane = isOverlay ? 0 : target.plane | 0;
-        let baseY = sampleBridgeHeightForWorldTile(
-            this.mapManager,
-            entityX / 128.0,
-            entityZ / 128.0,
-            heightPlane,
-            BridgePlaneStrategy.RENDER,
-        ).height;
-        if (isOverlay) {
-            baseY += this.getWorldEntityDeckHeight(0, 0) / 128.0;
-        }
-        return this.buildModelTrianglePoints(model, (i) => ({
-            x: (entityX + model.verticesX[i]) / 128.0,
-            y: baseY + model.verticesY[i] / 128.0,
-            z: (entityZ + model.verticesZ[i]) / 128.0,
-        }));
+        return render.buildLocModelHighlightTriangles(this, target);
     }
 
     private buildNpcModelHighlightTriangles(
         target: NpcHighlightTarget,
     ): ReadonlyArray<readonly [number, number, number]> | undefined {
-        const npcEcs = this.osrsClient.npcEcs;
-        const ecsId = target.ecsId | 0;
-        if (!npcEcs.isActive(ecsId) || !npcEcs.isLinked(ecsId)) return undefined;
-        if ((npcEcs.getServerId(ecsId) | 0) !== (target.serverId | 0)) return undefined;
-
-        const npcModelLoader = this.getInteractNpcModelLoader();
-        if (!npcModelLoader) return undefined;
-
-        const npcTypeId = npcEcs.getNpcTypeId(ecsId) | 0;
-        const npcType = this.osrsClient.npcTypeLoader.load(npcTypeId);
-        if (!npcType) return undefined;
-
-        const actionSeqId = npcEcs.getSeqId(ecsId) | 0;
-        const actionDelay = npcEcs.getSeqDelay?.(ecsId) | 0;
-        const { movementSeqId, idleSeqId } = this.resolveNpcMovementSequenceIds(npcEcs, ecsId);
-        const actionActive = actionSeqId >= 0 && actionDelay === 0;
-        const seqId = actionActive ? actionSeqId : movementSeqId;
-        const frame = Math.max(
-            0,
-            actionActive
-                ? npcEcs.getFrameIndex(ecsId) | 0
-                : npcEcs.getMovementFrameIndex?.(ecsId) | 0,
-        );
-        const movementFrame = Math.max(0, npcEcs.getMovementFrameIndex?.(ecsId) | 0);
-        const overlaySeqId =
-            actionActive &&
-            this.shouldLayerNpcMovementSequence(actionSeqId | 0, movementSeqId | 0, idleSeqId | 0)
-                ? movementSeqId | 0
-                : -1;
-
-        let model =
-            seqId >= 0
-                ? npcModelLoader.getModel(
-                    npcType,
-                    seqId | 0,
-                    frame | 0,
-                    overlaySeqId | 0,
-                    (overlaySeqId >= 0 ? movementFrame : -1) | 0,
-                )
-                : undefined;
-        if (!model) {
-            model = npcModelLoader.getModel(npcType, -1, -1);
-        }
-        if (!model || !model.verticesX || !model.verticesY || !model.verticesZ) {
-            return undefined;
-        }
-        const modelForTriangles = model;
-
-        const mapId = npcEcs.getMapId(ecsId) | 0;
-        const mapX = (mapId >> 8) & 0xff;
-        const mapY = mapId & 0xff;
-        const centerSceneX = (mapX << 13) + (npcEcs.getX(ecsId) | 0);
-        const centerSceneZ = (mapY << 13) + (npcEcs.getY(ecsId) | 0);
-        const plane = npcEcs.getLevel(ecsId) | 0;
-        target.plane = plane;
-        // Match NPC rendering height: bridge-aware sampling, ground clearance,
-        // and deck height for world entities.
-        let baseY = sampleBridgeHeightForWorldTile(
-            this.mapManager,
-            centerSceneX / 128.0,
-            centerSceneZ / 128.0,
-            plane | 0,
-            BridgePlaneStrategy.RENDER,
-        ).height;
-        baseY += WebGLOsrsRenderer.ACTOR_GROUND_CLEARANCE_MODEL_UNITS / 128.0;
-        const wvId = npcEcs.getWorldViewId?.(ecsId) ?? -1;
-        if (wvId >= 0) {
-            const deckH = this.getWorldEntityDeckHeight(0, 0);
-            baseY += deckH / 128.0;
-        }
-        const angle = (npcEcs.getRotation(ecsId) | 0) * RS_TO_RADIANS;
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-
-        return this.buildModelTrianglePoints(modelForTriangles, (i) => {
-            const vx = modelForTriangles.verticesX[i] | 0;
-            const vz = modelForTriangles.verticesZ[i] | 0;
-            // Match npc.vert.glsl exactly:
-            // vec4(vertex.pos, 1.0) * rotationY(angle)
-            const rx = vx * cos + vz * sin;
-            const rz = -vx * sin + vz * cos;
-            return {
-                x: (centerSceneX + rx) / 128.0,
-                y: baseY + modelForTriangles.verticesY[i] / 128.0,
-                z: (centerSceneZ + rz) / 128.0,
-            };
-        });
+        return render.buildNpcModelHighlightTriangles(this, target);
     }
 
     private buildModelTrianglePoints(
         model: Model,
         mapVertex: (index: number) => { x: number; y: number; z: number },
     ): ReadonlyArray<readonly [number, number, number]> | undefined {
-        if (!model.indices1 || !model.indices2 || !model.indices3) {
-            return undefined;
-        }
-        const vertexCount = model.verticesCount | 0;
-        if (vertexCount <= 0) return undefined;
-        const faceCount = Math.min(
-            model.faceCount | 0,
-            model.indices1.length | 0,
-            model.indices2.length | 0,
-            model.indices3.length | 0,
-        );
-        if (faceCount <= 0) return undefined;
-
-        const cachedX = new Float32Array(vertexCount);
-        const cachedY = new Float32Array(vertexCount);
-        const cachedZ = new Float32Array(vertexCount);
-        const cachedState = new Uint8Array(vertexCount); // 0 unknown, 1 valid, 2 invalid
-        const getWorldVertex = (index: number): { x: number; y: number; z: number } | undefined => {
-            const state = cachedState[index] | 0;
-            if (state === 1) {
-                return {
-                    x: cachedX[index],
-                    y: cachedY[index],
-                    z: cachedZ[index],
-                };
-            }
-            if (state === 2) {
-                return undefined;
-            }
-            const v = mapVertex(index);
-            if (!Number.isFinite(v.x) || !Number.isFinite(v.y) || !Number.isFinite(v.z)) {
-                cachedState[index] = 2;
-                return undefined;
-            }
-            cachedX[index] = v.x;
-            cachedY[index] = v.y;
-            cachedZ[index] = v.z;
-            cachedState[index] = 1;
-            return v;
-        };
-
-        const out: Array<readonly [number, number, number]> = [];
-        for (let i = 0; i < faceCount; i++) {
-            if (
-                (model.faceColors3 && model.faceColors3[i] === -2) ||
-                (model.faceAlphas && (model.faceAlphas[i] & 0xff) >= 254)
-            ) {
-                continue;
-            }
-            const a = model.indices1[i] | 0;
-            const b = model.indices2[i] | 0;
-            const c = model.indices3[i] | 0;
-            if (
-                a < 0 ||
-                b < 0 ||
-                c < 0 ||
-                a >= vertexCount ||
-                b >= vertexCount ||
-                c >= vertexCount
-            ) {
-                continue;
-            }
-
-            const va = getWorldVertex(a);
-            const vb = getWorldVertex(b);
-            const vc = getWorldVertex(c);
-            if (!va || !vb || !vc) continue;
-
-            const abx = vb.x - va.x;
-            const aby = vb.y - va.y;
-            const abz = vb.z - va.z;
-            const acx = vc.x - va.x;
-            const acy = vc.y - va.y;
-            const acz = vc.z - va.z;
-            const nx = aby * acz - abz * acy;
-            const ny = abz * acx - abx * acz;
-            const nz = abx * acy - aby * acx;
-            if (nx * nx + ny * ny + nz * nz <= 1e-10) continue;
-
-            out.push([va.x, va.y, va.z], [vb.x, vb.y, vb.z], [vc.x, vc.y, vc.z]);
-        }
-
-        return out.length >= 3 ? out : undefined;
+        return render.buildModelTrianglePoints(this, model, mapVertex);
     }
 
     private clearInteractHighlightActiveTarget(): void {
-        this.interactHighlightActiveTarget = undefined;
-        this.interactHighlightActiveFromInteraction = false;
-        this.interactHighlightClickTick = -1;
+        return render.clearInteractHighlightActiveTarget(this);
     }
 
     private clearInteractHighlightHoverTarget(): void {
-        this.interactHighlightHoverTarget = undefined;
+        return render.clearInteractHighlightHoverTarget(this);
     }
 
     private resolveLocHighlightTargetFromEntry(
         entry: Pick<SimpleMenuEntry, "targetType" | "targetId" | "mapX" | "mapY"> | undefined,
         fallbackTile?: { tileX: number; tileY: number; plane?: number },
     ): LocHighlightTarget | undefined {
-        if (!entry) return undefined;
-        if (entry.targetType !== MenuTargetType.LOC) return undefined;
-        if (typeof entry.targetId !== "number") return undefined;
-
-        const baseX = ClientState.baseX | 0;
-        const baseY = ClientState.baseY | 0;
-        const fallback =
-            fallbackTile ??
-            (this.osrsClient.menuTile
-                ? {
-                    tileX: this.osrsClient.menuTile.tileX | 0,
-                    tileY: this.osrsClient.menuTile.tileY | 0,
-                    plane:
-                        typeof this.osrsClient.menuTile.plane === "number"
-                            ? this.osrsClient.menuTile.plane | 0
-                            : undefined,
-                }
-                : undefined);
-        let approx: { tileX: number; tileY: number; plane?: number } | undefined;
-        if (typeof entry.mapX === "number" && typeof entry.mapY === "number") {
-            approx = {
-                tileX: (baseX + (entry.mapX | 0)) | 0,
-                tileY: (baseY + (entry.mapY | 0)) | 0,
-                plane:
-                    typeof fallback?.plane === "number"
-                        ? fallback.plane | 0
-                        : this.getPlayerBasePlane() | 0,
-            };
-        } else if (fallback) {
-            approx = {
-                tileX: fallback.tileX | 0,
-                tileY: fallback.tileY | 0,
-                plane:
-                    typeof fallback.plane === "number"
-                        ? fallback.plane | 0
-                        : this.getPlayerBasePlane() | 0,
-            };
-        }
-
-        if (!approx) return undefined;
-
-        const locId = entry.targetId | 0;
-        const resolved = this.resolveLocInteractionTile(locId, approx);
-        const plane =
-            typeof resolved.plane === "number" ? resolved.plane | 0 : this.getPlayerBasePlane();
-        const resolvedTypeRot =
-            typeof resolved.typeRot === "number"
-                ? (resolved.typeRot | 0) & 0xff
-                : this.resolveLocTypeRotAtTile(
-                    locId,
-                    resolved.tileX | 0,
-                    resolved.tileY | 0,
-                    plane | 0,
-                );
-        return {
-            kind: "loc",
-            locId,
-            tileX: resolved.tileX | 0,
-            tileY: resolved.tileY | 0,
-            plane: plane | 0,
-            locModelType:
-                typeof resolvedTypeRot === "number" ? (resolvedTypeRot & 0x3f) | 0 : undefined,
-            locRotation:
-                typeof resolvedTypeRot === "number"
-                    ? ((resolvedTypeRot >> 6) & 0x3) | 0
-                    : undefined,
-        };
+        return render.resolveLocHighlightTargetFromEntry(this, entry, fallbackTile);
     }
 
     private getNpcWorldTile(ecsId: number): { x: number; y: number } {
-        const npcEcs = this.osrsClient.npcEcs;
-        const mapId = npcEcs.getMapId(ecsId) | 0;
-        const mapX = (mapId >> 8) & 0xff;
-        const mapY = mapId & 0xff;
-        const worldSubX = (mapX << 13) + (npcEcs.getX(ecsId) | 0);
-        const worldSubY = (mapY << 13) + (npcEcs.getY(ecsId) | 0);
-        return {
-            x: (worldSubX >> 7) | 0,
-            y: (worldSubY >> 7) | 0,
-        };
+        return render.getNpcWorldTile(this, ecsId);
     }
 
     private resolveNpcHighlightTargetFromEntry(
         entry: Pick<SimpleMenuEntry, "targetType" | "targetId" | "mapX" | "mapY"> | undefined,
         fallbackTile?: { tileX: number; tileY: number; plane?: number },
     ): NpcHighlightTarget | undefined {
-        if (!entry) return undefined;
-        if (entry.targetType !== MenuTargetType.NPC) return undefined;
-        const desiredNpcTypeId =
-            typeof entry.targetId === "number" ? entry.targetId | 0 : undefined;
-        const npcEcs = this.osrsClient.npcEcs;
-
-        const baseX = ClientState.baseX | 0;
-        const baseY = ClientState.baseY | 0;
-        const fallback = fallbackTile ?? this.osrsClient.menuTile;
-        const targetTile =
-            typeof entry.mapX === "number" && typeof entry.mapY === "number"
-                ? { x: (baseX + (entry.mapX | 0)) | 0, y: (baseY + (entry.mapY | 0)) | 0 }
-                : fallback
-                    ? { x: fallback.tileX | 0, y: fallback.tileY | 0 }
-                    : undefined;
-
-        let bestEcsId: number | undefined;
-        let bestScore = Number.POSITIVE_INFINITY;
-        const evaluateCandidate = (ecsId: number, enforceTypeMatch: boolean): void => {
-            const id = ecsId | 0;
-            if (!npcEcs.isActive(id) || !npcEcs.isLinked(id)) return;
-            const typeId = npcEcs.getNpcTypeId(id) | 0;
-            if (
-                enforceTypeMatch &&
-                desiredNpcTypeId !== undefined &&
-                typeId !== (desiredNpcTypeId | 0)
-            ) {
-                return;
-            }
-            let distPenalty = 0;
-            if (targetTile) {
-                const worldTile = this.getNpcWorldTile(id);
-                distPenalty =
-                    Math.max(
-                        Math.abs((worldTile.x | 0) - (targetTile.x | 0)),
-                        Math.abs((worldTile.y | 0) - (targetTile.y | 0)),
-                    ) * 10;
-            }
-            const score = distPenalty;
-            if (score < bestScore) {
-                bestScore = score;
-                bestEcsId = id;
-            }
-        };
-
-        if (targetTile) {
-            const tileCandidates = npcEcs.queryByTile(targetTile.x | 0, targetTile.y | 0);
-            for (const id of tileCandidates) {
-                evaluateCandidate(id | 0, true);
-            }
-            if (bestEcsId === undefined && desiredNpcTypeId !== undefined) {
-                for (const id of tileCandidates) {
-                    evaluateCandidate(id | 0, false);
-                }
-            }
-        }
-        if (bestEcsId === undefined) {
-            for (const id of npcEcs.getAllActiveIds()) {
-                evaluateCandidate(id | 0, true);
-            }
-            if (bestEcsId === undefined && desiredNpcTypeId !== undefined) {
-                for (const id of npcEcs.getAllActiveIds()) {
-                    evaluateCandidate(id | 0, false);
-                }
-            }
-        }
-        if (bestEcsId === undefined) return undefined;
-
-        const serverId = npcEcs.getServerId(bestEcsId) | 0;
-        if (serverId <= 0) return undefined;
-        return {
-            kind: "npc",
-            ecsId: bestEcsId | 0,
-            serverId,
-            npcTypeId: npcEcs.getNpcTypeId(bestEcsId) | 0,
-            plane: npcEcs.getLevel(bestEcsId) | 0,
-        };
+        return render.resolveNpcHighlightTargetFromEntry(this, entry, fallbackTile);
     }
 
     private resolveNpcHighlightTargetFromServerId(
         serverId: number,
     ): NpcHighlightTarget | undefined {
-        const sid = serverId | 0;
-        if (sid <= 0) return undefined;
-
-        const npcEcs = this.osrsClient.npcEcs;
-        const ecsId = npcEcs.getEcsIdForServer(sid);
-        if (ecsId === undefined) return undefined;
-        if (!npcEcs.isActive(ecsId) || !npcEcs.isLinked(ecsId)) return undefined;
-        if ((npcEcs.getServerId(ecsId) | 0) !== sid) return undefined;
-
-        return {
-            kind: "npc",
-            ecsId: ecsId | 0,
-            serverId: sid,
-            npcTypeId: npcEcs.getNpcTypeId(ecsId) | 0,
-            plane: npcEcs.getLevel(ecsId) | 0,
-        };
+        return render.resolveNpcHighlightTargetFromServerId(this, serverId);
     }
 
     private resolveInteractHighlightTargetFromEntry(
         entry: Pick<SimpleMenuEntry, "targetType" | "targetId" | "mapX" | "mapY"> | undefined,
         fallbackTile?: { tileX: number; tileY: number; plane?: number },
     ): InteractHighlightTarget | undefined {
-        if (!entry) return undefined;
-        if (entry.targetType === MenuTargetType.LOC) {
-            return this.resolveLocHighlightTargetFromEntry(entry, fallbackTile);
-        }
-        if (entry.targetType === MenuTargetType.NPC) {
-            return this.resolveNpcHighlightTargetFromEntry(entry, fallbackTile);
-        }
-        return undefined;
+        return render.resolveInteractHighlightTargetFromEntry(this, entry, fallbackTile);
     }
 
     private updateInteractHighlightHoverTarget(simpleEntries: SimpleMenuEntry[]): void {
-        const config = this.osrsClient.interactHighlightPlugin.getConfig();
-        if (!config.enabled || !config.showHover) {
-            this.clearInteractHighlightHoverTarget();
-            return;
-        }
-
-        const entry = chooseDefaultMenuEntry(simpleEntries, {
-            hasSelectedSpell: ClientState.isSpellSelected,
-            hasSelectedItem: ClientState.isItemSelected === 1,
-        });
-        const target = this.resolveInteractHighlightTargetFromEntry(
-            entry,
-            this.osrsClient.menuTile,
-        );
-        if (!target) {
-            this.clearInteractHighlightHoverTarget();
-            return;
-        }
-        this.interactHighlightHoverTarget = target;
+        return render.updateInteractHighlightHoverTarget(this, simpleEntries);
     }
 
     private onInteractHighlightEntryInvoked(
         entry: SimpleMenuEntry | undefined,
         clickedTile?: { tileX: number; tileY: number; plane?: number },
     ): void {
-        const config = this.osrsClient.interactHighlightPlugin.getConfig();
-        if (!config.enabled) {
-            this.clearInteractHighlightActiveTarget();
-            return;
-        }
-        if (!entry) return;
-
-        const optionLower = String(entry.option || "").toLowerCase();
-        if (entry.targetType === MenuTargetType.LOC || entry.targetType === MenuTargetType.NPC) {
-            if (optionLower === "examine") {
-                return;
-            }
-            const target = this.resolveInteractHighlightTargetFromEntry(entry, clickedTile);
-            if (target) {
-                this.interactHighlightActiveTarget = target;
-                this.interactHighlightActiveFromInteraction = false;
-                this.interactHighlightClickTick = getCurrentTick() | 0;
-            } else {
-                this.clearInteractHighlightActiveTarget();
-            }
-            return;
-        }
-
-        if (
-            optionLower === "walk here" ||
-            entry.targetType === MenuTargetType.OBJ ||
-            entry.targetType === MenuTargetType.PLAYER
-        ) {
-            this.clearInteractHighlightActiveTarget();
-            return;
-        }
-
-        if (entry.action === MenuAction.Use || entry.action === MenuAction.Cast) {
-            this.clearInteractHighlightActiveTarget();
-        }
+        return render.onInteractHighlightEntryInvoked(this, entry, clickedTile);
     }
 
     private spawnClickCross(
@@ -10270,18 +1935,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         xy: { sx: number; sy: number },
         color: "red" | "yellow",
     ): void {
-        if (!tile) return;
-        const playerPlane = this.getPlayerBasePlane() | 0;
-        const plane = tile.plane ?? playerPlane;
-        this.clickCrossOverlay?.spawn(
-            tile.tileX | 0,
-            tile.tileY | 0,
-            xy.sx,
-            xy.sy,
-            plane,
-            undefined,
-            color,
-        );
+        return render.spawnClickCross(this, tile, xy, color);
     }
 
     private performWorldEntryAction(
@@ -10291,84 +1945,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         tileForMenu?: { tileX: number; tileY: number; plane?: number },
         menuCtx?: MenuClickContext,
     ): void {
-        const approxTile = this.osrsClient.menuTile ?? tileForMenu;
-        const isLocEntry = e.targetType === MenuTargetType.LOC && typeof e.targetId === "number";
-        const resolvedLocTile =
-            approxTile && isLocEntry
-                ? this.resolveLocInteractionTile((e.targetId as number) | 0, approxTile)
-                : undefined;
-        const effectiveTile = resolvedLocTile ?? approxTile;
-        const shouldSkipClientWalk =
-            isLocEntry && effectiveTile
-                ? this.isLocalPlayerAdjacentToLoc((e.targetId as number) | 0, effectiveTile)
-                : false;
-        const optionLower = String(e.option || "").toLowerCase();
-        const isWalk = optionLower === "walk here";
-        this.onInteractHighlightEntryInvoked(
-            {
-                option: e.option,
-                targetType: e.targetType,
-                targetId: typeof e.targetId === "number" ? e.targetId | 0 : undefined,
-                mapX: typeof e.mapX === "number" ? e.mapX | 0 : undefined,
-                mapY: typeof e.mapY === "number" ? e.mapY | 0 : undefined,
-            },
-            effectiveTile,
-        );
-        try {
-            const xy = this.toGLClickXY(evt);
-            // Red cross for targeted actions; Yellow for walk
-            this.spawnClickCross(effectiveTile as any, xy, isWalk ? "yellow" : "red");
-        } catch {}
-
-        const spellMeta = e.spellCast;
-        console.log("[menu] Entry clicked:", {
-            option: e.option,
-            targetType: e.targetType,
-            spellMeta,
-            entry: e,
-        });
-        if (spellMeta) {
-            try {
-                const ctx: {
-                    tile?: { tileX: number; tileY: number; plane?: number };
-                    mapX?: number;
-                    mapY?: number;
-                    npcServerId?: number;
-                    playerServerId?: number;
-                } = { tile: effectiveTile };
-                const metaMapX =
-                    typeof spellMeta.mapX === "number"
-                        ? spellMeta.mapX
-                        : typeof e.mapX === "number"
-                            ? e.mapX
-                            : undefined;
-                const metaMapY =
-                    typeof spellMeta.mapY === "number"
-                        ? spellMeta.mapY
-                        : typeof e.mapY === "number"
-                            ? e.mapY
-                            : undefined;
-                if (typeof metaMapX === "number") ctx.mapX = metaMapX;
-                if (typeof metaMapY === "number") ctx.mapY = metaMapY;
-                if (typeof spellMeta.npcServerId === "number")
-                    ctx.npcServerId = spellMeta.npcServerId | 0;
-                if (typeof spellMeta.playerServerId === "number")
-                    ctx.playerServerId = spellMeta.playerServerId | 0;
-                console.log("[menu] Calling castSpellFromMenu with ctx:", ctx);
-                this.osrsClient.castSpellFromMenu(e, ctx);
-            } catch (err) {
-                console.warn?.("[menu] failed to cast spell", err);
-            }
-            return;
-        }
-
-        // Facing is server-authoritative via the face direction update mask.
-        // Invoke original handler
-        if (!menuCtx?.worldMenuStateDispatch) {
-            try {
-                orig?.(e as any, evt, menuCtx);
-            } catch {}
-        }
+        return render.performWorldEntryAction(this, e, orig);
     }
 
     private buildSimpleMenuEntries(
@@ -10378,151 +1955,40 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             toCssEvent: (gx?: number, gy?: number) => any;
         },
     ): SimpleMenuEntry[] {
-        const client = this.osrsClient;
-        if (
-            opts.shouldFreeze &&
-            client.menuFrozenSimpleEntries &&
-            client.menuFrozenSimpleEntriesVersion === client.menuPinnedEntriesVersion
-        ) {
-            client.menuActiveSimpleEntries = client.menuFrozenSimpleEntries;
-            return client.menuFrozenSimpleEntries;
-        }
-        const menuState = client.menuState;
-        menuState.reset();
-        const simple = worldEntriesToSimple(entries, {
-            label: {
-                includeExamineIds: !!this.osrsClient.debugId,
-                localPlayerCombatLevel: ClientState.localPlayerCombatLevel | 0,
-            },
-            toCssEvent: opts.toCssEvent,
-            menuState,
-            registerWithState: true,
-            resetMenuState: false,
-        });
-        client.menuActiveSimpleEntries = simple;
-        if (opts.shouldFreeze) {
-            client.menuFrozenSimpleEntries = simple;
-            client.menuFrozenSimpleEntriesVersion = client.menuPinnedEntriesVersion;
-        } else {
-            client.menuFrozenSimpleEntries = undefined;
-            client.menuFrozenSimpleEntriesVersion = 0;
-        }
-        return simple;
+        return render.buildSimpleMenuEntries(this, entries, opts);
     }
-
-    // chooseDefaultEntry moved to ui/menu/MenuEngine.ts
 
     private getApproxTileHeight(worldX: number, worldY: number, basePlane?: number): number {
-        const resolvedBasePlane =
-            basePlane ??
-            (() => {
-                const idx = this.osrsClient.playerEcs.getIndexForServerId(
-                    this.osrsClient.controlledPlayerServerId,
-                );
-                return idx !== undefined ? this.osrsClient.playerEcs.getLevel(idx) : 0;
-            })();
-
-        const tileX = Math.floor(worldX);
-        const tileY = Math.floor(worldY);
-        const plane = this.getEffectivePlaneForTile(tileX, tileY, resolvedBasePlane);
-        return this.sampleHeightAtExactPlane(worldX, worldY, plane);
+        return render.getApproxTileHeight(this, worldX, worldY, basePlane);
     }
 
-    // Compute height sampling at a fixed plane without applying bridge promotion per-sample.
     private getTileHeightAtPlane(worldX: number, worldY: number, plane: number): number {
-        return this.sampleHeightAtExactPlane(worldX, worldY, plane);
+        return render.getTileHeightAtPlane(this, worldX, worldY, plane);
     }
 
-    // Height sample with per-tile bridge promotion, matching the plane selection used
-    // when placing actor models so 2D anchors stay attached to them.
     private getBridgedTileHeight(worldX: number, worldY: number, plane: number): number {
-        const tileX = Math.floor(worldX);
-        const tileY = Math.floor(worldY);
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        const local = map ? this.getMapLocalTile(map, tileX, tileY) : undefined;
-        const samplePlane =
-            map && local ? resolveHeightSamplePlaneForLocal(map, plane, local.x, local.y) : plane;
-        return this.sampleHeightAtExactPlane(worldX, worldY, samplePlane);
+        return render.getBridgedTileHeight(this, worldX, worldY, plane);
     }
 
-    // Highest terrain sample (min in negative-up space) across an actor footprint.
-    // radius is in fine units (128 per tile); 0 falls back to a single center sample.
     private getMinTileHeightInRadius(
         worldX: number,
         worldZ: number,
         plane: number,
         radius: number,
     ): number {
-        if ((radius | 0) === 0) {
-            return this.getBridgedTileHeight(worldX, worldZ, plane);
-        }
-        const fineX = Math.round(worldX * 128) | 0;
-        const fineZ = Math.round(worldZ * 128) | 0;
-        const half = (radius / 2) | 0;
-        const minTileX = ((fineX - half) >> 7) + 1;
-        const minTileZ = ((fineZ - half) >> 7) + 1;
-        const maxTileX = (fineX + half) >> 7;
-        const maxTileZ = (fineZ + half) >> 7;
-        let min = Infinity;
-        for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-            for (let tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
-                min = Math.min(min, this.getBridgedTileHeight(tileX, tileZ, plane));
-            }
-        }
-        min = Math.min(min, this.getBridgedTileHeight(worldX, worldZ, plane));
-        min = Math.min(
-            min,
-            this.getBridgedTileHeight((fineX - half) / 128, (fineZ - half) / 128, plane),
-        );
-        min = Math.min(
-            min,
-            this.getBridgedTileHeight((fineX - half) / 128, (fineZ + half) / 128, plane),
-        );
-        min = Math.min(
-            min,
-            this.getBridgedTileHeight((fineX + half) / 128, (fineZ - half) / 128, plane),
-        );
-        return Math.min(
-            min,
-            this.getBridgedTileHeight((fineX + half) / 128, (fineZ + half) / 128, plane),
-        );
+        return render.getMinTileHeightInRadius(this, worldX, worldZ, plane, radius);
     }
 
     private getNpcFootprintRadius(npcTypeId: number | undefined): number {
-        if (npcTypeId == null || npcTypeId < 0) return 0;
-        try {
-            const npcType = this.osrsClient.npcTypeLoader?.load?.(npcTypeId | 0);
-            return npcType ? npcType.footprintSize | 0 : 0;
-        } catch {
-            return 0;
-        }
+        return render.getNpcFootprintRadius(this, npcTypeId);
     }
 
     private getControlledPlayerWorldViewId(): number {
-        const idx = this.osrsClient.playerEcs.getIndexForServerId(
-            this.osrsClient.controlledPlayerServerId,
-        );
-        return idx !== undefined ? this.osrsClient.playerEcs.getWorldViewId(idx) | 0 : -1;
+        return render.getControlledPlayerWorldViewId(this);
     }
 
     private getPreferredMapForWorldTile(tileX: number, tileY: number): WebGLMapSquare | undefined {
-        const preferredWorldViewId = this.getControlledPlayerWorldViewId();
-        if (preferredWorldViewId >= 0) {
-            const preferredView =
-                this.osrsClient.worldViewManager.getWorldView(preferredWorldViewId);
-            if (preferredView?.containsTile(tileX | 0, tileY | 0)) {
-                const overlayMap = this.osrsClient.worldViewManager.getOverlayMapSquare(
-                    preferredWorldViewId,
-                    this.mapManager,
-                );
-                if (overlayMap) {
-                    return overlayMap;
-                }
-            }
-        }
-        return this.mapManager.getMap(getMapIndexFromTile(tileX), getMapIndexFromTile(tileY)) as
-            | WebGLMapSquare
-            | undefined;
+        return render.getPreferredMapForWorldTile(this, tileX, tileY);
     }
 
     private getMapLocalTile(
@@ -10530,289 +1996,86 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         tileX: number,
         tileY: number,
     ): { x: number; y: number } | undefined {
-        const mapTileSpan = map.getLocalTileSpan();
-        const localX = (tileX | 0) - map.getRenderBaseTileX();
-        const localY = (tileY | 0) - map.getRenderBaseTileY();
-        if (localX < 0 || localY < 0 || localX >= mapTileSpan || localY >= mapTileSpan) {
-            return undefined;
-        }
-        return { x: localX | 0, y: localY | 0 };
+        return render.getMapLocalTile(this, map, tileX, tileY);
     }
 
     private getGroundItemLayerHeightTiles(tileX: number, tileY: number, level: number): number {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        if (!map) return 0;
-        const local = this.getMapLocalTile(map, tileX, tileY);
-        if (!local) return 0;
-        return Math.max(0, map.getItemLayerHeightAtLocal(level | 0, local.x, local.y)) / 128;
+        return render.getGroundItemLayerHeightTiles(this, tileX, tileY, level);
     }
 
     private withGroundItemOverlayHeights(
         entries: GroundItemOverlayEntry[],
     ): GroundItemOverlayEntry[] {
-        if (entries.length === 0) return entries;
-        let output: GroundItemOverlayEntry[] | undefined;
-        for (let i = 0; i < entries.length; i++) {
-            const entry = entries[i];
-            const heightOffsetTiles = this.getGroundItemLayerHeightTiles(
-                entry.tileX | 0,
-                entry.tileY | 0,
-                entry.level | 0,
-            );
-            if (heightOffsetTiles <= 0) {
-                if (output) output.push(entry);
-                continue;
-            }
-            if (!output) {
-                output = entries.slice(0, i);
-            }
-            output.push({ ...entry, heightOffsetTiles });
-        }
-        return output ?? entries;
+        return render.withGroundItemOverlayHeights(this, entries);
     }
 
-    // Derive the effective surface plane for a given world tile based on basePlane and bridge flag.
     private getEffectivePlaneForTile(tileX: number, tileY: number, basePlane: number): number {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        if (map && map.interactionPlane >= 0) return map.interactionPlane;
-        const local = map ? this.getMapLocalTile(map, tileX, tileY) : undefined;
-        if (!map || !local) {
-            return resolveInteractionPlaneForWorldTile(this.mapManager, basePlane, tileX, tileY);
-        }
-        return resolveInteractionPlaneForLocal(map, basePlane, local.x, local.y);
+        return render.getEffectivePlaneForTile(this, tileX, tileY, basePlane);
     }
 
     private getHeightSamplePlaneForTile(tileX: number, tileY: number, basePlane: number): number {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        if (map && map.interactionPlane >= 0) return map.interactionPlane;
-        const local = map ? this.getMapLocalTile(map, tileX, tileY) : undefined;
-        if (!map || !local) {
-            return basePlane | 0;
-        }
-        return resolveHeightSamplePlaneForLocal(map, basePlane, local.x, local.y);
+        return render.getHeightSamplePlaneForTile(this, tileX, tileY, basePlane);
     }
 
-    // Derive occupancy plane matching collision map demotion rules.
     private getOccupancyPlaneForTile(tileX: number, tileY: number, basePlane: number): number {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        const local = map ? this.getMapLocalTile(map, tileX, tileY) : undefined;
-        if (!map || !local) {
-            return resolveCollisionSamplePlaneForWorldTile(
-                this.mapManager,
-                basePlane,
-                tileX,
-                tileY,
-            );
-        }
-        return resolveCollisionSamplePlaneForLocal(map, basePlane, local.x, local.y);
+        return render.getOccupancyPlaneForTile(this, tileX, tileY, basePlane);
     }
 
     private isBridgeSurfaceTile(tileX: number, tileY: number, plane: number): boolean {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY);
-        if (!map || typeof map.isBridgeSurface !== "function") return false;
-        const local = this.getMapLocalTile(map, tileX, tileY);
-        if (!local) {
-            return false;
-        }
-        return map.isBridgeSurface(plane, local.x, local.y);
+        return render.isBridgeSurfaceTile(this, tileX, tileY, plane);
     }
 
-    // PERF: Helper method to convert game coordinates to CSS event (avoids closure per frame)
     private toCssEvent(
         gx?: number,
         gy?: number,
         frameCount?: number,
     ): { clientX: number; clientY: number } | undefined {
-        if (typeof gx !== "number" || typeof gy !== "number") return undefined;
-        // Update cached rect once per frame (or first call)
-        if (frameCount !== undefined && frameCount !== this.cachedCanvasRectFrame) {
-            this.cachedCanvasRect = this.canvas.getBoundingClientRect();
-            this.cachedCanvasRectFrame = frameCount;
-        } else if (!this.cachedCanvasRect) {
-            this.cachedCanvasRect = this.canvas.getBoundingClientRect();
-        }
-        const rect = this.cachedCanvasRect;
-        this.cachedCssEventResult.clientX = rect.left + gx;
-        this.cachedCssEventResult.clientY = rect.top + gy;
-        return this.cachedCssEventResult;
+        return render.toCssEvent(this, gx, gy, frameCount);
     }
 
-    // PERF: Helper method to check if mouse is in UI region (avoids IIFE allocation per frame)
     private isMouseInUIRegion(mx: number, my: number): boolean {
-        return checkMouseInUIRegion(mx, my, this.canvas.width, this.canvas.height);
+        return render.isMouseInUIRegion(this, mx, my);
     }
 
-    /**
-     * Create a Ray from screen coordinates for raycast-all menu building.
-     * Uses the same unprojection logic as tile selection.
-     * @param mouseX Screen X coordinate in canvas coordinates
-     * @param mouseY Screen Y coordinate in canvas coordinates
-     * @returns Ray from camera through the screen point, or null if invalid
-     */
     private screenToRay(mouseX: number, mouseY: number): Ray | null {
-        if (!this.app || !this.osrsClient.camera?.viewProjMatrix) return null;
-
-        const camera = this.osrsClient.camera;
-        if (!camera.containsScreenPoint(mouseX, mouseY)) return null;
-        const width = camera.screenWidth || this.app.width;
-        const height = camera.screenHeight || this.app.height;
-        if (width <= 0 || height <= 0) return null;
-
-        // Normalize to NDC
-        const nx = (2 * mouseX) / width - 1;
-        const ny = 1 - (2 * mouseY) / height;
-
-        // Unproject from NDC to world using inverse view-projection
-        mat4.invert(this.tmpInvViewProj, camera.viewProjMatrix);
-        this.tmpNear[0] = nx;
-        this.tmpNear[1] = ny;
-        this.tmpNear[2] = -1;
-        this.tmpNear[3] = 1;
-        this.tmpFar[0] = nx;
-        this.tmpFar[1] = ny;
-        this.tmpFar[2] = 1;
-        this.tmpFar[3] = 1;
-        vec4.transformMat4(this.tmpNear, this.tmpNear, this.tmpInvViewProj);
-        vec4.transformMat4(this.tmpFar, this.tmpFar, this.tmpInvViewProj);
-
-        // Perspective divide
-        const nearW = this.tmpNear[3] || 1.0;
-        const farW = this.tmpFar[3] || 1.0;
-        this.tmpNear[0] /= nearW;
-        this.tmpNear[1] /= nearW;
-        this.tmpNear[2] /= nearW;
-        this.tmpFar[0] /= farW;
-        this.tmpFar[1] /= farW;
-        this.tmpFar[2] /= farW;
-
-        // Create ray
-        const origin = vec3.fromValues(this.tmpNear[0], this.tmpNear[1], this.tmpNear[2]);
-        const farPos = vec3.fromValues(this.tmpFar[0], this.tmpFar[1], this.tmpFar[2]);
-        const direction = vec3.create();
-        vec3.subtract(direction, farPos, origin);
-        vec3.normalize(direction, direction);
-
-        return new Ray(origin, direction);
+        return render.screenToRay(this, mouseX, mouseY);
     }
 
     override getCollisionFlagAt(level: number, tileX: number, tileY: number): number {
-        const map = this.getPreferredMapForWorldTile(tileX, tileY) as any;
-        if (!map || typeof (map as any).getCollisionFlag !== "function") {
-            return CollisionFlag.OBJECT_ROUTE_BLOCKER;
-        }
-        const local = this.getMapLocalTile(map, tileX, tileY);
-        if (!local) return CollisionFlag.OBJECT_ROUTE_BLOCKER;
-        return (map as any).getCollisionFlag(level | 0, local.x, local.y) | 0;
+        return render.getCollisionFlagAt(this, level, tileX, tileY);
     }
 
-    // Return loc ids anchored at the origin of the given world tile,
-    // resolving effective plane using the same bridge logic as heights.
     private getLocIdsAtTile(tileX: number, tileY: number, basePlane: number): number[] {
-        try {
-            const map = this.getPreferredMapForWorldTile(tileX, tileY) as any;
-            if (!map || typeof (map as any).getLocIdsAtLocal !== "function") return [];
-            const local = this.getMapLocalTile(map, tileX, tileY);
-            if (!local) return [];
-            const effPlane = this.getEffectivePlaneForTile(tileX, tileY, basePlane) | 0;
-            return (map as any).getLocIdsAtLocal(effPlane, local.x, local.y) as number[];
-        } catch {
-            return [];
-        }
+        return render.getLocIdsAtTile(this, tileX, tileY, basePlane);
     }
 
     private getLocIdsAtTileAllLevels(
         tileX: number,
         tileY: number,
     ): { id: number; level: number; typeRot?: number }[] {
-        try {
-            const map = this.getPreferredMapForWorldTile(tileX, tileY) as any;
-            if (!map || typeof (map as any).getLocIdsAtLocal !== "function") return [];
-            const local = this.getMapLocalTile(map, tileX, tileY);
-            if (!local) return [];
-            const out: { id: number; level: number; typeRot?: number }[] = [];
-            for (let lvl = 0; lvl < 4; lvl++) {
-                const ids = (map as any).getLocIdsAtLocal(lvl, local.x, local.y) as number[];
-                const typeRots =
-                    typeof (map as any).getLocTypeRotsAtLocal === "function"
-                        ? ((map as any).getLocTypeRotsAtLocal(lvl, local.x, local.y) as number[])
-                        : undefined;
-                if (!ids) continue;
-                for (let i = 0; i < ids.length; i++) {
-                    const id = ids[i] | 0;
-                    const typeRot =
-                        typeRots && i < typeRots.length ? (typeRots[i] | 0) & 0xff : undefined;
-                    out.push({ id, level: lvl | 0, typeRot });
-                }
-            }
-            return out;
-        } catch {
-            return [];
-        }
+        return render.getLocIdsAtTileAllLevels(this, tileX, tileY);
     }
 
     private resolveLocInteractionTile(
         locId: number,
         approx: { tileX: number; tileY: number; plane?: number },
     ): { tileX: number; tileY: number; plane?: number; typeRot?: number } {
-        const basePlane = this.getPlayerBasePlane() | 0;
-        const fallbackPlane =
-            typeof approx.plane === "number" ? (approx.plane as number) | 0 : basePlane;
-        const match = this.findNearestLocTile(locId, approx.tileX | 0, approx.tileY | 0, basePlane);
-        if (match) {
-            return match;
-        }
-        return {
-            tileX: approx.tileX | 0,
-            tileY: approx.tileY | 0,
-            plane: fallbackPlane,
-            typeRot: this.resolveLocTypeRotAtTile(
-                locId | 0,
-                approx.tileX | 0,
-                approx.tileY | 0,
-                fallbackPlane | 0,
-            ),
-        };
+        return render.resolveLocInteractionTile(this, locId, approx);
     }
 
     private isLocalPlayerAdjacentToLoc(
         locId: number,
         tile: { tileX: number; tileY: number },
     ): boolean {
-        const playerTile = this.getLocalPlayerTile();
-        if (!playerTile) return false;
-        const size = this.getLocSize(locId | 0);
-        if (!size) return false;
-        const minX = tile.tileX | 0;
-        const minY = tile.tileY | 0;
-        const maxX = minX + Math.max(1, size.sizeX | 0) - 1;
-        const maxY = minY + Math.max(1, size.sizeY | 0) - 1;
-        const clampedX = clamp(playerTile.x | 0, minX, maxX);
-        const clampedY = clamp(playerTile.y | 0, minY, maxY);
-        const dx = Math.abs((playerTile.x | 0) - clampedX);
-        const dy = Math.abs((playerTile.y | 0) - clampedY);
-        return dx <= 1 && dy <= 1;
+        return render.isLocalPlayerAdjacentToLoc(this, locId, tile);
     }
 
     private getLocalPlayerTile(): { x: number; y: number } | undefined {
-        const serverId = this.osrsClient.controlledPlayerServerId | 0;
-        if (!(serverId >= 0)) return undefined;
-        const state = this.osrsClient.playerMovementSync?.getState?.(serverId);
-        if (!state) return undefined;
-        return { x: state.tileX | 0, y: state.tileY | 0 };
+        return render.getLocalPlayerTile(this);
     }
 
     private getLocSize(locId: number): { sizeX: number; sizeY: number } | undefined {
-        const loader: any = (this.osrsClient as any)?.locTypeLoader;
-        if (!loader?.load) return undefined;
-        try {
-            const loc = loader.load(locId | 0);
-            if (!loc) return undefined;
-            const sizeX = Math.max(1, Number(loc.sizeX ?? 1));
-            const sizeY = Math.max(1, Number(loc.sizeY ?? 1));
-            return { sizeX, sizeY };
-        } catch {
-            return undefined;
-        }
+        return render.getLocSize(this, locId);
     }
 
     private findNearestLocTile(
@@ -10822,37 +2085,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         basePlane: number,
         maxRadius: number = 8,
     ): { tileX: number; tileY: number; plane: number; typeRot?: number } | undefined {
-        const targetId = locId | 0;
-        for (let radius = 0; radius <= maxRadius; radius++) {
-            for (let dx = -radius; dx <= radius; dx++) {
-                for (let dy = -radius; dy <= radius; dy++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
-                    const cx = tileX + dx;
-                    const cy = tileY + dy;
-                    const locs = this.getLocIdsAtTileAllLevels(cx, cy);
-                    if (!locs.length) continue;
-                    let bestPlane: number | undefined;
-                    let bestTypeRot: number | undefined;
-                    let bestScore = Number.POSITIVE_INFINITY;
-                    for (const loc of locs) {
-                        if ((loc.id | 0) !== targetId) continue;
-                        const diff = Math.abs((loc.level | 0) - (basePlane | 0));
-                        if (diff < bestScore) {
-                            bestScore = diff;
-                            bestPlane = loc.level | 0;
-                            bestTypeRot =
-                                typeof loc.typeRot === "number"
-                                    ? (loc.typeRot | 0) & 0xff
-                                    : undefined;
-                        }
-                    }
-                    if (bestPlane !== undefined) {
-                        return { tileX: cx, tileY: cy, plane: bestPlane, typeRot: bestTypeRot };
-                    }
-                }
-            }
-        }
-        return undefined;
+        return render.findNearestLocTile(this, locId, tileX, tileY, basePlane, maxRadius);
     }
 
     private resolveLocTypeRotAtTile(
@@ -10861,60 +2094,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         tileY: number,
         plane: number,
     ): number | undefined {
-        try {
-            const tryMap = (map: any): number | undefined => {
-                if (!map || typeof map.getLocIdsAtLocal !== "function") return undefined;
-                if (typeof map.getLocTypeRotsAtLocal !== "function") return undefined;
-                const local = this.getMapLocalTile(map, tileX, tileY);
-                if (!local) return undefined;
-                const level = Math.max(0, Math.min(Scene.MAX_LEVELS - 1, plane | 0));
-                const ids = map.getLocIdsAtLocal(level, local.x, local.y) as number[];
-                const typeRots = map.getLocTypeRotsAtLocal(level, local.x, local.y) as number[];
-                for (let i = 0; i < ids.length; i++) {
-                    if ((ids[i] | 0) !== (locId | 0)) continue;
-                    if (i < typeRots.length) {
-                        return (typeRots[i] | 0) & 0xff;
-                    }
-                    break;
-                }
-                return undefined;
-            };
-            // Check preferred map first, then fall back to all visible maps.
-            const preferred = this.getPreferredMapForWorldTile(tileX, tileY);
-            const result = tryMap(preferred);
-            if (result !== undefined) return result;
-            for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-                const map = this.mapManager.visibleMaps[i];
-                if (map === preferred) continue;
-                const r = tryMap(map);
-                if (r !== undefined) return r;
-            }
-            return undefined;
-        } catch {
-            return undefined;
-        }
+        return render.resolveLocTypeRotAtTile(this, locId, tileX, tileY, plane);
     }
 
-    // Tile devoverlay rendering delegated to OverlayManager
-
     private updateCustomLabels(): void {
-        const labels = this.osrsClient.customLabels;
-        const screens: { x: number; y: number; text: string }[] = [];
-        const basePlane = this.getPlayerRawPlane() | 0;
-        for (const label of labels) {
-            const h = this.getApproxTileHeight(label.x + 0.5, label.y + 0.5, basePlane);
-            const screen = this.worldToScreen(label.x + 0.5, h - 0.3, label.y + 0.5);
-            if (screen) {
-                screens.push({
-                    x: screen[0],
-                    y: screen[1],
-                    text: label.text,
-                });
-            }
-        }
-
-        // Destination tile label now rendered via TileTextOverlay using bitmap font
-        this.osrsClient.customLabelScreens = screens;
+        return render.updateCustomLabels(this);
     }
 
     tickPass(
@@ -10923,214 +2107,19 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         clientTicksElapsed: number,
         clientCycle: number,
     ): void {
-        const seqFrameLoader = this.osrsClient.seqFrameLoader;
-
-        this.actorRenderCount = 0;
-
-        // Core client-cycle ticking is handled by OsrsClient's tick loop so it continues even when
-        // rendering is throttled (e.g., alt-tab/background). This pass is render-focused only.
-
-        // Reuse buffers instead of allocating new arrays each frame
-        const visibleMaps = this.visibleMapsBuffer;
-        visibleMaps.length = 0;
-
-        this.gfxManager?.resetWorldBindings?.();
-        // PERF: Use cached callback to avoid per-frame closure allocation
-        // Throttle ambient sound collection to reduce tick cost
-        this.ambientSoundFrameCounter++;
-        const shouldCollectAmbient =
-            this.ambientSoundFrameCounter >= WebGLOsrsRenderer.AMBIENT_SOUND_THROTTLE_FRAMES;
-        if (shouldCollectAmbient) {
-            this.ambientSoundFrameCounter = 0;
-            // Reset only on collect frames; between collects the previous
-            // instances stay live so volumes keep tracking the listener
-            this.ambientSoundBufferIndex = 0;
-        }
-        for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-            const map = this.mapManager.visibleMaps[i];
-            visibleMaps.push(map);
-
-            for (const loc of map.locsAnimated) {
-                // DynamicObject/loc animation timing is based on Client.cycle (20ms each).
-                loc.update(seqFrameLoader, clientCycle | 0, this.seqSoundCallback);
-            }
-
-            // Collect ambient sounds only every N frames (throttled)
-            if (shouldCollectAmbient) {
-                this.collectAmbientSounds(map);
-            }
-
-            this._ecsUpdateNpcClient(map, clientTicksElapsed);
-            this._ecsUpdatePlayerOccupancy(map);
-
-            // ECS is authoritative; legacy sync removed
-
-            // Fully clear per-map actor offset rings to avoid any stale indices leaking
-            for (let r = 0; r < map.playerDataTextureOffsets.length; r++)
-                map.playerDataTextureOffsets[r] = -1;
-            for (let r = 0; r < map.npcDataTextureOffsets.length; r++)
-                map.npcDataTextureOffsets[r] = -1;
-            for (let r = 0; r < map.worldGfxDataTextureOffsets.length; r++)
-                map.worldGfxDataTextureOffsets[r] = -1;
-
-            this.addNpcRenderData(map);
-            this.addPlayerRenderData(map);
-            this.addProjectileRenderData(map);
-            this.addWorldGfxRenderData(map);
-        }
-
-        this.worldEntityAnimator?.tick(clientCycle);
-        this.osrsClient.worldViewManager.interpolateEntities(clientCycle, this.clientTickPhase);
-
-        // Propagate listener position for positional audio and advance ambient loops.
-        const soundSystem = this.osrsClient.soundEffectSystem;
-        if (soundSystem) {
-            try {
-                const peListener = this.osrsClient.playerEcs;
-                const idxListener = peListener.getIndexForServerId(
-                    this.osrsClient.controlledPlayerServerId,
-                );
-                if (idxListener !== undefined) {
-                    const px = peListener.getX(idxListener) | 0;
-                    const py = peListener.getY(idxListener) | 0;
-                    const level = peListener.getLevel(idxListener) | 0;
-                    soundSystem.updateListenerPosition(px, py, level * 128);
-                } else {
-                    // z is the listener plane (level * 128), not a world height
-                    soundSystem.updateListenerPosition(
-                        this.osrsClient.camera.getPosX() * 128,
-                        this.osrsClient.camera.getPosZ() * 128,
-                        0,
-                    );
-                }
-            } catch {
-                soundSystem.updateListenerPosition(
-                    this.osrsClient.camera.getPosX() * 128,
-                    this.osrsClient.camera.getPosZ() * 128,
-                    0,
-                );
-            }
-            // Truncate the buffer only on collect frames; the update itself
-            // runs every frame so volumes track the listener continuously
-            if (shouldCollectAmbient) {
-                this.ambientSoundBuffer.length = this.ambientSoundBufferIndex;
-            }
-            soundSystem.updateAmbientSounds(this.ambientSoundBuffer);
-        }
-
-        // animation stepping is handled by the client tick loop (`PlayerEcs` + `PlayerAnimController`).
+        return render.tickPass(this, time, ticksElapsed, clientTicksElapsed, clientCycle);
     }
-    // Update dynamic BLOCK_PLAYERS occupancy using per-cell counters when players cross tiles.
+
     private _ecsUpdatePlayerOccupancy(map: WebGLMapSquare): void {
-        const pe = this.osrsClient.playerEcs;
-        const n = pe.size?.() ?? (pe as any).size?.() ?? 0;
-        if (!n) return;
-        for (let i = 0; i < n; i++) {
-            const px = pe.getX(i) | 0;
-            const py = pe.getY(i) | 0;
-            const tileX = (px / 128) | 0;
-            const tileY = (py / 128) | 0;
-            const worldViewId = pe.getWorldViewId(i) | 0;
-            let occMapX = map.mapX | 0;
-            let occMapY = map.mapY | 0;
-            if (worldViewId >= 0) {
-                const overlayView = this.osrsClient.worldViewManager.getWorldView(worldViewId);
-                if (!overlayView || (overlayView.overlayMapId | 0) !== (map.id | 0)) continue;
-            } else {
-                const mapX = getMapIndexFromTile(tileX);
-                const mapY = getMapIndexFromTile(tileY);
-                if (mapX !== map.mapX || mapY !== map.mapY) continue;
-                occMapX = mapX | 0;
-                occMapY = mapY | 0;
-            }
-
-            // Compute effective plane using bridge flag
-            const local = this.getMapLocalTile(map, tileX, tileY);
-            if (!local) continue;
-            const localTileX = local.x;
-            const localTileY = local.y;
-            const plane = resolveCollisionSamplePlaneForLocal(
-                map,
-                pe.getLevel(i) | 0,
-                localTileX,
-                localTileY,
-            );
-
-            const oldPlane = pe.getOccPlane(i) | 0;
-            const oldMapX = pe.getOccMapX?.(i) ?? 255;
-            const oldMapY = pe.getOccMapY?.(i) ?? 255;
-            const oldTileX = pe.getOccTileX(i) | 0;
-            const oldTileY = pe.getOccTileY(i) | 0;
-
-            // First-time init: set occ to current and inc
-            if (oldPlane === 255) {
-                map.incPlayerOcc(plane, localTileX, localTileY);
-                pe.setOccTileWithMap?.(i, occMapX, occMapY, localTileX, localTileY, plane);
-                continue;
-            }
-
-            // If map changed, dec on old map (if loaded), inc on new
-            if (oldMapX !== occMapX || oldMapY !== occMapY) {
-                const oldMap = this.mapManager.getMap(oldMapX as number, oldMapY as number) as
-                    | WebGLMapSquare
-                    | undefined;
-                if (oldMap) oldMap.decPlayerOcc(oldPlane, oldTileX, oldTileY);
-                map.incPlayerOcc(plane, localTileX, localTileY);
-                pe.setOccTileWithMap?.(i, occMapX, occMapY, localTileX, localTileY, plane);
-                continue;
-            }
-
-            // Same map: if plane and tile the same, nothing to do
-            if (
-                oldPlane === (plane | 0) &&
-                oldTileX === (localTileX | 0) &&
-                oldTileY === (localTileY | 0)
-            ) {
-                continue;
-            }
-
-            // Same map: delta row/column if single-tile and same plane, else full
-            if (
-                oldPlane === (plane | 0) &&
-                Math.abs(localTileX - oldTileX) <= 1 &&
-                Math.abs(localTileY - oldTileY) <= 1 &&
-                (localTileX !== oldTileX || localTileY !== oldTileY)
-            ) {
-                const dx = localTileX - oldTileX;
-                const dy = localTileY - oldTileY;
-                if (dx !== 0) {
-                    const trailX = oldTileX; // size 1: trailing is the whole old footprint
-                    map.decPlayerOcc(oldPlane, trailX, oldTileY);
-                    const leadX = localTileX;
-                    map.incPlayerOcc(plane, leadX, localTileY);
-                }
-                if (dy !== 0) {
-                    const trailY = oldTileY;
-                    map.decPlayerOcc(oldPlane, oldTileX, trailY);
-                    const leadY = localTileY;
-                    map.incPlayerOcc(plane, localTileX, leadY);
-                }
-            } else {
-                map.decPlayerOcc(oldPlane, oldTileX, oldTileY);
-                map.incPlayerOcc(plane, localTileX, localTileY);
-            }
-            pe.setOccTileWithMap?.(i, occMapX, occMapY, localTileX, localTileY, plane);
-        }
+        return render._ecsUpdatePlayerOccupancy(this, map);
     }
 
     private resetActorTileSelectionFrameIfNeeded(): void {
-        const frameId = (this.stats?.frameCount ?? 0) | 0;
-        if (frameId === this.frameActorTileSelectionId) {
-            return;
-        }
-
-        this.frameActorTileSelectionId = frameId;
-        this.frameActorTileSelectionBuilt = false;
-        this.frameWinningActorByTile.clear();
+        return render.resetActorTileSelectionFrameIfNeeded(this);
     }
 
     private getActorTileSelectionKey(tileX: number, tileY: number, plane: number): number {
-        return ((plane & 0x3) * 0x40000000 + ((tileX & 0x7fff) * 0x8000 + (tileY & 0x7fff))) >>> 0;
+        return render.getActorTileSelectionKey(this, tileX, tileY, plane);
     }
 
     private shouldReplaceTileWinner(
@@ -11139,7 +2128,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         id: number,
         priority: number,
     ): boolean {
-        return (priority | 0) > (current.priority | 0);
+        return render.shouldReplaceTileWinner(this, current, kind, id, priority);
     }
 
     private registerActorTileCandidate(
@@ -11150,555 +2139,61 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         plane: number,
         priority: number,
     ): void {
-        const key = this.getActorTileSelectionKey(tileX | 0, tileY | 0, plane | 0);
-        const current = this.frameWinningActorByTile.get(key);
-        if (current && !this.shouldReplaceTileWinner(current, kind, id | 0, priority | 0)) {
-            return;
-        }
-
-        this.frameWinningActorByTile.set(key, {
-            kind: kind,
-            id: id | 0,
-            priority: priority | 0,
-        });
+        return render.registerActorTileCandidate(this, kind, id, tileX, tileY, plane, priority);
     }
 
     private ensureActorTileSelectionForFrame(): void {
-        this.resetActorTileSelectionFrameIfNeeded();
-        if (this.frameActorTileSelectionBuilt) {
-            return;
-        }
-
-        this.frameActorTileSelectionBuilt = true;
-
-        const pe = this.osrsClient.playerEcs;
-        const renderSelf = this.osrsClient.renderSelf !== false;
-        const controlledServerId = this.osrsClient.controlledPlayerServerId | 0;
-        const controlledPid =
-            controlledServerId > 0 ? pe.getIndexForServerId(controlledServerId) : undefined;
-
-        if (
-            renderSelf &&
-            controlledPid !== undefined &&
-            this.isPlayerSceneTileMarkerCandidate(controlledPid | 0)
-        ) {
-            this.registerPlayerSceneTileCandidate(controlledPid | 0, 5);
-        }
-
-        const combatTargetPid = this.getCombatTargetPlayerEcsIndex();
-        if (
-            combatTargetPid !== undefined &&
-            (combatTargetPid | 0) !== (controlledPid ?? -1) &&
-            this.isPlayerSceneTileMarkerCandidate(combatTargetPid | 0)
-        ) {
-            this.registerPlayerSceneTileCandidate(combatTargetPid | 0, 4);
-        }
-
-        const renderableNpcIds = this.collectRenderableNpcIds();
-        this.registerNpcSceneTileCandidatesByPriority(
-            NpcDrawPriority.DRAW_PRIORITY_FIRST,
-            3,
-            renderableNpcIds,
-        );
-
-        const activeServerIds = Array.from(pe.getAllServerIds()).sort((a, b) => a - b);
-        for (const serverId of activeServerIds) {
-            const pid = pe.getIndexForServerId(serverId | 0);
-            if (pid === undefined) {
-                continue;
-            }
-            if (controlledPid !== undefined && (pid | 0) === (controlledPid | 0)) {
-                continue;
-            }
-            if (combatTargetPid !== undefined && (pid | 0) === (combatTargetPid | 0)) {
-                continue;
-            }
-            if (!this.isPlayerSceneTileMarkerCandidate(pid | 0)) {
-                continue;
-            }
-
-            this.registerPlayerSceneTileCandidate(pid | 0, 2);
-        }
-
-        this.registerNpcSceneTileCandidatesByPriority(
-            NpcDrawPriority.DRAW_PRIORITY_DEFAULT,
-            1,
-            renderableNpcIds,
-        );
-        this.registerNpcSceneTileCandidatesByPriority(
-            NpcDrawPriority.DRAW_PRIORITY_LAST,
-            0,
-            renderableNpcIds,
-        );
+        return render.ensureActorTileSelectionForFrame(this);
     }
 
     private registerPlayerSceneTileCandidate(pid: number, priority: number): void {
-        const pe = this.osrsClient.playerEcs;
-        if (pe.getIsHidden(pid | 0)) {
-            return;
-        }
-        this.registerActorTileCandidate(
-            "player",
-            pid | 0,
-            (pe.getX(pid) >> 7) | 0,
-            (pe.getY(pid) >> 7) | 0,
-            pe.getLevel(pid) | 0,
-            priority | 0,
-        );
+        return render.registerPlayerSceneTileCandidate(this, pid, priority);
     }
 
-    // NPCs rendered by a visible map this frame (ownership-deduped across maps).
     private collectRenderableNpcIds(): Set<number> {
-        const renderable = new Set<number>();
-        for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-            const map = this.mapManager.visibleMaps[i];
-            const ids = map?.npcEntityIds;
-            if (!ids || ids.length === 0) {
-                continue;
-            }
-
-            for (let j = 0; j < ids.length; j++) {
-                const ecsId = ids[j] | 0;
-                if (this.shouldRenderNpcOwnershipFromMap(map, ecsId)) {
-                    renderable.add(ecsId);
-                }
-            }
-        }
-        return renderable;
+        return render.collectRenderableNpcIds(this);
     }
 
-    // Iterates in view-entry order so same-priority tile claims resolve like the
-    // engine's npc list iteration: the earliest NPC in the list wins the tile.
     private registerNpcSceneTileCandidatesByPriority(
         drawPriority: NpcDrawPriority,
         priority: number,
         renderableNpcIds: Set<number>,
     ): void {
-        const npcEcs = this.osrsClient.npcEcs;
-        for (const idRaw of npcEcs.getServerLinkedEcsIds()) {
-            const ecsId = idRaw | 0;
-            if (!renderableNpcIds.has(ecsId)) {
-                continue;
-            }
-            if (!this.isNpcSceneTileMarkerCandidate(ecsId)) {
-                continue;
-            }
-            const npcType = this.getEffectiveNpcType(npcEcs.getNpcTypeId(ecsId) | 0);
-            if (!npcType) {
-                continue;
-            }
-            const npcDrawPriority = npcType.drawPriority ?? NpcDrawPriority.DRAW_PRIORITY_DEFAULT;
-            if ((npcDrawPriority | 0) !== (drawPriority | 0)) {
-                continue;
-            }
-
-            this.registerActorTileCandidate(
-                "npc",
-                ecsId,
-                (npcEcs.getWorldX(ecsId) >> 7) | 0,
-                (npcEcs.getWorldY(ecsId) >> 7) | 0,
-                npcEcs.getLevel(ecsId) | 0,
-                priority | 0,
-            );
-        }
+        return render.registerNpcSceneTileCandidatesByPriority(this, drawPriority, priority, renderableNpcIds);
     }
 
     private isPlayerSceneTileMarkerCandidate(pid: number): boolean {
-        const pe = this.osrsClient.playerEcs;
-        const px = pe.getX(pid) | 0;
-        const py = pe.getY(pid) | 0;
-        return (px & 127) === 64 && (py & 127) === 64;
+        return render.isPlayerSceneTileMarkerCandidate(this, pid);
     }
 
     private isNpcSceneTileMarkerCandidate(ecsId: number): boolean {
-        const npcEcs = this.osrsClient.npcEcs;
-        if ((npcEcs.getSize(ecsId) | 0) !== 1) {
-            return false;
-        }
-
-        const worldX = npcEcs.getWorldX(ecsId) | 0;
-        const worldY = npcEcs.getWorldY(ecsId) | 0;
-        return (worldX & 127) === 64 && (worldY & 127) === 64;
+        return render.isNpcSceneTileMarkerCandidate(this, ecsId);
     }
 
-    // Resolves the NPC's transformed definition; undefined when the NPC has no
-    // definition or its transform resolves to -1 (invisible), in which case the
-    // NPC must neither draw nor claim its tile.
     private getEffectiveNpcType(npcTypeId: number): NpcType | undefined {
-        if (npcTypeId < 0) {
-            return undefined;
-        }
-
-        try {
-            const base = this.osrsClient.npcTypeLoader.load(npcTypeId);
-            if (!base) {
-                return undefined;
-            }
-            if (!base.transforms) {
-                return base;
-            }
-            return base.transform(this.osrsClient.varManager, this.osrsClient.npcTypeLoader);
-        } catch {
-            return undefined;
-        }
+        return render.getEffectiveNpcType(this, npcTypeId);
     }
 
     private getCombatTargetPlayerEcsIndex(): number | undefined {
-        const targetServerId = ClientState.combatTargetPlayerIndex | 0;
-        if ((targetServerId | 0) < 0) {
-            return undefined;
-        }
-
-        return this.osrsClient.playerEcs.getIndexForServerId(targetServerId | 0);
+        return render.getCombatTargetPlayerEcsIndex(this);
     }
 
     shouldRenderPlayerIndex(pid: number): boolean {
-        const renderSelf = this.osrsClient.renderSelf !== false;
-        const controlledServerId = this.osrsClient.controlledPlayerServerId | 0;
-        const controlledPid =
-            controlledServerId > 0
-                ? this.osrsClient.playerEcs.getIndexForServerId(controlledServerId)
-                : undefined;
-        if (!renderSelf && controlledPid !== undefined && (pid | 0) === (controlledPid | 0)) {
-            return false;
-        }
-        if (this.osrsClient.playerEcs.getIsHidden(pid | 0)) {
-            return false;
-        }
-        if (!this.isPlayerSceneTileMarkerCandidate(pid)) {
-            return true;
-        }
-
-        this.ensureActorTileSelectionForFrame();
-        const pe = this.osrsClient.playerEcs;
-        const tileKey = this.getActorTileSelectionKey(
-            (pe.getX(pid) >> 7) | 0,
-            (pe.getY(pid) >> 7) | 0,
-            pe.getLevel(pid) | 0,
-        );
-        const winner = this.frameWinningActorByTile.get(tileKey);
-        return winner?.kind === "player" && (winner.id | 0) === (pid | 0);
+        return render.shouldRenderPlayerIndex(this, pid);
     }
 
     private shouldRenderNpcOwnershipFromMap(map: WebGLMapSquare, ecsId: number): boolean {
-        const ecs = this.osrsClient.npcEcs;
-        if (!ecs.isActive(ecsId) || !ecs.isLinked(ecsId)) return false;
-
-        const worldViewId = ecs.getWorldViewId(ecsId) | 0;
-        if (worldViewId >= 0) {
-            const worldView = this.osrsClient.worldViewManager.getWorldView(worldViewId);
-            if (!worldView) {
-                return false;
-            }
-            if ((map.id | 0) === (worldView.overlayMapId | 0)) {
-                return true;
-            }
-
-            const overlayMap = this.mapManager.mapSquares.get(worldView.overlayMapId) as
-                | WebGLMapSquare
-                | undefined;
-            if (overlayMap?.npcEntityIds?.indexOf(ecsId | 0) !== -1) {
-                for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-                    if (this.mapManager.visibleMaps[i] === overlayMap) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        const ownerMapX = ecs.getMapX(ecsId) | 0;
-        const ownerMapY = ecs.getMapY(ecsId) | 0;
-        if ((ownerMapX | 0) === (map.mapX | 0) && (ownerMapY | 0) === (map.mapY | 0)) {
-            return true;
-        }
-
-        const ownerMap = this.mapManager.getMap(ownerMapX, ownerMapY) as WebGLMapSquare | undefined;
-        if (!ownerMap?.npcEntityIds || ownerMap.npcEntityIds.indexOf(ecsId | 0) === -1) {
-            return true;
-        }
-
-        for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-            if (this.mapManager.visibleMaps[i] === ownerMap) {
-                return false;
-            }
-        }
-
-        return true;
+        return render.shouldRenderNpcOwnershipFromMap(this, map, ecsId);
     }
 
     shouldRenderNpcFromMap(map: WebGLMapSquare, ecsId: number): boolean {
-        if (!this.shouldRenderNpcOwnershipFromMap(map, ecsId)) {
-            return false;
-        }
-        if (!this.getEffectiveNpcType(this.osrsClient.npcEcs.getNpcTypeId(ecsId) | 0)) {
-            return false;
-        }
-        if (!this.isNpcSceneTileMarkerCandidate(ecsId)) {
-            return true;
-        }
-
-        this.ensureActorTileSelectionForFrame();
-        const npcEcs = this.osrsClient.npcEcs;
-        const tileKey = this.getActorTileSelectionKey(
-            (npcEcs.getWorldX(ecsId) >> 7) | 0,
-            (npcEcs.getWorldY(ecsId) >> 7) | 0,
-            npcEcs.getLevel(ecsId) | 0,
-        );
-        const winner = this.frameWinningActorByTile.get(tileKey);
-        return winner?.kind === "npc" && (winner.id | 0) === (ecsId | 0);
+        return render.shouldRenderNpcFromMap(this, map, ecsId);
     }
 
-    /**
-     * Render-side NPC updates that depend on loaded animation frames (per-map caches).
-     *
-     * Movement stepping is handled in the core client tick loop (NpcEcs.updateClient) so that
-     * NPC positions remain in sync even when rendering is throttled (alt-tab/background).
-     */
     private _ecsUpdateNpcClient(map: WebGLMapSquare, clientTicksElapsed: number): void {
-        const ids: number[] = map.npcEntityIds || ([] as any);
-        if (ids.length === 0 || clientTicksElapsed <= 0) return;
-        const ecs = this.osrsClient.npcEcs;
-        const pe = this.osrsClient.playerEcs;
-
-        for (let t = 0; t < clientTicksElapsed; t++) {
-            for (let j = 0; j < ids.length; j++) {
-                const id = ids[j] | 0;
-                if (!ecs.isActive(id) || !ecs.isLinked(id)) continue;
-                if (!this.shouldRenderNpcOwnershipFromMap(map, id)) continue;
-
-                const walkingNow = ecs.shouldUseWalkAnim(id);
-                const movementOrientation = walkingNow ? ecs.getCurrentStepRot(id) : undefined;
-                ecs.setWalking(id, walkingNow);
-
-                const npcWorldX = ecs.getWorldX(id) | 0;
-                const npcWorldY = ecs.getWorldY(id) | 0;
-                let desiredFacing: number | undefined;
-
-                const npcInteractionIndex = ecs.getInteractionIndex?.(id);
-                const npcInteraction =
-                    typeof npcInteractionIndex === "number" && npcInteractionIndex >= 0
-                        ? decodeInteractionIndex(npcInteractionIndex)
-                        : null;
-                if (npcInteraction) {
-                    if (npcInteraction.type === "player") {
-                        const targetIdx = pe.getIndexForServerId?.(npcInteraction.id | 0);
-                        if (targetIdx != null) {
-                            const px = pe.getX(targetIdx) | 0;
-                            const py = pe.getY(targetIdx) | 0;
-                            const dxFacing = (npcWorldX - px) | 0;
-                            const dyFacing = (npcWorldY - py) | 0;
-                            const facing = computeFacingRotation(dxFacing, dyFacing);
-                            if (facing !== undefined) desiredFacing = facing;
-                        }
-                    } else if (npcInteraction.type === "npc") {
-                        const targetEcs = ecs.getEcsIdForServer?.(npcInteraction.id | 0);
-                        if (targetEcs != null && ecs.isLinked(targetEcs | 0)) {
-                            const targetMapId = ecs.getMapId(targetEcs | 0) | 0;
-                            const targetMapX = (targetMapId >> 8) & 0xff;
-                            const targetMapY = targetMapId & 0xff;
-                            const targetWorldX =
-                                ((targetMapX << 13) + (ecs.getX(targetEcs | 0) | 0)) | 0;
-                            const targetWorldY =
-                                ((targetMapY << 13) + (ecs.getY(targetEcs | 0) | 0)) | 0;
-                            const dxFacing = (npcWorldX - targetWorldX) | 0;
-                            const dyFacing = (npcWorldY - targetWorldY) | 0;
-                            const facing = computeFacingRotation(dxFacing, dyFacing);
-                            if (facing !== undefined) desiredFacing = facing;
-                        }
-                    }
-                }
-                if (
-                    desiredFacing === undefined &&
-                    walkingNow &&
-                    movementOrientation !== undefined
-                ) {
-                    desiredFacing = movementOrientation;
-                }
-                if (desiredFacing !== undefined) {
-                    ecs.setTargetRot(id, desiredFacing);
-                }
-
-                // Rotate toward target orientation with rotation speed
-                const rot = ecs.getRotation(id) | 0;
-                const targetRot = ecs.getTargetRot(id) | 0;
-                if (rot !== targetRot) {
-                    const step = ecs.getRotationSpeed(id) | 0;
-                    const newRot = interpolateRotation(rot, targetRot, step);
-                    ecs.setRotation(id, newRot);
-                }
-
-                const seqId = ecs.getSeqId(id) | 0;
-                const seqDelay = ecs.getSeqDelay?.(id) | 0;
-                const extraAnimMap = map.npcExtraAnims?.[j];
-                const extraLenMap = map.npcExtraFrameLengths?.[j];
-                const { movementSeqId, idleSeqId, walkSeqId } = this.resolveNpcMovementSequenceIds(
-                    ecs,
-                    id,
-                );
-                const movementAnim =
-                    (movementSeqId | 0) === (idleSeqId | 0)
-                        ? (map.npcIdleFrames[j] as AnimationFrames | undefined)
-                        : (movementSeqId | 0) === (walkSeqId | 0)
-                            ? (((map.npcWalkFrames[j] ?? map.npcIdleFrames[j]) as AnimationFrames) ??
-                                undefined)
-                            : undefined;
-                let movementLengths =
-                    (movementSeqId | 0) === (idleSeqId | 0)
-                        ? (map.npcIdleFrameLengths[j] as number[] | undefined)
-                        : (movementSeqId | 0) === (walkSeqId | 0)
-                            ? (((map.npcWalkFrameLengths[j] ??
-                                map.npcIdleFrameLengths[j]) as number[]) ?? undefined)
-                            : undefined;
-                const currentMovementSeqId = ecs.getMovementSeqId?.(id) | 0;
-
-                if ((movementSeqId | 0) !== (currentMovementSeqId | 0)) {
-                    ecs.setMovementSeqId?.(id, movementSeqId | 0);
-                    ecs.setMovementFrameIndex?.(id, 0);
-                    ecs.setMovementAnimTick?.(id, 0);
-                    ecs.setMovementLoopCount?.(id, 0);
-                }
-
-                let movementSeqType: any | undefined;
-                if (movementSeqId >= 0) {
-                    try {
-                        movementSeqType = this.osrsClient.seqTypeLoader.load(movementSeqId | 0);
-                    } catch {}
-                }
-
-                let movementFrameCount = Math.max(1, (movementAnim?.frames.length ?? 0) | 0);
-                if (movementFrameCount <= 1 && movementSeqId >= 0) {
-                    if (
-                        !!movementSeqType?.isSkeletalSeq?.() ||
-                        (movementSeqType?.skeletalId ?? -1) >= 0
-                    ) {
-                        movementFrameCount = Math.max(
-                            1,
-                            movementSeqType?.getSkeletalDuration?.() | 0,
-                        );
-                    } else if (Array.isArray(movementSeqType?.frameIds)) {
-                        movementFrameCount = Math.max(1, movementSeqType.frameIds.length | 0);
-                        if (!movementLengths) {
-                            movementLengths = new Array<number>(movementFrameCount).fill(1);
-                            for (let k = 0; k < movementFrameCount; k++) {
-                                try {
-                                    movementLengths[k] =
-                                        movementSeqType.getFrameLength(
-                                            this.osrsClient.seqFrameLoader,
-                                            k | 0,
-                                        ) | 0;
-                                } catch {}
-                            }
-                        }
-                    }
-                }
-                const movementStep = this.stepNpcSequenceTrack(
-                    ecs.getMovementFrameIndex?.(id) | 0,
-                    ecs.getMovementAnimTick?.(id) | 0,
-                    ecs.getMovementLoopCount?.(id) | 0,
-                    movementFrameCount | 0,
-                    movementLengths,
-                    movementSeqType,
-                    false,
-                );
-                ecs.setMovementFrameIndex?.(id, movementStep.frameIndex | 0);
-                ecs.setMovementAnimTick?.(id, movementStep.animTick | 0);
-                ecs.setMovementLoopCount?.(id, movementStep.loopCount | 0);
-
-                if (movementStep.frameAdvanced && movementSeqType?.frameSounds?.size) {
-                    try {
-                        this.osrsClient.handleSeqFrameSounds(
-                            movementSeqType,
-                            movementStep.frameIndex | 0,
-                            {
-                                position: {
-                                    x: npcWorldX,
-                                    y: npcWorldY,
-                                    z: (ecs.getLevel(id) | 0) * 128,
-                                },
-                                isLocalPlayer: false,
-                            },
-                        );
-                    } catch {}
-                }
-
-                if (seqId >= 0 && seqDelay === 0) {
-                    let actionLengths = extraLenMap?.[seqId];
-                    let actionFrameCount = 1;
-                    let actionSeqType: any | undefined;
-                    try {
-                        actionSeqType = this.osrsClient.seqTypeLoader.load(seqId | 0);
-                    } catch {}
-
-                    const seqAnim = extraAnimMap?.[seqId];
-                    if (seqAnim) {
-                        actionFrameCount = Math.max(1, seqAnim.frames.length | 0);
-                    } else if (
-                        !!actionSeqType?.isSkeletalSeq?.() ||
-                        (actionSeqType?.skeletalId ?? -1) >= 0
-                    ) {
-                        actionFrameCount = Math.max(1, actionSeqType?.getSkeletalDuration?.() | 0);
-                    } else if (Array.isArray(actionSeqType?.frameIds)) {
-                        actionFrameCount = Math.max(1, actionSeqType.frameIds.length | 0);
-                        if (!actionLengths) {
-                            actionLengths = new Array<number>(actionFrameCount).fill(1);
-                            for (let k = 0; k < actionFrameCount; k++) {
-                                try {
-                                    actionLengths[k] =
-                                        actionSeqType.getFrameLength(
-                                            this.osrsClient.seqFrameLoader,
-                                            k | 0,
-                                        ) | 0;
-                                } catch {}
-                            }
-                        }
-                    }
-
-                    const actionStep = this.stepNpcSequenceTrack(
-                        ecs.getFrameIndex(id) | 0,
-                        ecs.getAnimTick(id) | 0,
-                        ecs.getLoopCount(id) | 0,
-                        actionFrameCount | 0,
-                        actionLengths,
-                        actionSeqType,
-                        true,
-                    );
-
-                    // Reference: updateActorAnimationState stops the sequence the
-                    // moment it finishes (actor animation state reverts to none);
-                    // corpse poses persist via the death seq's own frame lengths
-                    // and the server despawning the NPC at the animation's end.
-                    if (actionStep.cleared) {
-                        ecs.clearSeq(id);
-                    } else {
-                        ecs.setFrameIndex(id, actionStep.frameIndex | 0);
-                        ecs.setAnimTick(id, actionStep.animTick | 0);
-                        ecs.setLoopCount(id, actionStep.loopCount | 0);
-                    }
-
-                    if (actionStep.frameAdvanced && actionSeqType?.frameSounds?.size) {
-                        try {
-                            this.osrsClient.handleSeqFrameSounds(
-                                actionSeqType,
-                                actionStep.frameIndex | 0,
-                                {
-                                    position: {
-                                        x: npcWorldX,
-                                        y: npcWorldY,
-                                        z: (ecs.getLevel(id) | 0) * 128,
-                                    },
-                                    isLocalPlayer: false,
-                                },
-                            );
-                        } catch {}
-                    }
-                }
-            }
-        }
+        return render._ecsUpdateNpcClient(this, map, clientTicksElapsed);
     }
 
-    // Helper to add ambient sound instance with object pooling.
-    // soundType carries the resolved (possibly varbit-transformed) sound
-    // fields; the emitter footprint always comes from the base loc.
     private addAmbientSoundInstance(
         locId: number,
         soundType: any,
@@ -11709,123 +2204,21 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         sizeX: number,
         sizeY: number,
     ): void {
-        const idx = this.ambientSoundBufferIndex;
-        const buffer = this.ambientSoundBuffer;
-
-        // Reuse existing object or create new one
-        let inst = buffer[idx];
-        if (!inst) {
-            inst = {} as import("../audio/SoundEffectSystem").AmbientSoundInstance;
-            buffer[idx] = inst;
-        }
-
-        // Update all properties
-        inst.locId = locId;
-        inst.soundId = soundType ? soundType.ambientSoundId : -1;
-        inst.x = x;
-        inst.y = y;
-        inst.z = z;
-        inst.maxDistance = soundType ? soundType.soundMaxDistance : 0;
-        inst.minDistance = soundType ? soundType.soundMinDistance : 0;
-        inst.changeTicksMin = soundType ? soundType.ambientSoundChangeTicksMin : 0;
-        inst.changeTicksMax = soundType ? soundType.ambientSoundChangeTicksMax : 0;
-        inst.soundIds = soundType ? soundType.ambientSoundIds : undefined;
-        inst.sizeX = sizeX;
-        inst.sizeY = sizeY;
-        inst.orientation = orientation;
-        inst.fadeInDurationMs = (soundType && soundType.soundFadeInDuration) || undefined;
-        inst.fadeOutDurationMs = (soundType && soundType.soundFadeOutDuration) || undefined;
-        inst.fadeInCurve = (soundType && soundType.soundFadeInCurve) || undefined;
-        inst.fadeOutCurve = (soundType && soundType.soundFadeOutCurve) || undefined;
-        inst.distanceFadeCurve = (soundType && soundType.soundDistanceFadeCurve) || undefined;
-        inst.distanceOverride = soundType
-            ? (soundType.soundAreaRadiusOverride ?? undefined)
-            : undefined;
-        inst.loopSequentially = soundType ? soundType.loopMultiSoundSequentially : false;
-        inst.deferSwap = soundType ? soundType.deferredAmbientSwap : false;
-        inst.exactPosition = soundType ? soundType.useExactSoundPosition : false;
-        inst.resetOnLoop = soundType ? soundType.resetAmbientOnLoopRestart : false;
-
-        this.ambientSoundBufferIndex = idx + 1;
+        return render.addAmbientSoundInstance(this, locId, soundType, x, y, z, orientation, sizeX, sizeY);
     }
 
     private static locTypeHasSound(locType: any): boolean {
-        return (
-            !!locType &&
-            (locType.ambientSoundId !== -1 ||
-                (locType.ambientSoundIds && locType.ambientSoundIds.length > 0))
-        );
+        return render.locTypeHasSound(locType);
     }
 
-    // A loc emits ambient sound if its base def or any varbit transform does
     private locHasSoundPotential(locId: number): boolean {
-        const cached = this.locSoundPotentialCache.get(locId);
-        if (cached !== undefined) return cached;
-        let result = false;
-        const locType = this.osrsClient.locTypeLoader.load(locId);
-        if (locType) {
-            result = WebGLOsrsRenderer.locTypeHasSound(locType);
-            if (!result && locType.transforms) {
-                for (const transformId of locType.transforms) {
-                    if (transformId === -1) continue;
-                    const transformed = this.osrsClient.locTypeLoader.load(transformId);
-                    if (WebGLOsrsRenderer.locTypeHasSound(transformed)) {
-                        result = true;
-                        break;
-                    }
-                }
-            }
-        }
-        this.locSoundPotentialCache.set(locId, result);
-        return result;
+        return render.locHasSoundPotential(this, locId);
     }
 
-    // Build (or reuse) the per-map list of static sound-emitting locs.
-    // The cache covers all levels and is cleared when scene data refreshes.
     private getMapSoundEmitters(
         map: WebGLMapSquare,
     ): { locId: number; x: number; y: number; level: number; rot: number }[] {
-        if (map.ambientSoundEmitters) return map.ambientSoundEmitters;
-
-        const emitters: { locId: number; x: number; y: number; level: number; rot: number }[] = [];
-        const mapBaseX = map.mapX * 64;
-        const mapBaseY = map.mapY * 64;
-        const offsetsByLevel = map.tileLocOffsetsByLevel;
-        const idsByLevel = map.tileLocIdsByLevel;
-        const typeRotsByLevel = map.tileLocTypeRotByLevel;
-
-        if (offsetsByLevel && idsByLevel) {
-            for (let level = 0; level < offsetsByLevel.length; level++) {
-                const offsets = offsetsByLevel[level];
-                const ids = idsByLevel[level];
-                if (!offsets || !ids || offsets.length < 2) continue;
-                const typeRots = typeRotsByLevel?.[level];
-                const span = Math.round(Math.sqrt(offsets.length - 1));
-
-                for (let localY = 0; localY < span; localY++) {
-                    for (let localX = 0; localX < span; localX++) {
-                        const tileIdx = localY * span + localX;
-                        const start = offsets[tileIdx] | 0;
-                        const end = offsets[tileIdx + 1] | 0;
-                        for (let i = start; i < end; i++) {
-                            const locId = ids[i] | 0;
-                            if (!this.locHasSoundPotential(locId)) continue;
-                            const packed = typeRots ? typeRots[i] | 0 : 0;
-                            emitters.push({
-                                locId,
-                                x: (mapBaseX + localX) * 128 + 64,
-                                y: (mapBaseY + localY) * 128 + 64,
-                                level,
-                                rot: (packed >> 6) & 3,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        map.ambientSoundEmitters = emitters;
-        return emitters;
+        return render.getMapSoundEmitters(this, map);
     }
 
     private addAmbientEmitter(
@@ -11835,405 +2228,47 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         level: number,
         rot: number,
     ): void {
-        const baseType = this.osrsClient.locTypeLoader.load(locId);
-        if (!baseType) return;
-
-        // Resolve varbit transforms for the active sound fields; the emitter
-        // persists with no sound while the active transform is silent so it
-        // can fade between states without losing loop phase or timers.
-        let soundType: any = baseType;
-        if (baseType.transforms) {
-            soundType = baseType.transform(
-                this.osrsClient.varManager,
-                this.osrsClient.locTypeLoader,
-            );
-        }
-        if (soundType && !WebGLOsrsRenderer.locTypeHasSound(soundType)) {
-            soundType = undefined;
-        }
-
-        this.addAmbientSoundInstance(
-            locId,
-            soundType,
-            x,
-            y,
-            level * 128,
-            rot,
-            baseType.sizeX || 1,
-            baseType.sizeY || 1,
-        );
+        return render.addAmbientEmitter(this, locId, x, y, level, rot);
     }
 
     collectAmbientSounds(map: WebGLMapSquare): void {
-        // Animated locs (sparse, iterate all levels)
-        if (map.locsAnimated) {
-            for (const loc of map.locsAnimated) {
-                if (!this.locHasSoundPotential(loc.id)) continue;
-                this.addAmbientEmitter(loc.id, loc.x, loc.y, loc.level, loc.rotation);
-            }
-        }
-
-        // Static locs from the cached per-map emitter list
-        const emitters = this.getMapSoundEmitters(map);
-        for (let i = 0; i < emitters.length; i++) {
-            const emitter = emitters[i];
-            this.addAmbientEmitter(emitter.locId, emitter.x, emitter.y, emitter.level, emitter.rot);
-        }
+        return render.collectAmbientSounds(this, map);
     }
 
     addNpcRenderData(map: WebGLMapSquare) {
-        if (!map.drawCallNpc || !map.npcEntityIds || map.npcEntityIds.length === 0) return;
-
-        // Always use slot 0 for double-buffered actor data
-        const sampleIdx = 0;
-
-        if (this.unifiedActorData) {
-            const ids: number[] = map.npcEntityIds as any;
-            const ecs = this.osrsClient.npcEcs;
-            const overlayView = this.osrsClient.worldViewManager.getWorldViewByOverlayMapId(map.id);
-            const renderBaseTileX = map.getRenderBaseTileX();
-            const renderBaseTileY = map.getRenderBaseTileY();
-            const mapTileSpan = map.getLocalTileSpan();
-            const npcCount = ids.length | 0;
-
-            if (npcCount === 0) {
-                map.npcDataTextureOffsets[sampleIdx] = -1;
-                return;
-            }
-
-            const baseOffset = this.actorRenderCount;
-            const required = baseOffset + npcCount;
-            if (this.actorRenderData.length / 8 < required) {
-                const newData = new Uint16Array(Math.ceil((required * 2) / 16) * 16 * 8);
-                newData.set(this.actorRenderData);
-                this.actorRenderData = newData;
-            }
-
-            map.npcDataTextureOffsets[sampleIdx] = baseOffset;
-
-            for (let i = 0; i < npcCount; i++) {
-                const id = ids[i] | 0;
-                const offset = (baseOffset + i) * 8;
-                if (!this.shouldRenderNpcFromMap(map, id)) {
-                    this.actorRenderData[offset + 0] = 0;
-                    this.actorRenderData[offset + 1] = 0;
-                    this.actorRenderData[offset + 2] = 0;
-                    this.actorRenderData[offset + 3] = 0;
-                    this.actorRenderData[offset + 4] = 0;
-                    this.actorRenderData[offset + 5] = 0;
-                    this.actorRenderData[offset + 6] = 0;
-                    this.actorRenderData[offset + 7] = 0;
-                    continue;
-                }
-                const npcWorldViewId = ecs.getWorldViewId(id) | 0;
-                let npcX: number;
-                let npcY: number;
-                if (overlayView && (npcWorldViewId | 0) === (overlayView.id | 0)) {
-                    npcX = (ecs.getWorldX(id) - renderBaseTileX * 128) | 0;
-                    npcY = (ecs.getWorldY(id) - renderBaseTileY * 128) | 0;
-                } else {
-                    // NPC geometry ownership can lag one map refresh behind ECS ownership while an NPC
-                    // crosses a 64x64 map-square boundary. Convert from world space back into the
-                    // currently drawn map so the existing draw batch remains stable until refresh.
-                    npcX = ecs.getLocalXForMap(id, map.mapX);
-                    npcY = ecs.getLocalYForMap(id, map.mapY);
-                }
-                const localTileX = clamp((npcX >> 7) | 0, 0, Math.max(0, mapTileSpan - 1));
-                const localTileY = clamp((npcY >> 7) | 0, 0, Math.max(0, mapTileSpan - 1));
-                const renderPlane = resolveHeightSamplePlaneForLocal(
-                    map,
-                    ecs.getLevel(id) | 0,
-                    localTileX,
-                    localTileY,
-                );
-                // Texel 0: position, plane|rotation, interactionId
-                this.actorRenderData[offset + 0] = npcX;
-                this.actorRenderData[offset + 1] = npcY;
-                this.actorRenderData[offset + 2] = renderPlane | (ecs.getRotation(id) << 2);
-                this.actorRenderData[offset + 3] = ecs.getServerId(id);
-                // Texel 1: per-actor HSL override
-                const npcOverride = ecs.getColorOverride(id);
-                const clientCycle = getClientCycle() | 0;
-                if (
-                    npcOverride.amount !== 0 &&
-                    clientCycle >= npcOverride.startCycle &&
-                    clientCycle < npcOverride.endCycle
-                ) {
-                    this.actorRenderData[offset + 4] =
-                        (npcOverride.hue & 0x7f) | ((npcOverride.sat & 0x7f) << 7);
-                    this.actorRenderData[offset + 5] =
-                        (npcOverride.lum & 0x7f) | ((npcOverride.amount & 0xff) << 7);
-                } else {
-                    this.actorRenderData[offset + 4] = 0;
-                    this.actorRenderData[offset + 5] = 0;
-                }
-                this.actorRenderData[offset + 6] = 0;
-                this.actorRenderData[offset + 7] = 0;
-            }
-
-            this.actorRenderCount = required;
-        }
+        return render.addNpcRenderData(this, map);
     }
 
     addPlayerRenderData(map: WebGLMapSquare) {
-        this.playerRenderer.addPlayerRenderData(map);
+        return render.addPlayerRenderData(this, map);
     }
 
     addProjectileRenderData(map: WebGLMapSquare) {
-        if (!this.projectileManager) return;
-
-        const projectiles = this.projectileManager.getProjectilesForMap(map.mapX, map.mapY);
-        const projCount = projectiles.length;
-        const key = `${map.mapX},${map.mapY}`;
-        const prevCount = this.projectileRenderDebugCounts.get(key) ?? 0;
-        if (prevCount !== projCount) {
-            /*console.info(
-                `[ProjectileRenderer] Map (${map.mapX}, ${map.mapY}) render queue changed from ${prevCount} to ${projCount}`,
-            );*/
-            this.projectileRenderDebugCounts.set(key, projCount);
-        }
-
-        if (projCount === 0) {
-            if (map.projectileDataTextureOffsets) {
-                map.projectileDataTextureOffsets[0] = -1;
-            }
-            return;
-        }
-
-        // Store the starting offset for this map's projectiles
-        const baseOffset = this.actorRenderCount;
-        const required = baseOffset + projCount;
-
-        // Ensure buffer capacity (8 uint16s per entry = 2 texels - shared with NPCs/Players)
-        if (required * 8 > this.actorRenderData.length) {
-            const newCap = Math.max(required * 8, this.actorRenderData.length * 2);
-            const newBuf = new Uint16Array(newCap);
-            newBuf.set(this.actorRenderData);
-            this.actorRenderData = newBuf;
-        }
-
-        // Store base offset for rendering
-        if (!map.projectileDataTextureOffsets) {
-            map.projectileDataTextureOffsets = new Array(2);
-        }
-        map.projectileDataTextureOffsets[0] = baseOffset;
-
-        // Write projectile data
-        const mapWorldX = map.mapX << 13;
-        const mapWorldY = map.mapY << 13;
-
-        for (let i = 0; i < projCount; i++) {
-            const proj = projectiles[i];
-            const offset = (baseOffset + i) * 8;
-            const pos = proj.getPosition();
-
-            // Convert from 128-unit coordinates to sub-tile coordinates (relative to map)
-            // Map coords are in world 128-units, need to make them relative to this map square
-            const relativeXf = pos.x - mapWorldX;
-            const relativeYf = pos.y - mapWorldY;
-            const baseRelativeX = Math.floor(relativeXf);
-            const baseRelativeY = Math.floor(relativeYf);
-
-            const localTileX = clamp((baseRelativeX >> 7) | 0, 0, 63);
-            const localTileY = clamp((baseRelativeY >> 7) | 0, 0, 63);
-            const renderPlane = resolveHeightSamplePlaneForLocal(
-                map,
-                proj.plane | 0,
-                localTileX,
-                localTileY,
-            );
-
-            // Get rotation (yaw, pitch, and roll in OSRS units 0-2047)
-            const rotation = proj.getRotation();
-            const yawOsrs = (rotation.yaw & 2047) | 0; // Clamp to 0-2047
-            const pitchOsrs = (rotation.pitch & 2047) | 0; // Clamp to 0-2047
-            const rollOsrs = (rotation.roll & 2047) | 0; // Clamp to 0-2047
-
-            // Pack angles: pitch gets 7 bits (original precision), roll gets 3 bits, projectileId gets 9 bits
-            const pitchShifted = (pitchOsrs >> 4) & 0x7f; // 7 bits for pitch (128 values, 16-unit precision)
-            const pitchHi = (pitchShifted >> 4) & 0x7; // 3 high bits
-            const pitchLo = pitchShifted & 0xf; // 4 low bits
-            const rollShifted = (rollOsrs >> 8) & 0x7; // 3 bits for roll (8 values, 256-unit precision)
-
-            const plane = renderPlane & 0x3;
-
-            // Texel 0: position, rotation, projectile ID
-            this.actorRenderData[offset + 0] = baseRelativeX & 0xffff;
-            this.actorRenderData[offset + 1] = baseRelativeY & 0xffff;
-            this.actorRenderData[offset + 2] = (plane | (yawOsrs << 2) | (pitchHi << 13)) & 0xffff;
-            this.actorRenderData[offset + 3] =
-                ((proj.projectileId & 0x1ff) | (pitchLo << 9) | (rollShifted << 13)) & 0xffff;
-            // Texel 1: unused for projectiles
-            this.actorRenderData[offset + 4] = 0;
-            this.actorRenderData[offset + 5] = 0;
-            this.actorRenderData[offset + 6] = 0;
-            this.actorRenderData[offset + 7] = 0;
-        }
-
-        this.actorRenderCount = required;
+        return render.addProjectileRenderData(this, map);
     }
 
     addWorldGfxRenderData(map: WebGLMapSquare): void {
-        if (!this.gfxManager) return;
-        const instances = this.gfxManager.listWorldInstancesForMap(map.mapX, map.mapY);
-        // Always use slot 0 for double-buffered actor data
-        const sampleIdx = 0;
-        if (instances.length === 0) {
-            map.worldGfxDataTextureOffsets[sampleIdx] = -1;
-            return;
-        }
-        const baseOffset = this.actorRenderCount;
-        const required = baseOffset + instances.length;
-        if (this.actorRenderData.length / 8 < required) {
-            const newData = new Uint16Array(Math.ceil((required * 2) / 16) * 16 * 8);
-            newData.set(this.actorRenderData);
-            this.actorRenderData = newData;
-        }
-        map.worldGfxDataTextureOffsets[sampleIdx] = baseOffset;
-        const mapBaseX = map.mapX * 64;
-        const mapBaseY = map.mapY * 64;
-        for (let i = 0; i < instances.length; i++) {
-            const inst = instances[i];
-            const world = inst.world;
-            if (!world) continue;
-            const worldX = (world.tileX | 0) * 128 + 64;
-            const worldY = (world.tileY | 0) * 128 + 64;
-            const localX = worldX - mapBaseX * 128;
-            const localY = worldY - mapBaseY * 128;
-            const localTileX = clamp((world.tileX | 0) - mapBaseX, 0, 63);
-            const localTileY = clamp((world.tileY | 0) - mapBaseY, 0, 63);
-            const renderPlane = resolveHeightSamplePlaneForLocal(
-                map,
-                world.level | 0,
-                localTileX,
-                localTileY,
-            );
-            const offset = (baseOffset + i) * 8;
-            this.actorRenderData[offset + 0] = localX;
-            this.actorRenderData[offset + 1] = localY;
-            this.actorRenderData[offset + 2] = renderPlane;
-            this.actorRenderData[offset + 3] = 0;
-            // Texel 1: HSL override (zeroed — world GFX have no actor override)
-            this.actorRenderData[offset + 4] = 0;
-            this.actorRenderData[offset + 5] = 0;
-            this.actorRenderData[offset + 6] = 0;
-            this.actorRenderData[offset + 7] = 0;
-            world.mapId = map.id;
-            world.slot = i;
-        }
-        this.actorRenderCount = required;
+        return render.addWorldGfxRenderData(this, map);
     }
 
-    // Commit one server step per tick for each player following a planned path.
     private _ecsUpdatePlayerServer(): void {
-        return;
+        return render._ecsUpdatePlayerServer(this);
     }
 
     updateActorDataTexture() {
-        const texWidth = 16;
-        // 2 texels per actor (position + HSL override data)
-        const texelCount = this.actorRenderCount * 2;
-        const texHeight = Math.max(Math.ceil(texelCount / texWidth), 1);
-
-        // PicoGL allocates immutable storage via texStorage2D, so the upload buffer must be large enough
-        // for the full texture (including padding to the 16-wide grid), not just actorRenderCount entries.
-        const requiredU16 = texWidth * texHeight * 4;
-        if (this.actorRenderData.length < requiredU16) {
-            const newData = new Uint16Array(requiredU16);
-            newData.set(this.actorRenderData);
-            this.actorRenderData = newData;
-        }
-        // Ensure padding texels (up to the next 16-wide row) don't leak stale values.
-        const writtenU16 = (this.actorRenderCount * 8) | 0;
-        if (writtenU16 < requiredU16) {
-            this.actorRenderData.fill(0, writtenU16, requiredU16);
-        }
-
-        // Compute checksum over actual actor data to detect changes
-        let checksum = this.actorRenderCount | 0;
-        const data = this.actorRenderData;
-        const len = writtenU16 | 0;
-        for (let i = 0; i < len; i++) {
-            checksum = (checksum * 31 + data[i]) | 0;
-        }
-
-        // If data hasn't changed and texture size matches, reuse current texture
-        const currentTex = this.actorDataTextures[this.actorDataCurrentIndex];
-        if (
-            checksum === this.actorDataChecksum &&
-            texHeight === this.actorDataLastTexHeight &&
-            currentTex
-        ) {
-            // Keep legacy buffer in sync for any code that references it
-            this.actorDataTextureBuffer[0] = currentTex;
-            return 0;
-        }
-
-        // Data changed - write to the OTHER texture, then swap
-        this.actorDataChecksum = checksum;
-        this.actorDataLastTexHeight = texHeight;
-
-        const writeIndex = 1 - this.actorDataCurrentIndex;
-        const uploadView = this.actorRenderData.subarray(0, requiredU16);
-
-        let writeTex = this.actorDataTextures[writeIndex];
-        if (!writeTex) {
-            writeTex = this.app.createTexture2D(uploadView, texWidth, texHeight, {
-                internalFormat: PicoGL.RGBA16UI,
-                type: PicoGL.UNSIGNED_SHORT,
-                minFilter: PicoGL.NEAREST,
-                magFilter: PicoGL.NEAREST,
-                wrapS: PicoGL.CLAMP_TO_EDGE,
-                wrapT: PicoGL.CLAMP_TO_EDGE,
-            });
-            this.actorDataTextures[writeIndex] = writeTex;
-        } else {
-            writeTex.resize(texWidth, texHeight);
-            writeTex.data(uploadView);
-        }
-
-        // Swap: the texture we just wrote becomes the current one
-        this.actorDataCurrentIndex = writeIndex;
-
-        // Keep legacy buffer in sync for any code that references it
-        this.actorDataTextureBuffer[0] = writeTex;
-        return 0;
+        return render.updateActorDataTexture(this);
     }
 
     private _accumulate(drawRanges: DrawRange[], length?: number): void {
-        // Count batches and indices
-        const len = length ?? drawRanges.length;
-        this._frameBatches += len;
-        for (let i = 0; i < len; i++) {
-            const r = drawRanges[i] as DrawRange;
-            const count = (r?.[1] ?? 0) * (r?.[2] ?? 1);
-            this._frameIndices += count;
-        }
+        return render._accumulate(this, drawRanges, length);
     }
 
     configureDrawCall(drawCall: DrawCall): DrawCall {
-        return this.drawBackend ? this.drawBackend.configureDrawCall(drawCall) : drawCall;
+        return render.configureDrawCall(this, drawCall);
     }
 
     draw(drawCall: DrawCall, drawRanges: DrawRange[], drawIndices?: number[]) {
-        // Accumulate stats regardless of draw path
-        if (drawIndices && drawIndices.length > 0) {
-            // Reuse buffer to avoid per-frame allocation
-            const len = drawIndices.length;
-            if (this.drawSubsetBuffer.length < len) {
-                this.drawSubsetBuffer.length = len;
-            }
-            for (let i = 0; i < len; i++) this.drawSubsetBuffer[i] = drawRanges[drawIndices[i]];
-            this._accumulate(this.drawSubsetBuffer, len);
-        } else {
-            this._accumulate(drawRanges);
-        }
-
-        if (this.drawBackend) {
-            this.drawBackend.draw(drawCall, drawRanges, drawIndices);
-        } else {
-            drawCall.draw();
-        }
+        return render.draw(this, drawCall, drawRanges, drawIndices);
     }
 
     private drawWithRoofPlaneFilter(
@@ -12242,87 +2277,15 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         drawRangePlanes: Uint8Array | undefined,
         roofPlaneLimit: number,
     ): void {
-        const totalRanges = drawRanges.length | 0;
-        this.frameRoofTotalRangeCount += totalRanges;
-        if (totalRanges <= 0) {
-            return;
-        }
-
-        if (!drawRangePlanes || roofPlaneLimit >= 3) {
-            this.draw(drawCall, drawRanges);
-            return;
-        }
-
-        const cullLimit = roofPlaneLimit | 0;
-        const filtered = this.roofFilteredDrawIndices;
-        filtered.length = 0;
-
-        for (let i = 0; i < totalRanges; i++) {
-            // Missing plane metadata should never happen, but default to visible to avoid
-            // accidentally dropping geometry.
-            const plane = i < drawRangePlanes.length ? drawRangePlanes[i] : 0;
-            if (plane <= cullLimit) {
-                filtered.push(i);
-            }
-        }
-
-        const visibleRanges = filtered.length | 0;
-        this.frameRoofFilteredRangeCount += Math.max(0, totalRanges - visibleRanges);
-        if (visibleRanges <= 0) {
-            return;
-        }
-        if (visibleRanges >= totalRanges) {
-            this.draw(drawCall, drawRanges);
-            return;
-        }
-        this.draw(drawCall, drawRanges, filtered);
+        return render.drawWithRoofPlaneFilter(this, drawCall, drawRanges, drawRangePlanes, roofPlaneLimit);
     }
 
     private getMapTileDistanceFromPoint(map: WebGLMapSquare, tileX: number, tileY: number): number {
-        // World entity overlays use baseWorldX/Y for distance instead of mapX/Y
-        const mapMinTileX = map.getRenderBaseTileX();
-        const mapMinTileY = map.getRenderBaseTileY();
-        const mapTileSpan = map.getLocalTileSpan();
-        const mapMaxTileX = mapMinTileX + mapTileSpan - 1;
-        const mapMaxTileY = mapMinTileY + mapTileSpan - 1;
-        const dx =
-            tileX < mapMinTileX
-                ? mapMinTileX - tileX
-                : tileX > mapMaxTileX
-                    ? tileX - mapMaxTileX
-                    : 0;
-        const dy =
-            tileY < mapMinTileY
-                ? mapMinTileY - tileY
-                : tileY > mapMaxTileY
-                    ? tileY - mapMaxTileY
-                    : 0;
-        return Math.max(dx, dy);
+        return render.getMapTileDistanceFromPoint(this, map, tileX, tileY);
     }
 
     private getMapZoneDistanceFromPoint(map: WebGLMapSquare, tileX: number, tileY: number): number {
-        // OSRS scene visibility is zone-based (8x8 tiles), not map-square based.
-        const zoneX = tileX >> 3;
-        const zoneY = tileY >> 3;
-        const bwx = (map as any).baseWorldX;
-        const bwy = (map as any).baseWorldY;
-        const mapMinZoneX = bwx != null ? (bwx | 0) >> 3 : map.mapX << 3;
-        const mapMinZoneY = bwy != null ? (bwy | 0) >> 3 : map.mapY << 3;
-        const mapMaxZoneX = mapMinZoneX + 7;
-        const mapMaxZoneY = mapMinZoneY + 7;
-        const dx =
-            zoneX < mapMinZoneX
-                ? mapMinZoneX - zoneX
-                : zoneX > mapMaxZoneX
-                    ? zoneX - mapMaxZoneX
-                    : 0;
-        const dy =
-            zoneY < mapMinZoneY
-                ? mapMinZoneY - zoneY
-                : zoneY > mapMaxZoneY
-                    ? zoneY - mapMaxZoneY
-                    : 0;
-        return Math.max(dx, dy);
+        return render.getMapZoneDistanceFromPoint(this, map, tileX, tileY);
     }
 
     private isMapWithinRenderDistance(
@@ -12332,97 +2295,55 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         renderDistanceTiles: number,
         renderDistancePadTiles: number,
     ): boolean {
-        const zoneDistance = this.getMapZoneDistanceFromPoint(map, tileX, tileY);
-        const renderDistanceZones = Math.max(
-            0,
-            Math.ceil((renderDistanceTiles + renderDistancePadTiles) / 8),
-        );
-        return zoneDistance <= renderDistanceZones;
+        return render.isMapWithinRenderDistance(this, map, tileX, tileY, renderDistanceTiles, renderDistancePadTiles);
     }
 
     private resolveEffectiveRenderDistanceTiles(frameId: number): number {
-        const base = clamp(this.osrsClient.renderDistance | 0, 25, 90);
-        if ((this.effectiveRenderDistanceFrame | 0) === (frameId | 0)) {
-            return this.effectiveRenderDistanceTiles | 0;
-        }
-        const profile = this.syncBrowserQualityProfile();
-        const target = isTouchDevice ? Math.min(base, profile.renderDistanceCap | 0) : base;
-        this.effectiveRenderDistanceTiles = Math.max(0, target | 0);
-        this.effectiveRenderDistanceFrame = frameId | 0;
-        return this.effectiveRenderDistanceTiles | 0;
+        return render.resolveEffectiveRenderDistanceTiles(this, frameId);
     }
 
     private getFrameRenderDistanceTiles(): number {
-        return this.resolveEffectiveRenderDistanceTiles(this.stats.frameCount | 0);
+        return render.getFrameRenderDistanceTiles(this);
     }
 
     private resolveEffectiveLodThresholdTiles(frameId: number): number {
-        const renderDistance = this.getFrameRenderDistanceTiles() | 0;
-        const base = clamp(this.osrsClient.lodDistance | 0, 0, Math.max(0, renderDistance));
-        if ((this.effectiveLodThresholdFrame | 0) === (frameId | 0)) {
-            return this.effectiveLodThresholdTiles | 0;
-        }
-        const profile = this.syncBrowserQualityProfile();
-        const target = isTouchDevice
-            ? Math.min(base, Math.max(0, Math.min(renderDistance, profile.lodThresholdCap | 0)))
-            : base;
-        this.effectiveLodThresholdTiles = Math.max(0, target | 0);
-        this.effectiveLodThresholdFrame = frameId | 0;
-        return this.effectiveLodThresholdTiles | 0;
+        return render.resolveEffectiveLodThresholdTiles(this, frameId);
     }
 
     private getFrameLodThresholdTiles(): number {
-        return this.resolveEffectiveLodThresholdTiles(this.stats.frameCount | 0);
+        return render.getFrameLodThresholdTiles(this);
     }
 
     private resolveEffectiveGroundItemOverlayMaxEntries(frameId: number): number {
-        if ((this.effectiveGroundItemOverlayFrame | 0) === (frameId | 0)) {
-            return this.effectiveGroundItemOverlayMaxEntries | 0;
-        }
-        const profile = this.syncBrowserQualityProfile();
-        const target = isTouchDevice ? profile.groundItemOverlayMaxEntries | 0 : 40;
-        this.effectiveGroundItemOverlayMaxEntries = target;
-        this.effectiveGroundItemOverlayFrame = frameId | 0;
-        return target;
+        return render.resolveEffectiveGroundItemOverlayMaxEntries(this, frameId);
     }
 
     private getFrameGroundItemOverlayMaxEntries(): number {
-        return this.resolveEffectiveGroundItemOverlayMaxEntries(this.stats.frameCount | 0);
+        return render.getFrameGroundItemOverlayMaxEntries(this);
     }
 
     private resolveEffectiveGroundItemOverlayRadius(frameId: number): number {
-        if ((this.effectiveGroundItemOverlayRadiusFrame | 0) === (frameId | 0)) {
-            return this.effectiveGroundItemOverlayRadius | 0;
-        }
-        const profile = this.syncBrowserQualityProfile();
-        const target = isTouchDevice ? profile.groundItemOverlayRadius | 0 : 12;
-        this.effectiveGroundItemOverlayRadius = target;
-        this.effectiveGroundItemOverlayRadiusFrame = frameId | 0;
-        return target;
+        return render.resolveEffectiveGroundItemOverlayRadius(this, frameId);
     }
 
     private getFrameGroundItemOverlayRadius(): number {
-        return this.resolveEffectiveGroundItemOverlayRadius(this.stats.frameCount | 0);
+        return render.getFrameGroundItemOverlayRadius(this);
     }
 
     private getFrameHitsplatMaxEntries(): number {
-        if (!isTouchDevice) return MAX_HIT_ENTRIES;
-        return this.syncBrowserQualityProfile().hitsplatMaxEntries | 0;
+        return render.getFrameHitsplatMaxEntries(this);
     }
 
     private getFrameHealthBarMaxEntries(): number {
-        if (!isTouchDevice) return 256;
-        return this.syncBrowserQualityProfile().healthBarMaxEntries | 0;
+        return render.getFrameHealthBarMaxEntries(this);
     }
 
     private getFrameOverheadTextMaxEntries(): number {
-        if (!isTouchDevice) return 256;
-        return this.syncBrowserQualityProfile().overheadTextMaxEntries | 0;
+        return render.getFrameOverheadTextMaxEntries(this);
     }
 
     private getFrameOverheadPrayerMaxEntries(): number {
-        if (!isTouchDevice) return 256;
-        return this.syncBrowserQualityProfile().overheadPrayerMaxEntries | 0;
+        return render.getFrameOverheadPrayerMaxEntries(this);
     }
 
     private updateAnimatedDrawRanges(
@@ -12433,2525 +2354,67 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         isInteract: boolean,
         isLod: boolean,
     ): void {
-        if (!map.locsAnimated.length) {
-            return;
-        }
-
-        for (const loc of map.locsAnimated) {
-            const frames = transparent ? loc.anim.framesAlpha : loc.anim.frames;
-            if (!frames) {
-                continue;
-            }
-
-            const frame = frames[loc.frame | 0];
-            if (!frame) {
-                continue;
-            }
-
-            const index = loc.getDrawRangeIndex(transparent, isInteract, isLod);
-            if (index === -1) {
-                continue;
-            }
-
-            drawCall.offsets[index] = frame[0];
-            (drawCall as any).numElements[index] = frame[1];
-            drawRanges[index] = frame;
-        }
+        return render.updateAnimatedDrawRanges(this, map, drawCall, drawRanges, transparent, isInteract, isLod);
     }
 
     private renderGeometryPass(transparent: boolean): void {
-        const roofPlaneLimit = this.getRoofPlaneLimit();
-        const cullTile = this.getRenderCullTile();
-
-        const count = this.mapManager.visibleMapCount;
-        if (count === 0) {
-            if (!transparent) {
-                this.lastLodVisibleMapCount = 0;
-                this.lastFullDetailVisibleMapCount = 0;
-                this.lastDistanceCulledVisibleMapCount = 0;
-            }
-            return;
-        }
-
-        const start = transparent ? count - 1 : 0;
-        const end = transparent ? -1 : count;
-        const step = transparent ? -1 : 1;
-        const renderDistanceTiles = Math.max(0, this.getFrameRenderDistanceTiles() | 0);
-        const renderDistancePadTiles = 0;
-        // LOD threshold in tiles from player tile to map bounds.
-        const lodThresholdTiles = Math.max(0, this.getFrameLodThresholdTiles() | 0);
-        let lodVisibleMapCount = 0;
-        let fullDetailVisibleMapCount = 0;
-        let distanceCulledVisibleMapCount = 0;
-
-        for (let i = start; i !== end; i += step) {
-            const map = this.mapManager.visibleMaps[i];
-            const tileDistance = this.getMapTileDistanceFromPoint(map, cullTile.x, cullTile.y);
-            if (
-                !this.isMapWithinRenderDistance(
-                    map,
-                    cullTile.x,
-                    cullTile.y,
-                    renderDistanceTiles,
-                    renderDistancePadTiles,
-                )
-            ) {
-                distanceCulledVisibleMapCount++;
-                continue;
-            }
-
-            // GPU interaction readback removed - always use non-interact draw calls
-            const isInteract = false;
-            const isLod = tileDistance > lodThresholdTiles;
-            if (isLod) {
-                lodVisibleMapCount++;
-            } else {
-                fullDetailVisibleMapCount++;
-            }
-
-            const { drawCall, drawRanges } = map.getDrawCall(transparent, isInteract, isLod);
-            const drawRangePlanes = map.getDrawRangesPlanes(transparent, isInteract, isLod);
-
-            const isWorldEntity = this.mapManager.worldEntityMapIds.has(map.id);
-            let weTransform: Float32Array = WebGLMapSquare.IDENTITY_MAT4;
-            let weEntityIndex: number | undefined;
-            if (isWorldEntity) {
-                weEntityIndex = this.getWorldEntityIndexForMapId(map.id);
-                if (weEntityIndex !== undefined) {
-                    weTransform =
-                        this.worldEntityAnimator?.getTransform(weEntityIndex) ??
-                        WebGLMapSquare.IDENTITY_MAT4;
-                }
-            }
-
-            drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
-            drawCall.uniform("u_worldEntityTransform", weTransform);
-            drawCall.uniform("u_worldEntityOpacity", 1.0);
-
-            this.drawWithRoofPlaneFilter(drawCall, drawRanges, drawRangePlanes, roofPlaneLimit);
-
-            const locBatch = map.getLocDrawCall(transparent, isInteract, isLod);
-            if (locBatch) {
-                const locDrawRangePlanes = map.getLocDrawRangesPlanes(
-                    transparent,
-                    isInteract,
-                    isLod,
-                );
-                locBatch.drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
-                locBatch.drawCall.uniform("u_worldEntityTransform", weTransform);
-                locBatch.drawCall.uniform("u_worldEntityOpacity", 1.0);
-                this.updateAnimatedDrawRanges(
-                    map,
-                    locBatch.drawCall,
-                    locBatch.drawRanges,
-                    transparent,
-                    isInteract,
-                    isLod,
-                );
-                this.drawWithRoofPlaneFilter(
-                    locBatch.drawCall,
-                    locBatch.drawRanges,
-                    locDrawRangePlanes,
-                    roofPlaneLimit,
-                );
-            }
-
-            const groundBatch = map.getGroundItemDrawCall(transparent, isInteract, isLod);
-            if (groundBatch) {
-                const groundDrawRangePlanes = map.getGroundItemDrawRangesPlanes(
-                    transparent,
-                    isInteract,
-                    isLod,
-                );
-                groundBatch.drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
-                groundBatch.drawCall.uniform("u_worldEntityTransform", weTransform);
-                groundBatch.drawCall.uniform("u_worldEntityOpacity", 1.0);
-                this.drawWithRoofPlaneFilter(
-                    groundBatch.drawCall,
-                    groundBatch.drawRanges,
-                    groundDrawRangePlanes,
-                    roofPlaneLimit,
-                );
-            }
-
-            const doorBatch = map.getDoorDrawCall(transparent, isInteract, isLod);
-            if (doorBatch) {
-                const doorDrawRangePlanes = map.getDoorDrawRangesPlanes(
-                    transparent,
-                    isInteract,
-                    isLod,
-                );
-                doorBatch.drawCall.uniform("u_roofPlaneLimit", roofPlaneLimit);
-                doorBatch.drawCall.uniform("u_worldEntityTransform", weTransform);
-                this.drawWithRoofPlaneFilter(
-                    doorBatch.drawCall,
-                    doorBatch.drawRanges,
-                    doorDrawRangePlanes,
-                    roofPlaneLimit,
-                );
-            }
-
-            // Mode1 overlap ghost: redraw WE with tint + low opacity when actors overlap
-            if (isWorldEntity && weEntityIndex !== undefined && !transparent) {
-                const weEntity = this.osrsClient.worldViewManager.getWorldEntity(weEntityIndex);
-                if (weEntity && weEntity.drawMode === 1) {
-                    const weView = this.osrsClient.worldViewManager.getWorldView(weEntityIndex);
-                    const hasOverlap =
-                        weView && (weView.npcIds.size > 0 || weView.playerIds.size > 0);
-                    if (hasOverlap) {
-                        const overlay = this.worldEntityOverlays.get(weEntityIndex);
-                        const weType =
-                            overlay?.configId !== undefined && overlay.configId >= 0
-                                ? this.osrsClient.worldEntityTypeLoader?.load(overlay.configId)
-                                : undefined;
-                        if (weType && weType.sceneTintHsl > 0 && this.sceneUniformBuffer) {
-                            this.setSceneHslOverrideFromPacked(weType.sceneTintHsl, 127);
-                            this.sceneUniformBuffer
-                                .set(4, this.sceneHslOverride as Float32Array)
-                                .update();
-
-                            this.app.enable(PicoGL.BLEND);
-                            this.app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
-
-                            drawCall.uniform("u_worldEntityOpacity", 0.01);
-                            this.drawWithRoofPlaneFilter(
-                                drawCall,
-                                drawRanges,
-                                drawRangePlanes,
-                                roofPlaneLimit,
-                            );
-                            drawCall.uniform("u_worldEntityOpacity", 1.0);
-
-                            this.app.disable(PicoGL.BLEND);
-
-                            this.clearSceneHslOverride();
-                            this.sceneUniformBuffer
-                                .set(4, this.sceneHslOverride as Float32Array)
-                                .update();
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!transparent) {
-            this.lastLodVisibleMapCount = lodVisibleMapCount;
-            this.lastFullDetailVisibleMapCount = fullDetailVisibleMapCount;
-            this.lastLodThreshold = lodThresholdTiles | 0;
-            this.lastDistanceCulledVisibleMapCount = distanceCulledVisibleMapCount;
-        }
+        return render.renderGeometryPass(this, transparent);
     }
 
     renderOpaquePass(): void {
-        this.renderGeometryPass(false);
+        return render.renderOpaquePass(this);
     }
 
     renderTransparentPass(): void {
-        this.renderGeometryPass(true);
+        return render.renderTransparentPass(this);
     }
 
     renderTransparentNpcPass(
         npcDataTextureIndex: number,
         npcDataTexture: Texture | undefined,
     ): void {
-        if (!npcDataTexture || !this.loadNpcs) {
-            return;
-        }
-        const cullTile = this.getRenderCullTile();
-        const renderDistanceTiles = Math.max(0, this.getFrameRenderDistanceTiles() | 0);
-        const renderDistancePadTiles = 0;
-
-        // Collect dynamic NPCs for second pass
-        const dynamicNpcs: Array<{
-            map: WebGLMapSquare;
-            npcIndex: number;
-            ecsId: number;
-            npcTypeId: number;
-            seqId: number;
-            overlaySeqId: number;
-            overlayFrameId: number;
-            dataOffset: number;
-            frameId: number;
-        }> = [];
-
-        for (let i = this.mapManager.visibleMapCount - 1; i >= 0; i--) {
-            const map = this.mapManager.visibleMaps[i];
-            if (
-                !this.isMapWithinRenderDistance(
-                    map,
-                    cullTile.x,
-                    cullTile.y,
-                    renderDistanceTiles,
-                    renderDistancePadTiles,
-                )
-            ) {
-                continue;
-            }
-            const npcCount = map.npcEntityIds?.length ?? 0;
-            if (npcCount === 0) continue;
-
-            const dataOffset = map.npcDataTextureOffsets[npcDataTextureIndex];
-            if (dataOffset === -1) {
-                continue;
-            }
-
-            const npcBatch = map.drawCallNpc;
-            if (!npcBatch) continue;
-            const { drawCall, drawRanges } = npcBatch;
-
-            drawCall
-                .uniform("u_npcDataOffset", dataOffset)
-                .uniform("u_modelYOffset", this.getNpcModelYOffset())
-                .uniform("u_worldEntityTransform", WebGLMapSquare.IDENTITY_MAT4)
-                .texture("u_npcDataTexture", npcDataTexture);
-
-            {
-                const ecs = this.osrsClient.npcEcs;
-                const ids: number[] = map.npcEntityIds as any;
-                const weNpcIndices: number[] = [];
-
-                for (let j = 0; j < npcCount; j++) {
-                    const id = ids[j] | 0;
-                    if (!this.shouldRenderNpcFromMap(map, id)) {
-                        (drawCall as any).offsets[j] = 0;
-                        (drawCall as any).numElements[j] = 0;
-                        drawRanges[j] = NULL_DRAW_RANGE;
-                        continue;
-                    }
-
-                    // Draw world-entity NPCs separately so their transparent faces
-                    // receive the same deck height and transform as their opaque faces.
-                    if (ecs.getWorldViewId(id) >= 0) {
-                        weNpcIndices.push(j);
-                        (drawCall as any).offsets[j] = 0;
-                        (drawCall as any).numElements[j] = 0;
-                        drawRanges[j] = NULL_DRAW_RANGE;
-                        continue;
-                    }
-
-                    const seqId = ecs.getSeqId(id) | 0;
-                    const seqDelay = ecs.getSeqDelay?.(id) | 0;
-                    const npcTypeId = (ecs.getNpcTypeId?.(id) ?? -1) | 0;
-                    const { movementSeqId, idleSeqId, walkSeqId } =
-                        this.resolveNpcMovementSequenceIds(ecs, id);
-                    const actionActive = seqId >= 0 && seqDelay === 0;
-                    const renderSeqId = actionActive ? seqId | 0 : movementSeqId | 0;
-                    const overlaySeqId =
-                        actionActive &&
-                        this.shouldLayerNpcMovementSequence(
-                            seqId | 0,
-                            movementSeqId | 0,
-                            idleSeqId | 0,
-                        )
-                            ? movementSeqId | 0
-                            : -1;
-                    const frameId = actionActive
-                        ? ecs.getFrameIndex(id) | 0
-                        : ecs.getMovementFrameIndex?.(id) | 0;
-                    const overlayFrameId =
-                        overlaySeqId >= 0 ? ecs.getMovementFrameIndex?.(id) | 0 : -1;
-                    const hasStaticMovementAnim =
-                        (movementSeqId | 0) === (idleSeqId | 0) ||
-                        (movementSeqId | 0) === (walkSeqId | 0) ||
-                        !!map.npcExtraAnims?.[j]?.[movementSeqId | 0];
-                    const forceDynamic =
-                        overlaySeqId >= 0 || (!actionActive && !hasStaticMovementAnim);
-                    const dynamicMeta =
-                        renderSeqId >= 0 && npcTypeId >= 0
-                            ? this.ensureNpcDynamicSequenceMeta(
-                                map,
-                                j,
-                                npcTypeId,
-                                renderSeqId,
-                                forceDynamic,
-                            )
-                            : undefined;
-
-                    if (
-                        renderSeqId >= 0 &&
-                        (forceDynamic || !actionActive || !map.npcExtraAnims?.[j]?.[seqId]) &&
-                        dynamicMeta
-                    ) {
-                        (drawCall as any).offsets[j] = 0;
-                        (drawCall as any).numElements[j] = 0;
-                        drawRanges[j] = NULL_DRAW_RANGE;
-                        dynamicNpcs.push({
-                            map,
-                            npcIndex: j,
-                            ecsId: id,
-                            npcTypeId,
-                            seqId: renderSeqId | 0,
-                            overlaySeqId: overlaySeqId | 0,
-                            overlayFrameId: overlayFrameId | 0,
-                            dataOffset,
-                            frameId,
-                        });
-                        continue;
-                    }
-
-                    const anim = this._resolveNpcAnimation(map, j, ecs, id);
-                    let frame: DrawRange = NULL_DRAW_RANGE;
-                    if (anim.framesAlpha) {
-                        frame =
-                            anim.framesAlpha[
-                                Math.max(0, Math.min((anim.framesAlpha.length - 1) | 0, frameId))
-                                ];
-                    }
-                    (drawCall as any).offsets[j] = frame[0];
-                    (drawCall as any).numElements[j] = frame[1];
-                    drawRanges[j] = frame;
-                }
-
-                this.draw(drawCall, drawRanges);
-
-                if (weNpcIndices.length > 0) {
-                    const firstWeId = ids[weNpcIndices[0]] | 0;
-                    const weEntityIdx = ecs.getWorldViewId(firstWeId);
-                    const weTransform =
-                        this.worldEntityAnimator?.getTransform(weEntityIdx) ??
-                        WebGLMapSquare.IDENTITY_MAT4;
-                    const weDeckH = this.getWorldEntityDeckHeight(0, 0);
-
-                    drawCall
-                        .uniform("u_modelYOffset", this.getNpcModelYOffset(weDeckH))
-                        .uniform("u_worldEntityTransform", weTransform);
-
-                    for (let j = 0; j < npcCount; j++) {
-                        (drawCall as any).offsets[j] = 0;
-                        (drawCall as any).numElements[j] = 0;
-                        drawRanges[j] = NULL_DRAW_RANGE;
-                    }
-                    for (const wj of weNpcIndices) {
-                        const wid = ids[wj] | 0;
-                        const anim = this._resolveNpcAnimation(map, wj, ecs, wid);
-                        const wFrameId =
-                            ecs.getSeqId(wid) >= 0 && ecs.getSeqDelay?.(wid) === 0
-                                ? ecs.getFrameIndex(wid) | 0
-                                : ecs.getMovementFrameIndex?.(wid) | 0;
-                        let frame: DrawRange = NULL_DRAW_RANGE;
-                        if (anim.framesAlpha) {
-                            frame =
-                                anim.framesAlpha[
-                                    Math.max(
-                                        0,
-                                        Math.min((anim.framesAlpha.length - 1) | 0, wFrameId),
-                                    )
-                                    ];
-                        }
-                        (drawCall as any).offsets[wj] = frame[0];
-                        (drawCall as any).numElements[wj] = frame[1];
-                        drawRanges[wj] = frame;
-                    }
-                    this.draw(drawCall, drawRanges);
-                }
-            }
-
-            try {
-                if (this.gfxRenderer) {
-                    // Reuse object to avoid per-call allocation
-                    this.gfxRenderPassOffsets.player = undefined;
-                    this.gfxRenderPassOffsets.npc = dataOffset;
-                    this.gfxRenderPassOffsets.world =
-                        map.worldGfxDataTextureOffsets[npcDataTextureIndex];
-                    this.gfxRenderer.renderMapPass(
-                        map,
-                        npcDataTexture,
-                        "alpha",
-                        this.gfxRenderPassOffsets,
-                    );
-                }
-            } catch {}
-        }
-
-        if (dynamicNpcs.length > 0 && npcDataTexture) {
-            for (const dyn of dynamicNpcs) {
-                const geometry = this.dynamicNpcAnimLoader?.getFrameGeometry(
-                    dyn.npcTypeId,
-                    dyn.seqId,
-                    dyn.frameId,
-                    dyn.overlaySeqId,
-                    dyn.overlayFrameId,
-                );
-                if (!geometry) {
-                    continue;
-                }
-
-                const indexCount = this.uploadDynamicNpcGeometry(geometry, true);
-                if (indexCount <= 0 || !this.dynamicNpcDrawCall) {
-                    continue;
-                }
-
-                const dynDrawCall = this.dynamicNpcDrawCall;
-                dynDrawCall.texture("u_npcDataTexture", npcDataTexture);
-                const npcDataOffset = dyn.dataOffset + dyn.npcIndex;
-
-                dynDrawCall.uniform("u_npcDataOffset", npcDataOffset);
-                dynDrawCall.uniform("u_mapPos", [dyn.map.renderPosX, dyn.map.renderPosY]);
-                dynDrawCall.uniform("u_timeLoaded", dyn.map.timeLoaded);
-                {
-                    const dynWvId = this.osrsClient.npcEcs.getWorldViewId(dyn.ecsId);
-                    if (dynWvId >= 0) {
-                        const dynDeckH = this.getWorldEntityDeckHeight(0, 0);
-                        dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset(dynDeckH));
-                        dynDrawCall.uniform(
-                            "u_worldEntityTransform",
-                            this.worldEntityAnimator?.getTransform(dynWvId) ??
-                            WebGLMapSquare.IDENTITY_MAT4,
-                        );
-                    } else {
-                        dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset());
-                        dynDrawCall.uniform("u_worldEntityTransform", WebGLMapSquare.IDENTITY_MAT4);
-                    }
-                }
-
-                // Set height map texture from the map
-                const heightMapTex = (dyn.map as any).heightMapTexture;
-                if (heightMapTex) {
-                    dynDrawCall.texture("u_heightMap", heightMapTex);
-                    dynDrawCall.uniform("u_sceneBorderSize", (dyn.map as any).borderSize ?? 6);
-                }
-                const waterMaskTex = (dyn.map as any).waterMaskTexture;
-                if (waterMaskTex) {
-                    dynDrawCall.texture("u_waterMask", waterMaskTex);
-                }
-
-                this.dynamicNpcSingleDrawRange[0] = 0;
-                this.dynamicNpcSingleDrawRange[1] = indexCount | 0;
-                this.dynamicNpcSingleDrawRange[2] = 1;
-                (dynDrawCall as any).offsets[0] = 0;
-                (dynDrawCall as any).numElements[0] = indexCount | 0;
-                this.draw(dynDrawCall, this.dynamicNpcSingleDrawRanges);
-            }
-        }
+        return render.renderTransparentNpcPass(this, npcDataTextureIndex, npcDataTexture);
     }
 
     updateGroundItemMeshes(stacks: ClientGroundItemStack[]): void {
-        const grouped = new Map<number, ClientGroundItemStack[]>();
-        for (const stack of stacks) {
-            const tileX = stack.tile.x | 0;
-            const tileY = stack.tile.y | 0;
-
-            // Check if this ground item falls within a WorldView overlay
-            let mapId: number;
-            const wv = this.osrsClient.worldViewManager.findWorldViewAt(tileX, tileY);
-            if (wv && !wv.isTopLevel()) {
-                mapId = wv.overlayMapId;
-            } else {
-                const mapX = tileX >> 6;
-                const mapY = tileY >> 6;
-                if (mapX < 0 || mapY < 0) continue;
-                mapId = getMapSquareId(mapX, mapY);
-            }
-
-            const clone: ClientGroundItemStack = {
-                ...stack,
-                itemId: stack.itemId | 0,
-                quantity: Math.max(1, stack.quantity | 0),
-                tile: { x: tileX, y: tileY, level: stack.tile.level | 0 },
-            };
-            const list = grouped.get(mapId);
-            if (list) list.push(clone);
-            else grouped.set(mapId, [clone]);
-        }
-
-        const allKeys = new Set<number>([...this.groundItemStacks.keys(), ...grouped.keys()]);
-        for (const key of allKeys) {
-            const next = grouped.get(key) ?? [];
-            const hashNext = next.length > 0 ? this.hashGroundStacks(next) : "";
-            const prevHash = this.groundItemStackHashes.get(key) ?? "";
-            if (hashNext !== prevHash) {
-                if (next.length > 0) {
-                    this.groundItemStacks.set(key, next);
-                    this.groundItemStackHashes.set(key, hashNext);
-                } else {
-                    this.groundItemStacks.delete(key);
-                    this.groundItemStackHashes.delete(key);
-                }
-
-                const mapX = key >> 16;
-                let mapY = key & 0xffff;
-                if (mapY & 0x8000) mapY = mapY - 0x10000;
-                const map = this.mapManager.getMap(mapX, mapY) as WebGLMapSquare | undefined;
-                if (map) {
-                    this.rebuildGroundItemsForMap(map, next);
-                }
-            }
-        }
+        return render.updateGroundItemMeshes(this, stacks);
     }
 
     private hashGroundStacks(stacks: ClientGroundItemStack[]): string {
-        return stacks
-            .slice()
-            .sort(
-                (a, b) =>
-                    a.tile.x - b.tile.x ||
-                    a.tile.y - b.tile.y ||
-                    a.tile.level - b.tile.level ||
-                    a.itemId - b.itemId ||
-                    a.quantity - b.quantity ||
-                    (a.id | 0) - (b.id | 0),
-            )
-            .map(
-                (stack) =>
-                    `${stack.tile.x},${stack.tile.y},${stack.tile.level},${stack.itemId},${stack.quantity},${stack.id}`,
-            )
-            .join("|");
+        return render.hashGroundStacks(this, stacks);
     }
 
     private rebuildGroundItemsForMap(
         map: WebGLMapSquare,
         stacks: ClientGroundItemStack[] | undefined,
     ): void {
-        if (!this.mainProgram || !this.mainAlphaProgram) return;
-        if (
-            !this.textureArray ||
-            !this.textureMaterials ||
-            !this.waterTextures ||
-            !this.sceneUniformBuffer
-        )
-            return;
-        const objModelLoader = this.osrsClient.objModelLoader;
-        const textureLoader = this.osrsClient.textureLoader;
-        if (!objModelLoader || !textureLoader) return;
-
-        const data = buildGroundItemGeometry(
-            map,
-            stacks && stacks.length > 0 ? stacks : undefined,
-            objModelLoader,
-            textureLoader,
-            this.textureIdIndexMap,
-        );
-
-        if (!data) {
-            map.clearGroundItemGeometry();
-            return;
-        }
-
-        const textureUpdates = new Map<number, Int32Array>();
-        for (const texId of data.usedTextureIds) {
-            if (this.loadedTextureIds.has(texId)) continue;
-            try {
-                const pixels = textureLoader.getPixelsArgb(texId, TEXTURE_SIZE, true, 1.0);
-                textureUpdates.set(texId, pixels);
-                this.loadedTextureIds.add(texId);
-            } catch (err) {
-                console.warn("[ground] failed to load texture", texId, err);
-            }
-        }
-        if (textureUpdates.size > 0) {
-            this.updateTextureArray(textureUpdates);
-        }
-
-        map.updateGroundItemGeometry(
-            this.app,
-            this.mainProgram,
-            this.mainAlphaProgram,
-            this.textureArray,
-            this.textureMaterials,
-            this.waterTextures,
-            this.sceneUniformBuffer,
-            data,
-        );
+        return render.rebuildGroundItemsForMap(this, map, stacks);
     }
 
-    // Unified opaque actor pass that draws NPCs and Players for each visible map
     renderOpaqueActorPass(
         actorDataTextureIndex: number,
         actorDataTexture: Texture | undefined,
     ): void {
-        if (!actorDataTexture) return;
-
-        const cullTile = this.getRenderCullTile();
-        const renderDistanceTiles = Math.max(0, this.getFrameRenderDistanceTiles() | 0);
-        const renderDistancePadTiles = 0;
-
-        // Collect dynamic NPCs for second pass
-        const dynamicNpcs: Array<{
-            map: WebGLMapSquare;
-            npcIndex: number;
-            ecsId: number;
-            npcTypeId: number;
-            seqId: number;
-            overlaySeqId: number;
-            overlayFrameId: number;
-            dataOffset: number;
-            frameId: number;
-        }> = [];
-
-        // Iterate maps front-to-back (same as opaque ordering for map chunks)
-        for (let i = 0; i < this.mapManager.visibleMapCount; i++) {
-            const map = this.mapManager.visibleMaps[i];
-            if (
-                !this.isMapWithinRenderDistance(
-                    map,
-                    cullTile.x,
-                    cullTile.y,
-                    renderDistanceTiles,
-                    renderDistancePadTiles,
-                )
-            ) {
-                continue;
-            }
-            const npcCount = map.npcEntityIds?.length ?? 0;
-
-            // Draw NPCs in this map using map-specific geometry
-            if (this.loadNpcs && npcCount > 0) {
-                const baseOffsetNpc = map.npcDataTextureOffsets[actorDataTextureIndex];
-                if (baseOffsetNpc !== -1) {
-                    const npcBatch = map.drawCallNpc;
-                    if (!npcBatch) {
-                        continue;
-                    }
-                    const { drawCall, drawRanges } = npcBatch;
-                    drawCall
-                        .uniform("u_npcDataOffset", baseOffsetNpc)
-                        .uniform("u_modelYOffset", this.getNpcModelYOffset())
-                        .uniform("u_worldEntityTransform", WebGLMapSquare.IDENTITY_MAT4)
-                        .texture("u_npcDataTexture", actorDataTexture);
-                    const ecs = this.osrsClient.npcEcs;
-                    const ids: number[] = map.npcEntityIds as any;
-
-                    // Track world-entity NPCs for second pass with bobbing transform
-                    const weNpcIndices: number[] = [];
-
-                    for (let j = 0; j < npcCount; j++) {
-                        const id = ids[j] | 0;
-                        if (!this.shouldRenderNpcFromMap(map, id)) {
-                            (drawCall as any).offsets[j] = 0;
-                            (drawCall as any).numElements[j] = 0;
-                            drawRanges[j] = NULL_DRAW_RANGE;
-                            continue;
-                        }
-
-                        // NPCs assigned to a world entity skip the overworld pass
-                        if (ecs.getWorldViewId(id) >= 0) {
-                            weNpcIndices.push(j);
-                            (drawCall as any).offsets[j] = 0;
-                            (drawCall as any).numElements[j] = 0;
-                            drawRanges[j] = NULL_DRAW_RANGE;
-                            continue;
-                        }
-
-                        const seqId = ecs.getSeqId(id) | 0;
-                        const seqDelay = ecs.getSeqDelay?.(id) | 0;
-                        const npcTypeId = (ecs.getNpcTypeId?.(id) ?? -1) | 0;
-                        const { movementSeqId, idleSeqId, walkSeqId } =
-                            this.resolveNpcMovementSequenceIds(ecs, id);
-                        const actionActive = seqId >= 0 && seqDelay === 0;
-                        const renderSeqId = actionActive ? seqId | 0 : movementSeqId | 0;
-                        const overlaySeqId =
-                            actionActive &&
-                            this.shouldLayerNpcMovementSequence(
-                                seqId | 0,
-                                movementSeqId | 0,
-                                idleSeqId | 0,
-                            )
-                                ? movementSeqId | 0
-                                : -1;
-                        const frameId = actionActive
-                            ? ecs.getFrameIndex(id) | 0
-                            : ecs.getMovementFrameIndex?.(id) | 0;
-                        const overlayFrameId =
-                            overlaySeqId >= 0 ? ecs.getMovementFrameIndex?.(id) | 0 : -1;
-                        const hasStaticMovementAnim =
-                            (movementSeqId | 0) === (idleSeqId | 0) ||
-                            (movementSeqId | 0) === (walkSeqId | 0) ||
-                            !!map.npcExtraAnims?.[j]?.[movementSeqId | 0];
-                        const forceDynamic =
-                            overlaySeqId >= 0 || (!actionActive && !hasStaticMovementAnim);
-                        const dynamicMeta =
-                            renderSeqId >= 0 && npcTypeId >= 0
-                                ? this.ensureNpcDynamicSequenceMeta(
-                                    map,
-                                    j,
-                                    npcTypeId,
-                                    renderSeqId,
-                                    forceDynamic,
-                                )
-                                : undefined;
-
-                        if (
-                            renderSeqId >= 0 &&
-                            (forceDynamic || !actionActive || !map.npcExtraAnims?.[j]?.[seqId]) &&
-                            dynamicMeta
-                        ) {
-                            (drawCall as any).offsets[j] = 0;
-                            (drawCall as any).numElements[j] = 0;
-                            drawRanges[j] = NULL_DRAW_RANGE;
-                            dynamicNpcs.push({
-                                map,
-                                npcIndex: j,
-                                ecsId: id,
-                                npcTypeId,
-                                seqId: renderSeqId | 0,
-                                overlaySeqId: overlaySeqId | 0,
-                                overlayFrameId: overlayFrameId | 0,
-                                dataOffset: baseOffsetNpc,
-                                frameId,
-                            });
-                            continue;
-                        }
-
-                        const anim = this._resolveNpcAnimation(map, j, ecs, id);
-                        const frame =
-                            anim.frames[
-                                Math.max(0, Math.min((anim.frames.length - 1) | 0, frameId))
-                                ];
-                        (drawCall as any).offsets[j] = frame[0];
-                        (drawCall as any).numElements[j] = frame[1];
-                        drawRanges[j] = frame;
-                    }
-                    this.draw(drawCall, drawRanges);
-
-                    // Second pass: draw world-entity NPCs with deck height + bobbing transform
-                    if (weNpcIndices.length > 0) {
-                        const firstWeId = ids[weNpcIndices[0]] | 0;
-                        const weEntityIdx = ecs.getWorldViewId(firstWeId);
-                        const weTransform =
-                            this.worldEntityAnimator?.getTransform(weEntityIdx) ??
-                            WebGLMapSquare.IDENTITY_MAT4;
-                        const weDeckH = this.getWorldEntityDeckHeight(0, 0);
-
-                        drawCall
-                            .uniform("u_modelYOffset", this.getNpcModelYOffset(weDeckH))
-                            .uniform("u_worldEntityTransform", weTransform);
-
-                        for (let j = 0; j < npcCount; j++) {
-                            (drawCall as any).offsets[j] = 0;
-                            (drawCall as any).numElements[j] = 0;
-                            drawRanges[j] = NULL_DRAW_RANGE;
-                        }
-                        for (const wj of weNpcIndices) {
-                            const wid = ids[wj] | 0;
-                            const anim = this._resolveNpcAnimation(map, wj, ecs, wid);
-                            const wFrameId =
-                                ecs.getSeqId(wid) >= 0 && ecs.getSeqDelay?.(wid) === 0
-                                    ? ecs.getFrameIndex(wid) | 0
-                                    : ecs.getMovementFrameIndex?.(wid) | 0;
-                            const frame =
-                                anim.frames[
-                                    Math.max(0, Math.min((anim.frames.length - 1) | 0, wFrameId))
-                                    ];
-                            (drawCall as any).offsets[wj] = frame[0];
-                            (drawCall as any).numElements[wj] = frame[1];
-                            drawRanges[wj] = frame;
-                        }
-                        this.draw(drawCall, drawRanges);
-                    }
-                }
-            }
-
-            // Draw Players in this map using player geometry
-            this.playerRenderer.renderOpaqueForMap(map, actorDataTextureIndex, actorDataTexture);
-            // GFX pass (opaque) for attached player/NPC effects
-            try {
-                const baseOffsetPlayer = map.playerDataTextureOffsets[actorDataTextureIndex];
-                const baseOffsetNpcForGfx = map.npcDataTextureOffsets[actorDataTextureIndex];
-                if (this.gfxRenderer && (baseOffsetPlayer !== -1 || baseOffsetNpcForGfx !== -1)) {
-                    // Reuse object to avoid per-call allocation
-                    this.gfxRenderPassOffsets.player =
-                        baseOffsetPlayer !== -1 ? baseOffsetPlayer : undefined;
-                    this.gfxRenderPassOffsets.npc =
-                        baseOffsetNpcForGfx !== -1 ? baseOffsetNpcForGfx : undefined;
-                    this.gfxRenderPassOffsets.world =
-                        map.worldGfxDataTextureOffsets[actorDataTextureIndex];
-                    this.gfxRenderer.renderMapPass(
-                        map,
-                        actorDataTexture,
-                        "opaque",
-                        this.gfxRenderPassOffsets,
-                    );
-                }
-            } catch {}
-            // Render projectiles (opaque pass)
-            try {
-                if (map.projectileDataTextureOffsets) {
-                    const baseOffsetProjectile = map.projectileDataTextureOffsets[0];
-                    if (baseOffsetProjectile !== undefined && baseOffsetProjectile !== -1) {
-                        this.projectileRenderer?.renderMapPass(
-                            map,
-                            baseOffsetProjectile,
-                            actorDataTexture,
-                            "opaque",
-                        );
-                    }
-                }
-            } catch {}
-        }
-
-        if (dynamicNpcs.length > 0 && actorDataTexture) {
-            for (const dyn of dynamicNpcs) {
-                const geometry = this.dynamicNpcAnimLoader?.getFrameGeometry(
-                    dyn.npcTypeId,
-                    dyn.seqId,
-                    dyn.frameId,
-                    dyn.overlaySeqId,
-                    dyn.overlayFrameId,
-                );
-                if (!geometry) {
-                    continue;
-                }
-
-                const indexCount = this.uploadDynamicNpcGeometry(geometry, false);
-                if (indexCount <= 0 || !this.dynamicNpcDrawCall) {
-                    continue;
-                }
-
-                const dynDrawCall = this.dynamicNpcDrawCall;
-                dynDrawCall.texture("u_npcDataTexture", actorDataTexture);
-                const npcDataOffset = dyn.dataOffset + dyn.npcIndex;
-
-                dynDrawCall.uniform("u_npcDataOffset", npcDataOffset);
-                dynDrawCall.uniform("u_mapPos", [dyn.map.renderPosX, dyn.map.renderPosY]);
-                dynDrawCall.uniform("u_timeLoaded", dyn.map.timeLoaded);
-                {
-                    const dynWvId = this.osrsClient.npcEcs.getWorldViewId(dyn.ecsId);
-                    if (dynWvId >= 0) {
-                        const dynDeckH = this.getWorldEntityDeckHeight(0, 0);
-                        dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset(dynDeckH));
-                        dynDrawCall.uniform(
-                            "u_worldEntityTransform",
-                            this.worldEntityAnimator?.getTransform(dynWvId) ??
-                            WebGLMapSquare.IDENTITY_MAT4,
-                        );
-                    } else {
-                        dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset());
-                        dynDrawCall.uniform("u_worldEntityTransform", WebGLMapSquare.IDENTITY_MAT4);
-                    }
-                }
-
-                // Set height map texture from the map
-                const heightMapTex = (dyn.map as any).heightMapTexture;
-                if (heightMapTex) {
-                    dynDrawCall.texture("u_heightMap", heightMapTex);
-                    dynDrawCall.uniform("u_sceneBorderSize", (dyn.map as any).borderSize ?? 6);
-                }
-                const waterMaskTex = (dyn.map as any).waterMaskTexture;
-                if (waterMaskTex) {
-                    dynDrawCall.texture("u_waterMask", waterMaskTex);
-                }
-
-                this.dynamicNpcSingleDrawRange[0] = 0;
-                this.dynamicNpcSingleDrawRange[1] = indexCount | 0;
-                this.dynamicNpcSingleDrawRange[2] = 1;
-                (dynDrawCall as any).offsets[0] = 0;
-                (dynDrawCall as any).numElements[0] = indexCount | 0;
-                this.draw(dynDrawCall, this.dynamicNpcSingleDrawRanges);
-            }
-        }
+        return render.renderOpaqueActorPass(this, actorDataTextureIndex, actorDataTexture);
     }
 
     renderTransparentPlayerPass(
         playerDataTextureIndex: number,
         playerDataTexture: Texture | undefined,
     ): void {
-        const cullTile = this.getRenderCullTile();
-        const renderDistanceTiles = Math.max(0, this.getFrameRenderDistanceTiles() | 0);
-        const renderDistancePadTiles = 0;
-        this.playerRenderer.renderTransparentPlayerPass(playerDataTextureIndex, playerDataTexture);
-        // GFX pass (alpha)
-        try {
-            if (playerDataTexture) {
-                for (let i = this.mapManager.visibleMapCount - 1; i >= 0; i--) {
-                    const map = this.mapManager.visibleMaps[i];
-                    if (
-                        !this.isMapWithinRenderDistance(
-                            map,
-                            cullTile.x,
-                            cullTile.y,
-                            renderDistanceTiles,
-                            renderDistancePadTiles,
-                        )
-                    ) {
-                        continue;
-                    }
-                    const baseOffsetPlayer = map.playerDataTextureOffsets[playerDataTextureIndex];
-                    // Alpha player phase should only render player-attached effects.
-                    // NPC/world alpha effects are handled in renderTransparentNpcPass.
-                    if (this.gfxRenderer && baseOffsetPlayer !== -1) {
-                        // Reuse object to avoid per-call allocation
-                        this.gfxRenderPassOffsets.player = baseOffsetPlayer;
-                        this.gfxRenderPassOffsets.npc = undefined;
-                        this.gfxRenderPassOffsets.world = undefined;
-                        this.gfxRenderer.renderMapPass(
-                            map,
-                            playerDataTexture,
-                            "alpha",
-                            this.gfxRenderPassOffsets,
-                        );
-                    }
-                }
-            }
-        } catch {}
-        // Projectile pass (alpha)
-        try {
-            if (playerDataTexture) {
-                for (let i = this.mapManager.visibleMapCount - 1; i >= 0; i--) {
-                    const map = this.mapManager.visibleMaps[i];
-                    if (
-                        !this.isMapWithinRenderDistance(
-                            map,
-                            cullTile.x,
-                            cullTile.y,
-                            renderDistanceTiles,
-                            renderDistancePadTiles,
-                        )
-                    ) {
-                        continue;
-                    }
-                    if (map.projectileDataTextureOffsets) {
-                        const baseOffsetProjectile = map.projectileDataTextureOffsets[0];
-                        if (baseOffsetProjectile !== undefined && baseOffsetProjectile !== -1) {
-                            this.projectileRenderer?.renderMapPass(
-                                map,
-                                baseOffsetProjectile,
-                                playerDataTexture,
-                                "alpha",
-                            );
-                        }
-                    }
-                }
-            }
-        } catch {}
+        return render.renderTransparentPlayerPass(this, playerDataTextureIndex, playerDataTexture);
     }
 
     checkInteractions(): void {
-        const frameCount = this.stats.frameCount;
-        this.lastInteractionRaycastHitCount = 0;
-        this.lastInteractionMenuOptionCount = 0;
-        let raycastHitCount = 0;
-
-        const inputManager = this.osrsClient.inputManager;
-        const isMouseDown = inputManager.dragX !== -1 || inputManager.dragY !== -1;
-        const pickX = inputManager.pickX;
-        const pickY = inputManager.pickY;
-        const picked = pickX !== -1 && pickY !== -1;
-        const leftClicked = inputManager.leftClickX !== -1 && inputManager.leftClickY !== -1;
-
-        // If the click is inside the bottom-right UI tabs region, consume it (don't interact with world).
-        if (leftClicked) {
-            const contW = 241;
-            const contH = 37 + 261 + 37; // strip + panel + strip
-            const contX = this.app.width - 8 - contW; // right margin 8
-            const contY = this.app.height - 8 - contH; // bottom margin 8
-            const mx = inputManager.leftClickX;
-            const my = inputManager.leftClickY;
-            if (mx >= contX && mx <= contX + contW && my >= contY && my <= contY + contH) {
-                this.clearInteractHighlightHoverTarget();
-                return;
-            }
-        }
-
-        const menuCooldown = isTouchDevice ? 50 : 10;
-
-        if (
-            (inputManager.mouseX === -1 ||
-                inputManager.mouseY === -1 ||
-                frameCount - this.osrsClient.menuOpenedFrame < menuCooldown) &&
-            !leftClicked
-        ) {
-            if (inputManager.mouseX === -1 || inputManager.mouseY === -1) {
-                this.clearInteractHighlightHoverTarget();
-            }
-            return;
-        }
-
-        // Don't auto close menu on touch devices
-        if (this.osrsClient.menuOpen && !picked && !isMouseDown && isTouchDevice) {
-            return;
-        }
-
-        if (!picked && !leftClicked && !this.osrsClient.tooltips) {
-            this.osrsClient.closeMenu();
-            this.clearInteractHighlightHoverTarget();
-            return;
-        }
-
-        const usingPinnedMenu =
-            this.osrsClient.menuOpen &&
-            !!this.osrsClient.menuPinnedEntries &&
-            this.osrsClient.menuPinnedEntries.length > 0;
-        // PERF: Reuse cached array and copy entries in-place instead of .slice()
-        const menuEntries = this.cachedMenuEntries;
-        menuEntries.length = 0;
-        if (usingPinnedMenu) {
-            for (let i = 0; i < this.osrsClient.menuPinnedEntries!.length; i++) {
-                menuEntries.push(this.osrsClient.menuPinnedEntries![i]);
-            }
-        }
-
-        const hasActiveSpell = ClientState.isSpellSelected;
-        // PERF: Reuse cached spell object instead of creating new one each frame
-        let activeSpell = this.cachedActiveSpell;
-        if (hasActiveSpell) {
-            if (!activeSpell) {
-                activeSpell = {
-                    spellId: 0,
-                    spellName: "",
-                    actionName: "",
-                    spellLevel: 0,
-                    runes: null,
-                    targetMask: 0,
-                };
-                this.cachedActiveSpell = activeSpell;
-            }
-            activeSpell.spellId = ClientState.selectedSpellId;
-            activeSpell.spellName = ClientState.selectedSpellName;
-            activeSpell.actionName = ClientState.selectedSpellActionName;
-            activeSpell.spellLevel = ClientState.selectedSpellLevel;
-            activeSpell.runes = ClientState.selectedSpellRunes;
-            activeSpell.targetMask = ClientState.selectedSpellTargetMask;
-        } else {
-            activeSpell = null;
-        }
-        // world "Use" targeting is driven by ClientState.isItemSelected (not inventory UI selection).
-        const hasSelectedItem =
-            ClientState.isItemSelected === 1 && (ClientState.selectedItemId | 0) > 0;
-        const selectedItemName = String(ClientState.selectedSpellName || "");
-        const anchorX = picked ? pickX : inputManager.mouseX;
-        const anchorY = picked ? pickY : inputManager.mouseY;
-        const anchorInSceneViewport = this.osrsClient.camera.containsScreenPoint(anchorX, anchorY);
-
-        // Only build world menu entries (NPCs, objects, Walk here) when mouse is NOT
-        // over an interactive widget. In resizable mode, viewport covers the whole screen but
-        // widgets (inventory, chat, etc.) are layered on top and should capture clicks.
-        // Check if mouse is in a UI region (chatbox, minimap, sidebar)
-        // The client uses dynamic region checks based on frame dimensions
-        // PERF: Inline check instead of IIFE to avoid per-frame function allocation
-        const mouseInUIRegion = this.isMouseInUIRegion(anchorX, anchorY);
-        // Also treat any visible widget/modal capture under the pointer as UI.
-        // This prevents world hover/menu fallbacks ("Walk here") from leaking through modal overlays.
-        const mouseOverWidget =
-            anchorX !== -1 && anchorY !== -1
-                ? this.osrsClient.isPointOverWidget(anchorX, anchorY)
-                : false;
-
-        // Build world menu entries only if:
-        // 1. Not using a pinned menu
-        // 2. Mouse is not in a static UI region (chatbox, minimap, sidebar)
-        // 3. Mouse is not over any blocking widget/modal capture
-        if (!usingPinnedMenu && !mouseInUIRegion && !mouseOverWidget) {
-            // base menu always starts with Cancel.
-            menuEntries.push({
-                option: "Cancel",
-                targetId: -1,
-                targetType: MenuTargetType.NONE,
-                targetName: "",
-                targetLevel: -1,
-            });
-        }
-
-        if (!usingPinnedMenu && !mouseInUIRegion && !mouseOverWidget && anchorInSceneViewport) {
-            // PERF: Reuse cached arrays/sets instead of allocating new ones each frame
-            const locIds = this.cachedLocIds;
-            locIds.clear();
-            const objIds = this.cachedObjIds;
-            objIds.clear();
-            const npcIds = this.cachedNpcIds;
-            npcIds.clear();
-            const playerIds = this.cachedPlayerIds;
-            playerIds.clear();
-            const hoveredTile = this.osrsClient.hoveredTile;
-
-            // add Walk here only when no item/spell is selected.
-            const baseX = (ClientState.baseX | 0) as number;
-            const baseY = (ClientState.baseY | 0) as number;
-            const anchorTile = this.computeTileAt(anchorX, anchorY);
-            let walkHereEntry: OsrsMenuEntry | undefined = undefined;
-            if (ClientState.isItemSelected === 0 && !ClientState.isSpellSelected) {
-                const walkTile = anchorTile ?? this.osrsClient.menuTile ?? hoveredTile;
-                const tileX = (walkTile?.tileX ?? 0) | 0;
-                const tileY = (walkTile?.tileY ?? 0) | 0;
-                const localX = (tileX - baseX) | 0;
-                const localY = (tileY - baseY) | 0;
-                walkHereEntry = {
-                    option: "Walk here",
-                    targetId: -1,
-                    targetType: MenuTargetType.NONE,
-                    targetName: "",
-                    targetLevel: -1,
-                    mapX: localX,
-                    mapY: localY,
-                    tile: walkTile ? { tileX, tileY, plane: (walkTile as any)?.plane } : undefined,
-                    onClick: (_entry, evt?: MouseEvent) => {
-                        try {
-                            if (isServerConnected()) sendInteractStop();
-                        } catch {}
-                        // use the tile determined at menu creation
-                        // time, not a re-raycast.  The camera may have shifted
-                        // while the menu was open, making a second computeTileAt
-                        // return the wrong tile.
-                        const wx = tileX;
-                        const wy = tileY;
-                        if (wx > 0 && wy > 0) {
-                            const xy = this.toGLClickXY(evt);
-                            menuAction(
-                                (wx - baseX) | 0,
-                                (wy - baseY) | 0,
-                                MenuOpcode.WalkHere,
-                                0,
-                                -1,
-                                "Walk here",
-                                "",
-                                xy.sx,
-                                xy.sy,
-                            );
-                            try {
-                                this.spawnClickCross(
-                                    { tileX: wx, tileY: wy, plane: (walkTile as any)?.plane },
-                                    xy,
-                                    "yellow",
-                                );
-                            } catch {}
-                        }
-                        this.osrsClient.closeMenu();
-                    },
-                };
-                menuEntries.push(walkHereEntry);
-            }
-
-            const ray = this.screenToRay(anchorX, anchorY);
-            // scene interactions are filtered by the current client plane
-            // (raw server plane), not the bridge-promoted render plane.
-            const interactionPlane = this.getPlayerRawPlane() | 0;
-            const raycastHits =
-                ray && this.sceneRaycaster
-                    ? this.sceneRaycaster.raycast(ray, {
-                        maxHits: 1000,
-                        basePlane: interactionPlane,
-                    })
-                    : [];
-            raycastHitCount = raycastHits.length | 0;
-
-            const npcEcs = this.osrsClient.npcEcs;
-            const playerEcs = this.osrsClient.playerEcs;
-            const normalizePlayerName = (name: string | undefined): string => {
-                return String(name ?? "")
-                    .replace(/<[^>]*>/g, "")
-                    .trim()
-                    .toLowerCase();
-            };
-            const clanMemberNames = new Set<string>();
-            try {
-                const cs2Ctx: any = this.osrsClient.cs2Vm?.context;
-                const addName = (raw: unknown): void => {
-                    if (typeof raw !== "string") return;
-                    const normalized = normalizePlayerName(raw);
-                    if (normalized.length > 0) clanMemberNames.add(normalized);
-                };
-                const addListByField = (list: unknown, fieldName: string): void => {
-                    if (!Array.isArray(list)) return;
-                    for (const entry of list) {
-                        addName((entry as any)?.[fieldName]);
-                    }
-                };
-                const addNameList = (list: unknown): void => {
-                    if (!Array.isArray(list)) return;
-                    for (const entry of list) addName(entry);
-                };
-                addListByField(cs2Ctx?.clanMembers, "name");
-                addNameList(cs2Ctx?.clanSettings?.memberNames);
-                addNameList(cs2Ctx?.clanChannel?.userNames);
-            } catch {}
-            const isClanMemberName = (name: string | undefined): boolean => {
-                const normalized = normalizePlayerName(name);
-                return normalized.length > 0 && clanMemberNames.has(normalized);
-            };
-
-            const addPlayerMenuEntries = (
-                ecsIndex: number,
-                worldTileX: number,
-                worldTileY: number,
-            ): void => {
-                const idx = ecsIndex | 0;
-                if (idx < 0) return;
-                if (playerIds.has(idx)) return;
-                playerIds.add(idx);
-
-                const sidRaw = playerEcs.getServerIdForIndex?.(idx);
-                const sid = (typeof sidRaw === "number" ? sidRaw | 0 : idx | 0) | 0;
-                const myId = this.osrsClient.controlledPlayerServerId | 0;
-                if ((sid | 0) === (myId | 0)) return;
-
-                const displayName = playerEcs.getName(idx);
-                const playerLabel = displayName || "Player";
-                const localX = (worldTileX - baseX) | 0;
-                const localY = (worldTileY - baseY) | 0;
-                const playerPlane = playerEcs.getLevel(idx) | 0;
-                const targetCombatLevel = playerEcs.getCombatLevel(idx) | 0;
-                const targetTeam = playerEcs.getTeam(idx) | 0;
-                const localEcsIndex = playerEcs.getIndexForServerId?.(myId);
-                const localCombatLevelFromEcs =
-                    typeof localEcsIndex === "number"
-                        ? playerEcs.getCombatLevel(localEcsIndex | 0) | 0
-                        : 0;
-                const localCombatLevel =
-                    localCombatLevelFromEcs > 0
-                        ? localCombatLevelFromEcs
-                        : ClientState.localPlayerCombatLevel | 0;
-                const playerMenuLabel = formatPlayerCombatLabel(
-                    playerLabel,
-                    localCombatLevel,
-                    targetCombatLevel,
-                );
-                const localTeam =
-                    typeof localEcsIndex === "number"
-                        ? playerEcs.getTeam(localEcsIndex | 0) | 0
-                        : 0;
-                const localWorldX =
-                    typeof localEcsIndex === "number"
-                        ? playerEcs.getX(localEcsIndex | 0) >> 7
-                        : 0;
-                const localWorldY =
-                    typeof localEcsIndex === "number"
-                        ? playerEcs.getY(localEcsIndex | 0) >> 7
-                        : 0;
-                const canAttackPlayers = isInWilderness(localWorldX, localWorldY);
-                const targetIsClanMember = isClanMemberName(playerLabel);
-
-                // When hovering a player, Walk here target becomes the player's label.
-                if (walkHereEntry) {
-                    walkHereEntry.targetName = `<col=ffffff>${playerMenuLabel}`;
-                }
-
-                // Item selection: Use only (HttpHeaders.addPlayerToMenu).
-                if (ClientState.isItemSelected === 1) {
-                    const itemName =
-                        selectedItemName || `Item ${ClientState.selectedItemId | 0 || 0}`;
-                    menuEntries.push({
-                        option: "Use",
-                        targetId: -1,
-                        targetType: MenuTargetType.PLAYER,
-                            targetName: `${itemName} -> ${playerMenuLabel}`,
-                        targetLevel: -1,
-                        mapX: localX,
-                        mapY: localY,
-                        playerServerId: sid | 0,
-                        tile: { tileX: worldTileX, tileY: worldTileY, plane: playerPlane },
-                        onClick: (entry?: any) =>
-                            this.osrsClient.useSelectedItemOnFromMenu(
-                                (entry as any) ?? ({} as any),
-                                {
-                                    playerServerId: sid | 0,
-                                    mapX: localX,
-                                    mapY: localY,
-                                    tile: {
-                                        tileX: worldTileX,
-                                        tileY: worldTileY,
-                                        plane: playerPlane,
-                                    },
-                                },
-                            ),
-                    });
-                    return;
-                }
-
-                // Spell selection: Cast only when targetable (HttpHeaders.addPlayerToMenu).
-                if (ClientState.isSpellSelected) {
-                    if (hasActiveSpell && activeSpell && canTargetPlayer(activeSpell.targetMask)) {
-                        menuEntries.push({
-                            option: activeSpell.actionName || "Cast",
-                            targetId: -1,
-                            targetType: MenuTargetType.PLAYER,
-                            targetName: `${activeSpell.spellName} -> ${playerMenuLabel}`,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                            playerServerId: sid | 0,
-                            spellCast: {
-                                spellId: activeSpell.spellId,
-                                spellName: activeSpell.spellName,
-                                spellLevel: activeSpell.spellLevel,
-                                runes: activeSpell.runes,
-                                playerServerId: sid | 0,
-                            },
-                        });
-                    }
-                    return;
-                }
-
-                // No selection: insert player actions in 7..0 order.
-                for (let actionIdx = 7; actionIdx >= 0; actionIdx--) {
-                    if (actionIdx === 2) {
-                        menuEntries.push({
-                            option: "Follow",
-                            targetId: sid | 0,
-                            targetType: MenuTargetType.PLAYER,
-                            targetName: playerMenuLabel,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                            playerServerId: sid | 0,
-                            actionIndex: 2, // OPPLAYER3 - Follow
-                            onClick: () => {
-                                try {
-                                    this.osrsClient.playerInteractionSystem.beginFollow(sid | 0);
-                                    if (isServerConnected()) sendInteractFollow(sid | 0, "follow");
-                                } catch {}
-                            },
-                        });
-                    } else if (actionIdx === 1) {
-                        // OSRS: Trade is typically a low-priority player option from the server.
-                        menuEntries.push({
-                            option: "Trade with",
-                            targetId: sid | 0,
-                            targetType: MenuTargetType.PLAYER,
-                            targetName: playerMenuLabel,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                            playerServerId: sid | 0,
-                            actionIndex: 1, // OPPLAYER2 - Trade with
-                            deprioritized: true,
-                            onClick: () => {
-                                try {
-                                    this.osrsClient.playerInteractionSystem.beginTrade(sid | 0);
-                                    if (isServerConnected()) sendInteractFollow(sid | 0, "trade");
-                                } catch {}
-                            },
-                        });
-                    } else if (actionIdx === 0) {
-                        // Player combat is a Wilderness-only menu action.
-                        if (!canAttackPlayers) continue;
-                        const attackOption = ClientState.playerAttackOption | 0;
-                        if (attackOption === 3) continue;
-
-                        let deprioritized = false;
-                        if (attackOption === 1) {
-                            deprioritized = true;
-                        } else if (attackOption === 0) {
-                            deprioritized = targetCombatLevel > localCombatLevel;
-                        } else if (attackOption === 4) {
-                            deprioritized = targetIsClanMember;
-                        }
-
-                        // Team logic overrides attack option priority when both players have teams.
-                        if (localTeam !== 0 && targetTeam !== 0) {
-                            deprioritized = localTeam === targetTeam;
-                        }
-
-                        menuEntries.push({
-                            option: "Attack",
-                            targetId: sid | 0,
-                            targetType: MenuTargetType.PLAYER,
-                            targetName: playerMenuLabel,
-                            targetLevel: targetCombatLevel,
-                            mapX: localX,
-                            mapY: localY,
-                            playerServerId: sid | 0,
-                            actionIndex: 0, // OPPLAYER1 - Attack
-                            deprioritized,
-                            onClick: () => {
-                                try {
-                                    this.osrsClient.playerInteractionSystem.beginCombat(sid | 0, {
-                                        targetType: "player",
-                                        tile: { x: localX | 0, y: localY | 0 },
-                                    });
-                                } catch {}
-                            },
-                        });
-                    }
-                }
-            };
-
-            const addNpcMenuEntries = (
-                npcTypeId: number,
-                npcServerId: number,
-                npcEcsId: number,
-                worldTileX: number,
-                worldTileY: number,
-            ): void => {
-                const sid = npcServerId | 0;
-                const ecsId = npcEcsId | 0;
-                if (sid <= 0 || ecsId <= 0) return;
-                if (npcIds.has(sid)) return;
-                npcIds.add(sid);
-
-                let npcType = this.osrsClient.npcTypeLoader.load(npcTypeId | 0);
-                if (npcType.transforms) {
-                    const transformed = npcType.transform(
-                        this.osrsClient.varManager,
-                        this.osrsClient.npcTypeLoader,
-                    );
-                    if (transformed) npcType = transformed;
-                }
-                if (npcType.name === "null" && !this.osrsClient.debugId) return;
-                if (npcType.isFollower && (ClientState.followerIndex | 0) !== (sid | 0)) {
-                    return;
-                }
-
-                const localX = (worldTileX - baseX) | 0;
-                const localY = (worldTileY - baseY) | 0;
-                const npcPlane = npcEcs.getLevel(ecsId) | 0;
-                const isFollowerLowPriority =
-                    npcType.isFollower && ClientState.followerOpsLowPriority;
-
-                // OSRS: For followers with low priority, insert Examine first (opcode 1003).
-                if (isFollowerLowPriority) {
-                    menuEntries.push({
-                        option: "Examine",
-                        targetId: npcType.id,
-                        targetType: MenuTargetType.NPC,
-                        npcServerId: sid | 0,
-                        targetName: npcType.name,
-                        targetLevel: npcType.combatLevel,
-                        mapX: localX,
-                        mapY: localY,
-                    });
-                }
-
-                // Item selection: Use only (opcode 7), except follower examine above remains.
-                if (ClientState.isItemSelected === 1) {
-                    const itemName =
-                        selectedItemName || `Item ${ClientState.selectedItemId | 0 || 0}`;
-                    menuEntries.push({
-                        option: "Use",
-                        targetId: npcType.id,
-                        targetType: MenuTargetType.NPC,
-                        npcServerId: sid | 0,
-                        targetName: `${itemName} -> ${npcType.name}`,
-                        targetLevel: npcType.combatLevel,
-                        mapX: localX,
-                        mapY: localY,
-                        tile: { tileX: worldTileX, tileY: worldTileY, plane: npcPlane },
-                        onClick: (entry?: any) =>
-                            this.osrsClient.useSelectedItemOnFromMenu(
-                                (entry as any) ?? ({} as any),
-                                {
-                                    npcServerId: sid | 0,
-                                    mapX: localX,
-                                    mapY: localY,
-                                    tile: { tileX: worldTileX, tileY: worldTileY, plane: npcPlane },
-                                },
-                            ),
-                    });
-                    return;
-                }
-
-                // Spell selection: Cast only when targetable (opcode 8), except follower examine above remains.
-                if (ClientState.isSpellSelected) {
-                    if (hasActiveSpell && activeSpell && canTargetNpc(activeSpell.targetMask)) {
-                        menuEntries.push({
-                            option: activeSpell.actionName || "Cast",
-                            targetId: npcType.id,
-                            targetType: MenuTargetType.NPC,
-                            npcServerId: sid | 0,
-                            targetName: `${activeSpell.spellName} -> ${npcType.name}`,
-                            targetLevel: npcType.combatLevel,
-                            mapX: localX,
-                            mapY: localY,
-                            spellCast: {
-                                spellId: activeSpell.spellId,
-                                spellName: activeSpell.spellName,
-                                spellLevel: activeSpell.spellLevel,
-                                runes: activeSpell.runes,
-                                npcServerId: sid | 0,
-                                mapX: localX,
-                                mapY: localY,
-                            },
-                        });
-                    }
-                    return;
-                }
-
-                const actions = npcType.actions ?? [];
-                const followerDeprioritized = isFollowerLowPriority;
-
-                // OSRS: Non-attack options first (4..0).
-                for (let actionIdx = 4; actionIdx >= 0; actionIdx--) {
-                    const option = actions[actionIdx];
-                    if (!option) continue;
-                    if (option.toLowerCase() === "attack") continue;
-                    const opt = option;
-                    menuEntries.push({
-                        option: opt,
-                        targetId: npcType.id,
-                        targetType: MenuTargetType.NPC,
-                        npcServerId: sid | 0,
-                        targetName: npcType.name,
-                        targetLevel: npcType.combatLevel,
-                        mapX: localX,
-                        mapY: localY,
-                        actionIndex: actionIdx,
-                        deprioritized: followerDeprioritized,
-                        onClick: (_entry?: any, _evt?: any, ctx?: any) => {
-                            // When called as a side-effect by MenuState.invoke (worldMenuStateDispatch),
-                            // menuAction already handles packet dispatch.
-                            if (ctx?.worldMenuStateDispatch) return;
-                            try {
-                                this.osrsClient.interactNpc({
-                                    npcServerId: sid | 0,
-                                    option: opt,
-                                    actionIndex: actionIdx,
-                                    mapX: localX | 0,
-                                    mapY: localY | 0,
-                                    tile: { tileX: worldTileX | 0, tileY: worldTileY | 0 },
-                                });
-                            } catch {}
-                            this.osrsClient.closeMenu();
-                        },
-                    });
-                }
-
-                // OSRS: Attack options after non-attack (4..0) with npcAttackOption deprioritization.
-                for (let actionIdx = 4; actionIdx >= 0; actionIdx--) {
-                    const option = actions[actionIdx];
-                    if (!option) continue;
-                    if (option.toLowerCase() !== "attack") continue;
-                    if (ClientState.npcAttackOption === 3) continue;
-
-                    let deprioritized = false;
-                    const attackOption = ClientState.npcAttackOption | 0;
-                    if (attackOption === 1) {
-                        deprioritized = true;
-                    } else if (attackOption === 0) {
-                        const npcLevel = (npcType.combatLevel ?? 0) | 0;
-                        const playerLevel = ClientState.localPlayerCombatLevel | 0 | 0;
-                        if (npcLevel > playerLevel) deprioritized = true;
-                    }
-
-                    menuEntries.push({
-                        option,
-                        targetId: npcType.id,
-                        targetType: MenuTargetType.NPC,
-                        npcServerId: sid | 0,
-                        targetName: npcType.name,
-                        targetLevel: npcType.combatLevel,
-                        mapX: localX,
-                        mapY: localY,
-                        actionIndex: actionIdx,
-                        deprioritized,
-                        onClick: (_entry?: any, _evt?: any, ctx?: any) => {
-                            if (ctx?.worldMenuStateDispatch) return;
-                            try {
-                                this.osrsClient.attackNpc({
-                                    npcServerId: sid | 0,
-                                    actionIndex: actionIdx,
-                                    mapX: localX | 0,
-                                    mapY: localY | 0,
-                                    tile: { tileX: worldTileX | 0, tileY: worldTileY | 0 },
-                                });
-                            } catch {}
-                            this.osrsClient.closeMenu();
-                        },
-                    });
-                }
-
-                // OSRS: Examine at the bottom for non-followers / normal priority followers.
-                if (!isFollowerLowPriority) {
-                    menuEntries.push({
-                        option: "Examine",
-                        targetId: npcType.id,
-                        targetType: MenuTargetType.NPC,
-                        npcServerId: sid | 0,
-                        targetName: npcType.name,
-                        targetLevel: npcType.combatLevel,
-                        mapX: localX,
-                        mapY: localY,
-                    });
-                }
-            };
-
-            // Process raycast hits to build menu entries
-            let lastTagKey: string | null = null;
-            for (let hitIndex = raycastHits.length - 1; hitIndex >= 0; hitIndex--) {
-                const hit = raycastHits[hitIndex];
-                const interactId = hit.interactId | 0;
-                const interactType = hit.interactType;
-                const tagKey = `${interactType}|${interactId}|${hit.tileX ?? ""}|${
-                    hit.tileY ?? ""
-                }|${hit.npcServerId ?? ""}|${hit.playerEcsIndex ?? ""}`;
-                if (tagKey === lastTagKey) continue;
-                lastTagKey = tagKey;
-
-                if (interactType === InteractType.LOC) {
-                    const baseLocType = this.osrsClient.locTypeLoader.load(interactId);
-                    if (!baseLocType) continue;
-                    let resolvedLocType = baseLocType;
-                    if (baseLocType?.transforms) {
-                        const transformed = baseLocType.transform(
-                            this.osrsClient.varManager,
-                            this.osrsClient.locTypeLoader,
-                        );
-                        if (transformed) {
-                            resolvedLocType = transformed;
-                        }
-                    }
-                    if (resolvedLocType.name === "null" && !this.osrsClient.debugId) continue;
-
-                    const worldTileX = (hit.tileX ?? 0) | 0;
-                    const worldTileY = (hit.tileY ?? 0) | 0;
-                    const localX = (worldTileX - baseX) | 0;
-                    const localY = (worldTileY - baseY) | 0;
-
-                    const dedupeKey = `${interactId | 0}|${localX | 0}|${localY | 0}`;
-                    if (locIds.has(dedupeKey)) continue;
-                    locIds.add(dedupeKey);
-
-                    // Item selection suppresses normal actions/examine.
-                    if (ClientState.isItemSelected === 1) {
-                        const itemName =
-                            selectedItemName || `Item ${ClientState.selectedItemId | 0 || 0}`;
-                        menuEntries.push({
-                            option: "Use",
-                            targetId: interactId,
-                            targetType: MenuTargetType.LOC,
-                            targetName: `${itemName} -> ${resolvedLocType.name}`,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                            onClick: (entry?: any) =>
-                                this.osrsClient.useSelectedItemOnFromMenu(
-                                    (entry as any) ?? ({} as any),
-                                    { mapX: localX, mapY: localY },
-                                ),
-                        });
-                        continue;
-                    }
-
-                    // Spell selection suppresses normal actions/examine.
-                    if (ClientState.isSpellSelected) {
-                        if (
-                            hasActiveSpell &&
-                            activeSpell &&
-                            canTargetObject(activeSpell.targetMask)
-                        ) {
-                            menuEntries.push({
-                                option: activeSpell.actionName || "Cast",
-                                targetId: interactId,
-                                targetType: MenuTargetType.LOC,
-                                targetName: `${activeSpell.spellName} -> ${resolvedLocType.name}`,
-                                targetLevel: -1,
-                                mapX: localX,
-                                mapY: localY,
-                                spellCast: {
-                                    spellId: activeSpell.spellId,
-                                    spellName: activeSpell.spellName,
-                                    spellLevel: activeSpell.spellLevel,
-                                    runes: activeSpell.runes,
-                                    mapX: localX,
-                                    mapY: localY,
-                                },
-                            });
-                        }
-                        continue;
-                    }
-
-                    // LOC actions inserted 4..0, then Examine.
-                    for (let actionIdx = 4; actionIdx >= 0; actionIdx--) {
-                        const option = resolvedLocType.actions?.[actionIdx];
-                        if (!option) continue;
-                        menuEntries.push({
-                            option,
-                            targetId: interactId,
-                            targetType: MenuTargetType.LOC,
-                            targetName: resolvedLocType.name,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                            actionIndex: actionIdx,
-                        });
-                    }
-
-                    menuEntries.push({
-                        option: "Examine",
-                        targetId: interactId,
-                        targetType: MenuTargetType.LOC,
-                        targetName: resolvedLocType.name,
-                        targetLevel: -1,
-                        mapX: localX,
-                        mapY: localY,
-                    });
-                } else if (interactType === InteractType.OBJ) {
-                    // Ground items: build options for all stacks at the hovered tile (OSRS: type=3 tag).
-                    const worldTileX = (hit.tileX ?? 0) | 0;
-                    const worldTileY = (hit.tileY ?? 0) | 0;
-                    const localX = (worldTileX - baseX) | 0;
-                    const localY = (worldTileY - baseY) | 0;
-
-                    // Ground items stay indexed by the raw client plane; bridge promotion is render-only.
-                    const plane = resolveGroundItemStackPlane(this.getPlayerRawPlane() | 0);
-                    const stacks = this.osrsClient.groundItems.getStacksAt(
-                        worldTileX,
-                        worldTileY,
-                        plane,
-                    );
-                    if (!stacks || stacks.length === 0) continue;
-                    const groundItemsPlugin = this.osrsClient.groundItemsPlugin;
-
-                    const tileKey = `${localX}:${localY}`;
-                    if (objIds.has(tileKey)) continue;
-                    objIds.add(tileKey);
-
-                    // Item selection: Use only (OSRS: opcode 16 per item, suppresses normal ops).
-                    if (ClientState.isItemSelected === 1) {
-                        const itemName =
-                            selectedItemName || `Item ${ClientState.selectedItemId | 0 || 0}`;
-                        for (const stack of stacks) {
-                            const objType = this.osrsClient.objTypeLoader.load(stack.itemId);
-                            if (!objType || objType.name === "null") continue;
-                            const menuName = groundItemsPlugin.getMenuTargetName(
-                                stack,
-                                objType.name,
-                            );
-                            menuEntries.push({
-                                option: "Use",
-                                targetId: stack.itemId,
-                                targetType: MenuTargetType.OBJ,
-                                targetName: `${itemName} -> ${menuName}`,
-                                targetLevel: -1,
-                                mapX: localX,
-                                mapY: localY,
-                                tile: { tileX: worldTileX, tileY: worldTileY, plane },
-                                onClick: (entry?: any) =>
-                                    this.osrsClient.useSelectedItemOnFromMenu(
-                                        (entry as any) ?? ({} as any),
-                                        { tile: { tileX: worldTileX, tileY: worldTileY, plane } },
-                                    ),
-                            });
-                        }
-                        continue;
-                    }
-
-                    // Spell selection: Cast only when targetable (OSRS: opcode 17 per item).
-                    if (ClientState.isSpellSelected) {
-                        if (
-                            hasActiveSpell &&
-                            activeSpell &&
-                            canTargetGroundItem(activeSpell.targetMask)
-                        ) {
-                            for (const stack of stacks) {
-                                const objType = this.osrsClient.objTypeLoader.load(stack.itemId);
-                                if (!objType || objType.name === "null") continue;
-                                const menuName = groundItemsPlugin.getMenuTargetName(
-                                    stack,
-                                    objType.name,
-                                );
-                                menuEntries.push({
-                                    option: activeSpell.actionName || "Cast",
-                                    targetId: stack.itemId,
-                                    targetType: MenuTargetType.OBJ,
-                                    targetName: `${activeSpell.spellName} -> ${menuName}`,
-                                    targetLevel: -1,
-                                    mapX: localX,
-                                    mapY: localY,
-                                    spellCast: {
-                                        spellId: activeSpell.spellId,
-                                        spellName: activeSpell.spellName,
-                                        spellLevel: activeSpell.spellLevel,
-                                        runes: activeSpell.runes,
-                                        mapX: localX,
-                                        mapY: localY,
-                                    },
-                                });
-                            }
-                        }
-                        continue;
-                    }
-
-                    // No selection: insert ground actions 4..0 with Take fallback at index 2, then Examine.
-                    for (const stack of stacks) {
-                        const objType = this.osrsClient.objTypeLoader.load(stack.itemId);
-                        if (!objType || objType.name === "null") continue;
-                        const menuName = groundItemsPlugin.getMenuTargetName(stack, objType.name);
-                        const menuTarget = groundItemsPlugin.getMenuTargetColorized(
-                            stack,
-                            menuName,
-                        );
-                        const deprioritized = groundItemsPlugin.shouldDeprioritizeInMenu(stack);
-
-                        const actions = objType.groundActions ?? [];
-                        for (let actionIdx = 4; actionIdx >= 0; actionIdx--) {
-                            const option = actions[actionIdx];
-                            if (option) {
-                                const capturedStack = stack;
-                                menuEntries.push({
-                                    option,
-                                    targetId: stack.itemId,
-                                    targetType: MenuTargetType.OBJ,
-                                    targetName: menuTarget,
-                                    targetLevel: -1,
-                                    mapX: localX,
-                                    mapY: localY,
-                                    actionIndex: actionIdx,
-                                    deprioritized,
-                                    onClick:
-                                        option.toLowerCase() === "take"
-                                            ? () => this.osrsClient.takeGroundItem(capturedStack)
-                                            : () => this.osrsClient.closeMenu(),
-                                });
-                            } else if (actionIdx === 2) {
-                                const capturedStack = stack;
-                                menuEntries.push({
-                                    option: "Take",
-                                    targetId: stack.itemId,
-                                    targetType: MenuTargetType.OBJ,
-                                    targetName: menuTarget,
-                                    targetLevel: -1,
-                                    mapX: localX,
-                                    mapY: localY,
-                                    actionIndex: 2,
-                                    deprioritized,
-                                    onClick: () => this.osrsClient.takeGroundItem(capturedStack),
-                                });
-                            }
-                        }
-
-                        menuEntries.push({
-                            option: "Examine",
-                            targetId: stack.itemId,
-                            targetType: MenuTargetType.OBJ,
-                            targetName: menuTarget,
-                            targetLevel: -1,
-                            mapX: localX,
-                            mapY: localY,
-                        });
-                    }
-                } else if (interactType === InteractType.NPC) {
-                    // SceneRaycaster encodes players as InteractType.NPC with a high interactId offset.
-                    const PLAYER_INTERACT_BASE = 0x8000;
-                    if (interactId >= PLAYER_INTERACT_BASE) {
-                        const ecsIndex = hit.playerEcsIndex;
-                        if (ecsIndex == null) continue;
-
-                        const playerSubX = playerEcs.getX(ecsIndex) | 0;
-                        const playerSubY = playerEcs.getY(ecsIndex) | 0;
-                        const worldTileX = (hit.tileX ?? (playerSubX >> 7) | 0) | 0;
-                        const worldTileY = (hit.tileY ?? (playerSubY >> 7) | 0) | 0;
-
-                        // OSRS X-ray menu: when centered on a tile, also add all entities at same coords.
-                        if ((playerSubX & 127) === 64 && (playerSubY & 127) === 64) {
-                            // NPCs at same coords (size=1)
-                            const npcsAtTile = npcEcs.queryByTile(worldTileX, worldTileY);
-                            for (const otherNpcEcsId of npcsAtTile) {
-                                const otherId = otherNpcEcsId | 0;
-                                if (otherId <= 0) continue;
-                                if (!npcEcs.isActive(otherId) || !npcEcs.isLinked(otherId))
-                                    continue;
-                                if ((npcEcs.getSize(otherId) | 0) !== 1) continue;
-
-                                const otherMapId = npcEcs.getMapId(otherId) | 0;
-                                const otherMapX = (otherMapId >> 8) & 0xff;
-                                const otherMapY = otherMapId & 0xff;
-                                const otherLocalSubX = npcEcs.getX(otherId) | 0;
-                                const otherLocalSubY = npcEcs.getY(otherId) | 0;
-                                const otherWorldSubX = (otherMapX << 13) + otherLocalSubX;
-                                const otherWorldSubY = (otherMapY << 13) + otherLocalSubY;
-                                if (otherWorldSubX !== playerSubX || otherWorldSubY !== playerSubY)
-                                    continue;
-
-                                addNpcMenuEntries(
-                                    npcEcs.getNpcTypeId(otherId) | 0,
-                                    npcEcs.getServerId(otherId) | 0,
-                                    otherId,
-                                    worldTileX,
-                                    worldTileY,
-                                );
-                            }
-
-                            // Other players at same coords
-                            for (const otherPlayerIndex of playerEcs.getAllActiveIndices()) {
-                                const otherIdx = otherPlayerIndex | 0;
-                                if (otherIdx === (ecsIndex | 0)) continue;
-                                if ((playerEcs.getX(otherIdx) | 0) !== playerSubX) continue;
-                                if ((playerEcs.getY(otherIdx) | 0) !== playerSubY) continue;
-                                addPlayerMenuEntries(otherIdx, worldTileX, worldTileY);
-                            }
-                        }
-
-                        addPlayerMenuEntries(ecsIndex, worldTileX, worldTileY);
-                    } else {
-                        const npcServerId = hit.npcServerId;
-                        const npcEcsId = hit.npcEcsId;
-                        if (npcServerId == null || npcEcsId == null) continue;
-
-                        const worldTileX = (hit.tileX ?? 0) | 0;
-                        const worldTileY = (hit.tileY ?? 0) | 0;
-
-                        const ecsId = npcEcsId | 0;
-                        const localSubX = npcEcs.getX(ecsId) | 0;
-                        const localSubY = npcEcs.getY(ecsId) | 0;
-                        const npcSize = npcEcs.getSize(ecsId) | 0;
-
-                        // OSRS X-ray menu: when a size-1 NPC is centered on a tile, add all entities at same coords.
-                        if (npcSize === 1 && (localSubX & 127) === 64 && (localSubY & 127) === 64) {
-                            // Other NPCs on the same coords
-                            const npcsAtTile = npcEcs.queryByTile(worldTileX, worldTileY);
-                            for (const otherNpcEcsId of npcsAtTile) {
-                                const otherId = otherNpcEcsId | 0;
-                                if (otherId <= 0 || otherId === ecsId) continue;
-                                if (!npcEcs.isActive(otherId) || !npcEcs.isLinked(otherId))
-                                    continue;
-                                if ((npcEcs.getSize(otherId) | 0) !== 1) continue;
-                                const otherLocalSubX = npcEcs.getX(otherId) | 0;
-                                const otherLocalSubY = npcEcs.getY(otherId) | 0;
-                                if (otherLocalSubX !== localSubX || otherLocalSubY !== localSubY)
-                                    continue;
-
-                                addNpcMenuEntries(
-                                    npcEcs.getNpcTypeId(otherId) | 0,
-                                    npcEcs.getServerId(otherId) | 0,
-                                    otherId,
-                                    worldTileX,
-                                    worldTileY,
-                                );
-                            }
-
-                            // Players on the same coords
-                            const hitMapId = hit.mapId | 0;
-                            const hitMapX = (hitMapId >> 8) & 0xff;
-                            const hitMapY = hitMapId & 0xff;
-                            const npcWorldSubX = (hitMapX << 13) + localSubX;
-                            const npcWorldSubY = (hitMapY << 13) + localSubY;
-
-                            for (const otherPlayerIndex of playerEcs.getAllActiveIndices()) {
-                                const otherIdx = otherPlayerIndex | 0;
-                                if ((playerEcs.getX(otherIdx) | 0) !== npcWorldSubX) continue;
-                                if ((playerEcs.getY(otherIdx) | 0) !== npcWorldSubY) continue;
-                                addPlayerMenuEntries(otherIdx, worldTileX, worldTileY);
-                            }
-                        }
-
-                        addNpcMenuEntries(
-                            interactId | 0,
-                            npcServerId | 0,
-                            npcEcsId | 0,
-                            worldTileX,
-                            worldTileY,
-                        );
-                    }
-                }
-            }
-
-            // Wrap NPC/LOC/PLAYER/OBJ entries to spawn a red cross when selected
-            try {
-                const tileForMenu = this.osrsClient.menuTile ?? hoveredTile;
-                for (const e of menuEntries) {
-                    if (
-                        (e.targetType === MenuTargetType.NPC ||
-                            e.targetType === MenuTargetType.LOC ||
-                            e.targetType === MenuTargetType.PLAYER ||
-                            e.targetType === MenuTargetType.OBJ) &&
-                        e.option !== "Examine"
-                    ) {
-                        const orig = e.onClick;
-                        e.onClick = (entry, evt?: MouseEvent, ctx?: unknown) =>
-                            this.performWorldEntryAction(
-                                e,
-                                orig,
-                                evt,
-                                tileForMenu,
-                                ctx as MenuClickContext | undefined,
-                            );
-                    }
-                }
-            } catch {}
-        }
-        const effectiveEntries =
-            this.osrsClient.menuOpen &&
-            this.osrsClient.menuPinnedEntries &&
-            this.osrsClient.menuPinnedEntries.length > 0
-                ? this.osrsClient.menuPinnedEntries
-                : menuEntries;
-        this.lastInteractionRaycastHitCount = raycastHitCount | 0;
-        this.lastInteractionMenuOptionCount = effectiveEntries.length | 0;
-        // PERF: Copy entries into cached array to avoid sharing reference with cachedMenuEntries
-        // This prevents the array from being cleared at the start of the next frame
-        const clientEntries = this.cachedClientMenuEntries;
-        clientEntries.length = 0;
-        for (let i = 0; i < effectiveEntries.length; i++) {
-            clientEntries.push(effectiveEntries[i]);
-        }
-        this.osrsClient.menuEntries = clientEntries;
-        let shouldFreeze = !!(
-            this.osrsClient.menuOpen &&
-            this.osrsClient.menuPinnedEntries &&
-            this.osrsClient.menuPinnedEntries.length > 0
-        );
-        // PERF: Use cached bound toCssEvent function instead of creating closure each frame
-        this.currentFrameCount = frameCount;
-        let simpleEntries = this.buildSimpleMenuEntries(effectiveEntries, {
-            shouldFreeze,
-            toCssEvent: this.boundToCssEvent,
-        });
-        // Use shouldLeftClickOpenMenu which checks:
-        // 1) leftClickOpensMenu setting && menuOptionsCount > 2
-        // 2) OR top entry opcode is CC_OP_LowPriority (1007)
-        // AND top entry is not shiftClickable
-        const leftClickMenuToggle = !!(
-            leftClicked &&
-            !this.osrsClient.menuOpen &&
-            shouldLeftClickOpenMenu(simpleEntries, !!this.osrsClient.settings?.leftClickOpensMenu)
-        );
-        if (leftClickMenuToggle) {
-            this.osrsClient.menuOpen = true;
-            this.osrsClient.menuOpenedFrame = frameCount;
-            this.osrsClient.menuX = inputManager.leftClickX;
-            this.osrsClient.menuY = inputManager.leftClickY;
-            const clickedFromLeft = this.computeTileAt(
-                inputManager.leftClickX,
-                inputManager.leftClickY,
-            );
-            if (clickedFromLeft) {
-                this.osrsClient.menuTile = clickedFromLeft;
-                this.hoverTileX = clickedFromLeft.tileX;
-                this.hoverTileY = clickedFromLeft.tileY;
-                const cx = clickedFromLeft.tileX + 0.5;
-                const cy = clickedFromLeft.tileY + 0.5;
-                const clickedPlane = clickedFromLeft.plane;
-                const h = this.sampleHeightAtExactPlane(cx, cy, clickedPlane);
-                const scr = this.worldToScreen(cx, h - 0.1, cy);
-                if (scr) {
-                    this.osrsClient.hoveredTile = {
-                        tileX: clickedFromLeft.tileX,
-                        tileY: clickedFromLeft.tileY,
-                        plane: clickedFromLeft.plane,
-                    };
-                    this.osrsClient.hoveredTileScreen = {
-                        x: scr[0],
-                        y: scr[1],
-                    };
-                }
-            }
-            try {
-                this.osrsClient.menuPinnedEntries = menuEntries.slice();
-                this.osrsClient.menuPinnedEntriesVersion++;
-            } catch {}
-            this.osrsClient.menuEntries = menuEntries.slice();
-            shouldFreeze = true;
-            simpleEntries = this.buildSimpleMenuEntries(menuEntries, {
-                shouldFreeze: true,
-                toCssEvent: this.boundToCssEvent,
-            });
-        }
-
-        this.updateInteractHighlightHoverTarget(simpleEntries);
-
-        // Handle left-click default action via the same menu interface as right-click
-        // Skip if menu is open (choose-option.ts handles menu clicks)
-        // Skip if click is in a UI region (region-based checks)
-        // PERF: Reuse helper method instead of IIFE to avoid per-click function allocation
-        const leftClickInUIRegion = leftClicked
-            ? this.isMouseInUIRegion(inputManager.leftClickX, inputManager.leftClickY)
-            : false;
-
-        // block world interaction when a widget at the click point captures input.
-        const hasUIClickTarget = leftClicked
-            ? this.osrsClient.isPointOverWidget(inputManager.leftClickX, inputManager.leftClickY)
-            : false;
-
-        if (
-            leftClicked &&
-            !leftClickMenuToggle &&
-            !this.osrsClient.menuOpen &&
-            !leftClickInUIRegion &&
-            !hasUIClickTarget
-        ) {
-            const clicked = this.computeTileAt(inputManager.leftClickX, inputManager.leftClickY);
-            if (clicked) {
-                this.osrsClient.menuTile = clicked;
-                this.hoverTileX = clicked.tileX;
-                this.hoverTileY = clicked.tileY;
-            }
-            const defaultEntry = chooseDefaultMenuEntry(simpleEntries, {
-                hasSelectedSpell: ClientState.isSpellSelected,
-                hasSelectedItem: ClientState.isItemSelected === 1,
-            });
-            // If an item/spell is selected and the default left-click is not Use/Cast, cancel selection like OSRS.
-            const hasSelectedItem = ClientState.isItemSelected === 1;
-            const hasSelectedSpell = ClientState.isSpellSelected;
-            const act = defaultEntry?.action;
-
-            // Cancel item selection if action is not Use/Cast
-            if (hasSelectedItem && (!act || (act !== MenuAction.Use && act !== MenuAction.Cast))) {
-                this.osrsClient.inventory?.setSelectedSlot?.(null);
-                ClientState.clearItemSelection();
-            }
-
-            // Cancel spell selection if action is not Cast (clicking on non-targetable area)
-            if (hasSelectedSpell && (!act || act !== MenuAction.Cast)) {
-                this.osrsClient.clearSelectedSpell();
-            }
-            if (defaultEntry) {
-                this.onInteractHighlightEntryInvoked(defaultEntry, clicked);
-                const xy = this.toGLClickXY();
-                const idx = defaultEntry.menuStateIndex;
-                // For "Walk here", handle directly using clicked tile (menu coords may be stale)
-                const isWalk = defaultEntry.option === "Walk here";
-                if (isWalk && clicked) {
-                    try {
-                        if (isServerConnected()) sendInteractStop();
-                    } catch {}
-                    menuAction(
-                        ((clicked.tileX | 0) - (ClientState.baseX | 0)) | 0,
-                        ((clicked.tileY | 0) - (ClientState.baseY | 0)) | 0,
-                        MenuOpcode.WalkHere,
-                        0,
-                        -1,
-                        "Walk here",
-                        "",
-                        xy.sx,
-                        xy.sy,
-                    );
-                    // No client prediction on click - wait for server
-                    try {
-                        this.spawnClickCross(clicked, xy, "yellow");
-                    } catch {}
-                    this.osrsClient.closeMenu();
-                } else if (typeof idx === "number") {
-                    try {
-                        this.osrsClient.menuState.invoke(idx, xy.sx, xy.sy, {
-                            source: "primary",
-                        });
-                    } catch {}
-                } else if (typeof defaultEntry.onClick === "function") {
-                    try {
-                        defaultEntry.onClick(xy.sx, xy.sy);
-                    } catch {}
-                }
-            } else if (clicked) {
-                this.clearInteractHighlightActiveTarget();
-                try {
-                    // Fallback: route like Walk here
-                    const sx = inputManager.leftClickX | 0;
-                    const sy = inputManager.leftClickY | 0;
-                    menuAction(
-                        ((clicked.tileX | 0) - (ClientState.baseX | 0)) | 0,
-                        ((clicked.tileY | 0) - (ClientState.baseY | 0)) | 0,
-                        MenuOpcode.WalkHere,
-                        0,
-                        -1,
-                        "Walk here",
-                        "",
-                        sx,
-                        sy,
-                    );
-                    // No client prediction on click - wait for server
-                    const playerPlane = this.getPlayerBasePlane() | 0;
-                    const clickedPlane = clicked.plane ?? playerPlane;
-                    this.clickCrossOverlay?.spawn(
-                        clicked.tileX | 0,
-                        clicked.tileY | 0,
-                        sx,
-                        sy,
-                        clickedPlane,
-                        undefined,
-                        "yellow",
-                    );
-                } catch {}
-            }
-            this.osrsClient.menuOpen = false;
-            this.osrsClient.menuPinnedEntries = undefined;
-            this.osrsClient.menuEntries = [];
-            return;
-        }
-
-        if (picked) {
-            // Only open the world menu for picks over the world. Picks over UI
-            // belong to the widget layer (which shows its own menu, falling back
-            // to a Cancel-only one); flagging menuOpen here with no entries left
-            // an invisible "open" menu that swallowed every left click, and
-            // opening a Cancel menu here instead consumed the right-click before
-            // the widget layer could build the real widget menu.
-            const pickOverUi = mouseInUIRegion || mouseOverWidget;
-            if (!pickOverUi) {
-                this.osrsClient.menuOpen = true;
-                this.osrsClient.menuOpenedFrame = frameCount;
-            }
-        }
-        // If a pick event happened, anchor menu to the true click position and compute exact tile at click
-        if (picked) {
-            this.osrsClient.menuX = pickX;
-            this.osrsClient.menuY = pickY;
-            const clicked = this.computeTileAt(pickX, pickY);
-            if (clicked) {
-                this.osrsClient.menuTile = clicked;
-                // Immediately reflect in hover devoverlay for this frame
-                this.hoverTileX = clicked.tileX;
-                this.hoverTileY = clicked.tileY;
-                const cx = clicked.tileX + 0.5;
-                const cy = clicked.tileY + 0.5;
-                // Use the clicked plane directly and sample at exact height without promotion
-                const clickedPlane = clicked.plane;
-                const h = this.sampleHeightAtExactPlane(cx, cy, clickedPlane);
-                const scr = this.worldToScreen(cx, h - 0.1, cy);
-                if (scr) {
-                    this.osrsClient.hoveredTile = {
-                        tileX: clicked.tileX,
-                        tileY: clicked.tileY,
-                        plane: clicked.plane,
-                    };
-                    this.osrsClient.hoveredTileScreen = {
-                        x: scr[0],
-                        y: scr[1],
-                    };
-                }
-            }
-            // Pin the current entries so moving targets don't change the list while the menu is open
-            try {
-                this.osrsClient.menuPinnedEntries = menuEntries.slice();
-                this.osrsClient.menuPinnedEntriesVersion++;
-                this.osrsClient.menuFrozenSimpleEntries = undefined;
-                this.osrsClient.menuFrozenSimpleEntriesVersion = 0;
-            } catch {}
-            inputManager.clearPick();
-        } else if (!this.osrsClient.menuOpen) {
-            // No pick this frame and menu not open: update hover anchor to follow mouse
-            this.osrsClient.menuX = inputManager.mouseX;
-            this.osrsClient.menuY = inputManager.mouseY;
-            this.osrsClient.menuTile = undefined;
-        }
-        const pinnedActive =
-            this.osrsClient.menuOpen &&
-            !!this.osrsClient.menuPinnedEntries &&
-            this.osrsClient.menuPinnedEntries.length > 0;
-        if (pinnedActive && !shouldFreeze && this.osrsClient.menuPinnedEntries) {
-            simpleEntries = this.buildSimpleMenuEntries(this.osrsClient.menuPinnedEntries, {
-                shouldFreeze: true,
-                toCssEvent: this.boundToCssEvent,
-            });
-            shouldFreeze = true;
-        }
-
-        // Handle UI hotkeys in the world interaction pass (ESC selection/menu cancel parity).
-        try {
-            const im = this.osrsClient.inputManager;
-            if (im?.isKeyDownEvent?.("Escape")) {
-                let escapeConsumed = false;
-                if (ClientState.isItemSelected === 1) {
-                    this.osrsClient.inventory?.setSelectedSlot?.(null);
-                    ClientState.clearItemSelection();
-                    escapeConsumed = true;
-                }
-                if (ClientState.isSpellSelected) {
-                    this.osrsClient.clearSelectedSpell();
-                    escapeConsumed = true;
-                }
-                if (this.osrsClient.menuOpen) {
-                    this.osrsClient.closeMenu();
-                    escapeConsumed = true;
-                }
-                if (!escapeConsumed) {
-                    const closedGroupId = this.osrsClient.widgetSessionManager?.closeTopModal?.();
-                    if (typeof closedGroupId === "number") {
-                        escapeConsumed = true;
-                    }
-                }
-            }
-        } catch {}
-
-        // Bridge menu entries to the GL UI overlay (Choose Option) so it shows
-        // the actual list of options at the cursor/pinned position.
-        try {
-            const canvas: any = this.app.gl.canvas as any;
-            const ui = (canvas.__ui = canvas.__ui || {});
-            // Provide a callback so the GL menu can close the world menu when clicking outside
-            try {
-                ui.closeWorldMenu = () => this.osrsClient.closeMenu();
-            } catch {}
-            const existing = ui.menu as any;
-            // If not in menuOpen state and a map-driven menu is visible, hide it (right-click activation only)
-            if (!this.osrsClient.menuOpen) {
-                if (existing && existing.source === "map") {
-                    existing.open = false;
-                }
-                return;
-            }
-            // If a pinned widget-driven menu is open, do not override it with map entries
-            if (
-                existing &&
-                existing.open &&
-                existing.follow === false &&
-                existing.source === "widgets"
-            ) {
-                return;
-            }
-            const simpleList = this.osrsClient.menuActiveSimpleEntries.length
-                ? this.osrsClient.menuActiveSimpleEntries
-                : simpleEntries;
-            // menuX/menuY are already in canvas coordinates from InputManager
-            const mx = (this.osrsClient.menuX | 0) as number;
-            const my = (this.osrsClient.menuY | 0) as number;
-            ui.menu = {
-                open: simpleList.length > 0,
-                follow: false,
-                x: mx,
-                y: my,
-                entries: simpleList,
-                source: "map",
-                menuState: this.osrsClient.menuState,
-                onEntryInvoke: (entry: SimpleMenuEntry) => {
-                    this.onInteractHighlightEntryInvoked(entry, this.osrsClient.menuTile);
-                },
-            };
-        } catch {}
+        return render.checkInteractions(this);
     }
 
-    /**
-     * Clear session-specific caches to prevent memory leaks on logout/disconnect.
-     * Does NOT dispose GL resources - only clears accumulated session data.
-     */
     override clearSessionCaches(): void {
-        // Clear NPC type caches (grow with each unique NPC type seen)
-        this.npcDefaultHeightCache.clear();
-        this.npcNameCache.clear();
-
-        // Clear hitsplat/health bar state
-        this.npcHitsplats.clear();
-        this.playerHitsplats.clear();
-        this.npcHealthBars.clear();
-        this.playerHealthBars.clear();
-        this.hitsplatSeenNpc.clear();
-        this.actorServerTilesSeenNpc.clear();
-
-        // Clear loc overrides and spawns (door state changes accumulate)
-        this.locOverrides.clear();
-        for (const timer of this.locAnimTimers.values()) {
-            clearTimeout(timer);
-        }
-        this.locAnimTimers.clear();
-        this.locSpawns.clear();
-        this.terrainOverrides.clear();
-        this.gamemodeWorldLocOverrideKeys.clear();
-        this.gamemodeWorldLocSpawnKeys.clear();
-        this.gamemodeWorldTerrainOverrideKeys.clear();
-        this.mapsToLoad.clear();
-        this.pendingStreamMapsByGeneration.clear();
-        this.observedGridRevision = -1;
-        this.activeStreamGeneration = 0;
-        this.activeStreamExpectedMapIds.clear();
-        this.pendingLocUpdates.clear();
-        this.pendingLocGeometryUpdates.clear();
-        this.pendingDoorLocUpdates.clear();
-        this.pendingLocReloadMaps.clear();
-        this.pendingLocReloadBatches.clear();
-        this.queuedLocReloadBatchByMap.clear();
-        this.nextLocReloadBatchId = 1;
-        if (this.pendingLocReloadFlushTimer) {
-            clearTimeout(this.pendingLocReloadFlushTimer);
-            this.pendingLocReloadFlushTimer = undefined;
-        }
-
-        // Clear ground item rendering caches
-        this.groundItemStacks.clear();
-        this.groundItemStackHashes.clear();
-        this.clearInteractHighlightActiveTarget();
-        this.clearInteractHighlightHoverTarget();
-        this.interactHighlightDrawTargets.length = 0;
-
-        // Clear minimap icons
-        this.minimapIcons.clear();
-
-        // Clear cached overlay state
-        this.cachedSceneOverlayUpdateArgs = null;
-        this.cachedOverlayUpdateArgs = null;
-
-        // Clear debug counts
-        this.projectileRenderDebugCounts.clear();
-
-        // Clear cached type IDs
-        this.cachedLocIds.clear();
-        this.cachedObjIds.clear();
-        this.cachedNpcIds.clear();
-        this.interactLocModelLoader?.clearCache();
-        this.interactNpcModelLoader?.clearCache();
-        this.sceneRaycaster?.clearCache();
-        this.clearDynamicNpcAnimRuntimeState();
-
-        // Reset camera follow state for next login
-        this.followCamFocalInitialized = false;
-        this.followCamFocalLastClientCycle = -1;
-        this.cameraTerrainPitchPressure = 0;
-        this.clearCameraShake();
-        this.mapDataLoadedNotified = false;
-        this.heightValidAtTime = undefined;
+        return render.clearSessionCaches(this);
     }
 
     override async cleanUp(): Promise<void> {
-        super.cleanUp();
-        this.canvas.removeEventListener("touchstart", this.onCanvasTouchStart, true);
-        if (isMobileMode && typeof window !== "undefined") {
-            window.removeEventListener("resize", this.onMobileLoginViewportChange);
-            window.removeEventListener("orientationchange", this.onMobileLoginViewportChange);
-            window.visualViewport?.removeEventListener("resize", this.onMobileLoginViewportChange);
-            window.visualViewport?.removeEventListener("scroll", this.onMobileLoginViewportChange);
-        }
-        this.destroyMobileLoginInput();
-        this.playerHealthBars.clear();
-        try {
-            this.overlayManager?.dispose();
-            this.hitsplatTickUnsub?.();
-            this.hitsplatTickUnsub = undefined;
-        } catch {}
-        this.overlayManager = undefined;
-        this.interactHighlightOverlay = undefined;
-        this.healthBarOverlay = undefined;
-        this.tileMarkerOverlay = undefined;
-        this.clearInteractHighlightActiveTarget();
-        this.clearInteractHighlightHoverTarget();
-        this.interactHighlightDrawTargets.length = 0;
-        this.interactLocModelLoader = undefined;
-        this.interactNpcModelLoader = undefined;
-        this.npcHealthBars.clear();
-        this.osrsClient.workerPool.resetLoader(this.dataLoader);
-
-        this.quadArray?.delete();
-        this.quadArray = undefined;
-
-        this.quadPositions?.delete();
-        this.quadPositions = undefined;
-
-        // Uniforms
-        this.sceneUniformBuffer?.delete();
-        this.sceneUniformBuffer = undefined;
-
-        // Framebuffers
-        this.framebuffer?.delete();
-        this.framebuffer = undefined;
-
-        this.colorTarget?.delete();
-        this.colorTarget = undefined;
-
-        this.depthTarget?.delete();
-        this.depthTarget = undefined;
-
-        this.textureFramebuffer?.delete();
-        this.textureFramebuffer = undefined;
-
-        this.textureColorTarget?.delete();
-        this.textureColorTarget = undefined;
-
-        this.textureDepthTarget?.delete();
-        this.textureDepthTarget = undefined;
-
-        // Textures
-        this.textureArray?.delete();
-        this.textureArray = undefined;
-
-        this.textureMaterials?.delete();
-        this.textureMaterials = undefined;
-
-        this.waterTextures?.delete();
-        this.waterTextures = undefined;
-
-        this.drawBackend?.dispose();
-        this.drawBackend = undefined;
-
-        // Unified actor texture cleanup handled by actorDataTextureBuffer below
-        for (const texture of this.actorDataTextureBuffer) {
-            texture?.delete();
-        }
-
-        this.clearMaps();
-        this.disposeDynamicNpcAnimState();
-
-        if (this.shadersPromise) {
-            for (const shader of await this.shadersPromise) {
-                shader.delete();
-            }
-            this.shadersPromise = undefined;
-        }
-        console.log("Renderer cleaned up");
+        return render.cleanUp(this);
     }
 
     onLocChange(
@@ -14967,167 +2430,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             newShape?: number;
         },
     ): void {
-        try {
-            console.log(
-                `[WebGLRenderer] Loc change: ${oldId} -> ${newId} at (${tile.x}, ${tile.y}, ${level})`,
-            );
-
-            const oldTile = opts?.oldTile ?? tile;
-            const newTile = opts?.newTile;
-            const oldLocType =
-                (oldId | 0) > 0 ? this.osrsClient.locTypeLoader.load(oldId | 0) : undefined;
-            const newLocType =
-                (newId | 0) > 0 ? this.osrsClient.locTypeLoader.load(newId | 0) : undefined;
-            const hasUnknownLocType =
-                ((oldId | 0) > 0 && oldLocType === undefined) ||
-                ((newId | 0) > 0 && newLocType === undefined);
-            const oldIsDoor = oldLocType !== undefined && isDoorLocType(oldLocType);
-            const newIsDoor = newLocType !== undefined && isDoorLocType(newLocType);
-            // Keeping doors and ordinary locs in separate GPU groups lets us
-            // match the game's partial loc-update behaviour. A change that
-            // crosses those groups retains the conservative full rebuild.
-            const isDoorOnlyUpdate =
-                !hasUnknownLocType &&
-                (oldId <= 0 || oldIsDoor) &&
-                (newId <= 0 || newIsDoor) &&
-                (oldIsDoor || newIsDoor);
-            const isLocOnlyUpdate = !hasUnknownLocType && !oldIsDoor && !newIsDoor;
-            const matchesChangedTile = (target: {
-                tileX: number;
-                tileY: number;
-                plane: number;
-            }): boolean => {
-                if ((target.plane | 0) !== (level | 0)) return false;
-                if (
-                    (target.tileX | 0) === (oldTile.x | 0) &&
-                    (target.tileY | 0) === (oldTile.y | 0)
-                ) {
-                    return true;
-                }
-                if (
-                    newTile &&
-                    (target.tileX | 0) === (newTile.x | 0) &&
-                    (target.tileY | 0) === (newTile.y | 0)
-                ) {
-                    return true;
-                }
-                return false;
-            };
-
-            if (
-                this.interactHighlightActiveTarget?.kind === "loc" &&
-                matchesChangedTile(this.interactHighlightActiveTarget)
-            ) {
-                this.clearInteractHighlightActiveTarget();
-            }
-            if (
-                this.interactHighlightHoverTarget?.kind === "loc" &&
-                matchesChangedTile(this.interactHighlightHoverTarget)
-            ) {
-                this.clearInteractHighlightHoverTarget();
-            }
-            const overrideRotation =
-                typeof opts?.newRotation === "number" ? opts.newRotation & 0x3 : undefined;
-
-            const spawnKey = `${oldTile.x | 0},${oldTile.y | 0},${level | 0}`;
-            const existingSpawn = this.locSpawns.get(spawnKey);
-            // Use locSpawns for: locs spawned on empty ground (oldId===0) or ongoing lifecycle of a spawned loc
-            const isSpawnedLoc =
-                (oldId | 0) === 0 ||
-                (existingSpawn !== undefined && existingSpawn.id === (oldId | 0));
-
-            const clearOverridesAtTile = (tileX: number, tileY: number): void => {
-                const keyPrefix = `${tileX | 0},${tileY | 0},${level},`;
-                for (const key of Array.from(this.locOverrides.keys())) {
-                    if (key.startsWith(keyPrefix)) {
-                        this.locOverrides.delete(key);
-                    }
-                }
-            };
-            clearOverridesAtTile(oldTile.x, oldTile.y);
-            if (newTile) {
-                clearOverridesAtTile(newTile.x, newTile.y);
-            }
-
-            if (isSpawnedLoc) {
-                // Manage via locSpawns
-                if ((newId | 0) === 0) {
-                    this.locSpawns.delete(spawnKey);
-                } else {
-                    // Use the shape from the server (matches loc_add_change_v2 OSRS packet),
-                    // or inherit from the existing spawn, or default to NORMAL (10).
-                    const spawnType =
-                        typeof opts?.newShape === "number"
-                            ? (opts.newShape as LocModelType)
-                            : (existingSpawn?.type ?? LocModelType.NORMAL);
-                    this.locSpawns.set(spawnKey, {
-                        id: newId | 0,
-                        type: spawnType,
-                        rotation: overrideRotation ?? 0,
-                    });
-                }
-            } else {
-                // Regular map loc override
-                const overrideKey = `${oldTile.x},${oldTile.y},${level},${oldId}`;
-                this.locOverrides.set(overrideKey, {
-                    newId: newId | 0,
-                    newRotation: overrideRotation,
-                    moveToX:
-                        newTile &&
-                        ((newTile.x | 0) !== (oldTile.x | 0) || (newTile.y | 0) !== (oldTile.y | 0))
-                            ? newTile.x | 0
-                            : undefined,
-                    moveToY:
-                        newTile &&
-                        ((newTile.x | 0) !== (oldTile.x | 0) || (newTile.y | 0) !== (oldTile.y | 0))
-                            ? newTile.y | 0
-                            : undefined,
-                });
-            }
-
-            // Moving locs can cross map-square boundaries (e.g., edge gates).
-            // Reload both affected map squares so moved geometry can appear on the new side.
-            const oldMapX = Math.floor(oldTile.x / 64);
-            const oldMapY = Math.floor(oldTile.y / 64);
-            const newMapX = Math.floor((newTile?.x ?? oldTile.x) / 64);
-            const newMapY = Math.floor((newTile?.y ?? oldTile.y) / 64);
-            const mapKeys = new Set<string>([`${oldMapX}:${oldMapY}`, `${newMapX}:${newMapY}`]);
-
-            for (const mapKey of mapKeys) {
-                const [mxRaw, myRaw] = mapKey.split(":");
-                const mx = Number(mxRaw) | 0;
-                const my = Number(myRaw) | 0;
-                const mapId = getMapSquareId(mx, my);
-                if (
-                    isDoorOnlyUpdate &&
-                    !this.pendingLocUpdates.has(mapId) &&
-                    !this.pendingLocGeometryUpdates.has(mapId)
-                ) {
-                    this.pendingDoorLocUpdates.add(mapId);
-                } else if (
-                    isLocOnlyUpdate &&
-                    !this.pendingLocUpdates.has(mapId) &&
-                    !this.pendingDoorLocUpdates.has(mapId)
-                ) {
-                    this.pendingLocGeometryUpdates.add(mapId);
-                } else {
-                    this.pendingLocUpdates.add(mapId);
-                    this.pendingLocGeometryUpdates.delete(mapId);
-                    this.pendingDoorLocUpdates.delete(mapId);
-                }
-                this.scheduleLocReload(mx, my);
-            }
-
-            const mapSummary = [...mapKeys]
-                .map((entry) => {
-                    const [mxRaw, myRaw] = entry.split(":");
-                    return `(${Number(mxRaw) | 0}, ${Number(myRaw) | 0})`;
-                })
-                .join(", ");
-            console.log(`Refreshing map square(s) ${mapSummary} via loc geometry refresh`);
-        } catch (err) {
-            console.warn("onLocChange error", err);
-        }
+        return render.onLocChange(this, oldId, newId, tile, level, opts);
     }
 
     private getExtraLocsForMap(
@@ -15143,32 +2446,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         rotation: number;
     }>
         | undefined {
-        if (this.addedLocs.size === 0) return undefined;
-        const minX = mapX * 64;
-        const minY = mapY * 64;
-        const maxX = minX + 64;
-        const maxY = minY + 64;
-        const locs: Array<{
-            id: number;
-            x: number;
-            y: number;
-            level: number;
-            shape: number;
-            rotation: number;
-        }> = [];
-        for (const loc of this.addedLocs.values()) {
-            if (loc.x >= minX && loc.x < maxX && loc.y >= minY && loc.y < maxY) {
-                locs.push({
-                    id: loc.locId,
-                    x: loc.x,
-                    y: loc.y,
-                    level: loc.level,
-                    shape: loc.shape,
-                    rotation: loc.rotation,
-                });
-            }
-        }
-        return locs.length > 0 ? locs : undefined;
+        return render.getExtraLocsForMap(this, mapX, mapY);
     }
 
     private scheduleLocGeometryUpdate(
@@ -15176,25 +2454,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         mapY: number,
         group: "loc" | "door" | "full",
     ): void {
-        const mapId = getMapSquareId(mapX, mapY);
-        if (
-            group === "door" &&
-            !this.pendingLocUpdates.has(mapId) &&
-            !this.pendingLocGeometryUpdates.has(mapId)
-        ) {
-            this.pendingDoorLocUpdates.add(mapId);
-        } else if (
-            group === "loc" &&
-            !this.pendingLocUpdates.has(mapId) &&
-            !this.pendingDoorLocUpdates.has(mapId)
-        ) {
-            this.pendingLocGeometryUpdates.add(mapId);
-        } else {
-            this.pendingLocUpdates.add(mapId);
-            this.pendingLocGeometryUpdates.delete(mapId);
-            this.pendingDoorLocUpdates.delete(mapId);
-        }
-        this.scheduleLocReload(mapX, mapY);
+        return render.scheduleLocGeometryUpdate(this, mapX, mapY, group);
     }
 
     onLocAddChange(
@@ -15204,62 +2464,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         shape: number,
         rotation: number,
     ): void {
-        try {
-            const key = `${tile.x},${tile.y},${level},${shape}`;
-            this.addedLocs.set(key, { locId, x: tile.x, y: tile.y, level, shape, rotation });
-
-            const mapX = Math.floor(tile.x / 64);
-            const mapY = Math.floor(tile.y / 64);
-            if (this.instanceActive) {
-                // In instance mode, schedule a deferred instance scene rebuild
-                // that includes the new loc via extraLocs.
-                this.scheduleInstanceLocRebuild();
-            } else {
-                const locType = this.osrsClient.locTypeLoader.load(locId | 0);
-                this.scheduleLocGeometryUpdate(
-                    mapX,
-                    mapY,
-                    locType && isDoorLocType(locType) ? "door" : "loc",
-                );
-            }
-            console.log(
-                `[WebGLRenderer] Loc add: ${locId} at (${tile.x}, ${tile.y}, ${level}) shape=${shape} -> map (${mapX}, ${mapY})`,
-            );
-        } catch (err) {
-            console.warn("onLocAddChange error", err);
-        }
+        return render.onLocAddChange(this, locId, tile, level, shape, rotation);
     }
 
     onLocDel(tile: { x: number; y: number }, level: number, shape: number, rotation: number): void {
-        try {
-            const key = `${tile.x},${tile.y},${level},${shape}`;
-            this.addedLocs.delete(key);
-
-            const mapX = Math.floor(tile.x / 64);
-            const mapY = Math.floor(tile.y / 64);
-            // LOC_DEL does not carry an object id. Resolve it from the current
-            // per-tile loc index so deletes can stay on the same partial path.
-            const deletedLoc = this.getLocIdsAtTileAllLevels(tile.x, tile.y).find((loc) => {
-                if ((loc.level | 0) !== (level | 0)) return false;
-                const typeRot = loc.typeRot;
-                return (
-                    typeRot !== undefined &&
-                    ((typeRot | 0) & 0x3f) === ((shape | 0) & 0x3f) &&
-                    ((typeRot >> 6) & 0x3) === ((rotation | 0) & 0x3)
-                );
-            });
-            const locType =
-                deletedLoc && (deletedLoc.id | 0) > 0
-                    ? this.osrsClient.locTypeLoader.load(deletedLoc.id | 0)
-                    : undefined;
-            this.scheduleLocGeometryUpdate(
-                mapX,
-                mapY,
-                locType ? (isDoorLocType(locType) ? "door" : "loc") : "full",
-            );
-        } catch (err) {
-            console.warn("onLocDel error", err);
-        }
+        return render.onLocDel(this, tile, level, shape, rotation);
     }
 
     onLocAnim(
@@ -15270,177 +2479,26 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         rotation: number,
         animId: number,
     ): void {
-        try {
-            if ((shape | 0) < 0) return;
-            const exactKey = `${tile.x | 0},${tile.y | 0},${level | 0},${locId | 0}`;
-            const matchKey = `${tile.x | 0},${tile.y | 0},${level | 0},-1`;
-            for (const key of [exactKey, matchKey]) {
-                const existingTimer = this.locAnimTimers.get(key);
-                if (existingTimer) {
-                    clearTimeout(existingTimer);
-                    this.locAnimTimers.delete(key);
-                }
-            }
-
-            if (
-                this.interactHighlightActiveTarget?.kind === "loc" &&
-                (this.interactHighlightActiveTarget.plane | 0) === (level | 0) &&
-                (this.interactHighlightActiveTarget.tileX | 0) === (tile.x | 0) &&
-                (this.interactHighlightActiveTarget.tileY | 0) === (tile.y | 0)
-            ) {
-                this.clearInteractHighlightActiveTarget();
-            }
-            if (
-                this.interactHighlightHoverTarget?.kind === "loc" &&
-                (this.interactHighlightHoverTarget.plane | 0) === (level | 0) &&
-                (this.interactHighlightHoverTarget.tileX | 0) === (tile.x | 0) &&
-                (this.interactHighlightHoverTarget.tileY | 0) === (tile.y | 0)
-            ) {
-                this.clearInteractHighlightHoverTarget();
-            }
-
-            this.locOverrides.set(exactKey, {
-                newId: locId | 0,
-                newRotation: rotation & 0x3,
-                seqId: animId | 0,
-                seqRandomStart: false,
-            });
-            this.locOverrides.set(matchKey, {
-                newId: -1,
-                newRotation: rotation & 0x3,
-                seqId: animId | 0,
-                seqRandomStart: false,
-                matchType: shape as LocModelType,
-                matchRotation: rotation & 0x3,
-            });
-            this.reloadLocAnimationTile(tile, locId);
-
-            const durationMs = this.getLocAnimationDurationMs(animId);
-            const timer = setTimeout(() => {
-                let changed = false;
-                for (const key of [exactKey, matchKey]) {
-                    const current = this.locOverrides.get(key);
-                    if (
-                        current &&
-                        typeof current.seqId === "number" &&
-                        (current.seqId | 0) === (animId | 0)
-                    ) {
-                        this.locOverrides.delete(key);
-                        changed = true;
-                    }
-                    this.locAnimTimers.delete(key);
-                }
-                if (changed) {
-                    this.reloadLocAnimationTile(tile, locId);
-                }
-            }, durationMs);
-            this.locAnimTimers.set(exactKey, timer);
-            this.locAnimTimers.set(matchKey, timer);
-        } catch (err) {
-            console.warn("onLocAnim error", err);
-        }
+        return render.onLocAnim(this, locId, tile, level, shape, rotation, animId);
     }
 
     private reloadLocAnimationTile(tile: { x: number; y: number }, locId: number): void {
-        const mapX = Math.floor((tile.x | 0) / 64);
-        const mapY = Math.floor((tile.y | 0) / 64);
-        if (this.instanceActive) {
-            this.scheduleInstanceLocRebuild();
-            return;
-        }
-        const locType = this.osrsClient.locTypeLoader.load(locId | 0);
-        this.scheduleLocGeometryUpdate(
-            mapX,
-            mapY,
-            locType && isDoorLocType(locType) ? "door" : "loc",
-        );
+        return render.reloadLocAnimationTile(this, tile, locId);
     }
 
     private getLocAnimationDurationMs(seqId: number): number {
-        const fallbackMs = 2400;
-        try {
-            const seqType = this.osrsClient.seqTypeLoader.load(seqId | 0) as any;
-            if (!seqType) return fallbackMs;
-            let cycles = 0;
-            const isSkeletal =
-                (typeof seqType.isSkeletalSeq === "function" && seqType.isSkeletalSeq()) ||
-                (seqType.skeletalId ?? -1) >= 0;
-            if (isSkeletal) {
-                const duration =
-                    typeof seqType.getSkeletalDuration === "function"
-                        ? seqType.getSkeletalDuration()
-                        : 0;
-                cycles = Math.max(1, duration | 0);
-            } else if (Array.isArray(seqType.frameLengths)) {
-                for (const frameLength of seqType.frameLengths) {
-                    cycles += Math.max(1, Number(frameLength) | 0);
-                }
-            }
-            if (!(cycles > 0)) return fallbackMs;
-            return Math.max(600, Math.min(10000, cycles * 20 + 120));
-        } catch {
-            return fallbackMs;
-        }
+        return render.getLocAnimationDurationMs(this, seqId);
     }
 
     private scheduleLocReload(mapX: number, mapY: number): void {
-        const id = getMapSquareId(mapX, mapY);
-        this.pendingLocReloadMaps.set(id, { mapX: mapX | 0, mapY: mapY | 0 });
-        if (this.pendingLocReloadFlushTimer) return;
-        const flush = () => {
-            this.pendingLocReloadFlushTimer = undefined;
-            if (this.pendingLocReloadMaps.size === 0) return;
-            const batch = Array.from(this.pendingLocReloadMaps.values());
-            this.pendingLocReloadMaps.clear();
-            this.beginLocReloadBatch(batch);
-        };
-        this.pendingLocReloadFlushTimer = setTimeout(
-            flush,
-            WebGLOsrsRenderer.LOC_RELOAD_FLUSH_DELAY_MS,
-        );
+        return render.scheduleLocReload(this, mapX, mapY);
     }
 
     private appendGroundItemMenuEntries(
         menuEntries: OsrsMenuEntry[],
         examineEntries: OsrsMenuEntry[],
     ): void {
-        const focusTile = this.osrsClient.menuTile ?? this.osrsClient.hoveredTile;
-        if (!focusTile) return;
-        // Ground item stacks are stored on the raw client plane even when bridge tiles render above it.
-        const plane = resolveGroundItemStackPlane(this.getPlayerRawPlane() | 0);
-        const stacks = this.osrsClient.getGroundItemsAt(
-            focusTile.tileX | 0,
-            focusTile.tileY | 0,
-            plane | 0,
-        );
-        if (!stacks || stacks.length === 0) return;
-        for (const stack of stacks) {
-            const label = stack.quantity > 1 ? `${stack.name} x ${stack.quantity}` : stack.name;
-            const tile = {
-                tileX: stack.tile.x | 0,
-                tileY: stack.tile.y | 0,
-                plane: stack.tile.level | 0,
-            };
-            menuEntries.push({
-                option: "Take",
-                targetId: stack.itemId,
-                targetType: MenuTargetType.OBJ,
-                targetName: label,
-                targetLevel: stack.tile.level | 0,
-                tile,
-                onClick: () => this.osrsClient.takeGroundItem(stack),
-            });
-            examineEntries.push({
-                option: "Examine",
-                targetId: stack.itemId,
-                targetType: MenuTargetType.OBJ,
-                targetName: stack.name,
-                targetLevel: stack.tile.level | 0,
-                tile,
-                onClick: () => this.osrsClient.examineGroundItem(stack),
-            });
-        }
+        return render.appendGroundItemMenuEntries(this, menuEntries, examineEntries);
     }
-
     // Chathead model building moved to ChatheadFactory
 }

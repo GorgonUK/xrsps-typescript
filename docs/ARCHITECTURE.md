@@ -6,12 +6,13 @@ XRSPS is a full-stack OSRS emulation engine. The client runs in the browser with
 
 ```
 src/                    # Browser client
-  client/               # Game engine, rendering, input, sync
-  rs/                   # Cache loaders and OSRS engine code
-  network/              # Client-side networking
-  ui/                   # Game UI overlays
-  components/           # React components
-  shared/               # Types and constants shared with server
+  common/               # Types, constants, protocol, pure utils (client + server)
+  client/               # Game domains: chat, combat, ecs, login, input, sync…
+  render/               # WebGL + overlays
+  widgets/              # Widget tree, CS2 glue, GL widget draw
+  components/           # React shell only
+  network/              # Browser WebSocket client
+  rs/                   # Cache loaders and OSRS engine code (size exceptions OK)
 
 server/
   src/                  # Server core (engine — never gamemode-specific)
@@ -34,7 +35,17 @@ scripts/                # Cache export and build tools
 | **Engine**       | `server/src/`               | Tick loop, networking, collision, pathfinding, packet routing, player sync. Never references a specific gamemode. |
 | **Gamemodes**    | `server/gamemodes/{id}/`    | Server identity — rules, progression, content handlers, providers. Each gamemode is a self-contained directory.   |
 | **Extrascripts** | `server/extrascripts/{id}/` | Universal modules that work on any server regardless of gamemode.                                                 |
-| **Shared**       | `src/shared/`               | Types, constants, and utilities used by both client and server.                                                   |
+| **Common**       | `src/common/`               | Types, constants, and utilities used by both client and server.                                                   |
+
+### Client code conventions
+
+Adopted from our Vite site discipline, adapted for a game client:
+
+- **File size:** Prefer **100–150** lines for app/domain code; **hard cap 400**. Exceptions: `src/rs/**` Jagex ports, generated/static data, opcode/ID tables, shaders.
+- **`src/common`:** Non-UI code shared by **2+** domains (or by client + server). Prefer extending shared helpers over rewriting.
+- **`src/components`:** React shell only. PascalCase folder = single component; lowercase folder = group with barrel; nested pieces under `ComponentName/components/`. Prefer `components/common` bases.
+- **Game domains** (`client/`, `render/`, `widgets/`): lowercase folders for groups (`chat/`, `combat/`); PascalCase files for one class/module (`EnterToTypeChat.ts`). Groups may use `index.ts` barrels when stable.
+- **Orchestrators stay thin:** `OsrsClient` and renderer facades wire explicit `*Deps`; feature logic lives in domain modules.
 
 ## Game Loop
 
