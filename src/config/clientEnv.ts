@@ -19,6 +19,20 @@ export type ConfiguredServer = {
     maxPlayers: number;
 };
 
+function readBoolean(value: unknown, fallback: boolean): boolean {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === "true" || normalized === "1") return true;
+        if (normalized === "false" || normalized === "0") return false;
+    }
+    return fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
 /** Base URL for OSRS cache files. Trailing slash always present. */
 export function getCacheBaseUrl(): string {
     const fromEnv = read(process.env.REACT_APP_CACHE_BASE_URL);
@@ -56,12 +70,16 @@ export function getConfiguredServers(): ConfiguredServer[] | undefined {
     try {
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) return undefined;
-        return parsed.map((entry: any) => ({
-            name: String(entry.name ?? "Server"),
-            address: String(entry.address ?? "localhost:43594"),
-            secure: Boolean(entry.secure),
-            maxPlayers: typeof entry.maxPlayers === "number" ? entry.maxPlayers : 2047,
-        }));
+        return parsed.map((entry): ConfiguredServer => {
+            const server = isRecord(entry) ? entry : {};
+            return {
+                name: typeof server.name === "string" ? server.name : "Server",
+                address:
+                    typeof server.address === "string" ? server.address : "localhost:43594",
+                secure: readBoolean(server.secure, false),
+                maxPlayers: typeof server.maxPlayers === "number" ? server.maxPlayers : 2047,
+            };
+        });
     } catch {
         console.warn("[clientEnv] Failed to parse REACT_APP_SERVERS_JSON");
         return undefined;
