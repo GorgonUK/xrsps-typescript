@@ -30,6 +30,28 @@ import { sendLogin } from "../../network/ServerConnection";
 import { flushPackets } from "../../network/packet";
 import { createTextureArray } from "../../picogl/PicoTexture";
 import { RS_TO_RADIANS } from "../../rs/MathConstants";
+import { CollisionFlag } from "../../shared/CollisionFlag";
+import { isInWilderness } from "../../shared/world/Wilderness";
+
+/** Format a player menu target using the OSRS combat-level colour convention. */
+function formatPlayerCombatLabel(
+    username: string,
+    localCombatLevel: number,
+    targetCombatLevel: number,
+): string {
+    const colour =
+        targetCombatLevel < localCombatLevel
+            ? "00ff00"
+            : targetCombatLevel === localCombatLevel
+              ? "ffff00"
+              : "ff0000";
+    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
+}
+import {
+    getWorldLocChanges,
+    getWorldLocSpawns,
+    getWorldTerrainOverrides,
+} from "../../shared/gamemode/GamemodeContentStore";
 import { OsrsMenuEntry } from "../../rs/MenuEntry";
 import { MenuTargetType } from "../../rs/MenuEntry";
 import type { OverlayFloorType } from "../../rs/config/floortype/OverlayFloorType";
@@ -44,13 +66,6 @@ import { getMapIndexFromTile, getMapPlaneId, getMapSquareId } from "../../rs/map
 import { Model } from "../../rs/model/Model";
 import { ModelData } from "../../rs/model/ModelData";
 import { Scene } from "../../rs/scene/Scene";
-import { CollisionFlag } from "../../shared/CollisionFlag";
-import {
-    getWorldLocChanges,
-    getWorldLocSpawns,
-    getWorldTerrainOverrides,
-} from "../../shared/gamemode/GamemodeContentStore";
-import { isInWilderness } from "../../shared/world/Wilderness";
 import { getUiScale } from "../../ui/UiScale";
 import { ClickCrossOverlay } from "../../ui/devoverlay/ClickCrossOverlay";
 import { GroundItemOverlay } from "../../ui/devoverlay/GroundItemOverlay";
@@ -187,21 +202,6 @@ import {
     createProjectileProgram,
 } from "./shaders/Shaders";
 import { KNOWN_WATER_TEXTURE_IDS } from "./water/WaterTextureIds";
-
-/** Format a player menu target using the OSRS combat-level colour convention. */
-function formatPlayerCombatLabel(
-    username: string,
-    localCombatLevel: number,
-    targetCombatLevel: number,
-): string {
-    const colour =
-        targetCombatLevel < localCombatLevel
-            ? "00ff00"
-            : targetCombatLevel === localCombatLevel
-              ? "ffff00"
-              : "ff0000";
-    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
-}
 
 const MAX_TEXTURES = 1024;
 const TEXTURE_SIZE = 128;
@@ -805,7 +805,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     // Settings
     maxLevel: number = Scene.MAX_LEVELS - 1;
 
-    skyColor: vec4 = vec4.fromValues(1, 1, 1, 1); // White fog / void (avoids a black "box" at the edge)
+    skyColor: vec4 = vec4.fromValues(0, 0, 0, 1); // Black ( — vanilla has no skybox)
     fogDepth: number = 24; // Fog starts at 24 tiles (OSRS fog is subtle until near max distance)
     autoFogDepth: boolean = true;
     autoFogDepthFactor: number = 0.85;
@@ -1133,8 +1133,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         const shortestCssEdge = Math.max(1, Math.min(safeCssW, safeCssH));
         const viewportT = clamp(
             (shortestCssEdge - WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_PHONE_EDGE) /
-                (WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_TABLET_EDGE -
-                    WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_PHONE_EDGE),
+            (WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_TABLET_EDGE -
+                WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_PHONE_EDGE),
             0,
             1,
         );
@@ -1142,7 +1142,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MIN_SCALE +
             (WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MAX_SCALE -
                 WebGLOsrsRenderer.MOBILE_GAMEPLAY_UI_MIN_SCALE) *
-                viewportT;
+            viewportT;
         return Math.max(1, desiredUiScale);
     }
 
@@ -2027,12 +2027,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             let model =
                 seqId >= 0
                     ? npcModelLoader.getModel(
-                          npcType,
-                          seqId,
-                          frame,
-                          overlaySeqId | 0,
-                          overlayFrame | 0,
-                      )
+                        npcType,
+                        seqId,
+                        frame,
+                        overlaySeqId | 0,
+                        overlayFrame | 0,
+                    )
                     : undefined;
             if (!model) {
                 model = npcModelLoader.getModel(npcType, -1, -1);
@@ -2599,8 +2599,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             typeof ecsHeight === "number" && Number.isFinite(ecsHeight) && ecsHeight > 0
                 ? ecsHeight
                 : typeof fallback === "number" && Number.isFinite(fallback) && fallback > 0
-                  ? fallback
-                  : this.playerDefaultHeightTiles;
+                    ? fallback
+                    : this.playerDefaultHeightTiles;
         return Math.max(0.5, base + this.resolvePlayerAnimationHeightOffsetTiles(index));
     }
 
@@ -2910,7 +2910,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         if (!ext) {
             console.warn(
                 "WEBGL_multi_draw extension not available! Rendering may not work correctly. " +
-                    "Falling back to single-draw rendering; this is slower but supported.",
+                "Falling back to single-draw rendering; this is slower but supported.",
             );
         }
 
@@ -2924,7 +2924,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         this.app.enable(PicoGL.BLEND);
         this.app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
-        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
+        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
 
         this.quadPositions = this.app.createVertexBuffer(
             PicoGL.FLOAT,
@@ -3593,23 +3593,23 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     },
                     getItemIconCanvas:
                         () =>
-                        (
-                            itemId: number,
-                            qty?: number,
-                            outline?: number,
-                            shadow?: number,
-                            quantityMode?: number,
-                        ) => {
-                            // Use ItemIconRenderer to render item icons
-                            if (this.itemIconRenderer) {
-                                return this.itemIconRenderer.renderToCanvas(itemId, qty ?? 1, {
-                                    outline,
-                                    shadow,
-                                    quantityMode,
-                                });
-                            }
-                            return undefined;
-                        },
+                            (
+                                itemId: number,
+                                qty?: number,
+                                outline?: number,
+                                shadow?: number,
+                                quantityMode?: number,
+                            ) => {
+                                // Use ItemIconRenderer to render item icons
+                                if (this.itemIconRenderer) {
+                                    return this.itemIconRenderer.renderToCanvas(itemId, qty ?? 1, {
+                                        outline,
+                                        shadow,
+                                        quantityMode,
+                                    });
+                                }
+                                return undefined;
+                            },
                     getObjLoader: () => {
                         // Return the object loader from OsrsClient
                         return this.osrsClient.objTypeLoader;
@@ -3676,24 +3676,24 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                                                 : 0;
                                         const colors = Array.isArray(appearanceSrc.colors)
                                             ? appearanceSrc.colors
-                                                  .slice(0, 5)
-                                                  .map((n: any) =>
-                                                      Number.isFinite(n) ? (n | 0) & 0xff : 0,
-                                                  )
+                                                .slice(0, 5)
+                                                .map((n: any) =>
+                                                    Number.isFinite(n) ? (n | 0) & 0xff : 0,
+                                                )
                                             : [0, 0, 0, 0, 0];
                                         const kits = Array.isArray(appearanceSrc.kits)
                                             ? appearanceSrc.kits
-                                                  .slice(0, 7)
-                                                  .map((n: any) =>
-                                                      Number.isFinite(n) ? n | 0 : -1,
-                                                  )
+                                                .slice(0, 7)
+                                                .map((n: any) =>
+                                                    Number.isFinite(n) ? n | 0 : -1,
+                                                )
                                             : new Array(7).fill(-1);
                                         const equip = Array.isArray(appearanceSrc.equip)
                                             ? appearanceSrc.equip
-                                                  .slice(0, 14)
-                                                  .map((n: any) =>
-                                                      Number.isFinite(n) ? n | 0 : -1,
-                                                  )
+                                                .slice(0, 14)
+                                                .map((n: any) =>
+                                                    Number.isFinite(n) ? n | 0 : -1,
+                                                )
                                             : new Array(14).fill(-1);
                                         if (!keepEquipment) {
                                             for (let i = 0; i < equip.length; i++) equip[i] = -1;
@@ -3936,27 +3936,27 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         straight ? pick(animSeq("run"), animSeq("walk")) : undefined,
                         right
                             ? pick(
-                                  animSeq("runRight"),
-                                  animSeq("run"),
-                                  animSeq("walkRight"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("runRight"),
+                                animSeq("run"),
+                                animSeq("walkRight"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                         left
                             ? pick(
-                                  animSeq("runLeft"),
-                                  animSeq("run"),
-                                  animSeq("walkLeft"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("runLeft"),
+                                animSeq("run"),
+                                animSeq("walkLeft"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                         !straight && !right && !left
                             ? pick(
-                                  animSeq("runBack"),
-                                  animSeq("run"),
-                                  animSeq("walkBack"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("runBack"),
+                                animSeq("run"),
+                                animSeq("walkBack"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                     );
                 }
@@ -3968,27 +3968,27 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         straight ? pick(animSeq("crawl"), animSeq("walk")) : undefined,
                         right
                             ? pick(
-                                  animSeq("crawlRight"),
-                                  animSeq("crawl"),
-                                  animSeq("walkRight"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("crawlRight"),
+                                animSeq("crawl"),
+                                animSeq("walkRight"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                         left
                             ? pick(
-                                  animSeq("crawlLeft"),
-                                  animSeq("crawl"),
-                                  animSeq("walkLeft"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("crawlLeft"),
+                                animSeq("crawl"),
+                                animSeq("walkLeft"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                         !straight && !right && !left
                             ? pick(
-                                  animSeq("crawlBack"),
-                                  animSeq("crawl"),
-                                  animSeq("walkBack"),
-                                  animSeq("walk"),
-                              )
+                                animSeq("crawlBack"),
+                                animSeq("crawl"),
+                                animSeq("walkBack"),
+                                animSeq("walk"),
+                            )
                             : undefined,
                     );
                 }
@@ -3997,27 +3997,27 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     straight ? pick(animSeq("walk"), animSeq("run")) : undefined,
                     right
                         ? pick(
-                              animSeq("walkRight"),
-                              animSeq("walk"),
-                              animSeq("runRight"),
-                              animSeq("run"),
-                          )
+                            animSeq("walkRight"),
+                            animSeq("walk"),
+                            animSeq("runRight"),
+                            animSeq("run"),
+                        )
                         : undefined,
                     left
                         ? pick(
-                              animSeq("walkLeft"),
-                              animSeq("walk"),
-                              animSeq("runLeft"),
-                              animSeq("run"),
-                          )
+                            animSeq("walkLeft"),
+                            animSeq("walk"),
+                            animSeq("runLeft"),
+                            animSeq("run"),
+                        )
                         : undefined,
                     !straight && !right && !left
                         ? pick(
-                              animSeq("walkBack"),
-                              animSeq("walk"),
-                              animSeq("runBack"),
-                              animSeq("run"),
-                          )
+                            animSeq("walkBack"),
+                            animSeq("walk"),
+                            animSeq("runBack"),
+                            animSeq("run"),
+                        )
                         : undefined,
                 );
             };
@@ -5180,8 +5180,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             queuedGeneration > currentGeneration
                 ? queuedGeneration
                 : queuedGeneration > 0 && queuedGeneration < currentGeneration
-                  ? currentGeneration
-                  : Math.max(currentGeneration, queuedGeneration);
+                    ? currentGeneration
+                    : Math.max(currentGeneration, queuedGeneration);
 
         let batch = this.pendingStreamMapsByGeneration.get(targetGeneration);
         if (!batch) {
@@ -5700,10 +5700,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             affectedMapIds.add(this.getMapIdForWorldTile(x, y));
 
             this.terrainOverrides.set(key, {
-                underlay: typeof terrain.underlay === "number" ? terrain.underlay | 0 : undefined,
+                underlay:
+                    typeof terrain.underlay === "number" ? terrain.underlay | 0 : undefined,
                 overlay: typeof terrain.overlay === "number" ? terrain.overlay | 0 : undefined,
                 shape: typeof terrain.shape === "number" ? terrain.shape | 0 : undefined,
-                rotation: typeof terrain.rotation === "number" ? terrain.rotation & 0x3 : undefined,
+                rotation:
+                    typeof terrain.rotation === "number" ? terrain.rotation & 0x3 : undefined,
                 renderFlags:
                     typeof terrain.renderFlags === "number"
                         ? terrain.renderFlags & 0xff
@@ -5744,10 +5746,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         }
 
         for (const mapId of affectedMapIds) {
-            if (
-                !this.mapManager.mapSquares.has(mapId) &&
-                !this.mapManager.loadingMapIds.has(mapId)
-            ) {
+            if (!this.mapManager.mapSquares.has(mapId) && !this.mapManager.loadingMapIds.has(mapId)) {
                 continue;
             }
             const mapX = mapId >> 8;
@@ -6464,8 +6463,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             existing instanceof WebGLMapSquare
                 ? existing.timeLoaded
                 : this.skipMapFadeIn
-                  ? -1.0
-                  : time;
+                    ? -1.0
+                    : time;
         const reuseFrame = existing instanceof WebGLMapSquare ? existing.frameLoaded : frameCount;
 
         const loadedMap = WebGLMapSquare.load(
@@ -7849,7 +7848,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
         profiler.startPhase("present");
         this.app.clearMask(PicoGL.COLOR_BUFFER_BIT | PicoGL.DEPTH_BUFFER_BIT);
-        this.app.clearColor(this.skyColor[0], this.skyColor[1], this.skyColor[2], this.skyColor[3]);
+        this.app.clearColor(0.0, 0.0, 0.0, 1.0);
         this.app.defaultDrawFramebuffer().clear();
 
         if (this.frameFxaaDrawCall && this.fxaaEnabled) {
@@ -8477,12 +8476,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         const defaultNativeDestinationColor = 0xa9a753;
         const visibleTileHighlights = shouldOwnDestinationTile
             ? nativeTileHighlights.filter((highlight) => {
-                  if ((highlight.slot | 0) === 4) {
-                      return false;
-                  }
-                  const color = highlight.colorRgb & 0xffffff;
-                  return color !== destinationColor && color !== defaultNativeDestinationColor;
-              })
+                if ((highlight.slot | 0) === 4) {
+                    return false;
+                }
+                const color = highlight.colorRgb & 0xffffff;
+                return color !== destinationColor && color !== defaultNativeDestinationColor;
+            })
             : nativeTileHighlights;
         state.tileHighlights = visibleTileHighlights.length > 0 ? visibleTileHighlights : undefined;
 
@@ -8630,7 +8629,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     samplePlane < 3 &&
                     (lookupTileRenderFlagAt(this.mapManager, 1, tileX, tileY) &
                         TILE_FLAG_BRIDGE) !==
-                        0
+                    0
                 ) {
                     samplePlane++;
                 }
@@ -8967,18 +8966,18 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             typeof viewport?._absLogicalX === "number"
                 ? viewport._absLogicalX
                 : typeof viewport?._absX === "number"
-                  ? Math.round(viewport._absX / scaleX)
-                  : typeof viewport?.x === "number"
-                    ? viewport.x
-                    : 0;
+                    ? Math.round(viewport._absX / scaleX)
+                    : typeof viewport?.x === "number"
+                        ? viewport.x
+                        : 0;
         const rawY =
             typeof viewport?._absLogicalY === "number"
                 ? viewport._absLogicalY
                 : typeof viewport?._absY === "number"
-                  ? Math.round(viewport._absY / scaleY)
-                  : typeof viewport?.y === "number"
-                    ? viewport.y
-                    : 0;
+                    ? Math.round(viewport._absY / scaleY)
+                    : typeof viewport?.y === "number"
+                        ? viewport.y
+                        : 0;
         const rawWidth = typeof viewport?.width === "number" ? viewport.width | 0 : fallbackWidth;
         const rawHeight =
             typeof viewport?.height === "number" ? viewport.height | 0 : fallbackHeight;
@@ -9408,14 +9407,14 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             this.osrsClient.menuOpen && this.osrsClient.menuX >= 0
                 ? this.osrsClient.menuX
                 : this.osrsClient.inputManager.leftClickX !== -1
-                  ? this.osrsClient.inputManager.leftClickX
-                  : this.osrsClient.inputManager.mouseX;
+                    ? this.osrsClient.inputManager.leftClickX
+                    : this.osrsClient.inputManager.mouseX;
         const py =
             this.osrsClient.menuOpen && this.osrsClient.menuY >= 0
                 ? this.osrsClient.menuY
                 : this.osrsClient.inputManager.leftClickY !== -1
-                  ? this.osrsClient.inputManager.leftClickY
-                  : this.osrsClient.inputManager.mouseY;
+                    ? this.osrsClient.inputManager.leftClickY
+                    : this.osrsClient.inputManager.mouseY;
         return { sx: px | 0, sy: py | 0 };
     }
 
@@ -9844,12 +9843,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         let model =
             seqId >= 0
                 ? npcModelLoader.getModel(
-                      npcType,
-                      seqId | 0,
-                      frame | 0,
-                      overlaySeqId | 0,
-                      (overlaySeqId >= 0 ? movementFrame : -1) | 0,
-                  )
+                    npcType,
+                    seqId | 0,
+                    frame | 0,
+                    overlaySeqId | 0,
+                    (overlaySeqId >= 0 ? movementFrame : -1) | 0,
+                )
                 : undefined;
         if (!model) {
             model = npcModelLoader.getModel(npcType, -1, -1);
@@ -10013,13 +10012,13 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             fallbackTile ??
             (this.osrsClient.menuTile
                 ? {
-                      tileX: this.osrsClient.menuTile.tileX | 0,
-                      tileY: this.osrsClient.menuTile.tileY | 0,
-                      plane:
-                          typeof this.osrsClient.menuTile.plane === "number"
-                              ? this.osrsClient.menuTile.plane | 0
-                              : undefined,
-                  }
+                    tileX: this.osrsClient.menuTile.tileX | 0,
+                    tileY: this.osrsClient.menuTile.tileY | 0,
+                    plane:
+                        typeof this.osrsClient.menuTile.plane === "number"
+                            ? this.osrsClient.menuTile.plane | 0
+                            : undefined,
+                }
                 : undefined);
         let approx: { tileX: number; tileY: number; plane?: number } | undefined;
         if (typeof entry.mapX === "number" && typeof entry.mapY === "number") {
@@ -10052,11 +10051,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             typeof resolved.typeRot === "number"
                 ? (resolved.typeRot | 0) & 0xff
                 : this.resolveLocTypeRotAtTile(
-                      locId,
-                      resolved.tileX | 0,
-                      resolved.tileY | 0,
-                      plane | 0,
-                  );
+                    locId,
+                    resolved.tileX | 0,
+                    resolved.tileY | 0,
+                    plane | 0,
+                );
         return {
             kind: "loc",
             locId,
@@ -10102,8 +10101,8 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             typeof entry.mapX === "number" && typeof entry.mapY === "number"
                 ? { x: (baseX + (entry.mapX | 0)) | 0, y: (baseY + (entry.mapY | 0)) | 0 }
                 : fallback
-                  ? { x: fallback.tileX | 0, y: fallback.tileY | 0 }
-                  : undefined;
+                    ? { x: fallback.tileX | 0, y: fallback.tileY | 0 }
+                    : undefined;
 
         let bestEcsId: number | undefined;
         let bestScore = Number.POSITIVE_INFINITY;
@@ -10341,14 +10340,14 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     typeof spellMeta.mapX === "number"
                         ? spellMeta.mapX
                         : typeof e.mapX === "number"
-                          ? e.mapX
-                          : undefined;
+                            ? e.mapX
+                            : undefined;
                 const metaMapY =
                     typeof spellMeta.mapY === "number"
                         ? spellMeta.mapY
                         : typeof e.mapY === "number"
-                          ? e.mapY
-                          : undefined;
+                            ? e.mapY
+                            : undefined;
                 if (typeof metaMapX === "number") ctx.mapX = metaMapX;
                 if (typeof metaMapY === "number") ctx.mapY = metaMapY;
                 if (typeof spellMeta.npcServerId === "number")
@@ -11540,16 +11539,16 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     (movementSeqId | 0) === (idleSeqId | 0)
                         ? (map.npcIdleFrames[j] as AnimationFrames | undefined)
                         : (movementSeqId | 0) === (walkSeqId | 0)
-                          ? (((map.npcWalkFrames[j] ?? map.npcIdleFrames[j]) as AnimationFrames) ??
-                            undefined)
-                          : undefined;
+                            ? (((map.npcWalkFrames[j] ?? map.npcIdleFrames[j]) as AnimationFrames) ??
+                                undefined)
+                            : undefined;
                 let movementLengths =
                     (movementSeqId | 0) === (idleSeqId | 0)
                         ? (map.npcIdleFrameLengths[j] as number[] | undefined)
                         : (movementSeqId | 0) === (walkSeqId | 0)
-                          ? (((map.npcWalkFrameLengths[j] ??
+                            ? (((map.npcWalkFrameLengths[j] ??
                                 map.npcIdleFrameLengths[j]) as number[]) ?? undefined)
-                          : undefined;
+                            : undefined;
                 const currentMovementSeqId = ecs.getMovementSeqId?.(id) | 0;
 
                 if ((movementSeqId | 0) !== (currentMovementSeqId | 0)) {
@@ -12290,14 +12289,14 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             tileX < mapMinTileX
                 ? mapMinTileX - tileX
                 : tileX > mapMaxTileX
-                  ? tileX - mapMaxTileX
-                  : 0;
+                    ? tileX - mapMaxTileX
+                    : 0;
         const dy =
             tileY < mapMinTileY
                 ? mapMinTileY - tileY
                 : tileY > mapMaxTileY
-                  ? tileY - mapMaxTileY
-                  : 0;
+                    ? tileY - mapMaxTileY
+                    : 0;
         return Math.max(dx, dy);
     }
 
@@ -12315,14 +12314,14 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             zoneX < mapMinZoneX
                 ? mapMinZoneX - zoneX
                 : zoneX > mapMaxZoneX
-                  ? zoneX - mapMaxZoneX
-                  : 0;
+                    ? zoneX - mapMaxZoneX
+                    : 0;
         const dy =
             zoneY < mapMinZoneY
                 ? mapMinZoneY - zoneY
                 : zoneY > mapMaxZoneY
-                  ? zoneY - mapMaxZoneY
-                  : 0;
+                    ? zoneY - mapMaxZoneY
+                    : 0;
         return Math.max(dx, dy);
     }
 
@@ -12760,12 +12759,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                     const dynamicMeta =
                         renderSeqId >= 0 && npcTypeId >= 0
                             ? this.ensureNpcDynamicSequenceMeta(
-                                  map,
-                                  j,
-                                  npcTypeId,
-                                  renderSeqId,
-                                  forceDynamic,
-                              )
+                                map,
+                                j,
+                                npcTypeId,
+                                renderSeqId,
+                                forceDynamic,
+                            )
                             : undefined;
 
                     if (
@@ -12796,7 +12795,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         frame =
                             anim.framesAlpha[
                                 Math.max(0, Math.min((anim.framesAlpha.length - 1) | 0, frameId))
-                            ];
+                                ];
                     }
                     (drawCall as any).offsets[j] = frame[0];
                     (drawCall as any).numElements[j] = frame[1];
@@ -12837,7 +12836,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                                         0,
                                         Math.min((anim.framesAlpha.length - 1) | 0, wFrameId),
                                     )
-                                ];
+                                    ];
                         }
                         (drawCall as any).offsets[wj] = frame[0];
                         (drawCall as any).numElements[wj] = frame[1];
@@ -12897,7 +12896,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         dynDrawCall.uniform(
                             "u_worldEntityTransform",
                             this.worldEntityAnimator?.getTransform(dynWvId) ??
-                                WebGLMapSquare.IDENTITY_MAT4,
+                            WebGLMapSquare.IDENTITY_MAT4,
                         );
                     } else {
                         dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset());
@@ -13163,12 +13162,12 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         const dynamicMeta =
                             renderSeqId >= 0 && npcTypeId >= 0
                                 ? this.ensureNpcDynamicSequenceMeta(
-                                      map,
-                                      j,
-                                      npcTypeId,
-                                      renderSeqId,
-                                      forceDynamic,
-                                  )
+                                    map,
+                                    j,
+                                    npcTypeId,
+                                    renderSeqId,
+                                    forceDynamic,
+                                )
                                 : undefined;
 
                         if (
@@ -13197,7 +13196,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         const frame =
                             anim.frames[
                                 Math.max(0, Math.min((anim.frames.length - 1) | 0, frameId))
-                            ];
+                                ];
                         (drawCall as any).offsets[j] = frame[0];
                         (drawCall as any).numElements[j] = frame[1];
                         drawRanges[j] = frame;
@@ -13232,7 +13231,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                             const frame =
                                 anim.frames[
                                     Math.max(0, Math.min((anim.frames.length - 1) | 0, wFrameId))
-                                ];
+                                    ];
                             (drawCall as any).offsets[wj] = frame[0];
                             (drawCall as any).numElements[wj] = frame[1];
                             drawRanges[wj] = frame;
@@ -13313,7 +13312,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         dynDrawCall.uniform(
                             "u_worldEntityTransform",
                             this.worldEntityAnimator?.getTransform(dynWvId) ??
-                                WebGLMapSquare.IDENTITY_MAT4,
+                            WebGLMapSquare.IDENTITY_MAT4,
                         );
                     } else {
                         dynDrawCall.uniform("u_modelYOffset", this.getNpcModelYOffset());
@@ -13618,9 +13617,9 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
             const raycastHits =
                 ray && this.sceneRaycaster
                     ? this.sceneRaycaster.raycast(ray, {
-                          maxHits: 1000,
-                          basePlane: interactionPlane,
-                      })
+                        maxHits: 1000,
+                        basePlane: interactionPlane,
+                    })
                     : [];
             raycastHitCount = raycastHits.length | 0;
 
@@ -13700,9 +13699,13 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         ? playerEcs.getTeam(localEcsIndex | 0) | 0
                         : 0;
                 const localWorldX =
-                    typeof localEcsIndex === "number" ? playerEcs.getX(localEcsIndex | 0) >> 7 : 0;
+                    typeof localEcsIndex === "number"
+                        ? playerEcs.getX(localEcsIndex | 0) >> 7
+                        : 0;
                 const localWorldY =
-                    typeof localEcsIndex === "number" ? playerEcs.getY(localEcsIndex | 0) >> 7 : 0;
+                    typeof localEcsIndex === "number"
+                        ? playerEcs.getY(localEcsIndex | 0) >> 7
+                        : 0;
                 const canAttackPlayers = isInWilderness(localWorldX, localWorldY);
                 const targetIsClanMember = isClanMemberName(playerLabel);
 
@@ -13719,7 +13722,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
                         option: "Use",
                         targetId: -1,
                         targetType: MenuTargetType.PLAYER,
-                        targetName: `${itemName} -> ${playerMenuLabel}`,
+                            targetName: `${itemName} -> ${playerMenuLabel}`,
                         targetLevel: -1,
                         mapX: localX,
                         mapY: localY,
@@ -15132,13 +15135,13 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         mapY: number,
     ):
         | Array<{
-              id: number;
-              x: number;
-              y: number;
-              level: number;
-              shape: number;
-              rotation: number;
-          }>
+        id: number;
+        x: number;
+        y: number;
+        level: number;
+        shape: number;
+        rotation: number;
+    }>
         | undefined {
         if (this.addedLocs.size === 0) return undefined;
         const minX = mapX * 64;
