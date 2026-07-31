@@ -1,3 +1,4 @@
+import { getConfiguredServers, getServerListUrl } from "../../config/clientEnv";
 import { CacheIndex } from "../../rs/cache/CacheIndex";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
@@ -152,7 +153,8 @@ const FALLBACK_SERVERS: ServerListEntry[] = [
     },
 ];
 
-const SERVER_LIST_URL = "https://xrsps.com/servers.json";
+// Prefer build-time REACT_APP_SERVERS_JSON, then same-origin /servers.json.
+const SERVER_LIST_URL = getServerListUrl();
 
 /**
  * Login screen renderer.
@@ -320,6 +322,20 @@ export class LoginRenderer {
 
     async fetchServerList(): Promise<void> {
         if (this.serverListFetched) return;
+
+        const configured = getConfiguredServers();
+        if (configured && configured.length > 0) {
+            this.serverList = configured.map((s) => ({
+                name: s.name,
+                address: s.address,
+                secure: s.secure,
+                playerCount: null,
+                maxPlayers: s.maxPlayers,
+            }));
+            this.serverListFetched = true;
+            return;
+        }
+
         try {
             const res = await fetch(SERVER_LIST_URL, { signal: AbortSignal.timeout(5000) });
             if (res.ok) {

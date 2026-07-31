@@ -4,6 +4,11 @@ import {
     MAX_PASSWORD_LENGTH,
     MIN_PASSWORD_LENGTH,
 } from "../../shared/authentication";
+import {
+    getDefaultServerAddress,
+    getDefaultServerName,
+    getDefaultServerSecure,
+} from "../../config/clientEnv";
 import { isIosStandalonePwa } from "../../util/DeviceUtil";
 import {
     getClientPreference,
@@ -205,13 +210,13 @@ export class LoginState {
     hoveredServerIndex: number = -1;
 
     /** Current server address displayed on the button */
-    serverAddress: string = "localhost:43594";
+    serverAddress: string = getDefaultServerAddress();
 
     /** Current server name displayed on the button */
-    serverName: string = "Local Development";
+    serverName: string = getDefaultServerName();
 
     /** Whether the current server uses secure WebSocket */
-    serverSecure: boolean = false;
+    serverSecure: boolean = getDefaultServerSecure();
 
     /** Persist the last selected server to localStorage */
     saveLastServer(): void {

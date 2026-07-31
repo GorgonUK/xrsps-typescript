@@ -3,6 +3,7 @@ import { ClientState } from "../client/ClientState";
 import { PlayerSyncContext } from "../client/sync/PlayerSyncContext";
 import type { PlayerSyncFrame } from "../client/sync/PlayerSyncTypes";
 import { PlayerUpdateDecoder } from "../client/sync/PlayerUpdateDecoder";
+import { getDefaultWsUrl } from "../config/clientEnv";
 import { SkillId } from "../rs/skill/skills";
 import type { ProjectileLaunch } from "../shared/projectiles/ProjectileLaunch";
 import {
@@ -232,6 +233,8 @@ export type TradeActionClientPayload =
 
 export type ChatMessageEvent = {
     messageType: string;
+    /** Raw OSRS chat channel id (for example, 101 = trade request). */
+    chatType?: number;
     text: string;
     from?: string;
     prefix?: string;
@@ -578,7 +581,7 @@ type ClientToServer =
 const getEnv = (key: string): string | undefined =>
     typeof process !== "undefined" && process.env ? process.env[key] : undefined;
 
-const DEFAULT_URL = "ws://localhost:43594";
+const DEFAULT_URL = getDefaultWsUrl();
 const LOGIN_CONNECT_RETRY_DELAY_MS = 1000;
 
 let socket: WebSocket | null = null;
@@ -2145,6 +2148,7 @@ function processServerMessage(msg: any): void {
         try {
             const event: ChatMessageEvent = {
                 messageType: payload.messageType,
+                chatType: payload.chatType,
                 text: payload.text,
                 from: payload.from,
                 prefix: payload.prefix,
@@ -2842,6 +2846,47 @@ export function setServerUrl(url: string): void {
 export function sendInteractFollow(targetId: number, mode: "follow" | "trade" = "follow"): void {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     send({ type: "interact", payload: { mode, targetId: targetId | 0 } } as any);
+}
+
+/** Sends the native OPPLAYER packet selected by a CS2 chatbox action. */
+export function sendPlayerOption(targetId: number, option: number): void {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const target = targetId | 0;
+    const op = option | 0;
+    if (target < 0 || op < 1 || op > 8) return;
+
+    const { ClientPacket, createPacket, queuePacket } = require("./packet");
+    const packet = createPacket(ClientPacket[`OPPLAYER${op}` as const]);
+    const buffer = packet.packetBuffer;
+    switch (op) {
+        case 1:
+        case 3:
+            buffer.writeByteSub(0);
+            buffer.writeShort(target);
+            break;
+        case 2:
+            buffer.writeByte(0);
+            buffer.writeShort(target);
+            break;
+        case 4:
+        case 6:
+            buffer.writeShort(target);
+            buffer.writeByteNeg(0);
+            break;
+        case 5:
+            buffer.writeShortAddLE(target);
+            buffer.writeByteSub(0);
+            break;
+        case 7:
+            buffer.writeShortAdd(target);
+            buffer.writeByteSub(0);
+            break;
+        case 8:
+            buffer.writeByte(0);
+            buffer.writeShortAdd(target);
+            break;
+    }
+    queuePacket(packet);
 }
 export function sendInteractStop(): void {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;

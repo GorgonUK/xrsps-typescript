@@ -77,6 +77,32 @@ function getTargetWidget(ctx: HandlerContext, intOp: number): WidgetNode | null 
 }
 
 const MOBILE_TOPLEVEL_GAMEFRAME_UID = 0x02590014;
+const TRADE_INVENTORY_ROOT_UID = 336 << 16;
+const TRADE_INVENTORY_COLUMNS = 4;
+const TRADE_INVENTORY_COLUMN_PITCH = 42;
+
+/**
+ * The cache trade scripts position their fourth inventory column 16px too far
+ * right. Apply the correction at the opcode boundary so later script refreshes
+ * cannot restore the clipped coordinate.
+ */
+function getCorrectedTradeInventoryX(
+    widget: WidgetNode | null | undefined,
+    x: number,
+    xMode: number,
+): number {
+    if (
+        widget?.parentUid === TRADE_INVENTORY_ROOT_UID &&
+        widget.groupId === 336 &&
+        xMode === 0 &&
+        typeof widget.childIndex === "number" &&
+        widget.childIndex >= 0 &&
+        widget.childIndex < 28
+    ) {
+        return (widget.childIndex % TRADE_INVENTORY_COLUMNS) * TRADE_INVENTORY_COLUMN_PITCH;
+    }
+    return x;
+}
 
 function getWidgetScriptHeight(ctx: HandlerContext, w: WidgetNode | null | undefined): number {
     const height = w?.height ?? 0;
@@ -1142,18 +1168,22 @@ export function registerWidgetOps(handlers: HandlerMap): void {
         const xMode = ctx.intStack[ctx.intStackSize + 2];
         const yMode = ctx.intStack[ctx.intStackSize + 3];
         const w = getTargetWidget(ctx, intOp);
+        const correctedX = getCorrectedTradeInventoryX(w, x, xMode);
         // PERF: Only invalidate if position actually changed
         if (
             w &&
-            (w.rawX !== x || w.rawY !== y || w.xPositionMode !== xMode || w.yPositionMode !== yMode)
+            (w.rawX !== correctedX ||
+                w.rawY !== y ||
+                w.xPositionMode !== xMode ||
+                w.yPositionMode !== yMode)
         ) {
-            w.rawX = x;
+            w.rawX = correctedX;
             w.rawY = y;
             w.xPositionMode = xMode;
             w.yPositionMode = yMode;
             // For absolute positioning (mode 0), also update computed x/y immediately
             // This ensures the renderer sees the new position without waiting for layout
-            if (xMode === 0) w.x = x;
+            if (xMode === 0) w.x = correctedX;
             if (yMode === 0) w.y = y;
             // PARITY: Invalidate instead of eager layout
             invalidateWidgetLayout(ctx, w);
