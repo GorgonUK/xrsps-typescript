@@ -281,6 +281,7 @@ export interface MessageHandlerServices {
         targetPlayerIds?: number[];
     }) => void;
     getPublicChatPlayerType: (player: PlayerState) => number;
+    getPlayerPermission: (player: PlayerState) => import("./PlayerPermission").PlayerPermission;
     eventBus?: import("../game/events/GameEventBus").GameEventBus;
     findScriptCommand: (
         name: string,

@@ -5,6 +5,7 @@ import type { GamemodeDefinition } from "../game/gamemodes/GamemodeDefinition";
 import type { PlayerState } from "../game/player";
 import { logger } from "../utils/logger";
 import { AccountStore, normalizeAccountName } from "./AccountStore";
+import { type PlayerPermission, hasPermission } from "./PlayerPermission";
 
 const ADMIN_USERNAMES_ENV = (
     process?.env?.ADMIN_USERNAMES ??
@@ -18,6 +19,17 @@ const ADMIN_USERNAMES = new Set(
         .map((value) => value.trim().toLowerCase())
         .filter((value) => value.length > 0),
 );
+const MODERATOR_USERNAMES = usernamesFromEnv("MODERATOR_USERNAMES");
+const DEVELOPER_USERNAMES = usernamesFromEnv("DEVELOPER_USERNAMES");
+
+function usernamesFromEnv(name: string): Set<string> {
+    return new Set(
+        (process.env[name] ?? "")
+            .split(",")
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean),
+    );
+}
 
 export const ADMIN_CROWN_ICON = 1;
 
@@ -109,10 +121,16 @@ export class AuthenticationService {
     }
 
     isAdminPlayer(player: PlayerState | undefined): boolean {
-        if (!player) return false;
-        const normalizedName = this.normalizePlayerNameForAuth(player.name);
-        if (normalizedName.length === 0) return false;
-        return ADMIN_USERNAMES.has(normalizedName);
+        return !!player && hasPermission(this.getPlayerPermission(player), "admin");
+    }
+
+    getPlayerPermission(player: PlayerState | undefined): PlayerPermission {
+        if (!player) return "player";
+        const name = this.normalizePlayerNameForAuth(player.name);
+        if (DEVELOPER_USERNAMES.has(name)) return "developer";
+        if (ADMIN_USERNAMES.has(name)) return "admin";
+        if (MODERATOR_USERNAMES.has(name)) return "moderator";
+        return this.options.accountStore.getPermissionLevel(name);
     }
 
     normalizeAccountType(value: number): number {

@@ -10,6 +10,8 @@ import { getSpellData } from "../../game/spells/SpellDataProvider";
 import { logger } from "../../utils/logger";
 import type { MessageHandlerServices } from "../MessageHandlers";
 import type { MessageHandler, MessageRouter } from "../MessageRouter";
+import { getBuiltinChatCommandPermission } from "../commands/ChatCommands";
+import { hasPermission } from "../PlayerPermission";
 
 const DEBUG_SCROLL_TITLE = "Clue Compass";
 const DEBUG_SCROLL_OPTIONS = [
@@ -265,6 +267,21 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                 logger.info(`[cmd] Player ${sender.id} (${senderName}) used command: ::${cmd}`);
                 const parts = cmd.split(/\s+/).filter((part) => part.length > 0);
                 const root = parts[0] ?? "";
+                const requiredPermission = getBuiltinChatCommandPermission(root);
+                if (
+                    requiredPermission &&
+                    !hasPermission(services.getPlayerPermission(sender), requiredPermission)
+                ) {
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: `You need ${requiredPermission} permission to use ::${root}.`,
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.warn(
+                        `[cmd] denied ::${root} for player ${sender.id}; requires ${requiredPermission}`,
+                    );
+                    return;
+                }
 
                 if (root === "tickstats") {
                     const stats = services.getTickerStats();

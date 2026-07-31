@@ -69,9 +69,12 @@ module.exports = {
                     typeof warning?.message === "string" &&
                     warning.message.includes("Failed to parse source map") &&
                     typeof warning?.module?.resource === "string" &&
-                    warning.module.resource.includes(
+                    (warning.module.resource.includes(
                         `${path.sep}node_modules${path.sep}js-xxhash${path.sep}`,
-                    ),
+                    ) ||
+                        warning.module.resource.includes(
+                            `${path.sep}node_modules${path.sep}wasm-gzip${path.sep}`,
+                        )),
             ];
 
             return webpackConfig;

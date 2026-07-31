@@ -7,6 +7,10 @@ import {
     MIN_PASSWORD_LENGTH,
 } from "../../../src/shared/authentication";
 import { type SqliteDatabase, getSqliteDatabase } from "../game/state/SqliteDatabase";
+import {
+    type PlayerPermission,
+    normalizePlayerPermission,
+} from "./PlayerPermission";
 
 const PASSWORD_KEY_LENGTH = 64;
 const SCRYPT_OPTIONS = {
@@ -129,6 +133,15 @@ export class AccountStore {
                 .prepare("SELECT 1 FROM accounts WHERE username = ?")
                 .get(accountName) !== undefined
         );
+    }
+
+    getPermissionLevel(username: string | undefined): PlayerPermission {
+        const accountName = normalizeAccountName(username);
+        if (!accountName) return "player";
+        const row = this.database.connection
+            .prepare("SELECT permission_level AS permissionLevel FROM accounts WHERE username = ?")
+            .get(accountName) as { permissionLevel?: unknown } | undefined;
+        return normalizePlayerPermission(row?.permissionLevel);
     }
 
     private derivePasswordHash(password: string, salt: Buffer): string {

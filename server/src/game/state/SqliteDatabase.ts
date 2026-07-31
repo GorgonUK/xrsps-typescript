@@ -73,6 +73,7 @@ export class SqliteDatabase {
                 password_algorithm TEXT NOT NULL,
                 password_salt TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
+                permission_level TEXT NOT NULL DEFAULT 'player',
                 created_at TEXT NOT NULL,
                 password_changed_at TEXT NOT NULL
             );
@@ -149,6 +150,14 @@ export class SqliteDatabase {
 
             PRAGMA user_version = 1;
         `);
+        const accountColumns = this.connection.prepare("PRAGMA table_info(accounts)").all() as Array<{
+            name: string;
+        }>;
+        if (!accountColumns.some((column) => column.name === "permission_level")) {
+            this.connection.exec(
+                "ALTER TABLE accounts ADD COLUMN permission_level TEXT NOT NULL DEFAULT 'player'",
+            );
+        }
         this.migrateLegacyJsonFiles(options.dataDir);
     }
 

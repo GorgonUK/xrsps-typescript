@@ -60,6 +60,7 @@ export function registerMessageHandlers(svc: ServerServices, router: MessageRout
             svc.actionScheduler.clearActionsInGroup(playerId, group),
         interruptPlayerInput: (player) => interruptForPlayerInput(player, svc.actionScheduler),
         canUseAdminTeleport: (player) => svc.authService.isAdminPlayer(player),
+        getPlayerPermission: (player) => svc.authService.getPlayerPermission(player),
         teleportPlayer: (player, x, y, level, forceRebuild = false) =>
             svc.movementService.teleportPlayer(player, x, y, level, forceRebuild),
         teleportToInstance: (player, x, y, level, templateChunks, extraLocs) =>
