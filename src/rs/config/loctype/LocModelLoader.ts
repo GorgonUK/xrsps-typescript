@@ -292,6 +292,12 @@ export class LocModelLoader {
                 -50,
             );
 
+            // ModelData.light() aliases vertex buffers. Detach before caching so later
+            // rotate/animate calls cannot mutate ModelLoader-shared scenery data.
+            if (model.verticesX === modelData.verticesX) {
+                model = Model.copyAnimated(model, true, true);
+            }
+
             this.modelCache.set(key, model);
         }
 
@@ -302,6 +308,12 @@ export class LocModelLoader {
 
         const isDiagonal = type === LocModelType.NORMAL && rotation > 3;
         if (isDiagonal) {
+            // rotate() mutates vertex buffers in place. Hover highlights call this every
+            // frame, so never apply the diagonal offset to the cached base model.
+            const cached = this.modelCache.get(key);
+            if (model === cached) {
+                model = Model.copyAnimated(model, true, true);
+            }
             model.rotate(256);
         }
 
