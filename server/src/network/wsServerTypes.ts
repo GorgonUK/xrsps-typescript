@@ -1,4 +1,4 @@
-import type { ProjectileLaunch } from "../../../src/common/projectiles/ProjectileLaunch";
+import type { ProjectileLaunch } from "../../../client/common/projectiles/ProjectileLaunch";
 import type { NpcUpdateDelta } from "../game/npc";
 import type { NpcStatusEvent } from "../game/npcManager";
 import type { PlayerAppearance as PlayerAppearanceState } from "../game/player";

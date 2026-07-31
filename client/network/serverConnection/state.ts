@@ -1,6 +1,6 @@
-import { PlayerSyncContext } from "../../client/sync/PlayerSyncContext";
-import { PlayerUpdateDecoder } from "../../client/sync/PlayerUpdateDecoder";
-import type { PlayerSyncFrame } from "../../client/sync/PlayerSyncTypes";
+import { PlayerSyncContext } from "../../game/sync/PlayerSyncContext";
+import { PlayerUpdateDecoder } from "../../game/sync/PlayerUpdateDecoder";
+import type { PlayerSyncFrame } from "../../game/sync/PlayerSyncTypes";
 import type { ProjectileLaunch } from "../../common/projectiles/ProjectileLaunch";
 import { CombatStateStore } from "../combat/CombatStateStore";
 import { DEFAULT_URL } from "./constants";

@@ -1,4 +1,4 @@
-import type { Huffman } from "../../../../src/rs/chat/Huffman";
+import type { Huffman } from "../../../../client/rs/chat/Huffman";
 import type { NpcState, NpcUpdateDelta } from "../../game/npc";
 import type { PlayerAppearance, PlayerState } from "../../game/player";
 import type { NpcSyncSession } from "../NpcSyncSession";

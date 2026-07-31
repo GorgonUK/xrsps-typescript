@@ -1,4 +1,4 @@
-import type { BasType } from "../../../../src/rs/config/bastype/BasType";
+import type { BasType } from "../../../../client/rs/config/bastype/BasType";
 
 export type PlayerAnimSet = {
     idle?: number;

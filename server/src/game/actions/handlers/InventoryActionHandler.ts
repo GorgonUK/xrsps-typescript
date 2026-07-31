@@ -14,7 +14,7 @@
 import {
     MODIFIER_FLAG_CTRL,
     MODIFIER_FLAG_CTRL_SHIFT,
-} from "../../../../../src/common/input/modifierFlags";
+} from "../../../../../client/common/input/modifierFlags";
 import { RectAdjacentRouteStrategy } from "../../../pathfinding/legacy/pathfinder/RouteStrategy";
 import type { RouteStrategy } from "../../../pathfinding/legacy/pathfinder/RouteStrategy";
 import { logger } from "../../../utils/logger";

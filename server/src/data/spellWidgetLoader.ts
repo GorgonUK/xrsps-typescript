@@ -2,11 +2,11 @@
  * Server-side spell widget loader.
  * Mirrors the client/CS2 contract: spell buttons come from spell item params in the cache.
  */
-import type { CacheInfo } from "../../../src/rs/cache/CacheInfo";
-import { CacheSystem } from "../../../src/rs/cache/CacheSystem";
-import { getCacheLoaderFactory } from "../../../src/rs/cache/loader/CacheLoaderFactory";
-import type { EnumTypeLoader } from "../../../src/rs/config/enumtype/EnumTypeLoader";
-import type { ObjTypeLoader } from "../../../src/rs/config/objtype/ObjTypeLoader";
+import type { CacheInfo } from "../../../client/rs/cache/CacheInfo";
+import { CacheSystem } from "../../../client/rs/cache/CacheSystem";
+import { getCacheLoaderFactory } from "../../../client/rs/cache/loader/CacheLoaderFactory";
+import type { EnumTypeLoader } from "../../../client/rs/config/enumtype/EnumTypeLoader";
+import type { ObjTypeLoader } from "../../../client/rs/config/objtype/ObjTypeLoader";
 import { logger } from "../utils/logger";
 
 export const SPELLBOOK_GROUP_ID = 218;

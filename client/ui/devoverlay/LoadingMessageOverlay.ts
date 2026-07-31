@@ -8,8 +8,8 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import { GameState } from "../../client/login";
-import { GameStateMachine, StateTransition } from "../../client/state";
+import { GameState } from "../../game/login";
+import { GameStateMachine, StateTransition } from "../../game/state";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 /**

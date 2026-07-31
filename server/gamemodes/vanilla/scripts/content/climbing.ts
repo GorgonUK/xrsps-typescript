@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import { CollisionFlag } from "../../../../../src/common/CollisionFlag";
+import { CollisionFlag } from "../../../../../client/common/CollisionFlag";
 import {
     type IScriptRegistry,
     type LocInteractionEvent,

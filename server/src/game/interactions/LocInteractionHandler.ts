@@ -1,8 +1,8 @@
 import type { WebSocket } from "ws";
 
-import { LocModelType } from "../../../../src/rs/config/loctype/LocModelType";
-import type { LocType } from "../../../../src/rs/config/loctype/LocType";
-import type { LocTypeLoader } from "../../../../src/rs/config/loctype/LocTypeLoader";
+import { LocModelType } from "../../../../client/rs/config/loctype/LocModelType";
+import type { LocType } from "../../../../client/rs/config/loctype/LocType";
+import type { LocTypeLoader } from "../../../../client/rs/config/loctype/LocTypeLoader";
 import { PathService } from "../../pathfinding/PathService";
 import {
     CardinalAdjacentRouteStrategy,

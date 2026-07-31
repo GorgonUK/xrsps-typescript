@@ -15,7 +15,7 @@ import {
     ITEM_SPAWNER_MODAL_GROUP_ID,
     ITEM_SPAWNER_MODAL_RESULT_SLOT_COUNT,
     ITEM_SPAWNER_MODAL_SLOT_COLUMNS,
-} from "../../../../src/common/ui/widgets";
+} from "../../../../client/common/ui/widgets";
 
 const FONT_PLAIN_11 = 494;
 const FONT_BOLD_12 = 496;

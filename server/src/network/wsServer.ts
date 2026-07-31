@@ -1,20 +1,20 @@
 import { WebSocket, WebSocketServer } from "ws";
 
-import { ConfigType } from "../../../src/rs/cache/ConfigType";
-import { IndexType } from "../../../src/rs/cache/IndexType";
+import { ConfigType } from "../../../client/rs/cache/ConfigType";
+import { IndexType } from "../../../client/rs/cache/IndexType";
 import {
     type CacheLoaderFactory,
     getCacheLoaderFactory,
-} from "../../../src/rs/cache/loader/CacheLoaderFactory";
-import { Huffman, tryLoadOsrsHuffman } from "../../../src/rs/chat/Huffman";
-import { DbRepository } from "../../../src/rs/config/db/DbRepository";
-import { ArchiveHealthBarDefinitionLoader } from "../../../src/rs/config/healthbar/HealthBarDefinitionLoader";
-import type { LocTypeLoader } from "../../../src/rs/config/loctype/LocTypeLoader";
-import type { NpcTypeLoader } from "../../../src/rs/config/npctype/NpcTypeLoader";
-import type { ObjTypeLoader } from "../../../src/rs/config/objtype/ObjTypeLoader";
-import { ACCOUNT_SUMMARY_GROUP_ID } from "../../../src/common/ui/accountSummary";
-import { MUSIC_GROUP_ID } from "../../../src/common/ui/music";
-import { VARP_FOLLOWER_INDEX } from "../../../src/common/vars";
+} from "../../../client/rs/cache/loader/CacheLoaderFactory";
+import { Huffman, tryLoadOsrsHuffman } from "../../../client/rs/chat/Huffman";
+import { DbRepository } from "../../../client/rs/config/db/DbRepository";
+import { ArchiveHealthBarDefinitionLoader } from "../../../client/rs/config/healthbar/HealthBarDefinitionLoader";
+import type { LocTypeLoader } from "../../../client/rs/config/loctype/LocTypeLoader";
+import type { NpcTypeLoader } from "../../../client/rs/config/npctype/NpcTypeLoader";
+import type { ObjTypeLoader } from "../../../client/rs/config/objtype/ObjTypeLoader";
+import { ACCOUNT_SUMMARY_GROUP_ID } from "../../../client/common/ui/accountSummary";
+import { MUSIC_GROUP_ID } from "../../../client/common/ui/music";
+import { VARP_FOLLOWER_INDEX } from "../../../client/common/vars";
 import { MusicCatalogService } from "../audio/MusicCatalogService";
 import { MusicRegionService } from "../audio/MusicRegionService";
 import { MusicUnlockService } from "../audio/MusicUnlockService";
@@ -1207,7 +1207,7 @@ export class WSServer {
                 logger.warn("[cache] obj type loader init failed", err);
             }
             let enumTypeLoader:
-                | import("../../../src/rs/config/enumtype/EnumTypeLoader").EnumTypeLoader
+                | import("../../../client/rs/config/enumtype/EnumTypeLoader").EnumTypeLoader
                 | undefined;
             try {
                 enumTypeLoader = this.cacheFactory.getEnumTypeLoader?.();

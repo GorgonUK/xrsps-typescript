@@ -4,7 +4,7 @@
 import {
     getClientClock as getClientClockFromCycles,
     markWidgetsLoaded,
-} from "../../../client/TransmitCycles";
+} from "../../../game/TransmitCycles";
 import { markWidgetInteractionDirty } from "../../../widgets/WidgetInteraction";
 import type { WidgetNode } from "../../../widgets/WidgetManager";
 import { getViewportSize } from "../../../common/utils/DeviceUtil";

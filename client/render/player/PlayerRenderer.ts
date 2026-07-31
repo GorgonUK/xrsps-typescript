@@ -7,9 +7,9 @@ import { getMapIndexFromTile } from "../../rs/map/MapFileIndex";
 import { Model } from "../../rs/model/Model";
 import { ModelData } from "../../rs/model/ModelData";
 import { clamp } from "../../common/utils/MathUtil";
-import { ActorAnimationClip } from "../../client/actor/ActorAnimation";
-import type { PlayerAnimKey } from "../../client/ecs/PlayerEcs";
-import { resolveHeightSamplePlaneForLocal } from "../../client/scene/PlaneResolver";
+import { ActorAnimationClip } from "../../game/actor/ActorAnimation";
+import type { PlayerAnimKey } from "../../game/ecs/PlayerEcs";
+import { resolveHeightSamplePlaneForLocal } from "../../game/scene/PlaneResolver";
 import { DrawRange, NULL_DRAW_RANGE, newDrawRange } from "../DrawRange";
 import { WebGLMapSquare } from "../WebGLMapSquare";
 import type { WebGLOsrsRenderer } from "../WebGLOsrsRenderer";
@@ -1084,7 +1084,7 @@ export class PlayerRenderer {
                 };
             }
         }
-        const ModelMod = require("../../../rs/model/Model").Model;
+        const ModelMod = require("../../rs/model/Model").Model;
         // Do not shallow-copy face alpha: sequences (frame-based or skeletal) can mutate faceAlphas via ALPHA transforms.
         // Sharing would leak those mutations back into the cached base model and cause visual artifacts (e.g., "blur"/ghosting).
         let model = ModelMod.copyAnimated(baseModel, false, true);

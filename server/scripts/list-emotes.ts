@@ -1,8 +1,8 @@
-import { IndexType } from "../../src/rs/cache/IndexType";
+import { IndexType } from "../../client/rs/cache/IndexType";
 import {
     ArchiveEnumTypeLoader,
     IndexEnumTypeLoader,
-} from "../../src/rs/config/enumtype/EnumTypeLoader";
+} from "../../client/rs/config/enumtype/EnumTypeLoader";
 import type { CacheEnv } from "../src/world/CacheEnv";
 import { initCacheEnv } from "../src/world/CacheEnv";
 

@@ -1,4 +1,4 @@
-import { ClientState } from "../../../client/ClientState";
+import { ClientState } from "../../../game/ClientState";
 import type { WidgetNode } from "../../../widgets/WidgetNode";
 // Debug flag: draw purple outlines around clickable areas
 export const DEBUG_CLICK_AREAS = false;

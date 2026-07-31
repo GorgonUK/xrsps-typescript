@@ -21,7 +21,7 @@
  * - Server-side item values only
  * - Validate respawn location (no wilderness respawns)
  */
-import { SKILL_IDS, SkillId } from "../../../../src/rs/skill/skills";
+import { SKILL_IDS, SkillId } from "../../../../client/rs/skill/skills";
 import { getItemDefinition } from "../../data/items";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";

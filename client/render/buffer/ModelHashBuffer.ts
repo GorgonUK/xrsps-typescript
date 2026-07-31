@@ -1,6 +1,6 @@
 import { Model } from "../../rs/model/Model";
 import { Hasher } from "../../common/utils/Hasher";
-import { DataBuffer } from "../../client/buffer/DataBuffer";
+import { DataBuffer } from "../../game/buffer/DataBuffer";
 
 export function getModelHash(modelHashBuf: ModelHashBuffer, model: Model): number {
     const textureIds =

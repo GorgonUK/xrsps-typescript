@@ -21,7 +21,7 @@ export class DoorRuntimeTileMappingStore {
     private flushTimer: NodeJS.Timeout | undefined;
 
     constructor(
-        private readonly filePath: string = path.resolve("server/data/doors.json"),
+        private readonly filePath: string = path.resolve(__dirname, "../../data/doors.json"),
         private readonly flushDelayMs: number = 2000,
     ) {
         this.load();

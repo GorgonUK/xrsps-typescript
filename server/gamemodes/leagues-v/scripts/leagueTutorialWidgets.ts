@@ -2,7 +2,7 @@ import {
     VARBIT_FLASHSIDE,
     VARBIT_LEAGUE_TUTORIAL_COMPLETED,
     VARP_LEAGUE_GENERAL,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import type { IScriptRegistry, ScriptServices } from "../../../src/game/scripts/types";
 import { LeagueTaskService } from "../LeagueTaskService";

@@ -10,7 +10,7 @@ const CHATBOX_GROUP_ID = 162;
 const CHATBOX_INPUT_CHILD_ID = 57;
 /** CS2 script 223 = [proc,chat_promptinput], rebuilds the chat input line text. */
 const CHAT_PROMPT_SCRIPT_ID = 223;
-const CHAT_LOCKED_PROMPT = "Press enter to type";
+const CHAT_LOCKED_PROMPT = "Press Enter to Chat";
 const CHAT_INPUT_VARC = 335;
 const OSRS_KEY_ENTER = 84;
 const OSRS_KEY_ESCAPE = 13;
@@ -24,7 +24,7 @@ export type EnterToTypeChatDeps = {
 };
 
 /**
- * RuneLite-style "press enter to type" (desktop only): while locked, keystrokes are
+ * RuneLite-style "Press Enter to Chat" (desktop only): while locked, keystrokes are
  * not delivered to the chatbox input scripts and WASD rotates the camera instead.
  * Enter (or "/" / ":") unlocks typing; sending a message or Escape re-locks it.
  */
@@ -73,7 +73,7 @@ export class EnterToTypeChat {
     /**
      * Re-run [proc,chat_promptinput] so the chat input line reflects the real typed
      * buffer. While locked, applyLockPlaceholder() (run every frame) swaps the line
-     * back to the "Press enter to type" placeholder.
+     * back to the "Press Enter to Chat" placeholder.
      */
     refreshPrompt(): void {
         try {
@@ -84,7 +84,7 @@ export class EnterToTypeChat {
     }
 
     /**
-     * While chat is locked, display "Press enter to type" after the player name in the
+     * While chat is locked, display "Press Enter to Chat" after the player name in the
      * chat input line (component 162:57). Runs every frame so it self-heals whenever
      * chat_promptinput rewrites the line (login, chat rebuilds, name changes).
      */

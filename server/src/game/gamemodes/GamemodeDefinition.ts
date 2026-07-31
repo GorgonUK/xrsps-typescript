@@ -229,7 +229,7 @@ export interface GamemodeDefinition {
     getPlayerTypes(
         player: PlayerState,
         isAdmin: boolean,
-    ): import("../../../../src/rs/chat/PlayerType").PlayerType[];
+    ): import("../../../../client/rs/chat/PlayerType").PlayerType[];
 
     // === Scripts ===
     registerHandlers(registry: IScriptRegistry, services: ScriptServices): void;

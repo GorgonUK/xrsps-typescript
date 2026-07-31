@@ -115,15 +115,19 @@ export function GameContainer({ osrsClient }: OsrsContainerProps): JSX.Element {
 
     const widgetManagerReady = osrsClient.widgetManager != null;
 
-    const animate = useCallback(
-        (time: DOMHighResTimeStamp) => {
-            setFps(Math.round(renderer.stats.frameTimeFps));
-            if (!hideUi && osrsClient.hoverOverlayEnabled) {
-                // Keep F3 stats overlay values live even when FPS number doesn't change.
-                forceStatsOverlayRefresh(renderer.stats.frameCount | 0);
-            }
+    const fpsUiLastMs = useRef(0);
 
-            // WebGL overlay handles Choose Option; no CSS menu props updates needed
+    const animate = useCallback(
+        (_time: DOMHighResTimeStamp) => {
+            const now = performance.now();
+            // Cap React FPS UI updates (~4Hz). Per-RAF setState was thrashing the tree.
+            if (now - fpsUiLastMs.current >= 250) {
+                fpsUiLastMs.current = now;
+                setFps(Math.round(renderer.stats.frameTimeFps));
+                if (!hideUi && osrsClient.hoverOverlayEnabled) {
+                    forceStatsOverlayRefresh(renderer.stats.frameCount | 0);
+                }
+            }
 
             requestRef.current = requestAnimationFrame(animate);
         },

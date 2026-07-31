@@ -2,7 +2,7 @@ import {
     VARBIT_AUTOCAST_DEFMODE,
     VARBIT_AUTOCAST_SET,
     VARBIT_AUTOCAST_SPELL,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import type { PlayerState } from "../player";
 import { canWeaponAutocastSpell, getAutocastIndexFromSpellId } from "../spells/SpellDataProvider";
 

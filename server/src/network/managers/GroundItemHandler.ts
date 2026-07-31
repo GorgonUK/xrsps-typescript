@@ -6,7 +6,7 @@
  */
 import type { WebSocket } from "ws";
 
-import { ObjStackability } from "../../../../src/rs/config/objtype/ObjStackability";
+import { ObjStackability } from "../../../../client/rs/config/objtype/ObjStackability";
 import { getItemDefinition } from "../../data/items";
 import type { ServerServices } from "../../game/ServerServices";
 import { isInWilderness } from "../../game/combat/MultiCombatZones";

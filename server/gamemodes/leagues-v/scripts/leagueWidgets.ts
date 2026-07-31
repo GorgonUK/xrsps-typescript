@@ -1,4 +1,4 @@
-import { VARBIT_MASTERY_POINT_UNLOCK_BASE } from "../../../../src/common/gamemode/GamemodeDataTypes";
+import { VARBIT_MASTERY_POINT_UNLOCK_BASE } from "../../../../client/common/gamemode/GamemodeDataTypes";
 import {
     ACCOUNT_SUMMARY_COLLECTION_ACTION_FLAGS,
     ACCOUNT_SUMMARY_COLLECTION_LOG_CHILD_INDEX,
@@ -6,8 +6,8 @@ import {
     ACCOUNT_SUMMARY_GROUP_ID,
     ACCOUNT_SUMMARY_PLAYTIME_ACTION_FLAGS,
     ACCOUNT_SUMMARY_PLAYTIME_CHILD_INDEX,
-} from "../../../../src/common/ui/accountSummary";
-import { LEAGUE_SUMMARY_GROUP_ID } from "../../../../src/common/ui/leagueSummary";
+} from "../../../../client/common/ui/accountSummary";
+import { LEAGUE_SUMMARY_GROUP_ID } from "../../../../client/common/ui/leagueSummary";
 import {
     DIARY_LIST_ENTRY_EVENT_FLAGS,
     DIARY_LIST_ENTRY_MAX_SLOT,
@@ -26,7 +26,7 @@ import {
     decodeSideJournalTabFromStateVarp,
     encodeSideJournalTabInStateVarp,
     getSideJournalLeaguesContentGroupId,
-} from "../../../../src/common/ui/sideJournal";
+} from "../../../../client/common/ui/sideJournal";
 import {
     FEATURE_FLAG_LEAGUES,
     MAP_FLAGS_LEAGUE_WORLD,
@@ -62,7 +62,7 @@ import {
     VARP_LEAGUE_POINTS_CURRENCY,
     VARP_MAP_FLAGS_CACHED,
     VARP_SIDE_JOURNAL_STATE,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import { AttackType } from "../../../src/game/combat/AttackType";
 import type { PlayerState } from "../../../src/game/player";
 import {

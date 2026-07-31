@@ -5,8 +5,8 @@ import type { WebGLMapSquare } from "../WebGLMapSquare";
 import type { WebGLOsrsRenderer } from "../WebGLOsrsRenderer";
 import type { GfxCache } from "../gfx/GfxCache";
 import type { SpotAnimGpuCache, SpotAnimGpuRecord } from "../gfx/SpotAnimGpuCache";
-import { sampleBridgeHeightForWorldTile } from "../../client/scene/BridgeHeightSampler";
-import { BridgePlaneStrategy } from "../../client/scene/PlaneResolver";
+import { sampleBridgeHeightForWorldTile } from "../../game/scene/BridgeHeightSampler";
+import { BridgePlaneStrategy } from "../../game/scene/PlaneResolver";
 import type { Projectile } from "./Projectile";
 import type { ProjectileManager } from "./ProjectileManager";
 

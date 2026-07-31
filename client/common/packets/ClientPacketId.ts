@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Client-to-Server Packet IDs - Binary protocol for JSON message replacement
  *
- * These opcodes are separate from OSRS-style packets (in src/common/network/ClientPacketId.ts).
+ * These opcodes are separate from OSRS-style packets (in client/common/network/ClientPacketId.ts).
  * OSRS packets use opcodes 1-103 for low-level game actions (clicks, interactions).
  * These packets use opcode range 180+ for high-level client messages.
  */

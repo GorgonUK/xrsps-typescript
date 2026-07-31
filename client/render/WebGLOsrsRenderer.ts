@@ -100,13 +100,13 @@ import {
     isWebGL2Supported,
 } from "../common/utils/DeviceUtil";
 import { clamp } from "../common/utils/MathUtil";
-import { ClientState } from "../client/ClientState";
-import { GameRenderer } from "../client/GameRenderer";
-import type { HitsplatEventPayload } from "../client/GameRenderer";
-import { OsrsRendererType, WEBGL } from "../client/GameRenderers";
-import { ClickMode, getMousePos } from "../client/InputManager";
-import { OsrsClient } from "../client/OsrsClient";
-import { ActorAnimationClip } from "../client/actor/ActorAnimation";
+import { ClientState } from "../game/ClientState";
+import { GameRenderer } from "../game/GameRenderer";
+import type { HitsplatEventPayload } from "../game/GameRenderer";
+import { OsrsRendererType, WEBGL } from "../game/GameRenderers";
+import { ClickMode, getMousePos } from "../game/InputManager";
+import { OsrsClient } from "../game/OsrsClient";
+import { ActorAnimationClip } from "../game/actor/ActorAnimation";
 import {
     ActorHealthBarsState,
     ActorHitsplatState,
@@ -116,23 +116,23 @@ import {
     MAX_HITSPLAT_SLOTS,
     createActorHealthBarsState,
     createActorHitsplatState,
-} from "../client/actor/ActorOverlayState";
-import type { ClientGroundItemStack, GroundItemOverlayEntry } from "../client/data/ground/GroundItemStore";
-import { NpcEcs } from "../client/ecs/NpcEcs";
-import type { PlayerAnimKey } from "../client/ecs/PlayerEcs";
-import { GameState, LoginIndex } from "../client/login";
-import { Ray, rayIntersectsBox } from "../client/math/Raycast";
-import { isMouseInUIRegion as checkMouseInUIRegion } from "../client/menu/WorldMenuBuilder";
+} from "../game/actor/ActorOverlayState";
+import type { ClientGroundItemStack, GroundItemOverlayEntry } from "../game/data/ground/GroundItemStore";
+import { NpcEcs } from "../game/ecs/NpcEcs";
+import type { PlayerAnimKey } from "../game/ecs/PlayerEcs";
+import { GameState, LoginIndex } from "../game/login";
+import { Ray, rayIntersectsBox } from "../game/math/Raycast";
+import { isMouseInUIRegion as checkMouseInUIRegion } from "../game/menu/WorldMenuBuilder";
 import {
     advanceAnimation,
     computeMovementOrientation,
     computeMovementStep,
     interpolateRotation,
     parseInteractionTarget,
-} from "../client/movement/NpcClientTick";
-import type { TileMarkersPluginConfig } from "../client/plugins/tilemarkers/types";
-import { computeRoofPlaneLimit } from "../client/roof/RoofVisibility";
-import { sampleBridgeHeightForWorldTile } from "../client/scene/BridgeHeightSampler";
+} from "../game/movement/NpcClientTick";
+import type { TileMarkersPluginConfig } from "../game/plugins/tilemarkers/types";
+import { computeRoofPlaneLimit } from "../game/roof/RoofVisibility";
+import { sampleBridgeHeightForWorldTile } from "../game/scene/BridgeHeightSampler";
 import {
     BridgePlaneStrategy,
     resolveBridgePromotedPlane,
@@ -142,15 +142,15 @@ import {
     resolveHeightSamplePlaneForLocal,
     resolveInteractionPlaneForLocal,
     resolveInteractionPlaneForWorldTile,
-} from "../client/scene/PlaneResolver";
-import { SceneRaycastHit, SceneRaycaster } from "../client/scene/SceneRaycaster";
+} from "../game/scene/PlaneResolver";
+import { SceneRaycastHit, SceneRaycaster } from "../game/scene/SceneRaycaster";
 import {
     TILE_FLAG_BRIDGE,
     getTileRenderFlagAt as lookupTileRenderFlagAt,
-} from "../client/scene/TileRenderFlags";
-import { LoadingRequirement } from "../client/state/LoadingTracker";
-import type { PlayerSpotAnimationEvent } from "../client/sync/PlayerSyncTypes";
-import { RAD_TO_RS_UNITS, computeFacingRotation } from "../client/utils/rotation";
+} from "../game/scene/TileRenderFlags";
+import { LoadingRequirement } from "../game/state/LoadingTracker";
+import type { PlayerSpotAnimationEvent } from "../game/sync/PlayerSyncTypes";
+import { RAD_TO_RS_UNITS, computeFacingRotation } from "../game/utils/rotation";
 import { AnimationFrames } from "./AnimationFrames";
 import { ChatheadFactory } from "./ChatheadFactory";
 import { type DrawBackend, createDrawBackend } from "./DrawBackend";
@@ -189,7 +189,7 @@ import {
 import { KNOWN_WATER_TEXTURE_IDS } from "./water/WaterTextureIds";
 
 import * as render from "./render";
-import { RENDER_CONSTANTS, TextureFilterMode } from "./render/constants";
+import { RENDER_CONSTANTS, TextureFilterMode, HD_SKY_COLOR_VEC4, HD_AUTO_FOG_DEPTH_FACTOR } from "./render/constants";
 import type {
     BrowserQualityProfile,
     BrowserQualityProfileKey,
@@ -397,7 +397,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     public drawSubsetBuffer: DrawRange[] = [];
     // Reusable arrays for tickPass (avoids per-frame allocation)
     public visibleMapsBuffer: WebGLMapSquare[] = [];
-    public ambientSoundBuffer: import("../client/audio/SoundEffectSystem").AmbientSoundInstance[] = [];
+    public ambientSoundBuffer: import("../game/audio/SoundEffectSystem").AmbientSoundInstance[] = [];
     public ambientSoundBufferIndex: number = 0;
     // Reusable object for gfxRenderer.renderMapPass calls
     public gfxRenderPassOffsets: { player?: number; npc?: number; world?: number } = {};
@@ -522,10 +522,17 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     // Settings
     maxLevel: number = Scene.MAX_LEVELS - 1;
 
-    skyColor: vec4 = vec4.fromValues(1, 1, 1, 1); // White fog / void (avoids a black "box" at the edge)
-    fogDepth: number = 24; // Fog starts at 24 tiles (OSRS fog is subtle until near max distance)
+    // 117HD blue skybox (#B9D6FF). Clear color + fog tint share this.
+    skyColor: vec4 = vec4.fromValues(
+        HD_SKY_COLOR_VEC4[0],
+        HD_SKY_COLOR_VEC4[1],
+        HD_SKY_COLOR_VEC4[2],
+        HD_SKY_COLOR_VEC4[3],
+    );
+    fogDepth: number = 24; // Manual fog start (tiles); used only when autoFogDepth is off
+    /** Dynamic fog: fog start tracks render distance each frame. */
     autoFogDepth: boolean = true;
-    autoFogDepthFactor: number = 0.85;
+    autoFogDepthFactor: number = HD_AUTO_FOG_DEPTH_FACTOR;
 
     // Scene-level HSL override for tinting all rendered geometry.
     // Values: [hue (-1=no override, 0-63), sat (-1=no override, 0-7),

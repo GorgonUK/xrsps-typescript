@@ -189,6 +189,8 @@ export interface CombatNpcRetaliateActionData {
     attackType?: AttackType | string;
     hitDelay?: number;
     isAggression?: boolean;
+    /** Spell id when the NPC cast a magic spell this swing. */
+    spellId?: number;
 }
 
 export interface CombatCompanionHitActionData {

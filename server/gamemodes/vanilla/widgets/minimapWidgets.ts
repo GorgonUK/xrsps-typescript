@@ -1,4 +1,4 @@
-import { VARBIT_XPDROPS_ENABLED } from "../../../../src/common/vars";
+import { VARBIT_XPDROPS_ENABLED } from "../../../../client/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import {
     DisplayMode,

@@ -1,5 +1,5 @@
-import { MAX_REAL_LEVEL, SKILL_IDS, SkillId, getXpForLevel } from "../../../../src/rs/skill/skills";
-import { VARBIT_ACTIVE_SPELLBOOK } from "../../../../src/common/vars";
+import { MAX_REAL_LEVEL, SKILL_IDS, SkillId, getXpForLevel } from "../../../../client/rs/skill/skills";
+import { VARBIT_ACTIVE_SPELLBOOK } from "../../../../client/common/vars";
 import { getItemDefinition } from "../../data/items";
 import { SpellbookName } from "../../data/spellWidgetLoader";
 import { getCollectionLogItems } from "../../game/collectionlog";

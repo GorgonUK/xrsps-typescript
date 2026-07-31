@@ -257,6 +257,8 @@ export class MinimapRenderer {
     private dotBuffer: Float32Array;
     private dotInstances: DotInstance[] = [];
     private maxDots = 256;
+    /** Reused 4-vert × 4-float quad; avoids per-draw Float32Array allocs on every minimap tile/dot. */
+    private quadVerts = new Float32Array(16);
 
     // Current state
     private centerX = 0;
@@ -423,24 +425,23 @@ export class MinimapRenderer {
         const x1 = relX + size;
         const y1 = relY + size;
 
-        const verts = new Float32Array([
-            x0,
-            y0,
-            0,
-            0, // top-left
-            x1,
-            y0,
-            1,
-            0, // top-right
-            x1,
-            y1,
-            1,
-            1, // bottom-right
-            x0,
-            y1,
-            0,
-            1, // bottom-left
-        ]);
+        const verts = this.quadVerts;
+        verts[0] = x0;
+        verts[1] = y0;
+        verts[2] = 0;
+        verts[3] = 0;
+        verts[4] = x1;
+        verts[5] = y0;
+        verts[6] = 1;
+        verts[7] = 0;
+        verts[8] = x1;
+        verts[9] = y1;
+        verts[10] = 1;
+        verts[11] = 1;
+        verts[12] = x0;
+        verts[13] = y1;
+        verts[14] = 0;
+        verts[15] = 1;
 
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
@@ -500,24 +501,23 @@ export class MinimapRenderer {
                 const x1 = screen.x + halfW;
                 const y1 = screen.y + halfH;
 
-                const verts = new Float32Array([
-                    x0,
-                    y0,
-                    0,
-                    0,
-                    x1,
-                    y0,
-                    1,
-                    0,
-                    x1,
-                    y1,
-                    1,
-                    1,
-                    x0,
-                    y1,
-                    0,
-                    1,
-                ]);
+                const verts = this.quadVerts;
+                verts[0] = x0;
+                verts[1] = y0;
+                verts[2] = 0;
+                verts[3] = 0;
+                verts[4] = x1;
+                verts[5] = y0;
+                verts[6] = 1;
+                verts[7] = 0;
+                verts[8] = x1;
+                verts[9] = y1;
+                verts[10] = 1;
+                verts[11] = 1;
+                verts[12] = x0;
+                verts[13] = y1;
+                verts[14] = 0;
+                verts[15] = 1;
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
                 gl.bufferData(gl.ARRAY_BUFFER, verts, gl.DYNAMIC_DRAW);
@@ -559,7 +559,23 @@ export class MinimapRenderer {
         const x1 = screenX + w / 2;
         const y1 = screenY + h / 2;
 
-        const verts = new Float32Array([x0, y0, 0, 0, x1, y0, 1, 0, x1, y1, 1, 1, x0, y1, 0, 1]);
+        const verts = this.quadVerts;
+        verts[0] = x0;
+        verts[1] = y0;
+        verts[2] = 0;
+        verts[3] = 0;
+        verts[4] = x1;
+        verts[5] = y0;
+        verts[6] = 1;
+        verts[7] = 0;
+        verts[8] = x1;
+        verts[9] = y1;
+        verts[10] = 1;
+        verts[11] = 1;
+        verts[12] = x0;
+        verts[13] = y1;
+        verts[14] = 0;
+        verts[15] = 1;
 
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
@@ -593,7 +609,23 @@ export class MinimapRenderer {
 
         // For solid shader, we only need position (no UV)
         // But VAO expects 16 bytes stride, so pad with zeros
-        const verts = new Float32Array([x0, y0, 0, 0, x1, y0, 0, 0, x1, y1, 0, 0, x0, y1, 0, 0]);
+        const verts = this.quadVerts;
+        verts[0] = x0;
+        verts[1] = y0;
+        verts[2] = 0;
+        verts[3] = 0;
+        verts[4] = x1;
+        verts[5] = y0;
+        verts[6] = 0;
+        verts[7] = 0;
+        verts[8] = x1;
+        verts[9] = y1;
+        verts[10] = 0;
+        verts[11] = 0;
+        verts[12] = x0;
+        verts[13] = y1;
+        verts[14] = 0;
+        verts[15] = 0;
 
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);

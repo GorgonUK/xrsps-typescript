@@ -1,4 +1,4 @@
-import type { LeagueTaskRow } from "../../../../src/common/gamemode/GamemodeDataTypes";
+import type { LeagueTaskRow } from "../../../../client/common/gamemode/GamemodeDataTypes";
 
 // Auto-generated from cache data (1 line per task).
 export const LEAGUE_TASKS: LeagueTaskRow[] = [

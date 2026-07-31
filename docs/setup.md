@@ -2,6 +2,8 @@
 
 Get xRSPS running locally in a few minutes.
 
+The repository root contains only **`client/`**, **`server/`**, and **`docs/`**. Install and run each package from its own directory.
+
 ## Prerequisites
 
 | Tool                                                | Version      | Why                                |
@@ -30,21 +32,26 @@ cd xrsps-typescript
 ## 2. Install Dependencies
 
 ```bash
+# Server
+cd server
+yarn install
+
+# Client (separate terminal or after)
+cd ../client
 yarn install
 ```
 
-This pulls in everything for both the client and server.
-
 ## 3. Build Required Data
 
-Before you can run the game, two offline build steps are needed. These only need to be done **once** (or when the cache version updates).
+Before you can run the game, one offline build step is needed. This only needs to be done **once** (or when the cache version updates).
 
 ### Collision Cache
 
 The server uses a precomputed collision map for pathfinding and movement:
 
 ```bash
-yarn server:build-collision
+cd server
+yarn build-collision
 ```
 
 ::: info
@@ -54,12 +61,13 @@ This takes a few minutes on first run. It reads the game cache and writes collis
 ## 4. Start the Server
 
 ```bash
-yarn server:start
+cd server
+yarn start
 ```
 
 The server will:
 
-1. Automatically download the OSRS cache if it hasn't been fetched yet
+1. Automatically download the OSRS cache if it hasn't been fetched yet (`server/caches/`)
 2. Load collision data, spells, and game scripts
 3. Start a WebSocket server on `0.0.0.0:43594`
 
@@ -69,7 +77,7 @@ By default, the server runs the **vanilla** gamemode. To run a different gamemod
 
 ```bash
 # Environment variable
-GAMEMODE=leagues-v yarn server:start
+GAMEMODE=leagues-v yarn start
 
 # Or set it in server/config.json
 { "gamemode": "leagues-v" }
@@ -80,6 +88,7 @@ GAMEMODE=leagues-v yarn server:start
 Open a **second terminal** and run:
 
 ```bash
+cd client
 yarn start
 ```
 
@@ -100,7 +109,8 @@ New account registration is enabled by default. Set `ALLOW_ACCOUNT_REGISTRATION=
 When upgrading a server that already has `player-state.json` character saves but no account passwords, temporarily start the server with:
 
 ```bash
-ALLOW_LEGACY_ACCOUNT_CLAIM=true yarn server:start
+cd server
+ALLOW_LEGACY_ACCOUNT_CLAIM=true yarn start
 ```
 
 This lets each legacy username assign a password on its next login. Disable the option again after the migration window so another person cannot claim an unclaimed character name. Existing `accounts.json` password hashes are imported automatically and do not require this option.
@@ -114,10 +124,10 @@ This lets each legacy username assign a password on its next login. Disable the 
 The cache is downloaded from the [OpenRS2 Archive](https://archive.openrs2.org/). If it stalls:
 
 - Check your internet connection
-- Delete the `caches/` folder and try again
-- The target cache version is defined in `target.txt` at the repo root
+- Delete the `server/caches/` folder and try again
+- The target cache version is defined in `server/target.txt`
 
-### `yarn server:build-collision` is slow
+### `yarn build-collision` is slow
 
 This is expected on first run. Subsequent runs are fast because results are cached in `server/cache/collision/`.
 
@@ -129,7 +139,7 @@ Another instance of the server is likely running. Kill it or change the port in 
 
 - Make sure the server is running first
 - Check the browser console for WebSocket connection errors
-- Ensure the cache download completed (check `caches/` folder)
+- Ensure the cache download completed (check `server/caches/` folder)
 
 ### Node version errors
 
@@ -143,10 +153,13 @@ node -v
 
 ## Useful Commands
 
-| Command                       | Description                      |
-| ----------------------------- | -------------------------------- |
-| `yarn start`                  | Start the client dev server      |
-| `yarn server:start`           | Start the game server            |
-| `yarn server:build-collision` | Build collision cache (once)     |
-| `yarn download-caches`        | Manually download the OSRS cache |
-| `yarn lint`                   | Format code with Prettier        |
+Run these from the package directory (`client/` or `server/`).
+
+| Command (from package) | Description                      |
+| ---------------------- | -------------------------------- |
+| `cd client && yarn start` | Start the client dev server   |
+| `cd server && yarn start` | Start the game server         |
+| `cd server && yarn build-collision` | Build collision cache (once) |
+| `cd server && yarn ensure-cache` | Manually download the OSRS cache |
+| `cd client && yarn typecheck` | Typecheck the client        |
+| `cd server && yarn typecheck` | Typecheck the server        |

@@ -5,6 +5,7 @@
 import fs from "fs";
 import path from "path";
 
+import { serverPath } from "../paths";
 import { logger } from "../utils/logger";
 import { readDoorCatalog, resolveDoorCatalogPath } from "./DoorCatalogFile";
 import { DoubleDoorDef, GateDef, SingleDoorDef } from "./DoorDefinitions";
@@ -24,7 +25,7 @@ export class DoorDefinitionLoader {
     private fileWatchers: fs.FSWatcher[] = [];
     private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
 
-    constructor(catalogPath: string = "server/data/doors.json", watchEnabled: boolean = false) {
+    constructor(catalogPath: string = serverPath("data", "doors.json"), watchEnabled: boolean = false) {
         this.catalogPath = resolveDoorCatalogPath(catalogPath);
         this.watchEnabled = watchEnabled;
         this.loadDefinitions();

@@ -9,8 +9,8 @@ import type { WebSocket } from "ws";
 import {
     MODIFIER_FLAG_CTRL,
     MODIFIER_FLAG_CTRL_SHIFT,
-} from "../../../src/common/input/modifierFlags";
-import type { WorldEntityBuildArea } from "../../../src/common/worldentity/WorldEntityTypes";
+} from "../../../client/common/input/modifierFlags";
+import type { WorldEntityBuildArea } from "../../../client/common/worldentity/WorldEntityTypes";
 import type {
     GamemodeDefinition,
     GamemodeUiController,

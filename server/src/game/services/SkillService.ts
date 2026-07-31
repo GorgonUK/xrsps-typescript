@@ -1,6 +1,6 @@
 import type { WebSocket } from "ws";
 
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";
 import { VARP_MAP_CLOCK } from "../../widgets/minimapOrbs";

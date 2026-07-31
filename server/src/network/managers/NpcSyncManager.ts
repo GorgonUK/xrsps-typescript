@@ -368,14 +368,17 @@ export class NpcSyncManager {
                             }
                         } else if (prev !== scaled) {
                             prevMap.set(hbDefId, scaled);
-                            if (!serialized.healthBars) serialized.healthBars = [];
-                            serialized.healthBars.push({
-                                id: hbDefId,
-                                cycle: serverCycle,
-                                health: scaled,
-                                health2: scaled,
-                                cycleOffset: 0,
-                            });
+                            // Silent heals should not flash the overhead bar.
+                            if (!(scaled > prev && curHp > 0)) {
+                                if (!serialized.healthBars) serialized.healthBars = [];
+                                serialized.healthBars.push({
+                                    id: hbDefId,
+                                    cycle: serverCycle,
+                                    health: scaled,
+                                    health2: scaled,
+                                    cycleOffset: 0,
+                                });
+                            }
                         }
                     } catch (err) {
                         logger.warn("[npc-sync] failed to update health bar", err);

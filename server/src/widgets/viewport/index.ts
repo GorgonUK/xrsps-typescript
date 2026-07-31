@@ -1,4 +1,4 @@
-import { SIDE_JOURNAL_GROUP_ID } from "../../../../src/common/ui/sideJournal";
+import { SIDE_JOURNAL_GROUP_ID } from "../../../../client/common/ui/sideJournal";
 import type { ViewportEnumService } from "./ViewportEnumService";
 import { BaseComponentUids } from "./ViewportEnumService";
 import {

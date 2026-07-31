@@ -1,4 +1,4 @@
-import { PlayerType } from "../../../../src/rs/chat/PlayerType";
+import { PlayerType } from "../../../../client/rs/chat/PlayerType";
 import type { PlayerState } from "../player";
 import type { IScriptRegistry, ScriptServices } from "../scripts/types";
 import type {

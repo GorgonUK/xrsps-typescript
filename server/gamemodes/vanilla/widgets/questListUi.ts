@@ -3,7 +3,7 @@ import {
     QUEST_LIST_ENTRY_EVENT_FLAGS,
     QUEST_LIST_ENTRY_LIST_UID,
     QUEST_LIST_QUEST_POINTS_UID,
-} from "../../../../src/common/ui/sideJournal";
+} from "../../../../client/common/ui/sideJournal";
 import {
     QUEST_LIST_STATUS_COMPLETE,
     QUEST_LIST_STATUS_IN_PROGRESS,
@@ -14,7 +14,7 @@ import {
     type QuestListConfigQuest,
     type QuestListStatus,
     type QuestListWidgetGroup,
-} from "../../../../src/common/ui/questList";
+} from "../../../../client/common/ui/questList";
 import type {
     GamemodeQuestListGroup,
     GamemodeQuestListQuest,

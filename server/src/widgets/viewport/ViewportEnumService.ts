@@ -1,4 +1,4 @@
-import type { EnumTypeLoader } from "../../../../src/rs/config/enumtype/EnumTypeLoader";
+import type { EnumTypeLoader } from "../../../../client/rs/config/enumtype/EnumTypeLoader";
 import { logger } from "../../utils/logger";
 import { DisplayMode } from "./index";
 

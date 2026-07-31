@@ -7,9 +7,6 @@ import { LOGIN_LAYOUT } from "./renderer/constants";
 import { FALLBACK_SERVERS } from "./renderer/constants";
 import type { LoginRendererHost } from "./renderer/host";
 import type { LoginLayoutConfig, ServerListEntry, World } from "./renderer/types";
-export type { LoginLayoutConfig, ServerListEntry, World } from "./renderer/types";
-export { WorldFlags } from "./renderer/types";
-
 import * as assets from "./renderer/assets";
 import * as canvas from "./renderer/canvas";
 import * as controls from "./renderer/controls";
@@ -24,6 +21,9 @@ import * as inputMouse from "./renderer/input/mouseClick";
 import * as sceneEntry from "./renderer/render/sceneEntry";
 import * as titleScene from "./renderer/render/titleScene";
 import { getMobileWorldIndexAtPosition } from "./renderer/world/worldSelectMobile";
+
+export type { LoginLayoutConfig, ServerListEntry, World } from "./renderer/types";
+export { WorldFlags } from "./renderer/types";
 
 /**
  * Login screen renderer facade.

@@ -1,13 +1,13 @@
 import path from "path";
 
-import { CacheFiles } from "../../../src/rs/cache/CacheFiles";
-import { CacheIndexDat2 } from "../../../src/rs/cache/CacheIndex";
-import { CacheInfo } from "../../../src/rs/cache/CacheInfo";
-import { CacheSystem } from "../../../src/rs/cache/CacheSystem";
-import { detectCacheType } from "../../../src/rs/cache/CacheType";
-import { IndexType } from "../../../src/rs/cache/IndexType";
-import { MemoryStore } from "../../../src/rs/cache/store/MemoryStore";
-import { Dat2MapIndex, MapFileIndex } from "../../../src/rs/map/MapFileIndex";
+import { CacheFiles } from "../../../client/rs/cache/CacheFiles";
+import { CacheIndexDat2 } from "../../../client/rs/cache/CacheIndex";
+import { CacheInfo } from "../../../client/rs/cache/CacheInfo";
+import { CacheSystem } from "../../../client/rs/cache/CacheSystem";
+import { detectCacheType } from "../../../client/rs/cache/CacheType";
+import { IndexType } from "../../../client/rs/cache/IndexType";
+import { MemoryStore } from "../../../client/rs/cache/store/MemoryStore";
+import { Dat2MapIndex, MapFileIndex } from "../../../client/rs/map/MapFileIndex";
 import { logger } from "../utils/logger";
 import { loadDat2CacheFiles, readJson } from "./cacheFs";
 

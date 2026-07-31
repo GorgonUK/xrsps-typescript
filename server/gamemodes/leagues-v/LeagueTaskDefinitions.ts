@@ -1,6 +1,6 @@
-import type { TypeLoader } from "../../../src/rs/config/TypeLoader";
-import { EnumType } from "../../../src/rs/config/enumtype/EnumType";
-import { StructType } from "../../../src/rs/config/structtype/StructType";
+import type { TypeLoader } from "../../../client/rs/config/TypeLoader";
+import { EnumType } from "../../../client/rs/config/enumtype/EnumType";
+import { StructType } from "../../../client/rs/config/structtype/StructType";
 
 export type LeagueTaskDefinition = {
     taskId: number;

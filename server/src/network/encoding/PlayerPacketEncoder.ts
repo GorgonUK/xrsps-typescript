@@ -10,7 +10,7 @@ import {
     MovementDirection,
     deltaToRunDirection,
     directionToDelta,
-} from "../../../../src/common/Direction";
+} from "../../../../client/common/Direction";
 import type { ServerServices } from "../../game/ServerServices";
 import {
     type HitsplatSourceType,
@@ -1028,6 +1028,12 @@ export class PlayerPacketEncoder {
             }
 
             prevMap.set(hbDefId, scaled);
+            // Natural HP regen (and other silent heals) must not pop the overhead
+            // health bar. Only show/update it for damage, hitsplats, or death.
+            const hpIncreased = scaled > prev;
+            if (hpIncreased && !hasHits && curHp > 0) {
+                continue;
+            }
             const entry = markMask(id, PLAYER_MASKS.HIT);
             if (!entry.healthBars) entry.healthBars = [];
             entry.healthBars.push({

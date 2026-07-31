@@ -5,9 +5,10 @@ import {
     ClientState,
     DEFAULT_SCREEN_HEIGHT,
     DEFAULT_SCREEN_WIDTH,
-} from "../../../client/ClientState";
-import { getClientClock } from "../../../client/TransmitCycles";
+} from "../../../game/ClientState";
+import { getClientClock } from "../../../game/TransmitCycles";
 import { getSafeAreaBounds, isTouchDevice } from "../../../common/utils/DeviceUtil";
+import { VARBIT_ROOF_REMOVAL } from "../../../common/vars";
 import { MenuTargetType } from "../../MenuEntry";
 import { chatHistory } from "../ChatHistory";
 import { Opcodes } from "../Opcodes";
@@ -547,11 +548,9 @@ export function registerClientOps(handlers: HandlerMap): void {
     });
 
     handlers.set(Opcodes.MOBILE_SETFPS, (ctx) => {
-        const fps = ctx.intStack[--ctx.intStackSize] | 0;
-        const osrsClient = (ctx.widgetManager as any).osrsClient;
-        if (osrsClient?.setTargetFps) {
-            osrsClient.setTargetFps(fps);
-        }
+        // Historically a no-op (stack pop only). Applying the script value caps desktop
+        // at ~20 FPS after login. Keep mobile battery caps via explicit UI later if needed.
+        ctx.intStackSize--;
     });
 
     handlers.set(Opcodes.MOBILE_OPENSTORE, (ctx) => {});
@@ -615,11 +614,22 @@ export function registerClientOps(handlers: HandlerMap): void {
     });
 
     handlers.set(Opcodes.SETREMOVEROOFS, (ctx) => {
-        ctx.intStackSize--; // pop enabled
+        const enabled = ctx.intStack[--ctx.intStackSize] === 1;
+        const osrsClient = (ctx.widgetManager as any).osrsClient;
+        if (osrsClient?.setRoofsHidden) {
+            osrsClient.setRoofsHidden(enabled);
+        }
+        try {
+            ctx.varManager?.setVarbit?.(VARBIT_ROOF_REMOVAL, enabled ? 1 : 0);
+        } catch {
+            /* varManager optional on some hosts */
+        }
     });
 
     handlers.set(Opcodes.GETREMOVEROOFS, (ctx) => {
-        ctx.pushInt(1);
+        const osrsClient = (ctx.widgetManager as any).osrsClient;
+        const hidden = osrsClient?.roofsHidden === true;
+        ctx.pushInt(hidden ? 1 : 0);
     });
 
     handlers.set(Opcodes.RENDERSELF, (ctx) => {

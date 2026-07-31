@@ -1,4 +1,4 @@
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import { resolveEmotePlayback } from "../../../src/game/emotes";
 import {
     getSkillcapeSeqId,

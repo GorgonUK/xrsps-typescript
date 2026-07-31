@@ -1,7 +1,7 @@
 import { deflateSync } from "zlib";
 
-import { CustomItemRegistry } from "../../../src/custom/items/CustomItemRegistry";
-import { ServerPacketId } from "../../../src/common/packets/ServerPacketId";
+import { CustomItemRegistry } from "../../../client/custom/items/CustomItemRegistry";
+import { ServerPacketId } from "../../../client/common/packets/ServerPacketId";
 import { CustomWidgetRegistry } from "../../src/game/scripts/CustomWidgetRegistry";
 import { getAllCustomChallenges, getAllCustomTasks } from "./data/custom";
 import "./data/custom-items/customItems";

@@ -15,13 +15,13 @@
 // ── Network types ───────────────────────────────────────────────────────────
 import type { WebSocket } from "ws";
 
-import type { Huffman } from "../../../src/rs/chat/Huffman";
-import type { BasType } from "../../../src/rs/config/bastype/BasType";
-import type { DbRepository } from "../../../src/rs/config/db/DbRepository";
-import type { IdkType } from "../../../src/rs/config/idktype/IdkType";
-import type { LocTypeLoader } from "../../../src/rs/config/loctype/LocTypeLoader";
-import type { NpcTypeLoader } from "../../../src/rs/config/npctype/NpcTypeLoader";
-import type { ObjTypeLoader } from "../../../src/rs/config/objtype/ObjTypeLoader";
+import type { Huffman } from "../../../client/rs/chat/Huffman";
+import type { BasType } from "../../../client/rs/config/bastype/BasType";
+import type { DbRepository } from "../../../client/rs/config/db/DbRepository";
+import type { IdkType } from "../../../client/rs/config/idktype/IdkType";
+import type { LocTypeLoader } from "../../../client/rs/config/loctype/LocTypeLoader";
+import type { NpcTypeLoader } from "../../../client/rs/config/npctype/NpcTypeLoader";
+import type { ObjTypeLoader } from "../../../client/rs/config/objtype/ObjTypeLoader";
 // ── Audio ───────────────────────────────────────────────────────────────────
 import type { MusicCatalogService } from "../audio/MusicCatalogService";
 import type { MusicRegionService } from "../audio/MusicRegionService";

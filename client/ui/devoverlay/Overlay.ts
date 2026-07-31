@@ -1,7 +1,7 @@
 import { App as PicoApp, UniformBuffer } from "picogl";
 
-import type { GroundItemOverlayEntry } from "../../client/data/ground/GroundItemStore";
-import type { TileHighlightRenderEntry } from "../../client/highlights/TileHighlightManager";
+import type { GroundItemOverlayEntry } from "../../game/data/ground/GroundItemStore";
+import type { TileHighlightRenderEntry } from "../../game/highlights/TileHighlightManager";
 
 export enum RenderPhase {
     ToSceneFramebuffer = "toSceneFramebuffer",

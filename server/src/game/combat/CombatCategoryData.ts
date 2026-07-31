@@ -1,4 +1,4 @@
-import type { DbRepository } from "../../../../src/rs/config/db/DbRepository";
+import type { DbRepository } from "../../../../client/rs/config/db/DbRepository";
 import { logger } from "../../utils/logger";
 import { AttackType } from "./AttackType";
 

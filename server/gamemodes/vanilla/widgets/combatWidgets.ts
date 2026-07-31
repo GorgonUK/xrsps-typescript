@@ -1,10 +1,10 @@
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import {
     VARP_ATTACK_STYLE,
     VARP_AUTOCAST_SPELLPOS,
     VARP_AUTO_RETALIATE,
     VARP_SPECIAL_ATTACK,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import { DisplayMode } from "../../../src/game/scripts/types";
 import { applyAutocastState, clearAutocastState } from "../../../src/game/scripts/types";

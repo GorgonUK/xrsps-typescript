@@ -11,6 +11,7 @@ import type {
     NpcVsPlayerResult,
     PlayerDefenceProfile,
 } from "../../../src/game/combat/CombatFormulaProvider";
+import { NPC_EFFECTIVE_LEVEL_BONUS } from "../../../src/game/combat/CombatFormulaProvider";
 
 function attackRoll(attacker: AttackerStats): number {
     return attacker.effectiveLevel * (attacker.bonus + 64);
@@ -29,6 +30,7 @@ function hitChance(atkRoll: number, defRoll: number): number {
 }
 
 function maxHit(params: MaxHitParams): number {
+    // RSMod InternalNpcMaxHits: (eff * (bonus+64) + 320) / 640
     const raw = 0.5 + (params.effectiveStrength * (params.strengthBonus + 64)) / 640;
     return Math.floor(raw);
 }
@@ -48,15 +50,15 @@ function effectiveMagicDefence(magicLevel: number, defenceLevel: number): number
 }
 
 function npcEffectiveAttack(attackLevel: number): number {
-    return attackLevel + 8;
+    return attackLevel + NPC_EFFECTIVE_LEVEL_BONUS;
 }
 
 function npcEffectiveStrength(strengthLevel: number): number {
-    return strengthLevel + 8;
+    return strengthLevel + NPC_EFFECTIVE_LEVEL_BONUS;
 }
 
 function npcEffectiveDefence(defenceLevel: number): number {
-    return defenceLevel + 8;
+    return defenceLevel + NPC_EFFECTIVE_LEVEL_BONUS;
 }
 
 function getNpcAttackBonus(profile: NpcAttackBonusProfile, attackType: AttackType): number {
@@ -95,12 +97,46 @@ function getNpcDefenceBonus(
     }
 }
 
+function resolvePositiveLevel(value: number | undefined, fallback: number): number {
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+        return Math.trunc(value);
+    }
+    return Math.max(0, fallback | 0);
+}
+
 function npcMaxHit(profile: NpcMaxHitProfile): number {
     if (profile.maxHit > 0) {
         return profile.maxHit;
     }
-    const effectiveStr = npcEffectiveStrength(profile.strengthLevel);
-    return maxHit({ effectiveStrength: effectiveStr, strengthBonus: profile.strengthBonus });
+    const attackType = profile.attackType ?? AttackType.Melee;
+    if (attackType === AttackType.Magic) {
+        const magicLevel = resolvePositiveLevel(profile.magicLevel, profile.strengthLevel);
+        return maxHit({
+            effectiveStrength: npcEffectiveStrength(magicLevel),
+            strengthBonus: profile.magicBonus ?? 0,
+        });
+    }
+    if (attackType === AttackType.Ranged) {
+        const rangedLevel = resolvePositiveLevel(profile.rangedLevel, profile.strengthLevel);
+        return maxHit({
+            effectiveStrength: npcEffectiveStrength(rangedLevel),
+            strengthBonus: profile.rangedBonus ?? 0,
+        });
+    }
+    return maxHit({
+        effectiveStrength: npcEffectiveStrength(profile.strengthLevel),
+        strengthBonus: profile.strengthBonus,
+    });
+}
+
+function resolveNpcAccuracyLevel(npcProfile: NpcVsPlayerProfile, type: AttackType): number {
+    if (type === AttackType.Magic) {
+        return resolvePositiveLevel(npcProfile.magicLevel, npcProfile.attackLevel);
+    }
+    if (type === AttackType.Ranged) {
+        return resolvePositiveLevel(npcProfile.rangedLevel, npcProfile.attackLevel);
+    }
+    return npcProfile.attackLevel;
 }
 
 function calculateNpcVsPlayer(
@@ -110,7 +146,7 @@ function calculateNpcVsPlayer(
 ): NpcVsPlayerResult {
     const type = attackType ?? npcProfile.attackType;
 
-    const npcEffAtk = npcEffectiveAttack(npcProfile.attackLevel);
+    const npcEffAtk = npcEffectiveAttack(resolveNpcAccuracyLevel(npcProfile, type));
     const npcAtkBonus = getNpcAttackBonus(npcProfile, type);
     const npcAtkRoll = attackRoll({ effectiveLevel: npcEffAtk, bonus: npcAtkBonus });
 
@@ -135,7 +171,7 @@ function calculateNpcVsPlayer(
 
     return {
         hitChance: hitChance(npcAtkRoll, playerDefRoll),
-        maxHit: npcMaxHit(npcProfile),
+        maxHit: npcMaxHit({ ...npcProfile, attackType: type }),
     };
 }
 

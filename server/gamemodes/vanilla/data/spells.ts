@@ -1,12 +1,12 @@
 import fs from "fs";
 import path from "path";
 
-import type { CacheInfo } from "../../../../src/rs/cache/CacheInfo";
-import { CacheSystem } from "../../../../src/rs/cache/CacheSystem";
+import type { CacheInfo } from "../../../../client/rs/cache/CacheInfo";
+import { CacheSystem } from "../../../../client/rs/cache/CacheSystem";
 import { CombatCategoryConst as CombatCategory } from "../../../src/game/combat/WeaponDataProvider";
 import { getWeaponData } from "../../../src/game/combat/WeaponDataProvider";
 import { applyProjectileDefaults } from "../../../src/game/data/ProjectileParamsProvider";
-import { VARP_DESERT_TREASURE } from "../../../../src/common/vars";
+import { VARP_DESERT_TREASURE } from "../../../../client/common/vars";
 import {
     type AutocastCompatibilityResult,
     type PoweredStaffSpellData,
@@ -1158,7 +1158,7 @@ export function createSpellDataProvider(): SpellDataProvider {
     // Load spell overrides from JSON
     try {
         const envPath = (process?.env?.SPELLS_OVERRIDES_FILE ?? "").toString();
-        const defaultPath = path.resolve("server/cache/spells-overrides.json");
+        const defaultPath = path.resolve(__dirname, "../../../cache/spells-overrides.json");
         const filePath = envPath || defaultPath;
         if (fs.existsSync(filePath)) {
             const text = fs.readFileSync(filePath, "utf8");

@@ -58,6 +58,7 @@ import { registerVanillaCommandHandlers } from "./scripts/commands";
 import { registerFollowerItemHandlers } from "./scripts/items/followers";
 import { registerPacksHandlers } from "./scripts/items/packs";
 import { handleDismiss, handleResumePauseButton, registerLevelUpHandlers } from "./scripts/levelup";
+import { registerNpcDialogueHandlers } from "./npcs";
 import { registerShopInterfaceHooks } from "./shops";
 import { ShopService } from "./shops/ShopService";
 import { registerShopInteractionHandlers } from "./shops/shopInteractions";
@@ -224,6 +225,8 @@ export class VanillaGamemode extends BaseGamemode {
         // Content
         registerClimbingHandlers(registry, services);
         registerDoorHandlers(registry, services);
+        // Specific Talk-to scripts before the global fallback.
+        registerNpcDialogueHandlers(registry);
         registerDefaultTalkHandlers(registry, services);
         registerPohPoolHandlers(registry, services);
         registerWildernessAccessHandlers(registry, services);

@@ -8,8 +8,8 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import type { OsrsClient } from "../../client/OsrsClient";
-import { GameState } from "../../client/login";
+import type { OsrsClient } from "../../game/OsrsClient";
+import { GameState } from "../../game/login";
 import { getCanvasCssSize } from "../../common/utils/DeviceUtil";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
@@ -409,8 +409,8 @@ export class LoginOverlay implements Overlay {
 
     /** Compute a hash of state values that affect rendering */
     private computeStateHash(
-        loginState: import("../../client/login/LoginState").LoginState,
-        loginRenderer: import("../../client/login/LoginRenderer").LoginRenderer,
+        loginState: import("../../game/login/LoginState").LoginState,
+        loginRenderer: import("../../game/login/LoginRenderer").LoginRenderer,
         width: number,
         height: number,
         layoutWidth: number,

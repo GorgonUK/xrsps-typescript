@@ -10,7 +10,7 @@ import {
     VARP_MUSIC_VOLUME,
     VARP_SHOP_QUANTITY,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import type { PersistentSubState } from "./PersistentSubState";
 
 /** Varps that should persist even when their value is 0. */

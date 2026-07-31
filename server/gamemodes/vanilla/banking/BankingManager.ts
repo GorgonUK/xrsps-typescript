@@ -2,7 +2,7 @@
  * BankingManager - Vanilla gamemode banking implementation.
  * Handles all bank deposit, withdraw, tab management, and related operations.
  */
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import { type BankEntry, type PlayerState } from "../../../src/game/player";
 import { getItemDefinition } from "../../../src/game/scripts/types";
 import { DEFAULT_BANK_CAPACITY } from "../../../src/game/state/PlayerBankSystem";

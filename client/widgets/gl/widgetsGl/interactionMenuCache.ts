@@ -1,4 +1,4 @@
-import { ClientState } from "../../../client/ClientState";
+import { ClientState } from "../../../game/ClientState";
 import { deriveMenuEntriesForWidget as UI_deriveMenuEntriesForWidget } from "../../../widgets/menu/utils";
 type WidgetMenuDeriveCacheEntry = {
     revision: number;

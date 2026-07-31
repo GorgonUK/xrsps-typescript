@@ -3,8 +3,8 @@ import {
     PrayerDefinition,
     PrayerName,
     getPrayerDefinition,
-} from "../../../../src/rs/prayer/prayers";
-import { SkillId } from "../../../../src/rs/skill/skills";
+} from "../../../../client/rs/prayer/prayers";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { getItemDefinition } from "../../data/items";
 import { PlayerState } from "../player";
 import type { PrayerSystemProvider, PrayerTickResult } from "./PrayerSystemProvider";

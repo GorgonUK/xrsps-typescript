@@ -4,7 +4,7 @@ import {
     type ScriptServices,
     type WidgetActionEvent,
 } from "../../../src/game/scripts/types";
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import {
     BankLimits,
     BankMainChild,

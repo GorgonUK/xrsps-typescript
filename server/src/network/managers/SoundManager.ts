@@ -11,8 +11,8 @@ import {
     MUSIC_JUKEBOX_ROW_FLAGS,
     MUSIC_NOW_PLAYING_FLAGS,
     MUSIC_NOW_PLAYING_TEXT_UID,
-} from "../../../../src/common/ui/music";
-import { VARP_MUSICPLAY, VARP_MUSIC_CURRENT_TRACK } from "../../../../src/common/vars";
+} from "../../../../client/common/ui/music";
+import { VARP_MUSICPLAY, VARP_MUSIC_CURRENT_TRACK } from "../../../../client/common/vars";
 import type { NpcSoundType } from "../../audio/NpcSoundLookup";
 import type { ServerServices } from "../../game/ServerServices";
 import {

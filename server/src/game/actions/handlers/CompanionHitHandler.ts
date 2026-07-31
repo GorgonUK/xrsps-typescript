@@ -71,7 +71,7 @@ export class CompanionHitHandler {
             }
         }
 
-        npc.engageCombat(player.id, tick);
+        npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
 
         const sock = this.services.getPlayerSocket(player.id);
         this.services.confirmHitLanded(

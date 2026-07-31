@@ -9,7 +9,7 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import type { TileHighlightRenderEntry } from "../../client/highlights/TileHighlightManager";
+import type { TileHighlightRenderEntry } from "../../game/highlights/TileHighlightManager";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 export class TileMarkerOverlay implements Overlay {

@@ -1,4 +1,4 @@
-import { ClientState } from "../../../client/ClientState";
+import { ClientState } from "../../../game/ClientState";
 import { state } from "../state";
 
 export function handleAuthTickMessage(msg: any): boolean {

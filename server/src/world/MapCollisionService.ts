@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 
-import { getCacheLoaderFactory } from "../../../src/rs/cache/loader/CacheLoaderFactory";
-import { LocModelLoader } from "../../../src/rs/config/loctype/LocModelLoader";
-import { MapFileLoader } from "../../../src/rs/map/MapFileLoader";
-import { CollisionMap } from "../../../src/rs/scene/CollisionMap";
-import { Scene } from "../../../src/rs/scene/Scene";
-import { LocLoadType, SceneBuilder } from "../../../src/rs/scene/SceneBuilder";
+import { getCacheLoaderFactory } from "../../../client/rs/cache/loader/CacheLoaderFactory";
+import { LocModelLoader } from "../../../client/rs/config/loctype/LocModelLoader";
+import { MapFileLoader } from "../../../client/rs/map/MapFileLoader";
+import { CollisionMap } from "../../../client/rs/scene/CollisionMap";
+import { Scene } from "../../../client/rs/scene/Scene";
+import { LocLoadType, SceneBuilder } from "../../../client/rs/scene/SceneBuilder";
+import { serverPath } from "../paths";
 import { bitsetGet } from "../utils/bitset";
 import { logger } from "../utils/logger";
 import { CacheEnv } from "./CacheEnv";
@@ -60,7 +61,7 @@ export class MapCollisionService {
         this.usePrecomputed = opts.usePrecomputed !== false;
         this.precomputedRoot = opts.precomputedRoot
             ? path.resolve(opts.precomputedRoot)
-            : path.resolve("server/cache/collision");
+            : serverPath("cache", "collision");
 
         const factory = getCacheLoaderFactory(env.info, env.cacheSystem);
         const underlays = factory.getUnderlayTypeLoader();

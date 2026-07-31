@@ -1,4 +1,4 @@
-import type { ObjType } from "../../../../src/rs/config/objtype/ObjType";
+import type { ObjType } from "../../../../client/rs/config/objtype/ObjType";
 import type { GamemodeServerServices } from "../../../src/game/gamemodes/GamemodeDefinition";
 import type { PlayerState } from "../../../src/game/player";
 import type { ShoppingServices } from "../../../src/game/scripts/types";
@@ -109,12 +109,6 @@ export class ShopService {
                 priceEach: entry.priceEach !== undefined ? Math.max(0, entry.priceEach) : undefined,
                 sellPrice: entry.sellPrice !== undefined ? Math.max(0, entry.sellPrice) : undefined,
             })),
-        });
-
-        this.ss.queueChatMessage({
-            messageType: "game",
-            text: "You open the shop.",
-            targetPlayerIds: [player.id],
         });
     }
 

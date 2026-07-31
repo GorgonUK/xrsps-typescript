@@ -2,6 +2,7 @@ import { Schema } from "leva/dist/declarations/src/types";
 
 import { Renderer } from "./render/Renderer";
 import { SceneBuilder } from "../rs/scene/SceneBuilder";
+import { isMobileMode } from "../common/utils/DeviceUtil";
 import { clamp } from "../common/utils/MathUtil";
 import { ProjectionType } from "./Camera";
 import { ClientState } from "./ClientState";
@@ -43,7 +44,15 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
 
     protected override getEffectiveFpsLimit(): number {
         let limit = super.getEffectiveFpsLimit();
-        const target = Number(this.osrsClient.targetFps) | 0;
+        let target = Number(this.osrsClient.targetFps) | 0;
+        // Never honor CS2 mobile battery caps (~20) on desktop.
+        if (!isMobileMode && target > 0 && target < 60) {
+            target = 0;
+            this.osrsClient.targetFps = 0;
+            if (this.fpsLimit > 0 && this.fpsLimit < 60) {
+                this.fpsLimit = 0;
+            }
+        }
         if (target > 0) {
             limit = limit > 0 ? Math.min(limit, target) : target;
         }

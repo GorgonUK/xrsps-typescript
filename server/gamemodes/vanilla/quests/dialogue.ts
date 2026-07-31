@@ -17,6 +17,8 @@ export interface DialogueContext {
     npcName: string;
 }
 
+export type DialogueExec = (ctx: DialogueContext) => void;
+
 export interface DialogueOption {
     text: string;
     /** Echo the chosen text as a player chat line before continuing (default true) */
@@ -24,11 +26,64 @@ export interface DialogueOption {
     next?: DialogueStep[];
 }
 
+export type NpcDialogueStep = { npc: string[]; animationId?: number };
+export type PlayerDialogueStep = { player: string[]; animationId?: number };
+export type OptionsDialogueStep = { options: DialogueOption[]; title?: string };
+export type ExecDialogueStep = { exec: DialogueExec };
+
 export type DialogueStep =
-    | { npc: string[]; animationId?: number }
-    | { player: string[]; animationId?: number }
-    | { options: DialogueOption[]; title?: string }
-    | { exec: (ctx: DialogueContext) => void };
+    | NpcDialogueStep
+    | PlayerDialogueStep
+    | OptionsDialogueStep
+    | ExecDialogueStep;
+
+function asLines(lines: string | readonly string[]): string[] {
+    return typeof lines === "string" ? [lines] : [...lines];
+}
+
+/** NPC chatbox line(s). */
+export function sayNpc(
+    lines: string | readonly string[],
+    animationId?: number,
+): NpcDialogueStep {
+    return animationId === undefined
+        ? { npc: asLines(lines) }
+        : { npc: asLines(lines), animationId };
+}
+
+/** Player chatbox line(s). */
+export function sayPlayer(
+    lines: string | readonly string[],
+    animationId?: number,
+): PlayerDialogueStep {
+    return animationId === undefined
+        ? { player: asLines(lines) }
+        : { player: asLines(lines), animationId };
+}
+
+/** Run a typed side-effect mid-conversation (open shop/bank, grant items, …). */
+export function run(exec: DialogueExec): ExecDialogueStep {
+    return { exec };
+}
+
+/** A single option-menu entry. */
+export function option(
+    text: string,
+    next: DialogueStep[] = [],
+    opts?: { echo?: boolean },
+): DialogueOption {
+    const entry: DialogueOption = { text, next };
+    if (opts?.echo !== undefined) entry.echo = opts.echo;
+    return entry;
+}
+
+/** Option menu step. */
+export function choose(
+    options: readonly DialogueOption[],
+    title?: string,
+): OptionsDialogueStep {
+    return title === undefined ? { options: [...options] } : { options: [...options], title };
+}
 
 const activeConversations = new Set<number>();
 let dialogSequence = 0;
@@ -80,7 +135,7 @@ function playSteps(ctx: DialogueContext, steps: DialogueStep[]): void {
         ctx.services.dialog.openDialogOptions(ctx.player, {
             id: dialogId,
             title: step.title ?? "Select an Option",
-            options: step.options.map((option) => option.text),
+            options: step.options.map((entry) => entry.text),
             onClose,
             onSelect: (choice) => {
                 const selected = step.options[choice];
@@ -89,7 +144,7 @@ function playSteps(ctx: DialogueContext, steps: DialogueStep[]): void {
                     return;
                 }
                 const echoed: DialogueStep[] =
-                    selected.echo === false ? [] : [{ player: [selected.text] }];
+                    selected.echo === false ? [] : [sayPlayer(selected.text)];
                 playSteps(ctx, [...echoed, ...(selected.next ?? []), ...rest]);
             },
         });

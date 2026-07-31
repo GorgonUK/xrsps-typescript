@@ -1,4 +1,4 @@
-import { ClickMode } from "../../client/InputManager";
+import { ClickMode } from "../../game/InputManager";
 import { BitmapFont } from "../../rs/font/BitmapFont";
 import { getClientCycle } from "../../network/ServerConnection";
 import { getUiScale } from "../../ui/UiScale";

@@ -1,4 +1,4 @@
-import { ScriptVarTypeId } from "../../../../src/rs/config/db/ScriptVarType";
+import { ScriptVarTypeId } from "../../../../client/rs/config/db/ScriptVarType";
 import type { ScriptServices } from "../../../src/game/scripts/types";
 
 export interface QuestEntry {

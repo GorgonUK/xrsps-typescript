@@ -1,4 +1,4 @@
-import type { CollisionMap } from "../../../../src/rs/scene/CollisionMap";
+import type { CollisionMap } from "../../../../client/rs/scene/CollisionMap";
 
 /**
  * Server-side WorldView collision container.

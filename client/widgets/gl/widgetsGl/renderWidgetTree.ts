@@ -1,5 +1,5 @@
-import { ClientState } from "../../../client/ClientState";
-import type { InputManager } from "../../../client/InputManager";
+import { ClientState } from "../../../game/ClientState";
+import type { InputManager } from "../../../game/InputManager";
 import { profiler } from "../../../render/PerformanceProfiler";
 import { packWorldMapCoord } from "../../../rs/map/WorldMapArea";
 import { menuAction } from "../../../ui/menu/MenuAction";
@@ -421,7 +421,7 @@ export function renderWidgetTreeGL(glr: GLRenderer, root: Widget, opts: GLRender
                             if (real) {
                                 ui.mouseX = x | 0;
                                 ui.mouseY = y | 0;
-                                const { widgetEntriesToSimple } = require("../menu/MenuBridge");
+                                const { widgetEntriesToSimple } = require("../../../ui/menu/MenuBridge");
                                 const menuState = new MenuState();
                                 const mapped = widgetEntriesToSimple(candEntries, {
                                     ui,
@@ -584,7 +584,7 @@ export function renderWidgetTreeGL(glr: GLRenderer, root: Widget, opts: GLRender
                 ui.mouseX = x | 0;
                 ui.mouseY = y | 0;
                 // Map entries using the shared bridge and central hooks
-                const { widgetEntriesToSimple } = require("../menu/MenuBridge");
+                const { widgetEntriesToSimple } = require("../../../ui/menu/MenuBridge");
                 const menuState = new MenuState();
                 const mapped = widgetEntriesToSimple(entries, {
                     ui,
@@ -623,7 +623,7 @@ export function renderWidgetTreeGL(glr: GLRenderer, root: Widget, opts: GLRender
             if (blockingWidget) {
                 ui.mouseX = x | 0;
                 ui.mouseY = y | 0;
-                const { widgetEntriesToSimple } = require("../menu/MenuBridge");
+                const { widgetEntriesToSimple } = require("../../../ui/menu/MenuBridge");
                 const menuState = new MenuState();
                 const mapped = widgetEntriesToSimple([{ option: "Cancel" }], {
                     ui,

@@ -1,7 +1,7 @@
-import { ObjStackability } from "../../../../src/rs/config/objtype/ObjStackability";
-import type { ObjType } from "../../../../src/rs/config/objtype/ObjType";
+import { ObjStackability } from "../../../../client/rs/config/objtype/ObjStackability";
+import type { ObjType } from "../../../../client/rs/config/objtype/ObjType";
 import { type InventoryAddResult, type PlayerState } from "../../../src/game/player";
-import { getAllShopDefinitions, getShopDefinitionByNpcId } from "./definitions";
+import { getAllShopDefinitions } from "./definitions";
 import { type ShopDefinition } from "./types";
 
 type LoggerLike = {
@@ -250,7 +250,6 @@ export class ShopManager {
         const targetSlot = shop.slots[targetSlotIndex];
         const obj = this.options.getObjType(normalizedItemId);
         if (!obj || obj.isTradable === false || this.isCurrencyItem(shop, normalizedItemId)) {
-            this.options.sendGameMessage(player, "The shop is not interested in that item.");
             return undefined;
         }
         const isNoted = obj.noteTemplate >= 0 || obj.placeholderTemplate >= 0;
@@ -328,7 +327,10 @@ export class ShopManager {
     }
 
     private registerDefinition(def: ShopDefinition): void {
-        const capacity = Math.max(1, Math.min(60, def.capacity ?? 40));
+        const capacity = Math.min(
+            80,
+            Math.max(40, def.capacity ?? def.stock.length, def.stock.length),
+        );
         const shop: ShopState = {
             id: def.id,
             name: def.name,

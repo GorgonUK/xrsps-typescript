@@ -275,15 +275,19 @@ export class NpcPacketEncoder {
                     }
                 } else if (prev !== scaled) {
                     map.set(hbDefId, scaled);
-                    healthBars.push({
-                        id: hbDefId,
-                        cycleOffset: 0,
-                        delayCycles: 0,
-                        // most HP updates are sent as immediate snaps (cycleOffset=0),
-                        // meaning `health2` is omitted on the wire and treated as `health`.
-                        health: scaled,
-                        health2: scaled,
-                    });
+                    // Silent heals (natural regen) should not flash the overhead bar.
+                    const hpIncreased = scaled > prev;
+                    if (!(hpIncreased && !hasHits && curHp > 0)) {
+                        healthBars.push({
+                            id: hbDefId,
+                            cycleOffset: 0,
+                            delayCycles: 0,
+                            // most HP updates are sent as immediate snaps (cycleOffset=0),
+                            // meaning `health2` is omitted on the wire and treated as `health`.
+                            health: scaled,
+                            health2: scaled,
+                        });
+                    }
                 } else if (hasHits) {
                     healthBars.push({
                         id: hbDefId,

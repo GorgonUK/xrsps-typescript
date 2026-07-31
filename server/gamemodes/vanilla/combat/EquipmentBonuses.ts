@@ -7,7 +7,7 @@
  * - Species bonuses (Salve amulet, Dragon hunter, etc.)
  * - Passive effects
  */
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import { AttackType } from "../../../src/game/combat/AttackType";
 import type {
     EquipmentBonusProvider,

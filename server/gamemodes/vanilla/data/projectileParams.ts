@@ -103,7 +103,7 @@ const PROJECTILE_PARAMS: Record<number, ProjectileParams> = {
 // Load overrides from JSON at startup
 try {
     const envPath = (process?.env?.PROJECTILE_PARAMS_FILE ?? "").toString();
-    const defaultPath = path.resolve("server/data/projectile-params.json");
+    const defaultPath = path.resolve(__dirname, "../../../data/projectile-params.json");
     const filePath = envPath || defaultPath;
     if (fs.existsSync(filePath)) {
         const text = fs.readFileSync(filePath, "utf8");

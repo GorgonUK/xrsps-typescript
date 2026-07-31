@@ -1,6 +1,6 @@
-import { PlayerType } from "../../../src/rs/chat/PlayerType";
-import { LEAGUE_SUMMARY_GROUP_ID } from "../../../src/common/ui/leagueSummary";
-import { decodeSideJournalTabFromStateVarp } from "../../../src/common/ui/sideJournal";
+import { PlayerType } from "../../../client/rs/chat/PlayerType";
+import { LEAGUE_SUMMARY_GROUP_ID } from "../../../client/common/ui/leagueSummary";
+import { decodeSideJournalTabFromStateVarp } from "../../../client/common/ui/sideJournal";
 import {
     FEATURE_FLAG_LEAGUES,
     MAP_FLAGS_LEAGUE_WORLD,
@@ -20,7 +20,7 @@ import {
     VARP_LEAGUE_POINTS_CURRENCY,
     VARP_MAP_FLAGS_CACHED,
     VARP_SIDE_JOURNAL_STATE,
-} from "../../../src/common/vars";
+} from "../../../client/common/vars";
 import type { EventSubscription } from "../../src/game/events";
 import type {
     GamemodeBridge,

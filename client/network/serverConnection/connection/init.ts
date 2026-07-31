@@ -1,5 +1,5 @@
-import { PlayerSyncContext } from "../../../client/sync/PlayerSyncContext";
-import { PlayerUpdateDecoder } from "../../../client/sync/PlayerUpdateDecoder";
+import { PlayerSyncContext } from "../../../game/sync/PlayerSyncContext";
+import { PlayerUpdateDecoder } from "../../../game/sync/PlayerUpdateDecoder";
 import { setPacketSocket } from "../../packet";
 import { DEFAULT_URL, WS_GLOBAL_KEY, WS_SUPPRESS_RECONNECT_KEY, getEnv } from "../constants";
 import { processServerMessage } from "../handlers/dispatch";
@@ -109,7 +109,7 @@ export function initServerConnection(url: string = DEFAULT_URL): void {
                 // Handle binary packets (ArrayBuffer) or JSON strings
                 if (raw instanceof ArrayBuffer) {
                     // Binary protocol - may contain batched packets
-                    const { decodeBatchedServerPackets } = require("./packet/ServerBinaryDecoder");
+                    const { decodeBatchedServerPackets } = require("../../packet/ServerBinaryDecoder");
                     const decoded = decodeBatchedServerPackets(raw);
                     if (!decoded || decoded.length === 0) {
                         console.warn("[ws] Failed to decode binary packet(s)");

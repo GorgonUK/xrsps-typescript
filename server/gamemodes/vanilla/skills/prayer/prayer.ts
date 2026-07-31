@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { PlayerState } from "../../../../src/game/player";
 import type { IScriptRegistry, ScriptServices } from "../../../../src/game/scripts/types";
 import { BURIABLE_BONES_XP, DEMONIC_ASHES_XP } from "./prayerData";

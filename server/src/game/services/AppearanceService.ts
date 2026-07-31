@@ -1,7 +1,7 @@
-import type { BasType } from "../../../../src/rs/config/bastype/BasType";
-import type { IdkType } from "../../../../src/rs/config/idktype/IdkType";
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
-import { PlayerAppearance as CachePlayerAppearance } from "../../../../src/rs/config/player/PlayerAppearance";
+import type { BasType } from "../../../../client/rs/config/bastype/BasType";
+import type { IdkType } from "../../../../client/rs/config/idktype/IdkType";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
+import { PlayerAppearance as CachePlayerAppearance } from "../../../../client/rs/config/player/PlayerAppearance";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import type { WeaponDataEntry } from "../combat/WeaponDataProvider";

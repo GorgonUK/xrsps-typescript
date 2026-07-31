@@ -84,8 +84,8 @@ export function sendWidgetDrag(
     }
 
     // Import packet functions dynamically to avoid circular dependencies
-    const { createPacket, queuePacket } = require("./packet");
-    const { ClientPacketId } = require("./packet/ClientPacket");
+    const { createPacket, queuePacket } = require("../../packet");
+    const { ClientPacketId } = require("../../packet/ClientPacket");
 
     const pkt = createPacket(ClientPacketId.IF_BUTTOND);
     pkt.packetBuffer.writeShortLE(targetItemId | 0);

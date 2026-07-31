@@ -4,11 +4,11 @@ import {
     PRAYER_DEACTIVATE_SOUND_ID,
     type PrayerName,
     getPrayerDefinition,
-} from "../../../../src/rs/prayer/prayers";
-import type { SkillId } from "../../../../src/rs/skill/skills";
-import { faceAngleRs } from "../../../../src/rs/utils/rotation";
-import { SIDE_JOURNAL_GROUP_ID } from "../../../../src/common/ui/sideJournal";
-import { VARBIT_XPDROPS_ENABLED } from "../../../../src/common/vars";
+} from "../../../../client/rs/prayer/prayers";
+import type { SkillId } from "../../../../client/rs/skill/skills";
+import { faceAngleRs } from "../../../../client/rs/utils/rotation";
+import { SIDE_JOURNAL_GROUP_ID } from "../../../../client/common/ui/sideJournal";
+import { VARBIT_XPDROPS_ENABLED } from "../../../../client/common/vars";
 import type { MusicCatalogService } from "../../audio/MusicCatalogService";
 import { getItemDefinition, loadItemDefinitions } from "../../data/items";
 import type { WorldEntityInfoEncoder } from "../../network/encoding/WorldEntityInfoEncoder";
@@ -152,7 +152,7 @@ export interface ScriptServiceAdapterDeps {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../client/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;
@@ -169,7 +169,7 @@ export interface ScriptServiceAdapterDeps {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../client/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;

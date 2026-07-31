@@ -804,7 +804,7 @@ export class OsrsClient {
     camFollowHeight: number = 50;
     // Hide-roofs toggle: when true, every plane above the player's plane is hidden.
     // When false, roofs are only removed while the player/camera is inside a building.
-    roofsHidden: boolean = false;
+    roofsHidden: boolean = true;
 
     setRoofsHidden(roofsHidden: boolean): void {
         if (this.roofsHidden === roofsHidden) {
@@ -3628,7 +3628,7 @@ export class OsrsClient {
             }
         }
 
-        // Keep the "Press enter to type" placeholder on the chat input line while
+        // Keep the "Press Enter to Chat" placeholder on the chat input line while
         // chat typing is locked (re-applied whenever chat_promptinput rewrites it).
         this.enterToTypeChat?.applyLockPlaceholder();
     }
@@ -4851,7 +4851,7 @@ export class OsrsClient {
 
         // Setup new state
         if (newState === GameState.LOGIN_SCREEN) {
-            // Chat starts locked ("press enter to type") on the next login.
+            // Chat starts locked ("Press Enter to Chat") on the next login.
             this.enterToTypeChat?.reset();
             this.loginState.networkState = 0;
             // Reset loading tracker on return to login
@@ -5425,6 +5425,9 @@ export class OsrsClient {
     onLoginSuccess(): void {
         this.loginState.savePersistedLoginState();
 
+        // Restore uncapped desktop pacing if CS2 previously applied a mobile FPS cap.
+        this.applyDisplayDefaults();
+
         // First show "Loading - please wait." (gameState 25)
         // The game world renders in the background while this message is shown
         this.updateGameState(GameState.LOADING_GAME);
@@ -5623,8 +5626,67 @@ export class OsrsClient {
         }
     }
 
+    getMinimapImageUrl(mapX: number, mapY: number, level: number = 0): string | undefined {
+        if (mapX < 0 || mapY < 0 || mapX >= MapManager.MAX_MAP_X || mapY >= MapManager.MAX_MAP_Y) {
+            return undefined;
+        }
+        const mapId = this.getMinimapImageKey(mapX, mapY, level);
+        const url = this.minimapImageUrls.get(mapId);
+        if (url) {
+            this.minimapImageAccess.set(mapId, performance.now());
+        }
+        return url;
+    }
+
+    setMinimapImageUrl(mapX: number, mapY: number, url: string, level: number = 0): void {
+        const mapId = this.getMinimapImageKey(mapX, mapY, level);
+        const old = this.minimapImageUrls.get(mapId);
+        if (old) {
+            this.releaseMinimapImageUrl(old);
+            this.minimapImageUrls.delete(mapId);
+            this.minimapImageAccess.delete(mapId);
+        }
+        this.minimapImageUrls.set(mapId, url);
+        this.minimapImageAccess.set(mapId, performance.now());
+        this.pruneMinimapImageUrls();
+    }
+
     clearMinimapImageUrls(): void {
+        for (const url of this.minimapImageUrls.values()) {
+            this.releaseMinimapImageUrl(url);
+        }
         this.minimapImageUrls.clear();
+        this.minimapImageAccess.clear();
+    }
+
+    private releaseMinimapImageUrl(url: string): void {
+        const textureCache = (this.renderer?.canvas as any)?.__textureCache;
+        if (textureCache && typeof textureCache.evictUrl === "function") {
+            try {
+                textureCache.evictUrl(url);
+            } catch {}
+        }
+        URL.revokeObjectURL(url);
+    }
+
+    private pruneMinimapImageUrls(): void {
+        const limit = this.getMinimapImageUrlLimit();
+        if (this.minimapImageUrls.size <= limit) return;
+        const ids = Array.from(this.minimapImageUrls.keys());
+        ids.sort(
+            (a, b) =>
+                (this.minimapImageAccess.get(a) ?? -Infinity) -
+                (this.minimapImageAccess.get(b) ?? -Infinity),
+        );
+        const toRemove = ids.slice(0, this.minimapImageUrls.size - limit);
+        for (const id of toRemove) {
+            const url = this.minimapImageUrls.get(id);
+            if (url) {
+                this.releaseMinimapImageUrl(url);
+            }
+            this.minimapImageUrls.delete(id);
+            this.minimapImageAccess.delete(id);
+        }
     }
 
     initCache(cache: LoadedCache): void {
@@ -6380,6 +6442,10 @@ export class OsrsClient {
 
     private applyDisplayDefaults(): void {
         this.renderDistance = clampRenderDistance(this.renderDistance);
+        // CS2 mobile_setfps can leave targetFps stuck at ~20; desktop must not keep that.
+        if (!isMobileMode && this.targetFps > 0 && this.targetFps < 60) {
+            this.targetFps = DEFAULT_FPS_LIMIT;
+        }
         try {
             if (this.renderer) {
                 this.renderer.fpsLimit = this.targetFps;
@@ -6399,7 +6465,11 @@ export class OsrsClient {
     }
 
     setTargetFps(limit: number): void {
-        const next = Number.isFinite(limit) ? Math.max(0, limit | 0) : 0;
+        let next = Number.isFinite(limit) ? Math.max(0, limit | 0) : 0;
+        // Ignore CS2/mobile battery caps on desktop (values like 20 pin the limiter).
+        if (!isMobileMode && next > 0 && next < 60) {
+            next = DEFAULT_FPS_LIMIT;
+        }
         this.targetFps = next;
         try {
             if (this.renderer) {

@@ -9,7 +9,7 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import type { GroundItemOverlayEntry } from "../../client/data/ground/GroundItemStore";
+import type { GroundItemOverlayEntry } from "../../game/data/ground/GroundItemStore";
 import { BitmapFont } from "../../rs/font/BitmapFont";
 import { FONT_PLAIN_11 } from "../fonts";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";

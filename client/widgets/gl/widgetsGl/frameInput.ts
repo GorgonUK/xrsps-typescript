@@ -1,4 +1,4 @@
-import type { InputManager } from "../../../client/InputManager";
+import type { InputManager } from "../../../game/InputManager";
 import { GLRenderer } from "../renderer";
 import { ensureInput } from "../ui-input";
 import type { CachedClickTarget, WidgetClickMeta } from "./clickTypes";

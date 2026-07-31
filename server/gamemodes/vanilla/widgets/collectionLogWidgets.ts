@@ -2,7 +2,7 @@ import {
     ACCOUNT_SUMMARY_COLLECTION_LOG_CHILD_INDEX,
     ACCOUNT_SUMMARY_ENTRY_LIST_UID,
     ACCOUNT_SUMMARY_GROUP_ID,
-} from "../../../../src/common/ui/accountSummary";
+} from "../../../../client/common/ui/accountSummary";
 import {
     COLLECTION_LOG_GROUP_ID,
     SCRIPT_COLLECTION_TAB_CHANGE,

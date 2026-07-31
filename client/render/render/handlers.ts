@@ -1,5 +1,5 @@
 import { isMobileMode } from "../../common/utils/DeviceUtil";
-import { GameRenderer } from "../../client/GameRenderer";
+import { GameRenderer } from "../../game/GameRenderer";
 import type { WebGLOsrsRendererHost } from "./hostInterface";
 import {
     getActiveLoginFieldValue,

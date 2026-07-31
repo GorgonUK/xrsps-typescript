@@ -1,4 +1,4 @@
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import { AttackType } from "../../../src/game/combat/AttackType";
 import { resolvePlayerAttackType } from "../../../src/game/combat/CombatRules";
 import type { PlayerState } from "../../../src/game/player";

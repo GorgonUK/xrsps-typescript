@@ -1,4 +1,4 @@
-import { DbRepository } from "../../src/rs/config/db/DbRepository";
+import { DbRepository } from "../../client/rs/config/db/DbRepository";
 import { initCacheEnv } from "../src/world/CacheEnv";
 
 const COMBAT_DB_TABLE_ID = 78;

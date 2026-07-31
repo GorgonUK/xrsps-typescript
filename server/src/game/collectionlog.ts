@@ -8,7 +8,7 @@
  *   1. Populate collection_transmit inventory (ID 620) with obtained items
  *   2. Send varps for category counts (kills, completions)
  *   3. Opening is handled by CollectionLogInterfaceHooks via InterfaceService
- *   4. Load category/item tracking data from src/common/collectionlog/collection-log.json
+ *   4. Load category/item tracking data from client/common/collectionlog/collection-log.json
  *
  * CS2 scripts query `inv_total(collection_transmit, itemId)` to check if item was obtained.
  */
@@ -345,8 +345,8 @@ export function getTabIndexFromComponentId(componentId: number): number {
 // ============================================================================
 
 const COLLECTION_LOG_DATA_PATH = path.resolve(
-    process.cwd(),
-    "src/common/collectionlog/collection-log.json",
+    __dirname,
+    "../../../client/common/collectionlog/collection-log.json",
 );
 
 type CollectionLogCategoryData = {
@@ -444,7 +444,7 @@ function ensureCollectionLogLoaded(): void {
 }
 
 /**
- * Load collection log tracking data from src/common/collectionlog/collection-log.json.
+ * Load collection log tracking data from client/common/collectionlog/collection-log.json.
  * This JSON is the server-authoritative source for trackable collection slots and category layout.
  * Runtime values are derived from `categories` so stale aggregate fields cannot desync behavior.
  */

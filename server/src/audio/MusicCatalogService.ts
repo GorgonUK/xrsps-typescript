@@ -1,5 +1,5 @@
-import type { DbRepository } from "../../../src/rs/config/db/DbRepository";
-import type { DbRow } from "../../../src/rs/config/db/DbRow";
+import type { DbRepository } from "../../../client/rs/config/db/DbRepository";
+import type { DbRow } from "../../../client/rs/config/db/DbRow";
 
 const MUSIC_DB_TABLE_ID = 44;
 const MUSIC_SORTNAME_COLUMN_ID = 0;

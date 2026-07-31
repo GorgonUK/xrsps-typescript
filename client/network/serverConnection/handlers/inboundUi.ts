@@ -1,4 +1,4 @@
-import { ClientState } from "../../../client/ClientState";
+import { ClientState } from "../../../game/ClientState";
 import {
     VARP_AREA_SOUNDS_VOLUME,
     VARP_COMBAT_TARGET_PLAYER_INDEX,

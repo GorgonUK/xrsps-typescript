@@ -4,14 +4,14 @@
  * Extracted from wsServer.ts for better organization and testability.
  * Uses a service interface pattern to avoid circular dependencies.
  */
-import type { BasType } from "../../../../src/rs/config/bastype/BasType";
-import type { IdkType } from "../../../../src/rs/config/idktype/IdkType";
+import type { BasType } from "../../../../client/rs/config/bastype/BasType";
+import type { IdkType } from "../../../../client/rs/config/idktype/IdkType";
 import {
     EquipmentSlot,
     HeadCoverage,
     deriveEquipSlotFromParams,
     getHeadCoverage,
-} from "../../../../src/rs/config/player/Equipment";
+} from "../../../../client/rs/config/player/Equipment";
 import type { ServerServices } from "../../game/ServerServices";
 import { DEFAULT_EQUIP_SLOT_COUNT } from "../../game/equipment";
 import type { PlayerAppearance as PlayerAppearanceState, PlayerState } from "../../game/player";

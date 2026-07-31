@@ -2,8 +2,8 @@
  * Serializes and deserializes PlayerState to/from persistent storage format.
  * Extracted from PlayerState to separate persistence concerns from entity logic.
  */
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
-import type { PrayerName } from "../../../../src/rs/prayer/prayers";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
+import type { PrayerName } from "../../../../client/rs/prayer/prayers";
 import { restoreAutocastState } from "../combat/AutocastState";
 import { DEFAULT_EQUIP_SLOT_COUNT } from "../equipment";
 import type { PlayerPersistentVars, PlayerState } from "../player";

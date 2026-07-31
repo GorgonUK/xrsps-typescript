@@ -9,7 +9,7 @@
  *
  * The unlock state is persisted via the player's varp/varbit system.
  */
-import { MUSIC_UNLOCK_VARPS, VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE } from "../../../src/common/vars";
+import { MUSIC_UNLOCK_VARPS, VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE } from "../../../client/common/vars";
 import type { PlayerState } from "../game/player";
 import { MusicCatalogService } from "./MusicCatalogService";
 

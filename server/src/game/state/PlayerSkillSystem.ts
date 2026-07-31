@@ -7,7 +7,7 @@ import {
     SkillId,
     getLevelForXp,
     getXpForLevel,
-} from "../../../../src/rs/skill/skills";
+} from "../../../../client/rs/skill/skills";
 import { logger } from "../../utils/logger";
 import {
     DEFAULT_DISEASE_INTERVAL_TICKS,

@@ -6,7 +6,7 @@ import { SceneTile } from "../../rs/scene/SceneTile";
 import { TextureLoader } from "../../rs/texture/TextureLoader";
 import { packHsl } from "../../rs/util/ColorUtil";
 import { clamp } from "../../common/utils/MathUtil";
-import { getBridgeLinkedBelow, isBridgeSurfaceTile } from "../../client/scene/BridgeTiles";
+import { getBridgeLinkedBelow, isBridgeSurfaceTile } from "../../game/scene/BridgeTiles";
 import { DrawRange, newDrawRange } from "../DrawRange";
 import { InteractType } from "../InteractType";
 import { LocAnimatedData } from "../loc/LocAnimatedData";

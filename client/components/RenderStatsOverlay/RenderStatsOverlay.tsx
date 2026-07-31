@@ -1,9 +1,9 @@
-import type { GameRenderer } from "../../client/GameRenderer";
+import type { GameRenderer } from "../../game/GameRenderer";
 import { RS_TO_DEGREES } from "../../rs/MathConstants";
 import type { CacheInfo } from "../../rs/cache/CacheInfo";
 import { formatBytes } from "../../common/utils/BytesUtil";
 import { checkIos, checkMobile } from "../../common/utils/DeviceUtil";
-import { RenderStats } from "../../client/render/RenderStats";
+import { RenderStats } from "../../game/render/RenderStats";
 import { HudDebugPanel } from "../common";
 
 export interface RenderStatsOverlayProps {

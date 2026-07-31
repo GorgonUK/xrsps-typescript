@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import { CustomItemRegistry } from "../../../src/custom/items/CustomItemRegistry";
+import { CustomItemRegistry } from "../../../client/custom/items/CustomItemRegistry";
 
 export type EquipmentType =
     | "NONE"

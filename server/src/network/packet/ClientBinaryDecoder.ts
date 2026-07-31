@@ -7,7 +7,7 @@
 import {
     CLIENT_PACKET_LENGTHS,
     ClientPacketId,
-} from "../../../../src/common/packets/ClientPacketId";
+} from "../../../../client/common/packets/ClientPacketId";
 import { logger } from "../../utils/logger";
 import type { RoutedMessage } from "../MessageRouter";
 import type { Appearance, TradeActionClientPayload } from "../messages";

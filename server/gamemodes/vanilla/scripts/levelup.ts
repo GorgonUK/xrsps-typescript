@@ -1,4 +1,4 @@
-import { MAX_REAL_LEVEL, SkillId, getSkillName } from "../../../../src/rs/skill/skills";
+import { MAX_REAL_LEVEL, SkillId, getSkillName } from "../../../../client/rs/skill/skills";
 import type { GameEventBus } from "../../../src/game/events/GameEventBus";
 import type { PlayerState } from "../../../src/game/player";
 import type { ScriptServices } from "../../../src/game/scripts/types";

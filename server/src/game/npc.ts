@@ -25,6 +25,18 @@ export const ROAM_DELAY_MAX_TICKS = 30;
 export const DEFAULT_NPC_WANDER_RADIUS = 5;
 
 /**
+ * OSRS retreat max range: NPC will not step more than this many tiles from spawn
+ * while chasing (Chebyshev). A step to 8+ cancels pathing and triggers retreat.
+ */
+export const DEFAULT_NPC_CHASE_LEASH_RADIUS = 7;
+
+/**
+ * OSRS retreat interaction range: attacking from further than this many tiles
+ * from the NPC's spawn causes instant de-aggro (no chase).
+ */
+export const DEFAULT_NPC_RETREAT_INTERACTION_RANGE = 18;
+
+/**
  * OSRS: How long an NPC can be blocked/stuck before resetting to spawn.
  * Typical value is around 100 ticks (60 seconds).
  */
@@ -527,9 +539,20 @@ export class NpcState extends Actor {
         return this.walkSeqId === this.idleSeqId && this.walkSeqId !== -1 && this.idleSeqId !== -1;
     }
 
-    engageCombat(playerId: number, currentTick: number): void {
+    engageCombat(
+        playerId: number,
+        currentTick: number,
+        playerTile?: { tileX: number; tileY: number },
+    ): void {
         if (this.returningToSpawn) return;
         if (this.isDead(currentTick) || this.hitpoints <= 0) return;
+        // OSRS: attacking from >18 tiles from spawn → instant de-aggro, no chase.
+        if (
+            playerTile &&
+            this.isBeyondRetreatInteractionRange(playerTile.tileX, playerTile.tileY)
+        ) {
+            return;
+        }
         const normalized = playerId;
         const changedTarget = this.combatTargetPlayerId !== normalized;
         this.combatTargetPlayerId = normalized;
@@ -594,7 +617,12 @@ export class NpcState extends Actor {
             return undefined;
         }
 
-        // OSRS: NPCs disengage if the target moves more than 32 tiles away.
+        // OSRS retreat interaction range: player >18 tiles from spawn → de-aggro.
+        if (this.isBeyondRetreatInteractionRange(player.tileX, player.tileY)) {
+            return undefined;
+        }
+
+        // Hard cap: never chase more than 32 tiles from the NPC's current tile.
         const dx = Math.abs(player.tileX - this.tileX);
         const dy = Math.abs(player.tileY - this.tileY);
         const distance = Math.max(dx, dy);
@@ -783,6 +811,39 @@ export class NpcState extends Actor {
         const dy = Math.abs(tileY - this.spawnY);
         const distance = Math.max(dx, dy); // Chebyshev distance
         return distance > this.wanderRadius;
+    }
+
+    /**
+     * Combat chase leash around spawn (OSRS retreat max range: 7 tiles).
+     * Idle roam still uses wanderRadius separately.
+     */
+    getCombatLeashRadius(): number {
+        return DEFAULT_NPC_CHASE_LEASH_RADIUS;
+    }
+
+    /**
+     * Max player-to-spawn distance for combat interaction (OSRS: 18 tiles).
+     * Hits from further out refuse chase / instant de-aggro.
+     */
+    getRetreatInteractionRange(): number {
+        return DEFAULT_NPC_RETREAT_INTERACTION_RANGE;
+    }
+
+    isTileOutsideCombatLeash(tileX: number, tileY: number): boolean {
+        const dx = Math.abs(tileX - this.spawnX);
+        const dy = Math.abs(tileY - this.spawnY);
+        return Math.max(dx, dy) > this.getCombatLeashRadius();
+    }
+
+    isBeyondRetreatInteractionRange(tileX: number, tileY: number): boolean {
+        const dx = Math.abs(tileX - this.spawnX);
+        const dy = Math.abs(tileY - this.spawnY);
+        return Math.max(dx, dy) > this.getRetreatInteractionRange();
+    }
+
+    /** @deprecated Prefer isTileOutsideCombatLeash — kept for call-site clarity. */
+    isBeyondHomeLeash(tileX: number, tileY: number): boolean {
+        return this.isTileOutsideCombatLeash(tileX, tileY);
     }
 
     /**

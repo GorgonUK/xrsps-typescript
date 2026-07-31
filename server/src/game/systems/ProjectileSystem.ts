@@ -2,7 +2,7 @@ import type {
     ProjectileActorRef,
     ProjectileEndpoint,
     ProjectileLaunch,
-} from "../../../../src/common/projectiles/ProjectileLaunch";
+} from "../../../../client/common/projectiles/ProjectileLaunch";
 import type { ServerServices } from "../ServerServices";
 import { ProjectileParams } from "../data/ProjectileParamsProvider";
 import { NpcState } from "../npc";
@@ -32,6 +32,15 @@ export interface SpellProjectileParams {
     targetNpc?: NpcState;
     targetPlayer?: PlayerState;
     targetTile?: { x: number; y: number; plane?: number };
+    spellData: SpellDataEntry;
+    projectileDefaults?: ProjectileParams;
+    endHeight?: number;
+    timing?: { startDelay: number; travelTime: number };
+}
+
+export interface NpcSpellProjectileParams {
+    npc: NpcState;
+    targetPlayer: PlayerState;
     spellData: SpellDataEntry;
     projectileDefaults?: ProjectileParams;
     endHeight?: number;
@@ -194,6 +203,55 @@ export class ProjectileSystem {
      */
     queueSpellProjectileLaunch(opts: SpellProjectileParams): void {
         const launch = this.buildSpellProjectileLaunch(opts);
+        if (launch) {
+            this.queueProjectileForViewers(launch);
+        }
+    }
+
+    /**
+     * Build a projectile launch for an NPC casting a spell at a player.
+     */
+    buildNpcSpellProjectileLaunch(opts: NpcSpellProjectileParams): ProjectileLaunch | undefined {
+        const projectileId = opts.spellData.projectileId;
+        if (projectileId === undefined || projectileId <= 0) {
+            return undefined;
+        }
+
+        const { npc, targetPlayer, spellData, projectileDefaults } = opts;
+        const framesPerTick = this.getFramesPerTick();
+        const cheb = Math.max(
+            Math.abs(npc.tileX - targetPlayer.tileX),
+            Math.abs(npc.tileY - targetPlayer.tileY),
+        );
+        const defaultTravelTime = Math.max(1, -5 + 10 * Math.max(1, cheb)) / framesPerTick;
+        const verticalStartByte =
+            spellData.projectileStartHeight ?? projectileDefaults?.startHeight ?? 43;
+        const verticalEndByte = opts.endHeight ?? projectileDefaults?.endHeight ?? 31;
+        const sourceHeight = projectileDefaults?.sourceHeightOffset ?? verticalStartByte * 4;
+        const endHeight = verticalEndByte * 4;
+        const startPos = spellData.projectileSteepness ?? projectileDefaults?.steepness ?? 64;
+        const startDelay = opts.timing?.startDelay ?? 0;
+        const travelTime = opts.timing?.travelTime ?? defaultTravelTime;
+        const cycleOffsets = this.buildCycleOffsets(startDelay, travelTime, framesPerTick);
+
+        return {
+            projectileId,
+            source: this.createNpcEndpoint(npc),
+            target: this.createPlayerEndpoint(targetPlayer),
+            sourceHeight,
+            endHeight,
+            slope: spellData.projectileSlope ?? projectileDefaults?.slope ?? 16,
+            startPos,
+            startCycleOffset: cycleOffsets.startCycleOffset,
+            endCycleOffset: cycleOffsets.endCycleOffset,
+        };
+    }
+
+    /**
+     * Queue an NPC→player spell projectile for nearby viewers.
+     */
+    queueNpcSpellProjectileLaunch(opts: NpcSpellProjectileParams): void {
+        const launch = this.buildNpcSpellProjectileLaunch(opts);
         if (launch) {
             this.queueProjectileForViewers(launch);
         }

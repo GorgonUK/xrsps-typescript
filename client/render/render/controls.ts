@@ -100,13 +100,13 @@ import {
     isWebGL2Supported,
 } from "../../common/utils/DeviceUtil";
 import { clamp } from "../../common/utils/MathUtil";
-import { ClientState } from "../../client/ClientState";
-import { GameRenderer } from "../../client/GameRenderer";
-import type { HitsplatEventPayload } from "../../client/GameRenderer";
-import { OsrsRendererType, WEBGL } from "../../client/GameRenderers";
-import { ClickMode, getMousePos } from "../../client/InputManager";
-import { OsrsClient } from "../../client/OsrsClient";
-import { ActorAnimationClip } from "../../client/actor/ActorAnimation";
+import { ClientState } from "../../game/ClientState";
+import { GameRenderer } from "../../game/GameRenderer";
+import type { HitsplatEventPayload } from "../../game/GameRenderer";
+import { OsrsRendererType, WEBGL } from "../../game/GameRenderers";
+import { ClickMode, getMousePos } from "../../game/InputManager";
+import { OsrsClient } from "../../game/OsrsClient";
+import { ActorAnimationClip } from "../../game/actor/ActorAnimation";
 import {
     ActorHealthBarsState,
     ActorHitsplatState,
@@ -116,23 +116,23 @@ import {
     MAX_HITSPLAT_SLOTS,
     createActorHealthBarsState,
     createActorHitsplatState,
-} from "../../client/actor/ActorOverlayState";
-import type { ClientGroundItemStack, GroundItemOverlayEntry } from "../../client/data/ground/GroundItemStore";
-import { NpcEcs } from "../../client/ecs/NpcEcs";
-import type { PlayerAnimKey } from "../../client/ecs/PlayerEcs";
-import { GameState, LoginIndex } from "../../client/login";
-import { Ray, rayIntersectsBox } from "../../client/math/Raycast";
-import { isMouseInUIRegion as checkMouseInUIRegion } from "../../client/menu/WorldMenuBuilder";
+} from "../../game/actor/ActorOverlayState";
+import type { ClientGroundItemStack, GroundItemOverlayEntry } from "../../game/data/ground/GroundItemStore";
+import { NpcEcs } from "../../game/ecs/NpcEcs";
+import type { PlayerAnimKey } from "../../game/ecs/PlayerEcs";
+import { GameState, LoginIndex } from "../../game/login";
+import { Ray, rayIntersectsBox } from "../../game/math/Raycast";
+import { isMouseInUIRegion as checkMouseInUIRegion } from "../../game/menu/WorldMenuBuilder";
 import {
     advanceAnimation,
     computeMovementOrientation,
     computeMovementStep,
     interpolateRotation,
     parseInteractionTarget,
-} from "../../client/movement/NpcClientTick";
-import type { TileMarkersPluginConfig } from "../../client/plugins/tilemarkers/types";
-import { computeRoofPlaneLimit } from "../../client/roof/RoofVisibility";
-import { sampleBridgeHeightForWorldTile } from "../../client/scene/BridgeHeightSampler";
+} from "../../game/movement/NpcClientTick";
+import type { TileMarkersPluginConfig } from "../../game/plugins/tilemarkers/types";
+import { computeRoofPlaneLimit } from "../../game/roof/RoofVisibility";
+import { sampleBridgeHeightForWorldTile } from "../../game/scene/BridgeHeightSampler";
 import {
     BridgePlaneStrategy,
     resolveBridgePromotedPlane,
@@ -142,15 +142,15 @@ import {
     resolveHeightSamplePlaneForLocal,
     resolveInteractionPlaneForLocal,
     resolveInteractionPlaneForWorldTile,
-} from "../../client/scene/PlaneResolver";
-import { SceneRaycastHit, SceneRaycaster } from "../../client/scene/SceneRaycaster";
+} from "../../game/scene/PlaneResolver";
+import { SceneRaycastHit, SceneRaycaster } from "../../game/scene/SceneRaycaster";
 import {
     TILE_FLAG_BRIDGE,
     getTileRenderFlagAt as lookupTileRenderFlagAt,
-} from "../../client/scene/TileRenderFlags";
-import { LoadingRequirement } from "../../client/state/LoadingTracker";
-import type { PlayerSpotAnimationEvent } from "../../client/sync/PlayerSyncTypes";
-import { RAD_TO_RS_UNITS, computeFacingRotation } from "../../client/utils/rotation";
+} from "../../game/scene/TileRenderFlags";
+import { LoadingRequirement } from "../../game/state/LoadingTracker";
+import type { PlayerSpotAnimationEvent } from "../../game/sync/PlayerSyncTypes";
+import { RAD_TO_RS_UNITS, computeFacingRotation } from "../../game/utils/rotation";
 import { AnimationFrames } from "../AnimationFrames";
 import { ChatheadFactory } from "../ChatheadFactory";
 import { type DrawBackend, createDrawBackend } from "../DrawBackend";
@@ -349,7 +349,7 @@ export function getControls(host: WebGLOsrsRendererHost, ): Schema {
                 {
                     Auto: {
                         value: host.autoFogDepth,
-                        label: "Auto (fogDepth = renderDistance * factor)",
+                        label: "Dynamic (scales with draw distance)",
                         onChange: (v: boolean) => {
                             host.autoFogDepth = !!v;
                         },
@@ -359,6 +359,7 @@ export function getControls(host: WebGLOsrsRendererHost, ): Schema {
                         min: 0,
                         max: 1,
                         step: 0.05,
+                        label: "Fog start factor",
                         onChange: (v: number) => {
                             // Keep it sane; fogFactorOSRS clamps against renderDistance anyway.
                             host.autoFogDepthFactor = Math.max(0, Math.min(1, v));

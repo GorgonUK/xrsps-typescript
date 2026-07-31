@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-import OsrsClientApp from "./client/OsrsClientApp";
+import OsrsClientApp from "./game/OsrsClientApp";
 import "./index.css";
 import { disposeServerConnection, initServerConnection } from "./network/ServerConnection";
 import reportWebVitals from "./reportWebVitals";

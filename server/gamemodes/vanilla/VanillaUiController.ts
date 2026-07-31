@@ -5,7 +5,7 @@ import {
     ACCOUNT_SUMMARY_GROUP_ID,
     ACCOUNT_SUMMARY_PLAYTIME_ACTION_FLAGS,
     ACCOUNT_SUMMARY_PLAYTIME_CHILD_INDEX,
-} from "../../../src/common/ui/accountSummary";
+} from "../../../client/common/ui/accountSummary";
 import {
     DIARY_LIST_ENTRY_EVENT_FLAGS,
     DIARY_LIST_ENTRY_MAX_SLOT,
@@ -22,8 +22,8 @@ import {
     SIDE_JOURNAL_TAB_CONTAINER_UID,
     decodeSideJournalTabFromStateVarp,
     encodeSideJournalTabInStateVarp,
-} from "../../../src/common/ui/sideJournal";
-import { VARBIT_SIDE_JOURNAL_TAB, VARP_SIDE_JOURNAL_STATE } from "../../../src/common/vars";
+} from "../../../client/common/ui/sideJournal";
+import { VARBIT_SIDE_JOURNAL_TAB, VARP_SIDE_JOURNAL_STATE } from "../../../client/common/vars";
 import type {
     GamemodeQuestListGroup,
     GamemodeUiBridge,

@@ -1,4 +1,5 @@
 import { clamp } from "../../common/utils/MathUtil";
+import { formatActorNameWithLevel } from "../../ui/menu/MenuBridge";
 import type { SdMapData } from "../loader/SdMapData";
 
 const MAX_TEXTURES = 1024;
@@ -36,6 +37,22 @@ export function waterRgb(hex: number): [number, number, number] {
 export function materialByte(value: number): number {
     return Math.round(clamp(value, 0, 255));
 }
+
+/** 117HD DefaultSkyColor.DEFAULT — "117 HD Blue" (#B9D6FF). */
+export const HD_SKY_COLOR_SRGB: readonly [number, number, number] = [185, 214, 255];
+
+export const HD_SKY_COLOR_VEC4: readonly [number, number, number, number] = [
+    HD_SKY_COLOR_SRGB[0] / 255,
+    HD_SKY_COLOR_SRGB[1] / 255,
+    HD_SKY_COLOR_SRGB[2] / 255,
+    1,
+];
+
+/**
+ * Dynamic fog start as a fraction of render distance (117HD-style adaptive fog).
+ * Fog ramps from this start to full opacity at the draw-distance edge.
+ */
+export const HD_AUTO_FOG_DEPTH_FACTOR = 0.85;
 
 // 117HD water_types.json parameters.
 const DEFAULT_WATER_MATERIAL: WaterMaterialParams = {
@@ -292,10 +309,11 @@ function optimizeAssumingFlatsHaveSameFirstAndLastData(gl: WebGL2RenderingContex
 
 export function formatPlayerCombatLabel(
     name: string,
-    _localCombatLevel: number,
-    _targetCombatLevel: number,
+    localCombatLevel: number,
+    targetCombatLevel: number,
 ): string {
-    return name;
+    // Used for Walk-here / non-PLAYER target strings that skip osrsTargetLabel level formatting.
+    return formatActorNameWithLevel(name, targetCombatLevel | 0, localCombatLevel | 0, true);
 }
 
 export {

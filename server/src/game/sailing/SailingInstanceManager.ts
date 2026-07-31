@@ -1,4 +1,4 @@
-import type { CollisionMap } from "../../../../src/rs/scene/CollisionMap";
+import type { CollisionMap } from "../../../../client/rs/scene/CollisionMap";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import type { NpcSpawnConfig, NpcState } from "../npc";

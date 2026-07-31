@@ -1,6 +1,6 @@
 import { state } from "../state";
 import type { NpcInfoPayload, SpellResultPayload } from "../types";
-import type { PlayerSyncFrame } from "../../../client/sync/PlayerSyncTypes";
+import type { PlayerSyncFrame } from "../../../game/sync/PlayerSyncTypes";
 import type { ProjectileLaunch } from "../../../common/projectiles/ProjectileLaunch";
 import type {
     RebuildNormalPayload,

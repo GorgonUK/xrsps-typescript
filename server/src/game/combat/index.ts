@@ -143,6 +143,7 @@ export {
     calculateNpcVsPlayer,
     registerCombatFormulaProvider,
     getCombatFormulaProvider,
+    NPC_EFFECTIVE_LEVEL_BONUS,
     type AttackerStats,
     type DefenderStats,
     type MaxHitParams,

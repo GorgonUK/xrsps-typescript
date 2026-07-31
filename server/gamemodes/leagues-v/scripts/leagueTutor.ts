@@ -2,7 +2,7 @@ import {
     VARBIT_LEAGUE_RELIC_1,
     VARBIT_LEAGUE_TUTORIAL_COMPLETED,
     VARBIT_LEAGUE_TYPE,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import { OwnedItemLocation } from "../../../src/game/items/playerItemOwnership";
 import type { PlayerState } from "../../../src/game/player";
 import {

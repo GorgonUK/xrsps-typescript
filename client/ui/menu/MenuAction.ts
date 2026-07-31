@@ -5,7 +5,7 @@
  * to the server. Each opcode maps to a specific packet with OSRS-specific
  * binary encoding.
  */
-import { ClientState, MOUSE_CROSS_YELLOW } from "../../client/ClientState";
+import { ClientState, MOUSE_CROSS_YELLOW } from "../../game/ClientState";
 import { ClientPacket, createPacket, queuePacket } from "../../network/packet";
 import { MenuTargetType } from "../../rs/MenuEntry";
 import { MODIFIER_FLAG_CTRL, MODIFIER_FLAG_CTRL_SHIFT } from "../../common/input/modifierFlags";

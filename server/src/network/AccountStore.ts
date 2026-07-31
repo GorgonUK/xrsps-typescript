@@ -5,7 +5,7 @@ import {
     MAX_ACCOUNT_NAME_LENGTH,
     MAX_PASSWORD_LENGTH,
     MIN_PASSWORD_LENGTH,
-} from "../../../src/common/authentication";
+} from "../../../client/common/authentication";
 import { type SqliteDatabase, getSqliteDatabase } from "../game/state/SqliteDatabase";
 import {
     type PlayerPermission,

@@ -781,7 +781,9 @@ export class PlayerCombatManager {
             }
             // If already in combat, NPC keeps its existing attack timer
 
-            npc.engageCombat(playerId, tick);
+            npc.engageCombat(playerId, tick, player
+                ? { tileX: player.tileX, tileY: player.tileY }
+                : undefined);
             npc.setInteraction("player", playerId);
         }
     }

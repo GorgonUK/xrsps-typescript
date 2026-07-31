@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const opts = parseArgs(process.argv.slice(2));
     const { cacheName, includeModels, force } = opts;
     const env = initCacheEnv("caches", cacheName);
-    const defaultOut = path.resolve("server/cache/collision");
+    const defaultOut = path.resolve(__dirname, "../cache/collision");
     const outRoot = path.resolve(opts.outDir ?? defaultOut);
     await ensureDir(outRoot);
 

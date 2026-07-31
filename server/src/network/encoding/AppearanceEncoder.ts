@@ -21,7 +21,7 @@
  * 15. custom ammo quantity (signed int)
  * 16. custom ammo item id (signed int)
  */
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import type { PlayerAppearance } from "../../game/player";
 import { encodeCp1252 } from "./Cp1252";
 import type { PlayerAnimSet, PlayerViewSnapshot } from "./types";

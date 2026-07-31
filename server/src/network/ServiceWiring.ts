@@ -3,11 +3,11 @@
  * The only remaining function — all service factory functions have been
  * migrated to use ServerServices directly.
  */
-import { EquipmentSlot } from "../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../client/rs/config/player/Equipment";
 import {
     SIDE_JOURNAL_CONTENT_GROUP_BY_TAB,
     SIDE_JOURNAL_TAB_CONTAINER_UID,
-} from "../../../src/common/ui/sideJournal";
+} from "../../../client/common/ui/sideJournal";
 import {
     VARBIT_SIDE_JOURNAL_TAB,
     VARP_ATTACK_STYLE,
@@ -16,7 +16,7 @@ import {
     VARP_OPTION_RUN,
     VARP_SIDE_JOURNAL_STATE,
     VARP_SPECIAL_ATTACK,
-} from "../../../src/common/vars";
+} from "../../../client/common/vars";
 import type { ServerServices } from "../game/ServerServices";
 import { interruptForPlayerInput } from "../game/actions/playerInputInterrupt";
 import type { NpcSpawnConfig } from "../game/npc";

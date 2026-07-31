@@ -1,4 +1,4 @@
-import type { WorldEntityBuildArea } from "../../../../src/common/worldentity/WorldEntityTypes";
+import type { WorldEntityBuildArea } from "../../../../client/common/worldentity/WorldEntityTypes";
 import { type ServerToClient, encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";
 import {

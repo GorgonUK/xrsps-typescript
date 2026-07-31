@@ -5,7 +5,7 @@
  * ClickRegistry (GL widget hit testing). It does NOT register its own event
  * listeners - all input comes through InputManager.
  */
-import { ClickMode, InputManager } from "../../client/InputManager";
+import { ClickMode, InputManager } from "../../game/InputManager";
 import { ClickRegistry } from "./click-registry";
 import type { GLRenderer } from "./renderer";
 

@@ -10,7 +10,7 @@ export interface ExtrascriptEntry {
     watch?: string[];
 }
 
-const EXTRASCRIPTS_DIR = path.resolve(__dirname, "../../../../server/extrascripts");
+const EXTRASCRIPTS_DIR = path.resolve(__dirname, "../../../extrascripts");
 
 export function loadExtrascriptEntries(): ExtrascriptEntry[] {
     if (!fs.existsSync(EXTRASCRIPTS_DIR)) return [];

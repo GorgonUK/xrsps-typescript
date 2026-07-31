@@ -1,9 +1,9 @@
 import type { WebSocket } from "ws";
 
-import type { TypeLoader } from "../../../../src/rs/config/TypeLoader";
-import type { LocType } from "../../../../src/rs/config/loctype/LocType";
-import type { NpcType } from "../../../../src/rs/config/npctype/NpcType";
-import type { ObjType } from "../../../../src/rs/config/objtype/ObjType";
+import type { TypeLoader } from "../../../../client/rs/config/TypeLoader";
+import type { LocType } from "../../../../client/rs/config/loctype/LocType";
+import type { NpcType } from "../../../../client/rs/config/npctype/NpcType";
+import type { ObjType } from "../../../../client/rs/config/objtype/ObjType";
 import {
     resolveLocExamineText,
     resolveNpcExamineText,

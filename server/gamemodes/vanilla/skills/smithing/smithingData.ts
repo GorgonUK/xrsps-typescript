@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 
 export const HAMMER_ITEM_ID = 2347;
 export const FURNACE_ANIMATION = 899;

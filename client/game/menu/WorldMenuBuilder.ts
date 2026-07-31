@@ -466,6 +466,7 @@ export function buildPlayerMenuEntries(
     myServerId: number,
     ctx: MenuBuildContext,
     callbacks: MenuActionCallbacks,
+    targetCombatLevel: number = 0,
 ): { actions: OsrsMenuEntry[] } {
     const actions: OsrsMenuEntry[] = [];
 
@@ -474,6 +475,8 @@ export function buildPlayerMenuEntries(
         return { actions };
     }
 
+    const level = targetCombatLevel | 0;
+
     // Cast spell on player - only if spell can target players
     if (ctx.activeSpell && canTargetPlayer(ctx.activeSpell.targetMask)) {
         actions.push({
@@ -481,7 +484,7 @@ export function buildPlayerMenuEntries(
             targetId: -1,
             targetType: MenuTargetType.PLAYER,
             targetName: `${ctx.activeSpell.spellName} -> ${targetName}`,
-            targetLevel: -1,
+            targetLevel: level,
             spellCast: {
                 spellId: ctx.activeSpell.spellId,
                 spellName: ctx.activeSpell.spellName,
@@ -498,7 +501,7 @@ export function buildPlayerMenuEntries(
         targetId: serverId,
         targetType: MenuTargetType.PLAYER,
         targetName: targetName,
-        targetLevel: -1,
+        targetLevel: level,
         actionIndex: 2, // OPPLAYER3 - Follow
         onClick: () => callbacks.onFollowPlayer(serverId),
     });
@@ -509,7 +512,7 @@ export function buildPlayerMenuEntries(
         targetId: serverId,
         targetType: MenuTargetType.PLAYER,
         targetName: targetName,
-        targetLevel: -1,
+        targetLevel: level,
         actionIndex: 1, // OPPLAYER2 - Trade with
         onClick: () => callbacks.onTradePlayer(serverId),
     });
@@ -521,7 +524,7 @@ export function buildPlayerMenuEntries(
             targetId: -1,
             targetType: MenuTargetType.PLAYER,
             targetName: `${ctx.selectedItem.itemName} -> ${targetName}`,
-            targetLevel: -1,
+            targetLevel: level,
             onClick: (entry?: MenuEntry) =>
                 callbacks.onUseItemOn(ensureMenuEntry(entry), { playerServerId: serverId | 0 }),
         });

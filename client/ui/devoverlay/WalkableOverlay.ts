@@ -8,7 +8,7 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import { CollisionFlag as CF } from "../../client/collision/CollisionFlags";
+import { CollisionFlag as CF } from "../../game/collision/CollisionFlags";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 export class WalkableOverlay implements Overlay {

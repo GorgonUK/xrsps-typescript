@@ -11,6 +11,7 @@
  * Reference: OSRS Wiki, RSMod
  */
 import { AttackType } from "./AttackType";
+import { NPC_EFFECTIVE_LEVEL_BONUS } from "./CombatFormulaProvider";
 import { resolveNpcAttackRange } from "./CombatRules";
 
 // =============================================================================
@@ -34,6 +35,34 @@ export const COMBAT_TIMEOUT_TICKS = 17; // ~10 seconds
 
 /** Ticks between NPC target searches */
 export const TARGET_SEARCH_INTERVAL = 5;
+
+/**
+ * OSRS / RSMod combat-level aggression gate (`HuntCheckNotTooStrong.OutsideWilderness`).
+ *
+ * Standard aggressive monsters attack when:
+ *   playerCombatLevel <= 2 * npcCombatLevel
+ * They become passive when:
+ *   playerCombatLevel >= (2 * npcCombatLevel) + 1
+ * (integer-equivalent: playerCombatLevel > npcCombatLevel * 2)
+ *
+ * Level 63+ NPCs are always aggressive (2*63 = 126 = max player combat).
+ * Wilderness / always-aggressive NPCs skip this check entirely.
+ *
+ * @see https://oldschool.runescape.wiki/w/Aggressiveness
+ * @see rsmod NpcPlayerHuntProcessor / HuntCheckNotTooStrong
+ */
+export function isPlayerSafeFromStandardNpcAggression(
+    playerCombatLevel: number,
+    npcCombatLevel: number,
+): boolean {
+    const npcLevel = Math.max(0, npcCombatLevel | 0);
+    const playerLevel = Math.max(0, playerCombatLevel | 0);
+    if (npcLevel >= 63) {
+        return false;
+    }
+    // Equivalent to playerLevel >= (2 * npcLevel) + 1 for integers.
+    return playerLevel > npcLevel * 2;
+}
 
 // =============================================================================
 // Types
@@ -406,11 +435,10 @@ export function checkAggression(
         // - Skip check entirely in wilderness (all NPCs aggressive regardless of level)
         // - Level 63+ NPCs are always aggressive (63*2=126 = max player combat level)
         // - Otherwise: Player must be <= 2x NPC's combat level
-        // Reference: docs/npc-behavior.md
+        // Reference: https://oldschool.runescape.wiki/w/Aggressiveness
         if (
             !isWilderness &&
-            npcStats.combatLevel < 63 &&
-            player.combatLevel > npcStats.combatLevel * 2
+            isPlayerSafeFromStandardNpcAggression(player.combatLevel, npcStats.combatLevel)
         ) {
             continue;
         }
@@ -511,7 +539,7 @@ export function updateAggressionState(
  * - When reset occurs, oldest tile (tile1) is replaced with tile2, tile2 becomes current position
  * - Timer resets to full 10 minutes
  *
- * Reference: docs/npc-behavior.md lines 61-93
+ * @see https://oldschool.runescape.wiki/w/Tolerance
  */
 export function updateAggressionStateWithPosition(
     state: PlayerAggressionState,
@@ -663,8 +691,8 @@ export function calculateNpcAttack(
     distance: number,
     random: () => number,
 ): NpcAttackResult {
-    // Calculate accuracy (NPC effective levels are level + 9)
-    const effectiveAttack = npcStats.attackLevel + 9;
+    // Calculate accuracy (RSMod: NPC effective level = visible + 9)
+    const effectiveAttack = npcStats.attackLevel + NPC_EFFECTIVE_LEVEL_BONUS;
     const attackRoll = effectiveAttack * (npcStats.attackBonus + 64);
 
     const effectiveDefence = targetDefenceLevel + 8;

@@ -8,7 +8,7 @@ import {
     VARP_MUSIC_CURRENT_TRACK,
     VARP_MUSIC_VOLUME,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 
 const DEFAULT_SOUND_VOLUME = 75;
 

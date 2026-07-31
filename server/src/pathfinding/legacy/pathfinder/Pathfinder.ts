@@ -1,5 +1,5 @@
-import { CollisionMap } from "../../../../../src/rs/scene/CollisionMap";
-import { DirectionFlag } from "../../../../../src/common/Direction";
+import { CollisionMap } from "../../../../../client/rs/scene/CollisionMap";
+import { DirectionFlag } from "../../../../../client/common/Direction";
 import { CollisionStrategy } from "./CollisionStrategy";
 import { RouteStrategy } from "./RouteStrategy";
 import { CollisionFlag } from "./flag/CollisionFlag";

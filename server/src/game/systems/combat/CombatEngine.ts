@@ -1,5 +1,5 @@
-import { EquipmentSlot } from "../../../../../src/rs/config/player/Equipment";
-import { SkillId } from "../../../../../src/rs/skill/skills";
+import { EquipmentSlot } from "../../../../../client/rs/config/player/Equipment";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import { type ItemDefinition, getItemDefinition } from "../../../data/items";
 import { logger } from "../../../utils/logger";
 import {
@@ -13,7 +13,7 @@ import {
     PRAYER_NAME_SET,
     type PrayerCombatStat,
     type PrayerName,
-} from "../../../../../src/rs/prayer/prayers";
+} from "../../../../../client/rs/prayer/prayers";
 import * as CombatFormulas from "../../combat/CombatFormulaProvider";
 import { MagicStyle, MeleeStyle, RangedStyle } from "../../combat/CombatXp";
 import type { MagicStyleMode, MeleeStyleMode, RangedStyleMode } from "../../combat/CombatXp";
@@ -42,6 +42,7 @@ import {
     getPoweredStaffSpellData,
     getSpellData,
 } from "../../spells/SpellDataProvider";
+import { resolveElementalSpellBaseMaxHit } from "../../spells/ElementalSpellMaxHit";
 
 type RangedProjectileProfile = {
     archetype: ProjectileArchetypeName;
@@ -1373,7 +1374,13 @@ export class CombatEngine {
                 return Math.max(0, 10 + Math.floor(boosted / 10));
             }
             const data = getSpellData(activeSpellId);
-            if (data) return Math.max(0, data.baseMaxHit);
+            if (data) {
+                const boosted = this.getBoostedLevel(player, SkillId.Magic);
+                return Math.max(
+                    0,
+                    resolveElementalSpellBaseMaxHit(activeSpellId, boosted, data.baseMaxHit),
+                );
+            }
         }
 
         // Check for powered staff built-in spell

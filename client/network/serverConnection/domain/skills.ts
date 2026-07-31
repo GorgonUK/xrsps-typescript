@@ -41,7 +41,7 @@ export function emitSkills(payload: SkillsServerPayload): void {
     }
 }
 
-export function emitPlayerSync(frame: import("../../../client/sync/PlayerSyncTypes").PlayerSyncFrame): void {
+export function emitPlayerSync(frame: import("../../../game/sync/PlayerSyncTypes").PlayerSyncFrame): void {
     for (const listener of state.playerSyncListeners) {
         try {
             listener(frame);

@@ -84,7 +84,7 @@ export function sendWidgetAction(payload: WidgetActionClientPayload): void {
     const opId = normalized.opId ?? 1;
 
     // Import packet functions dynamically to avoid circular dependencies
-    const { createPacket, queuePacket } = require("./packet");
+    const { createPacket, queuePacket } = require("../../packet");
     const { ClientPacketId } = require("../../../common/network/ClientPacketId");
 
     // Ops invoked from an op submenu carry the op index and 0-based submenu index
@@ -155,8 +155,8 @@ export function sendIfTriggerOpLocal(
     if (!Number.isFinite(widgetUid) || !Number.isFinite(childIndex)) return;
 
     // Import packet functions dynamically to avoid circular dependencies
-    const { createPacket, queuePacket } = require("./packet");
-    const { ClientPacketId } = require("./packet/ClientPacket");
+    const { createPacket, queuePacket } = require("../../packet");
+    const { ClientPacketId } = require("../../packet/ClientPacket");
 
     const pkt = createPacket(ClientPacketId.IF_TRIGGEROPLOCAL);
     const buf = pkt.packetBuffer;
@@ -208,7 +208,7 @@ export function sendPlayerDesignConfirm(appearance: {
     if (!appearance || !Number.isFinite(appearance.gender)) return;
 
     // Import packet functions dynamically to avoid circular dependencies
-    const { createPacket, queuePacket } = require("./packet");
+    const { createPacket, queuePacket } = require("../../packet");
     const { ClientPacketId } = require("../../../common/network/ClientPacketId");
 
     // Payload: gender (1), kits[7] (7, -1=0xff), colors[5] (5)

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
+import { getCacheLoaderFactory } from "../../client/rs/cache/loader/CacheLoaderFactory";
 import { initCacheEnv } from "../src/world/CacheEnv";
 import { readSingleDoorDefsFromFile } from "../src/world/DoorCatalogFile";
 
@@ -96,7 +96,7 @@ function buildFingerprint(candidate: DoorCandidate): string {
 }
 
 function loadExistingSingleDoors(repoRoot: string): ExistingSingleDoor[] {
-    const file = path.join(repoRoot, "server/data/doors.json");
+    const file = path.join(repoRoot, "data/doors.json");
     if (!fs.existsSync(file)) return [];
     try {
         return readSingleDoorDefsFromFile(file).map((entry) => ({
@@ -142,7 +142,7 @@ function greedyPairByNearest(
 
 function main(): void {
     const opts = parseArgs(process.argv.slice(2));
-    const repoRoot = path.resolve(__dirname, "../..");
+    const repoRoot = path.resolve(__dirname, "..");
 
     const env = initCacheEnv(path.join(repoRoot, "caches"), opts.cacheName);
     const factory = getCacheLoaderFactory(env.info, env.cacheSystem as any);
@@ -167,10 +167,11 @@ function main(): void {
         if (!hasOpen && !hasClose) continue;
         totalOpenOrCloseCandidates++;
 
+        const rawTypes: unknown[] = Array.isArray(loc.types) ? loc.types : [];
         const types = uniqueSorted(
-            (Array.isArray(loc.types) ? loc.types : [])
-                .map((value) => value as number)
-                .filter((value) => Number.isFinite(value)),
+            rawTypes
+                .map((value: unknown) => Number(value))
+                .filter((value: number) => Number.isFinite(value)),
         );
         if (!types.some((type) => WALL_MODEL_TYPES.has(type))) {
             ignoredNonWall++;
@@ -185,13 +186,14 @@ function main(): void {
         }
 
         totalWallDoorCandidates++;
-        const sizeXValue = loc.sizeX as number | undefined;
-        const sizeYValue = loc.sizeY as number | undefined;
-        const clipTypeValue = loc.clipType as number | undefined;
+        const sizeXValue = Number(loc.sizeX);
+        const sizeYValue = Number(loc.sizeY);
+        const clipTypeValue = Number(loc.clipType);
         const sizeX = Number.isFinite(sizeXValue) ? Math.max(1, sizeXValue) : 1;
         const sizeY = Number.isFinite(sizeYValue) ? Math.max(1, sizeYValue) : 1;
         const clipType = Number.isFinite(clipTypeValue) ? clipTypeValue : 0;
 
+        const rawModels: unknown[] = Array.isArray(loc.models) ? loc.models.flat() : [];
         const candidate: DoorCandidate = {
             id: id,
             name,
@@ -203,9 +205,9 @@ function main(): void {
             blocksProjectile: loc.blocksProjectile !== false,
             types,
             models: uniqueSorted(
-                (Array.isArray(loc.models) ? loc.models.flat() : [])
-                    .map((value) => value as number)
-                    .filter((value) => Number.isFinite(value)),
+                rawModels
+                    .map((value: unknown) => Number(value))
+                    .filter((value: number) => Number.isFinite(value)),
             ),
         };
 

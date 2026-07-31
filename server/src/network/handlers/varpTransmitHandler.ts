@@ -1,7 +1,7 @@
 import type { WebSocket } from "ws";
 
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
-import { decodeSideJournalTabFromStateVarp } from "../../../../src/common/ui/sideJournal";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
+import { decodeSideJournalTabFromStateVarp } from "../../../../client/common/ui/sideJournal";
 import {
     VARBIT_KEYBINDING_ESC_TO_CLOSE,
     VARBIT_SHOP_QUANTITY,
@@ -14,7 +14,7 @@ import {
     VARP_SHOP_QUANTITY,
     VARP_SIDE_JOURNAL_STATE,
     VARP_SPECIAL_ATTACK,
-} from "../../../../src/common/vars";
+} from "../../../../client/common/vars";
 import {
     applyInstantUtilitySpecialBoost,
     getInstantUtilitySpecial,

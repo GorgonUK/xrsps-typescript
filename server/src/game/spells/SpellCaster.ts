@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { NpcState } from "../npc";
 import { PlayerState } from "../player";
 import { InventoryItem, RuneValidationResult, RuneValidator } from "./RuneValidator";

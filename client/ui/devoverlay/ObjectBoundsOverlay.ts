@@ -8,7 +8,7 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import type { Aabb } from "../../client/math/Aabb";
+import type { Aabb } from "../../game/math/Aabb";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 export interface ObjectBoundsOverlayContext {
