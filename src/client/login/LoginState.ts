@@ -13,6 +13,7 @@ import { isIosStandalonePwa } from "../../util/DeviceUtil";
 import {
     getClientPreference,
     setClientPreference,
+    updateClientPreferences,
 } from "../preferences/ClientPreferences";
 import { LoginIndex } from "./GameState";
 
@@ -25,6 +26,25 @@ type PersistedIosPwaLoginState = {
     rememberUsername: boolean;
     isUsernameHidden: boolean;
 };
+
+function isLocalOnlyServerAddress(address: string): boolean {
+    const normalized = address.trim().toLowerCase();
+    return (
+        normalized === "localhost" ||
+        normalized.startsWith("localhost:") ||
+        normalized === "127.0.0.1" ||
+        normalized.startsWith("127.0.0.1:") ||
+        normalized === "[::1]" ||
+        normalized.startsWith("[::1]:") ||
+        normalized === "::1"
+    );
+}
+
+function isPageRunningLocally(): boolean {
+    if (typeof window === "undefined") return false;
+    const host = window.location.hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+}
 
 /**
  * Login state instance class.
@@ -41,11 +61,18 @@ export class LoginState {
     private loadPersistedSettings(): void {
         this.titleMusicDisabled = getClientPreference("titleMusicDisabled");
         const lastServer = getClientPreference("lastServer");
-        if (lastServer) {
-            this.serverName = lastServer.name;
-            this.serverAddress = lastServer.address;
-            this.serverSecure = lastServer.secure;
+        if (!lastServer) return;
+
+        // A saved "localhost" target is only valid when the page itself is local.
+        // Otherwise remote clients (e.g. iPhone on xrsps.online) dial ws://localhost and fail.
+        if (isLocalOnlyServerAddress(lastServer.address) && !isPageRunningLocally()) {
+            updateClientPreferences({ lastServer: undefined });
+            return;
         }
+
+        this.serverName = lastServer.name;
+        this.serverAddress = lastServer.address;
+        this.serverSecure = lastServer.secure;
     }
 
     /** Save title music disabled setting to localStorage */

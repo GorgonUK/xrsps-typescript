@@ -325,13 +325,15 @@ export class LoginRenderer {
 
         const configured = getConfiguredServers();
         if (configured && configured.length > 0) {
-            this.serverList = configured.map((s) => ({
-                name: s.name,
-                address: s.address,
-                secure: s.secure,
-                playerCount: null,
-                maxPlayers: s.maxPlayers,
-            }));
+            this.serverList = this.filterServersForCurrentHost(
+                configured.map((s) => ({
+                    name: s.name,
+                    address: s.address,
+                    secure: s.secure,
+                    playerCount: null,
+                    maxPlayers: s.maxPlayers,
+                })),
+            );
             this.serverListFetched = true;
             return;
         }
@@ -341,19 +343,46 @@ export class LoginRenderer {
             if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
-                    this.serverList = data.map((s: any) => ({
-                        name: s.name ?? "Unknown",
-                        address: s.address ?? "",
-                        secure: s.secure ?? false,
-                        playerCount: null,
-                        maxPlayers: s.maxPlayers ?? 2047,
-                    }));
+                    this.serverList = this.filterServersForCurrentHost(
+                        data.map((s: any) => ({
+                            name: s.name ?? "Unknown",
+                            address: s.address ?? "",
+                            secure: s.secure ?? false,
+                            playerCount: null,
+                            maxPlayers: s.maxPlayers ?? 2047,
+                        })),
+                    );
                 }
             }
         } catch {
             // keep fallback
         }
         this.serverListFetched = true;
+    }
+
+    /** Hide localhost entries when the client is served from a public host. */
+    private filterServersForCurrentHost(servers: ServerListEntry[]): ServerListEntry[] {
+        if (typeof window === "undefined") return servers;
+        const pageHost = window.location.hostname.toLowerCase();
+        const pageIsLocal =
+            pageHost === "localhost" ||
+            pageHost === "127.0.0.1" ||
+            pageHost === "[::1]" ||
+            pageHost === "::1";
+        if (pageIsLocal) return servers;
+
+        return servers.filter((s) => {
+            const address = s.address.trim().toLowerCase();
+            return !(
+                address === "localhost" ||
+                address.startsWith("localhost:") ||
+                address === "127.0.0.1" ||
+                address.startsWith("127.0.0.1:") ||
+                address === "[::1]" ||
+                address.startsWith("[::1]:") ||
+                address === "::1"
+            );
+        });
     }
 
     refreshServerList(): void {
