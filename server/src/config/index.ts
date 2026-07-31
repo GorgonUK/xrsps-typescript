@@ -33,7 +33,7 @@ export const config: ServerConfig = {
     host: process.env.HOST || "0.0.0.0",
     port: portEnv ? parseInt(portEnv, 10) || 43594 : 43594, // classic RuneScape default port
     tickMs: tickMsEnv ? parseInt(tickMsEnv, 10) || 600 : 600, // 0.6s tick
-    serverName,
+    serverName: process.env.SERVER_NAME?.trim() || serverName,
     maxPlayers,
     gamemode: process.env.GAMEMODE || gamemode,
 };

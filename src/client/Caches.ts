@@ -1,9 +1,10 @@
+import { getCacheBaseUrl } from "../config/clientEnv";
 import { CacheFiles, ProgressListener } from "../rs/cache/CacheFiles";
 import { CacheInfo, getLatestCache } from "../rs/cache/CacheInfo";
 import { CacheType, detectCacheType } from "../rs/cache/CacheType";
 import { IndexType } from "../rs/cache/IndexType";
 
-const CACHE_PATH = "/caches/";
+const CACHE_PATH = getCacheBaseUrl();
 
 function shouldSkipDat2MainCacheWrite(): boolean {
     if (typeof navigator === "undefined") return false;

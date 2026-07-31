@@ -3,6 +3,7 @@ import { ClientState } from "../client/ClientState";
 import { PlayerSyncContext } from "../client/sync/PlayerSyncContext";
 import type { PlayerSyncFrame } from "../client/sync/PlayerSyncTypes";
 import { PlayerUpdateDecoder } from "../client/sync/PlayerUpdateDecoder";
+import { getDefaultWsUrl } from "../config/clientEnv";
 import { SkillId } from "../rs/skill/skills";
 import type { ProjectileLaunch } from "../shared/projectiles/ProjectileLaunch";
 import {
@@ -580,7 +581,7 @@ type ClientToServer =
 const getEnv = (key: string): string | undefined =>
     typeof process !== "undefined" && process.env ? process.env[key] : undefined;
 
-const DEFAULT_URL = "ws://localhost:43594";
+const DEFAULT_URL = getDefaultWsUrl();
 const LOGIN_CONNECT_RETRY_DELAY_MS = 1000;
 
 let socket: WebSocket | null = null;

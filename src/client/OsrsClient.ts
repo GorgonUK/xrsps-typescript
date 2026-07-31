@@ -85,6 +85,12 @@ import {
     setServerUrl,
     subscribeProjectiles,
 } from "../network/ServerConnection";
+import {
+    getDefaultServerAddress,
+    getDefaultServerName,
+    getDefaultServerSecure,
+    getDefaultWsUrl,
+} from "../config/clientEnv";
 import { ClientPacketId, createPacket, queuePacket } from "../network/packet";
 import { MenuTargetType, type OsrsMenuEntry } from "../rs/MenuEntry";
 import { SoundEffectLoader } from "../rs/audio/SoundEffectLoader";
@@ -10475,11 +10481,12 @@ export class OsrsClient {
             url.searchParams.delete("password");
             window.history.replaceState({}, "", url.toString());
 
-            // Force localhost for URL-param auto-login
-            setServerUrl("ws://localhost:43594");
-            this.loginState.serverAddress = "localhost:43594";
-            this.loginState.serverName = "Local Development";
-            this.loginState.serverSecure = false;
+            // Keep URL-param auto-login on the active environment's default server.
+            const serverAddress = getDefaultServerAddress();
+            setServerUrl(getDefaultWsUrl());
+            this.loginState.serverAddress = serverAddress;
+            this.loginState.serverName = getDefaultServerName();
+            this.loginState.serverSecure = getDefaultServerSecure();
 
             // Set credentials and trigger login
             this.loginState.username = username;
