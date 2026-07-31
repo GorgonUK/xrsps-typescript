@@ -6,6 +6,7 @@ import { getCollectionLogItems } from "../../game/collectionlog";
 import { clearAutocastState } from "../../game/combat/AutocastState";
 import { ALL_RUNE_ITEM_IDS, RUNE_IDS } from "../../game/data/RuneDataProvider";
 import type { PlayerState } from "../../game/player";
+import type { BankingServices } from "../../game/scripts/serviceInterfaces";
 import { getSpellData } from "../../game/spells/SpellDataProvider";
 import { logger } from "../../utils/logger";
 import type { MessageHandlerServices } from "../MessageHandlers";
@@ -513,6 +514,49 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                         targetPlayerIds: [sender.id],
                     });
                     logger.info(`[cmd] ::spawn - Player ${sender.id} teleported to Lumbridge`);
+                    return;
+                }
+
+                if (root === "tele") {
+                    const x = Number(parts[1]);
+                    const y = Number(parts[2]);
+                    const level = parts[3] === undefined ? sender.level : Number(parts[3]);
+                    if (
+                        !Number.isInteger(x) ||
+                        !Number.isInteger(y) ||
+                        !Number.isInteger(level) ||
+                        level < 0 ||
+                        level > 3
+                    ) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Usage: ::tele <x> <y> [level 0-3]",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    services.teleportPlayer(sender, x, y, level);
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: `Teleported to (${x}, ${y}, ${level}).`,
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(`[cmd] ::tele - Player ${sender.id} teleported to (${x}, ${y}, ${level})`);
+                    return;
+                }
+
+                if (root === "devbank") {
+                    const banking = services.gamemodeServices.banking as BankingServices | undefined;
+                    if (!banking?.openBank) {
+                        services.queueChatMessage({
+                            messageType: "game",
+                            text: "Banking is not available in this gamemode.",
+                            targetPlayerIds: [sender.id],
+                        });
+                        return;
+                    }
+                    banking.openBank(sender, { mode: "bank" });
+                    logger.info(`[cmd] ::devbank - Opened bank for player ${sender.id}`);
                     return;
                 }
 

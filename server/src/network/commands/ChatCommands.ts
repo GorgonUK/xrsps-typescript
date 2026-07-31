@@ -11,6 +11,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     arceuus: "developer",
     bond: "developer",
     clear: "developer",
+    devbank: "developer",
     item: "developer",
     kill: "developer",
     levelup: "developer",
@@ -23,6 +24,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     smithing: "developer",
     spawn: "developer",
     standard: "developer",
+    tele: "developer",
     tickstats: "developer",
     whip: "developer",
 };
