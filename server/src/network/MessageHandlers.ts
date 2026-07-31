@@ -265,6 +265,7 @@ export interface MessageHandlerServices {
     queueCombatState: (player: PlayerState) => void;
     ensureEquipArray: (player: PlayerState) => number[];
     gamemodeServices: Record<string, unknown>;
+    getGamemodeServices: () => Record<string, unknown>;
 
     // Chat
     queueChatMessage: (msg: {

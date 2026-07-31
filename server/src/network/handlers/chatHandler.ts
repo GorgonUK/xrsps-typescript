@@ -546,7 +546,9 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                 }
 
                 if (root === "devbank") {
-                    const banking = services.gamemodeServices.banking as BankingServices | undefined;
+                    const banking = services.getGamemodeServices().banking as
+                        | BankingServices
+                        | undefined;
                     if (!banking?.openBank) {
                         services.queueChatMessage({
                             messageType: "game",

@@ -249,6 +249,7 @@ export function registerMessageHandlers(svc: ServerServices, router: MessageRout
         queueCombatState: (player) => svc.queueCombatState(player),
         ensureEquipArray: (player) => svc.equipmentService.ensureEquipArray(player),
         gamemodeServices: svc.gamemode.getGamemodeServices?.() ?? {},
+        getGamemodeServices: () => svc.gamemode.getGamemodeServices?.() ?? {},
 
         // Chat
         queueChatMessage: (msg) => svc.messagingService.queueChatMessage(msg),
