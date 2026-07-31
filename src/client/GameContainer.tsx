@@ -7,7 +7,7 @@ import { subscribeChatMessages, subscribeHandshake } from "../network/ServerConn
 import { DownloadProgress } from "../rs/cache/CacheFiles";
 import { Canvas } from "../ui/Canvas";
 import { formatBytes } from "../util/BytesUtil";
-import { isMobileMode } from "../util/DeviceUtil";
+import { isIos, isMobileMode } from "../util/DeviceUtil";
 import { DebugControls } from "./DebugControls";
 import "./GameContainer.css";
 import { GameRenderer } from "./GameRenderer";
@@ -347,7 +347,15 @@ export function GameContainer({ osrsClient }: OsrsContainerProps): JSX.Element {
 
     return (
         <div className="max-height game-container-root">
-            <div className={isMobileMode ? "game-viewport game-viewport-mobile" : "game-viewport"}>
+            <div
+                className={[
+                    "game-viewport",
+                    isMobileMode ? "game-viewport-mobile" : "",
+                    isMobileMode && isIos ? "game-viewport-apple" : "",
+                ]
+                    .filter(Boolean)
+                    .join(" ")}
+            >
                 <div className="game-canvas-shell">
                     <div className="game-canvas-stage">
                         {loadingBarOverlay}

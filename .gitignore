@@ -54,8 +54,9 @@ mcp
 AGENTS.md
 toolkit
 CLAUDE.md
-docs/.vitepress/cache
-docs/.vitepress/dist
+# VitePress local cache/output (config/theme under docs/.vitepress stay tracked)
+**/.vitepress/cache
+**/.vitepress/dist
 server/data/gamemodes/leagues-v/player-state.json
 server/data/gamemodes/vanilla/player-state.json
 .codex
@@ -63,3 +64,8 @@ AGENT.md
 server/data/gamemodes/*/player-state.json
 server/data/gamemodes/*/accounts.json
 server/data/gamemodes/*/game.sqlite*
+.vercel/project.json
+.vercel/README.txt
+.vercel
+.env*
+!.env.example

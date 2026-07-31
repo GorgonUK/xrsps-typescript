@@ -16,7 +16,12 @@ import {
     removeCacheManifestEntry,
     writeCacheManifestEntry,
 } from "../util/CacheManifest";
-import { isIos, isStandaloneDisplayMode, isTouchDevice } from "../util/DeviceUtil";
+import {
+    checkMobile,
+    isIos,
+    isStandaloneDisplayMode,
+    isTouchDevice,
+} from "../util/DeviceUtil";
 import {
     describeStorageShortfall,
     ensurePersistentStorage,
@@ -27,6 +32,10 @@ import { fetchCacheList, loadCacheFiles } from "./Caches";
 import { GameContainer } from "./GameContainer";
 import { getAvailableRenderers } from "./GameRenderers";
 import { OsrsClient } from "./OsrsClient";
+import {
+    getClientPreference,
+    setClientPreference,
+} from "./preferences/ClientPreferences";
 import { useSafariLandscapeLock } from "./useSafariLandscapeLock";
 import { useViewportCssVars } from "./useViewportCssVars";
 import { renderDataLoaderSerializer } from "./worker/RenderDataLoader";
@@ -95,8 +104,9 @@ function OsrsClientApp() {
     const [showIosInstallHint, setShowIosInstallHint] = useState(false);
     const loginUnsubscribers = useMemo<Array<LoginUnsubscriber>>(() => [], []);
     useViewportCssVars();
-    const shouldEnableSafariLandscapeLock = osrsClient?.isLoggedIn() ?? false;
-    const safariLandscapeLock = useSafariLandscapeLock(shouldEnableSafariLandscapeLock);
+    // Phones only (not iPad): CSS-rotate when portrait + try orientation.lock.
+    // Enabled from login onward — portrait layout is unusable for the classic UI.
+    const safariLandscapeLock = useSafariLandscapeLock(checkMobile());
 
     const addStorageWarning = useCallback((message: string) => {
         setStorageWarnings((prev) => {
@@ -112,13 +122,18 @@ function OsrsClientApp() {
 
         const isStandalone = isStandaloneDisplayMode();
 
-        if (isIos && !isStandalone) {
+        if (
+            isIos &&
+            !isStandalone &&
+            !getClientPreference("iosInstallHintDismissed")
+        ) {
             setShowIosInstallHint(true);
         }
 
         const handleBeforeInstallPrompt = (event: Event) => {
             event.preventDefault();
             if (!isTouchDevice) return;
+            if (getClientPreference("installPromptDismissed")) return;
             const promptEvent = event as BeforeInstallPromptEvent;
             setDeferredInstallPrompt(promptEvent);
             setShowInstallPrompt(true);
@@ -128,6 +143,8 @@ function OsrsClientApp() {
             setDeferredInstallPrompt(undefined);
             setShowInstallPrompt(false);
             setShowIosInstallHint(false);
+            setClientPreference("installPromptDismissed", true);
+            setClientPreference("iosInstallHintDismissed", true);
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -148,15 +165,25 @@ function OsrsClientApp() {
         } finally {
             setDeferredInstallPrompt(undefined);
             setShowInstallPrompt(false);
+            setClientPreference("installPromptDismissed", true);
         }
     }, [deferredInstallPrompt]);
 
     const dismissInstallPrompt = useCallback(() => {
         setShowInstallPrompt(false);
+        setClientPreference("installPromptDismissed", true);
     }, []);
 
     const dismissIosHint = useCallback(() => {
         setShowIosInstallHint(false);
+        setClientPreference("iosInstallHintDismissed", true);
+    }, []);
+
+    const dismissStorageWarnings = useCallback(() => {
+        setStorageWarnings([]);
+        // Avoid revealing a near-duplicate "add to home screen" banner underneath.
+        setShowIosInstallHint(false);
+        setClientPreference("iosInstallHintDismissed", true);
     }, []);
 
     // Two workers build maps in parallel — halves total grid load time.
@@ -204,16 +231,16 @@ function OsrsClientApp() {
                     console.warn(
                         "[storage] Persistent storage API not available; browser may evict cached data",
                     );
-                    addStorageWarning(
-                        "Persistent storage not supported in this browser. Cached assets may be cleared. Install as PWA or use a modern browser.",
-                    );
+                    // Skip on iOS Safari-in-tab: the dedicated home-screen hint already covers this.
+                    if (!(isIos && !isStandalone)) {
+                        addStorageWarning(
+                            "Persistent storage not supported in this browser. Cached assets may be cleared. Install as PWA or use a modern browser.",
+                        );
+                    }
                 }
 
-                if (isIos && !isStandalone) {
-                    addStorageWarning(
-                        "On iOS Safari, tap Share → Add to Home Screen to keep the cache between launches.",
-                    );
-                }
+                // iOS Safari (not installed): do not also push a storage banner about
+                // Add to Home Screen — showIosInstallHint already shows that once.
             }
 
             const cacheSize = typeof cacheInfo.size === "number" ? cacheInfo.size : 0;
@@ -461,10 +488,30 @@ function OsrsClientApp() {
                     padding: "18px 24px",
                     fontSize: "0.92rem",
                     lineHeight: 1.5,
+                    position: "relative",
                 }}
             >
+                <button
+                    type="button"
+                    aria-label="Close"
+                    onClick={dismissStorageWarnings}
+                    style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 12,
+                        background: "transparent",
+                        border: "none",
+                        color: "#f2f2ff",
+                        fontSize: "1.25rem",
+                        lineHeight: 1,
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    ×
+                </button>
                 {storageWarnings.map((msg, idx) => (
-                    <p key={idx} style={{ margin: idx === 0 ? 0 : "8px 0 0" }}>
+                    <p key={idx} style={{ margin: idx === 0 ? "0 28px 0 0" : "8px 28px 0 0" }}>
                         {msg}
                     </p>
                 ))}
@@ -482,25 +529,31 @@ function OsrsClientApp() {
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
+                    position: "relative",
                 }}
             >
-                <span>
+                <span style={{ paddingRight: 28 }}>
                     Add OSRS Client to your home screen: tap the share icon, then choose
                     <strong> Add to Home Screen</strong>.
                 </span>
                 <button
                     type="button"
+                    aria-label="Close"
                     onClick={dismissIosHint}
                     style={{
-                        background: "rgba(255,255,255,0.1)",
+                        position: "absolute",
+                        top: 10,
+                        right: 12,
+                        background: "transparent",
                         border: "none",
                         color: "#f8f9ff",
-                        borderRadius: 10,
-                        padding: "8px 14px",
-                        fontSize: "0.8rem",
+                        fontSize: "1.25rem",
+                        lineHeight: 1,
+                        padding: "4px 8px",
+                        cursor: "pointer",
                     }}
                 >
-                    Got it
+                    ×
                 </button>
             </div>
         );

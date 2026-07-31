@@ -525,22 +525,25 @@ export function registerClientOps(handlers: HandlerMap): void {
         ctx.pushInt(result);
     });
 
-    // === Mobile stubs ===
-    handlers.set(Opcodes.MOBILE_KEYBOARDHIDE, (ctx) => {});
+    // === Mobile keyboard ===
+    handlers.set(Opcodes.MOBILE_KEYBOARDHIDE, (ctx) => {
+        ctx.hideMobileKeyboard?.();
+    });
 
     // MOBILE_KEYBOARDSHOW (6522) - Shows the mobile keyboard for chat input
     // Stack: pops 1 string (hint text), 1 int (keyboard type)
     handlers.set(Opcodes.MOBILE_KEYBOARDSHOW, (ctx) => {
-        ctx.stringStackSize--; // pop hint text
-        ctx.intStackSize--; // pop keyboard type
-        // On mobile, this would trigger the virtual keyboard to appear
+        const hint = String(ctx.stringStack[--ctx.stringStackSize] ?? "");
+        const keyboardType = ctx.intStack[--ctx.intStackSize] | 0;
+        ctx.showMobileKeyboard?.(hint, keyboardType);
     });
 
     // MOBILE_KEYBOARDSHOW2 (6523) - Alternative keyboard show variant
     // Stack: pops 1 string, 1 int (same as 6522)
     handlers.set(Opcodes.MOBILE_KEYBOARDSHOW2, (ctx) => {
-        ctx.stringStackSize--; // pop hint text
-        ctx.intStackSize--; // pop keyboard type
+        const hint = String(ctx.stringStack[--ctx.stringStackSize] ?? "");
+        const keyboardType = ctx.intStack[--ctx.intStackSize] | 0;
+        ctx.showMobileKeyboard?.(hint, keyboardType);
     });
 
     handlers.set(Opcodes.MOBILE_SETFPS, (ctx) => {

@@ -1,6 +1,12 @@
 import { vec3 } from "gl-matrix";
 
 import {
+    getDefaultServerAddress,
+    getDefaultServerName,
+    getDefaultServerSecure,
+    getDefaultWsUrl,
+} from "../config/clientEnv";
+import {
     type BankServerUpdate,
     getClientCycle,
     getCurrentTick,
@@ -817,6 +823,20 @@ export class OsrsClient {
     private itemSpawnerSearchResultsVersion: number = 0;
     private itemSpawnerRenderedResultsVersion: number = -1;
     private itemSpawnerVisibleStartRow: number = -1;
+
+    // RuneLite-style "press enter to chat" (desktop only): while locked, keystrokes are
+    // not delivered to the chatbox input scripts and WASD rotates the camera instead.
+    // Enter (or "/" / ":") unlocks typing; sending a message or Escape re-locks it.
+    private chatTypingUnlocked: boolean = false;
+    private static readonly CHATBOX_GROUP_ID = 162;
+    /** Component 162:57 — the chat input line written by [proc,chat_promptinput]. */
+    private static readonly CHATBOX_INPUT_CHILD_ID = 57;
+    /** CS2 script 223 = [proc,chat_promptinput], rebuilds the chat input line text. */
+    private static readonly CHAT_PROMPT_SCRIPT_ID = 223;
+    private static readonly CHAT_LOCKED_PROMPT = "Press enter to type";
+    private mobileChatInput?: HTMLInputElement;
+    private mobileChatKeyboardOpen = false;
+    private mobileChatLastValue = "";
 
     // Script event queues (like OSRS's 3-tier priority system)
     private scriptEvents: ScriptEvent[] = []; // Normal priority
@@ -1966,6 +1986,11 @@ export class OsrsClient {
                 }
             },
         });
+
+        this.cs2Vm.context.showMobileKeyboard = (hint, keyboardType) => {
+            this.showMobileChatKeyboard(hint, keyboardType);
+        };
+        this.cs2Vm.context.hideMobileKeyboard = () => this.hideMobileChatKeyboard();
 
         // Wire up the deferred callbacks - triggers queued var changes after script execution
         this.cs2Vm.onVarpChange = (varpId) => {
@@ -5749,6 +5774,10 @@ export class OsrsClient {
                 }
             }
         }
+
+        // Keep the "Press enter to type" placeholder on the chat input line while
+        // chat typing is locked (re-applied whenever chat_promptinput rewrites it).
+        this.applyChatPromptLockPlaceholder();
     }
 
     /**
@@ -6554,6 +6583,117 @@ export class OsrsClient {
     private applyMinimapWheelZoom(deltaY: number): void {
         const wheelStep = deltaY > 0 ? 1 : -1;
         this.minimapZoom = Math.max(2, Math.min(8, this.minimapZoom + -wheelStep * 0.25));
+    }
+
+    /** "Press enter to type" chat gating is desktop-only; touch devices keep tap-to-type. */
+    private isEnterToTypeChatEnabled(): boolean {
+        return !isMobileMode && this.isLoggedIn();
+    }
+
+    /** True while the chatbox ignores typing (keys are free for camera/hotkeys). */
+    private isChatInputLocked(): boolean {
+        return this.isEnterToTypeChatEnabled() && !this.chatTypingUnlocked;
+    }
+
+    /**
+     * True while WASD should rotate the camera instead of typing. Any active text
+     * input (chat typing mode, chatbox dialogs, item spawner search) releases WASD
+     * back to typing.
+     */
+    isWasdCameraActive(): boolean {
+        return (
+            this.isChatInputLocked() &&
+            this.cs2Vm.inputDialogType === 0 &&
+            !this.itemSpawnerSearchFocused
+        );
+    }
+
+    private setChatTypingUnlocked(unlocked: boolean): void {
+        if (this.chatTypingUnlocked === unlocked) {
+            return;
+        }
+        this.chatTypingUnlocked = unlocked;
+        this.refreshChatPrompt();
+    }
+
+    /**
+     * Re-run [proc,chat_promptinput] so the chat input line reflects the real typed
+     * buffer. While locked, applyChatPromptLockPlaceholder() (run every frame) swaps
+     * the line back to the "Press enter to type" placeholder.
+     */
+    private refreshChatPrompt(): void {
+        try {
+            this.cs2Vm.runScriptEvent(
+                createScriptEvent({ args: [OsrsClient.CHAT_PROMPT_SCRIPT_ID] }),
+            );
+        } catch {}
+    }
+
+    /**
+     * While chat is locked, display "Press enter to type" after the player name in the
+     * chat input line (component 162:57). Runs every frame so it self-heals whenever
+     * chat_promptinput rewrites the line (login, chat rebuilds, name changes).
+     */
+    private applyChatPromptLockPlaceholder(): void {
+        if (!this.isChatInputLocked()) {
+            return;
+        }
+        const widget = this.widgetManager?.findWidget(
+            OsrsClient.CHATBOX_GROUP_ID,
+            OsrsClient.CHATBOX_INPUT_CHILD_ID,
+        );
+        if (!widget) {
+            return;
+        }
+        const text = typeof widget.text === "string" ? widget.text : "";
+        if (text.length === 0 || text.includes(OsrsClient.CHAT_LOCKED_PROMPT)) {
+            return;
+        }
+        // chat_promptinput composes "<col=..>Name<col=..>: typed*</col>"; keep the name
+        // prefix and replace everything after the colon (same approach as RuneLite).
+        const idx = text.indexOf(":");
+        if (idx === -1) {
+            return;
+        }
+        widget.text = `${text.slice(0, idx)}: ${OsrsClient.CHAT_LOCKED_PROMPT}`;
+        markWidgetInteractionDirty(widget);
+        this.widgetManager.invalidateWidgetRender(widget);
+    }
+
+    /**
+     * Enter-to-type state machine, run per key event before widget onKey dispatch.
+     * Returns true when the event is fully consumed (must not reach any widget).
+     */
+    private handleEnterToTypeKeyEvent(
+        keyEvent: { keyTyped: number; keyPressed: number },
+        dialogActive: boolean,
+    ): boolean {
+        if (dialogActive || !this.isEnterToTypeChatEnabled()) {
+            return false;
+        }
+        const OSRS_KEY_ENTER = 84;
+        const OSRS_KEY_ESCAPE = 13;
+
+        if (!this.chatTypingUnlocked) {
+            if (keyEvent.keyTyped === OSRS_KEY_ENTER) {
+                // Consume the unlocking Enter so it does not submit an empty message.
+                this.setChatTypingUnlocked(true);
+                return true;
+            }
+            // "/" and ":" start channel messages — unlock and let the character through.
+            if (keyEvent.keyPressed === 47 || keyEvent.keyPressed === 58) {
+                this.setChatTypingUnlocked(true);
+            }
+            return false;
+        }
+
+        if (keyEvent.keyTyped === OSRS_KEY_ESCAPE) {
+            // Escape cancels typing: clear the buffer and re-lock.
+            this.varManager.setVarcString(335, "");
+            this.setChatTypingUnlocked(false);
+            return true;
+        }
+        return false;
     }
 
     handleUiInput() {
@@ -8195,7 +8335,16 @@ export class OsrsClient {
 
             // Process all key events for all widgets with onKey handlers
             for (const keyEvent of input.keyEvents) {
+                // Enter-to-type gate (desktop): Enter/Escape toggle chat typing mode and
+                // are consumed; while locked, no keys are delivered to chatbox widgets.
+                if (this.handleEnterToTypeKeyEvent(keyEvent, dialogActive)) {
+                    continue;
+                }
+                const blockChatboxKeys = !dialogActive && this.isChatInputLocked();
                 for (const w of keyWidgetsByUid.values()) {
+                    if (blockChatboxKeys && (w?.uid ?? 0) >>> 16 === OsrsClient.CHATBOX_GROUP_ID) {
+                        continue;
+                    }
                     const keyCtx: Partial<ScriptEvent> = {
                         mouseX: mx - (w._absX ?? w.x ?? 0),
                         mouseY: my - (w._absY ?? w.y ?? 0),
@@ -8207,6 +8356,16 @@ export class OsrsClient {
                     } else if (w.onKey) {
                         this.executeScriptListener(w, w.onKey, keyCtx);
                     }
+                }
+                // Enter while typing sends the message (handled by the chatbox scripts
+                // above); re-lock so movement keys are captured again (RuneLite behavior).
+                if (
+                    !dialogActive &&
+                    this.chatTypingUnlocked &&
+                    this.isEnterToTypeChatEnabled() &&
+                    keyEvent.keyTyped === 84
+                ) {
+                    this.setChatTypingUnlocked(false);
                 }
             }
         }
@@ -9935,6 +10094,8 @@ export class OsrsClient {
 
         // Setup new state
         if (newState === GameState.LOGIN_SCREEN) {
+            // Chat starts locked ("press enter to type") on the next login.
+            this.chatTypingUnlocked = false;
             this.loginState.networkState = 0;
             // Reset loading tracker on return to login
             this.loadingTracker.reset();
@@ -10475,11 +10636,12 @@ export class OsrsClient {
             url.searchParams.delete("password");
             window.history.replaceState({}, "", url.toString());
 
-            // Force localhost for URL-param auto-login
-            setServerUrl("ws://localhost:43594");
-            this.loginState.serverAddress = "localhost:43594";
-            this.loginState.serverName = "Local Development";
-            this.loginState.serverSecure = false;
+            // Keep URL-param auto-login on the active environment's default server.
+            const serverAddress = getDefaultServerAddress();
+            setServerUrl(getDefaultWsUrl());
+            this.loginState.serverAddress = serverAddress;
+            this.loginState.serverName = getDefaultServerName();
+            this.loginState.serverSecure = getDefaultServerSecure();
 
             // Set credentials and trigger login
             this.loginState.username = username;
@@ -13010,12 +13172,51 @@ export class OsrsClient {
         }
     }
 
+    private showMobileChatKeyboard(hint: string, keyboardType: number): void {
+        if (typeof document === "undefined" || (!isMobileMode && !isTouchDevice)) return;
+        const input = this.ensureMobileChatInput();
+        input.placeholder = hint;
+        input.inputMode = keyboardType === 1 ? "numeric" : "text";
+        input.value = this.varManager.getVarcString(335) ?? "";
+        this.mobileChatLastValue = input.value;
+        this.mobileChatKeyboardOpen = true;
+        input.focus({ preventScroll: true });
+    }
+
+    private hideMobileChatKeyboard(): void {
+        this.mobileChatKeyboardOpen = false;
+        this.mobileChatInput?.blur();
+    }
+
+    private ensureMobileChatInput(): HTMLInputElement {
+        if (this.mobileChatInput?.isConnected) return this.mobileChatInput;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.style.cssText = "position:fixed;bottom:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none";
+        input.addEventListener("input", () => {
+            if (!this.mobileChatKeyboardOpen) return;
+            const next = input.value;
+            const prev = this.mobileChatLastValue;
+            for (let i = prev.length; i > 0 && next.length < i; i--) this.inputManager.enqueueOsrsKeyPress(85, "Backspace");
+            for (let i = Math.min(prev.length, next.length); i < next.length; i++) this.inputManager.enqueueTypedChar(next.charCodeAt(i));
+            this.mobileChatLastValue = next;
+        });
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") { event.preventDefault(); this.inputManager.enqueueOsrsKeyPress(84, "Enter"); }
+        });
+        document.body.appendChild(input);
+        this.mobileChatInput = input;
+        return input;
+    }
+
     /**
      * Reset all world/game state - used on disconnect/logout to prevent memory leaks.
      * Clears all players, NPCs, widgets, ground items, and other game entities.
      * @param fullReset If true, also clears chat history, vars, and transmit cycles (for full logout to login screen)
      */
     resetWorld(fullReset: boolean = false): void {
+        this.hideMobileChatKeyboard();
         console.log(`[OsrsClient] Resetting world state (fullReset=${fullReset})...`);
 
         // Clear all players

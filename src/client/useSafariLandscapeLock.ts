@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { isIosSafari } from "../util/DeviceUtil";
+import { checkMobile, shouldFreezeViewportForVirtualKeyboard } from "../util/DeviceUtil";
 
-interface SafariLandscapeLockState {
+interface MobileLandscapeLockState {
     enabled: boolean;
     rotated: boolean;
 }
@@ -26,25 +26,40 @@ function readViewportSize(): { width: number; height: number } {
     };
 }
 
-export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscapeLockState {
+/**
+ * Force a landscape layout on phones (iPhone + Android).
+ * When the device is physically portrait, CSS-rotates the app 90° and remaps
+ * input (via documentElement dataset flags). Also tries Screen Orientation lock
+ * when the browser allows it (often after a user gesture / in installed PWAs).
+ *
+ * Dataset attribute names keep the historical `iosSafariForceLandscape*` keys
+ * so InputManager / DeviceUtil continue to work unchanged.
+ */
+export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscapeLockState {
     const [rotated, setRotated] = useState(false);
+    const isPhone = checkMobile();
+    const active = enabled && isPhone;
 
     useEffect(() => {
-        if (
-            !enabled ||
-            !isIosSafari ||
-            typeof window === "undefined" ||
-            typeof document === "undefined"
-        ) {
+        if (!active || typeof window === "undefined" || typeof document === "undefined") {
             setRotated(false);
             return;
         }
 
         const root = document.documentElement;
         let rafId: number | undefined;
+        let lastApplied: { width: number; height: number } | undefined;
 
         const applyViewportMetrics = () => {
             const { width, height } = readViewportSize();
+            // While the on-screen keyboard is open the visual viewport only reflects the
+            // sliver above the keyboard. Recomputing the forced-landscape size (and the
+            // rotation flag) from it collapses the app and can un-rotate it mid-typing,
+            // so keep the pre-keyboard metrics until the keyboard closes.
+            if (shouldFreezeViewportForVirtualKeyboard(lastApplied, { width, height })) {
+                return;
+            }
+            lastApplied = { width, height };
             root.style.setProperty("--ios-safari-vw", `${width}px`);
             root.style.setProperty("--ios-safari-vh", `${height}px`);
             root.style.setProperty("--ios-safari-landscape-w", `${Math.max(width, height)}px`);
@@ -86,7 +101,10 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
         window.addEventListener("orientationchange", scheduleApply);
         window.addEventListener("pageshow", scheduleApply);
         document.addEventListener("visibilitychange", scheduleApply);
+        // Re-evaluate when focus leaves an editable element (keyboard closing).
+        document.addEventListener("focusout", scheduleApply);
         window.addEventListener("touchstart", tryLockLandscape, { passive: true });
+        window.addEventListener("click", tryLockLandscape);
 
         const viewport = window.visualViewport;
         viewport?.addEventListener("resize", scheduleApply);
@@ -97,7 +115,9 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
             window.removeEventListener("orientationchange", scheduleApply);
             window.removeEventListener("pageshow", scheduleApply);
             document.removeEventListener("visibilitychange", scheduleApply);
+            document.removeEventListener("focusout", scheduleApply);
             window.removeEventListener("touchstart", tryLockLandscape);
+            window.removeEventListener("click", tryLockLandscape);
             viewport?.removeEventListener("resize", scheduleApply);
             viewport?.removeEventListener("scroll", scheduleApply);
             if (rafId !== undefined) {
@@ -110,10 +130,10 @@ export function useSafariLandscapeLock(enabled: boolean = true): SafariLandscape
             delete root.dataset.iosSafariForceLandscape;
             delete root.dataset.iosSafariForceLandscapeRotated;
         };
-    }, [enabled]);
+    }, [active]);
 
     return {
-        enabled: enabled && isIosSafari,
+        enabled: active,
         rotated,
     };
 }

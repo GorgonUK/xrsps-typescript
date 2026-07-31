@@ -150,6 +150,8 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
     handleInput(deltaTime: number) {
         // OSRS frame start: transfer click state (clickMode1 -> clickMode3)
         this.osrsClient.inputManager.onFrameStart();
+        // Orbit only in-world; login keeps one-finger drag for list scrolling.
+        this.osrsClient.inputManager.setTouchCameraOrbitEnabled(this.osrsClient.isLoggedIn());
 
         this.handleKeyInput(deltaTime);
         this.handleControllerInput(deltaTime);
@@ -199,6 +201,24 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
         if (inputManager.isKeyDown("ArrowLeft")) {
             // Left rotates view to the left
             camera.updateYaw(camera.yaw, deltaYaw);
+        }
+
+        // RuneLite-style WASD camera: while chat typing is locked ("press enter to
+        // type"), WASD rotates the camera exactly like the arrow keys. Only in the
+        // normal follow-player camera — free-cam already uses WASD for movement.
+        if (this.osrsClient.followPlayerCamera && this.osrsClient.isWasdCameraActive()) {
+            if (inputManager.isKeyDown("KeyW")) {
+                camera.updatePitch(camera.pitch, deltaPitch);
+            }
+            if (inputManager.isKeyDown("KeyS")) {
+                camera.updatePitch(camera.pitch, -deltaPitch);
+            }
+            if (inputManager.isKeyDown("KeyD")) {
+                camera.updateYaw(camera.yaw, -deltaYaw);
+            }
+            if (inputManager.isKeyDown("KeyA")) {
+                camera.updateYaw(camera.yaw, deltaYaw);
+            }
         }
 
         // camera position controls
@@ -304,8 +324,8 @@ export abstract class GameRenderer<T extends MapSquare = MapSquare> extends Rend
 
         // Scroll wheel zoom.
         // Follow-camera zoom is driven by widget onScroll handlers on the main viewport root.
-        // Combine wheel and pinch inputs (pinchZoomDelta is scaled similarly to wheel)
-        const zoomDelta = inputManager.wheelDeltaY + inputManager.pinchZoomDelta;
+        // Pinch is merged into wheelDeltaY in InputManager (same path as mouse wheel).
+        const zoomDelta = inputManager.wheelDeltaY;
         if (zoomDelta !== 0) {
             if (
                 !this.osrsClient.followPlayerCamera &&

@@ -1,5 +1,6 @@
 import { vec2 } from "gl-matrix";
 
+import { TouchInputAdapter } from "./input/TouchInputAdapter";
 import { ClientState } from "./ClientState";
 
 /**
@@ -215,6 +216,14 @@ export class InputManager {
     /** Timestamp of the most recent touch interaction (used to suppress synthetic mouse events). */
     private lastTouchInputTimeMs: number = -1;
 
+    /** One-finger gesture → click / camera mapping (pinch stays in this class). */
+    private readonly touchAdapter: TouchInputAdapter = new TouchInputAdapter(this);
+    /**
+     * After a touch tap, keep clickMode2 LEFT for one full UI frame so widgets
+     * see down (clickMode3) then up (clickMode2 LEFT → NONE), matching mouse clicks.
+     */
+    private touchTapReleaseAfterFrames: number = 0;
+
     // === Keyboard State ===
 
     /** Key states array (indexed by char code, 1=pressed 0=released) */
@@ -242,6 +251,12 @@ export class InputManager {
 
     // === Touch/Pointer State ===
     isTouch: boolean = false;
+
+    /**
+     * Optional hook fired from the real touchstart gesture (canvas coords).
+     * Used to open the soft keyboard within the user-activation window (iOS/Android).
+     */
+    onCanvasTouchStart?: (x: number, y: number) => void;
 
     // === Delta tracking for camera ===
     lastMouseX: number = -1;
@@ -331,8 +346,92 @@ export class InputManager {
         this.element.removeEventListener("contextmenu", this.onContextMenu);
         this.element.removeEventListener("focusout", this.onFocusOut);
         this.removeDocumentGrab();
+        this.touchAdapter.destroy();
 
         this.element = undefined;
+    }
+
+    /**
+     * When false, one-finger drag scrolls / cancels tap but does not orbit the camera.
+     * Typically disabled on the login screen so world-select lists remain scrollable.
+     */
+    setTouchCameraOrbitEnabled(enabled: boolean): void {
+        this.touchAdapter.setCameraOrbitEnabled(enabled);
+    }
+
+    // === Touch adapter sinks (called from TouchInputAdapter only) ===
+
+    applyTouchPointerMove(x: number, y: number): void {
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+
+    applyTouchTap(x: number, y: number): void {
+        this.clickX = x;
+        this.clickY = y;
+        this.clickTime = Date.now();
+        this.clickMode1 = ClickMode.LEFT;
+        // Hold LEFT for one UI frame so onPointerDown/Up both fire (see onFrameEnd).
+        this.clickMode2 = ClickMode.LEFT;
+        this.touchTapReleaseAfterFrames = 1;
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+
+    applyTouchLongPress(x: number, y: number): void {
+        this.clickX = x;
+        this.clickY = y;
+        this.clickTime = Date.now();
+        this.clickMode1 = ClickMode.RIGHT;
+        this.clickMode2 = ClickMode.RIGHT;
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+
+    beginTouchCameraDrag(x: number, y: number): void {
+        this.clickMode1 = ClickMode.NONE;
+        this.clickMode2 = ClickMode.NONE;
+        this.isTouchScrolling = false;
+        this.touchScrollVelocityY = 0;
+        this.prevTouchY = -1;
+        this.mouseWheelDown = true;
+        this.mouseWheelX = x;
+        this.mouseWheelY = y;
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+
+    addTouchCameraDragDelta(x: number, y: number, deltaX: number, deltaY: number): void {
+        this._cameraDragDeltaX += deltaX;
+        this._cameraDragDeltaY += deltaY;
+        this.mouseWheelDragged(deltaX, -deltaY);
+        this.mouseWheelX = x;
+        this.mouseWheelY = y;
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+
+    endTouchCameraDrag(): void {
+        this.mouseWheelDown = false;
+        this._dragStartX = -1;
+        this._dragStartY = -1;
+    }
+
+    applyTouchScrollSample(y: number, deltaY: number, deltaTimeMs: number): void {
+        if (deltaTimeMs <= 0) return;
+        this.isTouchScrolling = true;
+        this.touchScrollVelocityY = (deltaY / deltaTimeMs) * 16;
+        this.prevTouchY = y;
+        this.prevTouchTime =
+            typeof performance !== "undefined" ? performance.now() : Date.now();
+    }
+
+    cancelTouchGesture(): void {
+        this.clickMode2 = ClickMode.NONE;
+        this.mouseWheelDown = false;
+        this._dragStartX = -1;
+        this._dragStartY = -1;
+        this.touchTapReleaseAfterFrames = 0;
     }
 
     // === OSRS-style helpers ===
@@ -374,6 +473,43 @@ export class InputManager {
     flushInput(): void {
         this.readIndex = this.writeIndex;
         this.keyEvents.length = 0;
+    }
+
+    /**
+     * Inject a typed character for widget onKey handlers (mobile soft-keyboard bridge).
+     * Mirrors the keyTyped=-1 / keyPressed=charCode path used by real keydown events.
+     */
+    enqueueTypedChar(charCode: number, code: string = "Unidentified"): void {
+        const ch = charCode | 0;
+        if (ch < 32) return;
+        this.keyEvents.push({
+            keyTyped: -1,
+            keyPressed: ch,
+            code,
+        });
+        this.charQueue[this.writeIndex] = ch;
+        this.writeIndex = (this.writeIndex + 1) & 0x7f;
+        this.idleTime = 0;
+        this.lastInputTimeMs = this.nowMs();
+    }
+
+    /**
+     * Inject an OSRS internal key press (Enter/Backspace/Escape/etc) for onKey handlers.
+     * One-shot pulse — does not leave the key in a held state.
+     */
+    enqueueOsrsKeyPress(osrsKeyCode: number, code: string = "Unidentified"): void {
+        const key = osrsKeyCode | 0;
+        if (key < 0) return;
+        this.keyEvents.push({
+            keyTyped: key,
+            keyPressed: 0,
+            code,
+        });
+        if (key >= 0 && key < this.osrsKeyState.length) {
+            this.osrsKeyPressedThisFrame.add(key);
+        }
+        this.idleTime = 0;
+        this.lastInputTimeMs = this.nowMs();
     }
 
     /** Read next character from queue (OSRS: readChar) */
@@ -690,6 +826,7 @@ export class InputManager {
 
         // Two-finger pinch gesture
         if (event.touches.length === 2) {
+            this.touchAdapter.onCancel();
             this.isPinching = true;
             const distance = this.getTouchDistance(event.touches[0], event.touches[1]);
             this.pinchStartDistance = distance;
@@ -697,30 +834,24 @@ export class InputManager {
             const [cx, cy] = this.getTouchCenter(event.touches[0], event.touches[1]);
             this.pinchCenterX = cx;
             this.pinchCenterY = cy;
-            // Cancel any single-touch click in progress
-            this.clickMode1 = ClickMode.NONE;
-            this.clickMode2 = ClickMode.NONE;
+            // Point at pinch center so UI (minimap / widgets) hit-tests like a wheel event.
+            this.mouseX = cx;
+            this.mouseY = cy;
             event.preventDefault();
             return;
         }
 
-        // Single touch - treat as click
+        // Single touch — gesture FSM decides tap / long-press / orbit.
         const [x, y] = getMousePos(this.element, event.touches[0]);
-        this.clickX = x;
-        this.clickY = y;
-        this.clickTime = Date.now();
-        this.clickMode1 = ClickMode.LEFT;
-        this.clickMode2 = ClickMode.LEFT;
-        this._dragStartX = x;
-        this._dragStartY = y;
-        this.mouseX = x;
-        this.mouseY = y;
-
-        // Initialize touch scroll tracking
         this.prevTouchY = y;
         this.prevTouchTime = performance.now();
         this.touchScrollVelocityY = 0;
         this.isTouchScrolling = false;
+        // Soft-keyboard open must happen inside this gesture (focus after touchend is rejected).
+        try {
+            this.onCanvasTouchStart?.(x, y);
+        } catch {}
+        this.touchAdapter.onFingerDown(x, y, this.lastInputTimeMs);
         event.preventDefault();
     };
 
@@ -730,41 +861,27 @@ export class InputManager {
         this.lastInputTimeMs = this.nowMs();
         this.lastTouchInputTimeMs = this.lastInputTimeMs;
 
-        // Handle pinch gesture
+        // Handle pinch gesture — same sink as mouse wheel so minimap / UI onScroll
+        // and camera zoom all see identical wheelDeltaY.
         if (this.isPinching && event.touches.length === 2) {
             const distance = this.getTouchDistance(event.touches[0], event.touches[1]);
             const delta = distance - this.lastPinchDistance;
-            // Convert pixel distance to zoom delta (negative = zoom out, positive = zoom in)
-            // Scale factor to make pinch feel natural (similar to mouse wheel)
-            this.pinchZoomDelta += -delta * 2;
+            // Pinch-in (delta < 0) → positive wheelDeltaY (zoom out), matching wheel-down.
+            // Scale ~2 so a modest pinch feels similar to a few wheel notches.
+            this.wheelDeltaY += -delta * 2;
             this.lastPinchDistance = distance;
             const [cx, cy] = this.getTouchCenter(event.touches[0], event.touches[1]);
             this.pinchCenterX = cx;
             this.pinchCenterY = cy;
+            this.mouseX = cx;
+            this.mouseY = cy;
             event.preventDefault();
             return;
         }
 
-        // Single touch move
-        const [x, y] = getMousePos(this.element, event.touches[0]);
-        this.mouseX = x;
-        this.mouseY = y;
-
-        // Calculate touch scroll velocity for mobile lists
-        if (this.prevTouchY >= 0) {
-            const now = performance.now();
-            const deltaTime = now - this.prevTouchTime;
-            if (deltaTime > 0) {
-                const deltaY = y - this.prevTouchY;
-                // Only track scrolling if there's significant vertical movement
-                if (Math.abs(deltaY) > 2) {
-                    this.isTouchScrolling = true;
-                    // Velocity in pixels per 16ms (approx one frame at 60fps)
-                    this.touchScrollVelocityY = (deltaY / deltaTime) * 16;
-                }
-            }
-            this.prevTouchY = y;
-            this.prevTouchTime = now;
+        if (event.touches.length === 1) {
+            const [x, y] = getMousePos(this.element, event.touches[0]);
+            this.touchAdapter.onFingerMove(x, y, this.lastInputTimeMs);
         }
         event.preventDefault();
     };
@@ -779,28 +896,30 @@ export class InputManager {
             this.isPinching = false;
             this.pinchStartDistance = 0;
             this.lastPinchDistance = 0;
-            // If one finger remains, transition back to single-touch mode
+            // If one finger remains, start a fresh one-finger gesture.
             if (event.touches.length === 1 && this.element) {
                 const [x, y] = getMousePos(this.element, event.touches[0]);
-                this.mouseX = x;
-                this.mouseY = y;
-                this._dragStartX = x;
-                this._dragStartY = y;
+                this.prevTouchY = y;
+                this.prevTouchTime = performance.now();
+                this.touchScrollVelocityY = 0;
+                this.isTouchScrolling = false;
+                this.touchAdapter.onFingerDown(x, y, this.lastInputTimeMs);
             }
             event.preventDefault();
             return;
         }
 
-        // Normal touch end
-        this.clickMode2 = ClickMode.NONE;
-        this._dragStartX = -1;
-        this._dragStartY = -1;
+        if (event.changedTouches.length >= 1 && this.element) {
+            const [x, y] = getMousePos(this.element, event.changedTouches[0]);
+            this.touchAdapter.onFingerUp(x, y, this.lastInputTimeMs);
+        } else {
+            this.touchAdapter.onCancel();
+        }
 
         // Reset touch scroll tracking (but keep velocity for momentum)
         this.prevTouchY = -1;
         this.prevTouchTime = 0;
         // Note: touchScrollVelocityY is intentionally kept for momentum scrolling
-        // It will be consumed by the mobile world select list
         event.preventDefault();
     };
 
@@ -974,6 +1093,14 @@ export class InputManager {
 
         // Clear per-frame OSRS key pressed tracking (for wasKeyPressed)
         this.osrsKeyPressedThisFrame.clear();
+
+        // Finish synthetic touch-tap hold after UI has processed clickMode3 + clickMode2.
+        if (this.touchTapReleaseAfterFrames > 0) {
+            this.touchTapReleaseAfterFrames--;
+            if (this.touchTapReleaseAfterFrames === 0 && this.clickMode2 === ClickMode.LEFT) {
+                this.clickMode2 = ClickMode.NONE;
+            }
+        }
 
         // Increment idle time
         this.idleTime++;
