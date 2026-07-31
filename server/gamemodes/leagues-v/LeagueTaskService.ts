@@ -9,7 +9,7 @@ import {
     VARP_LEAGUE_POINTS_CLAIMED,
     VARP_LEAGUE_POINTS_COMPLETED,
     VARP_LEAGUE_POINTS_CURRENCY,
-} from "../../../src/shared/vars";
+} from "../../../src/common/vars";
 import { getLeagueTaskByTaskId } from "./data/leagueTaskLookup";
 import { LEAGUE_TASK_COMPLETION_VARPS } from "./data/leagueTaskVarps";
 

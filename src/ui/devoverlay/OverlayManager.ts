@@ -1,4 +1,4 @@
-import { profiler } from "../../client/webgl/PerformanceProfiler";
+import { profiler } from "../../render/PerformanceProfiler";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 // PERF: Per-overlay timing for debugging

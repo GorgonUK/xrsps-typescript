@@ -1,8 +1,8 @@
 import { Schema } from "leva/dist/declarations/src/types";
 
-import { Renderer } from "../components/renderer/Renderer";
+import { Renderer } from "./render/Renderer";
 import { SceneBuilder } from "../rs/scene/SceneBuilder";
-import { clamp } from "../util/MathUtil";
+import { clamp } from "../common/utils/MathUtil";
 import { ProjectionType } from "./Camera";
 import { ClientState } from "./ClientState";
 import { OsrsRendererType } from "./GameRenderers";

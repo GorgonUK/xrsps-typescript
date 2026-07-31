@@ -1,4 +1,4 @@
-import type { ProjectileLaunch } from "../../shared/projectiles/ProjectileLaunch";
+import type { ProjectileLaunch } from "../../common/projectiles/ProjectileLaunch";
 
 export interface IProjectileManager {
     launch(launch: ProjectileLaunch): number;

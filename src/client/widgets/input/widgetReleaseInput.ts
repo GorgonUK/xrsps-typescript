@@ -3,7 +3,7 @@ import type { ScriptEvent } from "../../../rs/cs2/Cs2Vm";
 import { resolveDynamicWidgetParentId } from "../widgetActionPayload";
 import type { WidgetInputControllerDeps, WidgetInputFrame } from "./widgetInputTypes";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 
 export function processWidgetReleaseInput(
     deps: WidgetInputControllerDeps,

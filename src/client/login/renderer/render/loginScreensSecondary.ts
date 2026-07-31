@@ -1,7 +1,7 @@
 import type { LoginState } from "../../LoginState";
 import type { LoginRendererHost, RenderContext } from "../host";
 import { isCaretVisible } from "../canvas";
-import { drawButton, drawCenteredText, drawText } from "./drawUtils";
+import { drawButton, drawCenteredText, drawText, truncateFromStart } from "./drawUtils";
 
 export function drawForgotPassword(host: LoginRendererHost, ctx: RenderContext, state: LoginState) {
 
@@ -50,7 +50,7 @@ export function drawForgotPassword(host: LoginRendererHost, ctx: RenderContext, 
         textY += 15;
 
         const cursor = isCaretVisible(host) ? "|" : "";
-        const displayUsername = host.truncateFromStart(state.username, 215);
+        const displayUsername = truncateFromStart(host, state.username, 215);
         drawText(host, 
             ctx,
             host.fontBold12,

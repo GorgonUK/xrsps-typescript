@@ -10,7 +10,7 @@ import {
     VARBIT_PRAYER_FILTER_BLOCK_LACK_LEVEL,
     VARBIT_PRAYER_FILTER_BLOCK_LOCKED,
     VARBIT_PRAYER_FILTER_BLOCK_LOW_TIER,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import {
     DisplayMode,

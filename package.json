@@ -89,8 +89,8 @@
           "src/client/movement/**/*.{ts,tsx}",
           "src/client/roof/**/*.{ts,tsx}",
           "src/client/sync/**/*.{ts,tsx}",
-          "src/client/webgl/**/*.{ts,tsx}",
-          "src/ui/gl/**/*.{ts,tsx}",
+          "src/render/**/*.{ts,tsx}",
+          "src/widgets/gl/**/*.{ts,tsx}",
           "src/ui/item/**/*.{ts,tsx}",
           "src/ui/model/**/*.{ts,tsx}"
         ],
@@ -100,7 +100,7 @@
       },
       {
         "files": [
-          "src/util/*.js"
+          "src/common/utils/*.js"
         ],
         "rules": {
           "strict": "off"

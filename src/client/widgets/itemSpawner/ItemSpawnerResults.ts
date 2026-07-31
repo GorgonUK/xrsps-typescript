@@ -1,11 +1,11 @@
-import type { CacheItemSearchEntry } from "../../../shared/items/CacheItemSearchIndex";
+import type { CacheItemSearchEntry } from "../../../common/items/CacheItemSearchIndex";
 import {
     ITEM_SPAWNER_MODAL_GROUP_ID,
     ITEM_SPAWNER_MODAL_RESULT_SLOT_COUNT,
     ITEM_SPAWNER_MODAL_SLOT_COLUMNS,
-} from "../../../shared/ui/widgets";
-import { markWidgetInteractionDirty } from "../../../ui/widgets/WidgetInteraction";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+} from "../../../common/ui/widgets";
+import { markWidgetInteractionDirty } from "../../../widgets/WidgetInteraction";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import {
     ITEM_SPAWNER_SLOT_BACKGROUND_BASE_RAW_Y,
     ITEM_SPAWNER_SLOT_ICON_BASE_RAW_Y,

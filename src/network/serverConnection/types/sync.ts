@@ -28,7 +28,7 @@ export interface RebuildWorldEntityPayload {
     templateChunks: number[][][];
     xteaKeys: number[][];
     mapRegions: number[];
-    buildAreas: import("../../../shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[];
+    buildAreas: import("../../../common/worldentity/WorldEntityTypes").WorldEntityBuildArea[];
 }
 
 export interface WorldEntityMaskPayload {

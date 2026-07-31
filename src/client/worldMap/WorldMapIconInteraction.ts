@@ -1,7 +1,7 @@
 import { Opcodes as Cs2Opcodes } from "../../rs/cs2/Opcodes";
 import type { Script as Cs2Script } from "../../rs/cs2/Script";
 import { MenuOpcode } from "../../ui/menu/MenuState";
-import type { SimpleMenuEntry } from "../../ui/menu/MenuState";
+import type { SimpleMenuEntry } from "../../ui/menu/MenuEngine";
 import {
     WORLD_MAP_ELEMENT_TOOLTIP_CLEAR_SCRIPT_ID,
     WORLD_MAP_ELEMENT_TOOLTIP_SCRIPT_ID,

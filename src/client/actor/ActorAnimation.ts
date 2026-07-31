@@ -1,4 +1,4 @@
-import { DrawRange } from "../webgl/DrawRange";
+import { DrawRange } from "../../render/DrawRange";
 
 // A unified clip description for actors (NPCs or Players).
 // Contains pre-baked draw ranges and minimal stepping metadata.

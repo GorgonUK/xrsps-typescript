@@ -2,7 +2,7 @@ import type {
     ProjectileActorRef,
     ProjectileEndpoint,
     ProjectileLaunch,
-} from "../../../../src/shared/projectiles/ProjectileLaunch";
+} from "../../../../src/common/projectiles/ProjectileLaunch";
 import type { ServerServices } from "../ServerServices";
 import { ProjectileParams } from "../data/ProjectileParamsProvider";
 import { NpcState } from "../npc";

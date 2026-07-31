@@ -85,7 +85,7 @@ export function sendWidgetAction(payload: WidgetActionClientPayload): void {
 
     // Import packet functions dynamically to avoid circular dependencies
     const { createPacket, queuePacket } = require("./packet");
-    const { ClientPacketId } = require("../../../shared/network/ClientPacketId");
+    const { ClientPacketId } = require("../../../common/network/ClientPacketId");
 
     // Ops invoked from an op submenu carry the op index and 0-based submenu index
     // in a dedicated packet, mirroring the second widget op packet in the client.
@@ -209,7 +209,7 @@ export function sendPlayerDesignConfirm(appearance: {
 
     // Import packet functions dynamically to avoid circular dependencies
     const { createPacket, queuePacket } = require("./packet");
-    const { ClientPacketId } = require("../../../shared/network/ClientPacketId");
+    const { ClientPacketId } = require("../../../common/network/ClientPacketId");
 
     // Payload: gender (1), kits[7] (7, -1=0xff), colors[5] (5)
     const pkt = createPacket(ClientPacketId.APPEARANCE_SET);

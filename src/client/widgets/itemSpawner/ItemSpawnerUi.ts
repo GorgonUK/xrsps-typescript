@@ -2,10 +2,10 @@ import type { ObjTypeLoader } from "../../../rs/config/objtype/ObjTypeLoader";
 import {
     type CacheItemSearchEntry,
     CacheItemSearchIndex,
-} from "../../../shared/items/CacheItemSearchIndex";
-import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../../../shared/ui/widgets";
-import { markWidgetInteractionDirty } from "../../../ui/widgets/WidgetInteraction";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+} from "../../../common/items/CacheItemSearchIndex";
+import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../../../common/ui/widgets";
+import { markWidgetInteractionDirty } from "../../../widgets/WidgetInteraction";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import {
     initializeItemSpawnerScrollView,
     type ItemSpawnerScrollbarDeps,

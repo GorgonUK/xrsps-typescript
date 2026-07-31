@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { shouldFreezeViewportForVirtualKeyboard } from "../util/DeviceUtil";
+import { shouldFreezeViewportForVirtualKeyboard } from "../common/utils/DeviceUtil";
 
 function readViewportCssSize(): { width: number; height: number } {
     if (typeof window === "undefined") {

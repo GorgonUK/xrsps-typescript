@@ -3,12 +3,12 @@ import {
     VARP_MASTER_VOLUME,
     VARP_MUSIC_VOLUME,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../../shared/vars";
+} from "../../common/vars";
 import { setOsrsInterfaceScalingPercent } from "../../ui/UiScale";
 import type { GameRenderer } from "../GameRenderer";
 import type { MusicSystem } from "../audio/MusicSystem";
 import type { SoundEffectSystem } from "../audio/SoundEffectSystem";
-import { clamp } from "../../util/MathUtil";
+import { clamp } from "../../common/utils/MathUtil";
 
 export type AudioVarpControllerDeps = {
     getMusicSystem: () => MusicSystem | undefined;

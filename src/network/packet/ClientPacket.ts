@@ -1,10 +1,10 @@
 /**
  * ClientPacket - Re-exports shared packet definitions for client use
  *
- * All packet IDs are now defined in src/shared/network/ClientPacketId.ts
+ * All packet IDs are now defined in src/common/network/ClientPacketId.ts
  * to ensure client and server stay in sync.
  */
-import { ClientPacketId } from "../../shared/network/ClientPacketId";
+import { ClientPacketId } from "../../common/network/ClientPacketId";
 
 export {
     ClientPacketId,
@@ -12,7 +12,7 @@ export {
     getPacketLength,
     isVariableLength,
     isVariableShort,
-} from "../../shared/network/ClientPacketId";
+} from "../../common/network/ClientPacketId";
 
 /**
  * Semantic packet type aliases for clearer code

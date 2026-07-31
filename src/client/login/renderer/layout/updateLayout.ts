@@ -1,4 +1,4 @@
-import { isMobileMode } from "../../../../util/DeviceUtil";
+import { isMobileMode } from "../../../../common/utils/DeviceUtil";
 import type { LoginRendererHost } from "../host";
 import { computeLayoutConfig, getMobileKeyboardFocusTransform } from "./config";
 

@@ -4,7 +4,7 @@ import type { SeqTypeLoader } from "../../rs/config/seqtype/SeqTypeLoader";
 import type { SeqFrameLoader } from "../../rs/model/seq/SeqFrameLoader";
 import type { MapManager } from "../MapManager";
 import type { RenderDataWorkerPool } from "../worker/RenderDataWorkerPool";
-import type { NpcInstance } from "../webgl/npc/NpcRenderTemplate";
+import type { NpcInstance } from "../../render/npc/NpcRenderTemplate";
 
 export type NpcInstanceFlushControllerDeps = {
     getRenderer: () => any;

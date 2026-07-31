@@ -8,8 +8,8 @@ import type { Script as Cs2Script } from "../../rs/cs2/Script";
 import { WorldMapArchiveRenderer } from "../../rs/map/WorldMapArchiveRenderer";
 import { WorldMapState } from "../../rs/map/WorldMapArea";
 import type { TextureLoader } from "../../rs/texture/TextureLoader";
-import type { SimpleMenuEntry } from "../../ui/menu/MenuState";
-import type { MinimapIcon } from "../webgl/loader/SdMapData";
+import type { SimpleMenuEntry } from "../../ui/menu/MenuEngine";
+import type { MinimapIcon } from "../../render/loader/SdMapData";
 import {
     applyPendingWorldMapDrag,
     handleWorldMapDragInput,

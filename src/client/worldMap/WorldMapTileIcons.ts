@@ -1,4 +1,4 @@
-import type { MinimapIcon } from "../webgl/loader/SdMapData";
+import type { MinimapIcon } from "../../render/loader/SdMapData";
 import { unpackWorldMapCoord } from "../../rs/map/WorldMapArea";
 import { getWorldMapImageKey, type WorldMapImageDeps } from "./WorldMapImageCache";
 import type { WorldMapStateHolder } from "./WorldMapTypes";

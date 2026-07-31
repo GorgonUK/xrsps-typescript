@@ -1,4 +1,4 @@
-import { toSigned16bit } from "../../../util/MathUtil";
+import { toSigned16bit } from "../../../common/utils/MathUtil";
 import { CacheInfo } from "../../cache/CacheInfo";
 import { ByteBuffer } from "../../io/ByteBuffer";
 import { ParamsMap, Type } from "../Type";

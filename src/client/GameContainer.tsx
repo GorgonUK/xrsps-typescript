@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { RenderStatsOverlay } from "../components/renderer/RenderStatsOverlay";
-import { OsrsLoadingBar } from "../components/rs/loading/OsrsLoadingBar";
+import { RenderStatsOverlay } from "../components/RenderStatsOverlay";
+import { OsrsLoadingBar } from "../components/OsrsLoadingBar";
 // Legacy CSS menu and React minimap/orbs removed in favor of widget-based rendering
 import { subscribeChatMessages, subscribeHandshake } from "../network/ServerConnection";
 import { DownloadProgress } from "../rs/cache/CacheFiles";
 import { Canvas } from "../ui/Canvas";
-import { formatBytes } from "../util/BytesUtil";
-import { isIos, isMobileMode } from "../util/DeviceUtil";
+import { formatBytes } from "../common/utils/BytesUtil";
+import { isIos, isMobileMode } from "../common/utils/DeviceUtil";
 import { DebugControls } from "./DebugControls";
 import "./GameContainer.css";
 import { GameRenderer } from "./GameRenderer";

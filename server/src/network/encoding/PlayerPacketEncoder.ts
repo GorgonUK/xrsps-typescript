@@ -10,7 +10,7 @@ import {
     MovementDirection,
     deltaToRunDirection,
     directionToDelta,
-} from "../../../../src/shared/Direction";
+} from "../../../../src/common/Direction";
 import type { ServerServices } from "../../game/ServerServices";
 import {
     type HitsplatSourceType,

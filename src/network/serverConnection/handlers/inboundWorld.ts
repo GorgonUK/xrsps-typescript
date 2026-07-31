@@ -8,7 +8,7 @@ import {
     VARP_OPTION_ATTACK_PRIORITY_NPC,
     VARP_OPTION_ATTACK_PRIORITY_PLAYER,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../../../shared/vars";
+} from "../../../common/vars";
 import { send } from "../connection/send";
 import { emitCollectionLog, emitInventory } from "../domain/inventory";
 import { handleShopPayload } from "../domain/shop";

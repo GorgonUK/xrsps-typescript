@@ -3,11 +3,11 @@ import {
     PLANE_COUNT,
     deriveRegionsFromCenter,
     deriveRegionsFromTemplates,
-} from "../../../src/shared/instance/InstanceTypes";
+} from "../../../src/common/instance/InstanceTypes";
 import type {
     RebuildWorldEntityPayload,
     WorldEntityBuildArea,
-} from "../../../src/shared/worldentity/WorldEntityTypes";
+} from "../../../src/common/worldentity/WorldEntityTypes";
 import type { CacheEnv } from "./CacheEnv";
 
 export interface RebuildRegionPayload {

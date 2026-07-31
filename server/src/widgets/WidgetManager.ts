@@ -1,5 +1,5 @@
 import { logger } from "../utils/logger";
-import type { QuestListWidgetGroup } from "../../../src/shared/ui/questList";
+import type { QuestListWidgetGroup } from "../../../src/common/ui/questList";
 import {
     ContainerChildIds,
     type DesktopInterfaceOptions,

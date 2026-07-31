@@ -4,8 +4,8 @@ import {
     ACCOUNT_SUMMARY_PLAYTIME_CHILD_INDEX,
     SCRIPT_ACCOUNT_SUMMARY_SET_TIME_ID,
     buildAccountSummarySetTimeScriptArgs,
-} from "../../../../src/shared/ui/accountSummary";
-import { VARBIT_ACCOUNT_SUMMARY_DISPLAY_PLAYTIME } from "../../../../src/shared/vars";
+} from "../../../../src/common/ui/accountSummary";
+import { VARBIT_ACCOUNT_SUMMARY_DISPLAY_PLAYTIME } from "../../../../src/common/vars";
 import {
     type IScriptRegistry,
     type ScriptServices,

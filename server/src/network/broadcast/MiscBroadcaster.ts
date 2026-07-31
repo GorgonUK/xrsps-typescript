@@ -1,7 +1,7 @@
 import type { WebSocket } from "ws";
 
-import type { ProjectileLaunch } from "../../../../src/shared/projectiles/ProjectileLaunch";
-import { adjustProjectileLaunchesForElapsedCycles } from "../../../../src/shared/projectiles/projectileDelivery";
+import type { ProjectileLaunch } from "../../../../src/common/projectiles/ProjectileLaunch";
+import { adjustProjectileLaunchesForElapsedCycles } from "../../../../src/common/projectiles/projectileDelivery";
 import type { TickFrame } from "../../game/tick/TickPhaseOrchestrator";
 import { encodeMessage } from "../messages";
 import type { BroadcastContext, BroadcastDomain } from "./BroadcastDomain";

@@ -4,7 +4,7 @@ import path from "path";
 import { BasTypeLoader } from "../../../src/rs/config/bastype/BasTypeLoader";
 import { NpcType } from "../../../src/rs/config/npctype/NpcType";
 import { NpcTypeLoader } from "../../../src/rs/config/npctype/NpcTypeLoader";
-import { DIRECTION_TO_ORIENTATION } from "../../../src/shared/Direction";
+import { DIRECTION_TO_ORIENTATION } from "../../../src/common/Direction";
 import {
     getNpcAggressionMetadata,
     getNpcCombatStats,

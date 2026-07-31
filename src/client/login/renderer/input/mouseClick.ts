@@ -23,7 +23,7 @@ import {
     isButtonHit,
 } from "./mouseHandlers";
 
-export function handleServerListClick(host: LoginRendererHost, state: LoginState, x: number, y: number) {
+export function handleServerListClick(host: LoginRendererHost, state: LoginState, x: number, y: number): LoginAction | undefined {
 
         const panelW = 350;
         const contentH = host.probed ? host.serverList.length * 24 : 30;
@@ -49,7 +49,7 @@ export function handleServerListClick(host: LoginRendererHost, state: LoginState
             for (let i = 0; i < host.serverList.length; i++) {
                 const ry = rowStartY + i * rowH;
                 if (x >= panelX + 4 && x <= panelX + panelW - 4 && y >= ry && y < ry + rowH) {
-                    return { type: "select_server", index: i };
+                    return { type: "select_server", index: i } as const;
                 }
             }
         }
@@ -64,7 +64,7 @@ export function handleServerListClick(host: LoginRendererHost, state: LoginState
     
 }
 
-export function handleWorldSelectClick(host: LoginRendererHost, state: LoginState, x: number, y: number) {
+export function handleWorldSelectClick(host: LoginRendererHost, state: LoginState, x: number, y: number): LoginAction | undefined {
 
         // Mobile list mode: use tap-to-select
         if (host.layoutConfig.worldSelectListMode) {
@@ -86,7 +86,7 @@ export function handleWorldSelectClick(host: LoginRendererHost, state: LoginStat
                 const world = host.currentSortedWorlds[index];
                 if (world.population !== -1) {
                     // Can't select offline worlds
-                    return { type: "select_world", worldId: world.id };
+                    return { type: "select_world", worldId: world.id } as const;
                 }
             }
 
@@ -102,19 +102,19 @@ export function handleWorldSelectClick(host: LoginRendererHost, state: LoginStat
         if (y < 23 && host.worldSelectArrowSprites) {
             // World column sort
             if (x >= host.xPadding + 280 && x <= host.xPadding + 320) {
-                return { type: "world_sort", column: 0 };
+                return { type: "world_sort", column: 0 } as const;
             }
             // Players column sort
             if (x >= host.xPadding + 390 && x <= host.xPadding + 430) {
-                return { type: "world_sort", column: 1 };
+                return { type: "world_sort", column: 1 } as const;
             }
             // Location column sort
             if (x >= host.xPadding + 500 && x <= host.xPadding + 540) {
-                return { type: "world_sort", column: 2 };
+                return { type: "world_sort", column: 2 } as const;
             }
             // Type column sort
             if (x >= host.xPadding + 610 && x <= host.xPadding + 650) {
-                return { type: "world_sort", column: 3 };
+                return { type: "world_sort", column: 3 } as const;
             }
         }
 

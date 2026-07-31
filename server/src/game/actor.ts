@@ -4,7 +4,7 @@ import {
     deltaToDirection,
     deltaToRunDirection,
     directionToDelta,
-} from "../../../src/shared/Direction";
+} from "../../../src/common/Direction";
 import { logger } from "../utils/logger";
 import {
     type InteractionIndex,

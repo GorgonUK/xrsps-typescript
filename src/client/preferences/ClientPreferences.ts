@@ -3,7 +3,7 @@ import {
     readLocalStorageJson,
     removeLocalStorageItem,
     writeLocalStorageJson,
-} from "../../util/localStorage";
+} from "../../common/utils/localStorage";
 
 const PREFS_KEY = "osrs:clientPreferences";
 const PREFS_VERSION = 1;

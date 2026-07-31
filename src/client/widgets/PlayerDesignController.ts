@@ -9,7 +9,7 @@ import type { ModelLoader } from "../../rs/model/ModelLoader";
 import type { SeqFrameLoader } from "../../rs/model/seq/SeqFrameLoader";
 import type { SkeletalSeqLoader } from "../../rs/model/skeletal/SkeletalSeqLoader";
 import type { TextureLoader } from "../../rs/texture/TextureLoader";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import { sendPlayerDesignConfirm } from "../../network/ServerConnection";
 import type { PlayerEcs } from "../ecs/PlayerEcs";
 

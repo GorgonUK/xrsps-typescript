@@ -7,8 +7,8 @@ import {
 } from "../../../../src/rs/prayer/prayers";
 import type { SkillId } from "../../../../src/rs/skill/skills";
 import { faceAngleRs } from "../../../../src/rs/utils/rotation";
-import { SIDE_JOURNAL_GROUP_ID } from "../../../../src/shared/ui/sideJournal";
-import { VARBIT_XPDROPS_ENABLED } from "../../../../src/shared/vars";
+import { SIDE_JOURNAL_GROUP_ID } from "../../../../src/common/ui/sideJournal";
+import { VARBIT_XPDROPS_ENABLED } from "../../../../src/common/vars";
 import type { MusicCatalogService } from "../../audio/MusicCatalogService";
 import { getItemDefinition, loadItemDefinitions } from "../../data/items";
 import type { WorldEntityInfoEncoder } from "../../network/encoding/WorldEntityInfoEncoder";
@@ -152,7 +152,7 @@ export interface ScriptServiceAdapterDeps {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;
@@ -169,7 +169,7 @@ export interface ScriptServiceAdapterDeps {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;

@@ -85,7 +85,7 @@ export function initServerConnection(url: string = DEFAULT_URL): void {
                 // Send handshake request with client type (mobile=1, desktop=0)
                 // Server uses this to decide which root interface to send (601 mobile, 161 desktop)
                 // isMobileMode combines actual touch detection + ?mobile=1 URL param override
-                const { isMobileMode } = require("../../../util/DeviceUtil");
+                const { isMobileMode } = require("../../../common/utils/DeviceUtil");
                 const clientType = isMobileMode ? 1 : 0;
                 // Send a default name so chat scripts work (server echoes it back)
                 send({ type: "handshake", payload: { clientType, name: "Player" } });

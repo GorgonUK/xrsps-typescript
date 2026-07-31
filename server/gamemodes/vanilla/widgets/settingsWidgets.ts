@@ -2,7 +2,7 @@ import {
     VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE,
     VARP_OPTION_ATTACK_PRIORITY_NPC,
     VARP_OPTION_ATTACK_PRIORITY_PLAYER,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import {
     type IScriptRegistry,
     type ScriptServices,

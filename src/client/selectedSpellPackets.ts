@@ -1,5 +1,5 @@
 import { ClientPacket, type PacketBufferNode, createPacket } from "../network/packet";
-import type { NormalizedSelectedSpellPayload } from "../shared/spells/selectedSpellPayload";
+import type { NormalizedSelectedSpellPayload } from "../common/spells/selectedSpellPayload";
 
 type SelectedSpellPacketSelection = Pick<
     NormalizedSelectedSpellPayload,

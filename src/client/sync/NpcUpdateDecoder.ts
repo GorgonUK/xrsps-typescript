@@ -1,4 +1,4 @@
-import { DIRECTION_TO_ORIENTATION } from "../../shared/Direction";
+import { DIRECTION_TO_ORIENTATION } from "../../common/Direction";
 import { BitStream } from "./BitStream";
 import type { HealthBarUpdate, HitsplatUpdate } from "./PlayerSyncTypes";
 

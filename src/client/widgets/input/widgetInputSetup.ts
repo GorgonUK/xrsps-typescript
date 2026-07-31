@@ -1,7 +1,7 @@
-import { collectWidgetsAtPointAcrossRoots } from "../../../ui/widgets/menu/utils";
+import { collectWidgetsAtPointAcrossRoots } from "../../../widgets/menu/utils";
 import type { WidgetInputControllerDeps, WidgetInputFrame, WidgetInputState } from "./widgetInputTypes";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import type { InputManager } from "../../InputManager";
 
 export function buildWidgetInputFrame(
@@ -19,7 +19,7 @@ export function buildWidgetInputFrame(
     const allRoots: any[] = [];
     const baseRoots = widgetManager.getAllGroupRoots(widgetManager.rootInterface);
     allRoots.push(...baseRoots);
-    if (allRoots.length === 0) return;
+    if (allRoots.length === 0) return null;
 
     // Input picking treats widgets as visible unless explicitly hidden.
     const visibleMap = new Map<number, boolean>();

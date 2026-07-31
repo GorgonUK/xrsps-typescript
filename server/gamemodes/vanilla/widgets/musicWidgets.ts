@@ -2,8 +2,8 @@ import {
     MUSIC_GROUP_ID,
     MUSIC_JUKEBOX_CHILD_ID,
     MUSIC_SKIP_CHILD_ID,
-} from "../../../../src/shared/ui/music";
-import { VARP_MUSICPLAY } from "../../../../src/shared/vars";
+} from "../../../../src/common/ui/music";
+import { VARP_MUSICPLAY } from "../../../../src/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import { type IScriptRegistry, type ScriptServices } from "../../../src/game/scripts/types";
 

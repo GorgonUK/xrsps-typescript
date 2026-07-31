@@ -1,5 +1,5 @@
-import { getDragDepth } from "../../../ui/widgets/WidgetFlags";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import { getDragDepth } from "../../../widgets/WidgetFlags";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 
 /** Check if a widget UID belongs to an inventory container (type 2). */
 export function isInventoryContainer(

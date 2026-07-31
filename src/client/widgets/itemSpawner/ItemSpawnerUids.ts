@@ -8,7 +8,7 @@ import {
     ITEM_SPAWNER_MODAL_COMPONENT_SLOT_ICON_START,
     ITEM_SPAWNER_MODAL_COMPONENT_SUMMARY,
     ITEM_SPAWNER_MODAL_GROUP_ID,
-} from "../../../shared/ui/widgets";
+} from "../../../common/ui/widgets";
 
 export function itemSpawnerWidgetUid(componentId: number): number {
     return ((ITEM_SPAWNER_MODAL_GROUP_ID & 0xffff) << 16) | (componentId & 0xffff);

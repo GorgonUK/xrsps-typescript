@@ -1,9 +1,9 @@
 import type { WidgetActionClientPayload } from "../../network/ServerConnection";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import {
     getWidgetTargetLabel,
     sanitizeText,
-} from "../../ui/widgets/menu/utils";
+} from "../../widgets/menu/utils";
 
 export type WidgetActionEvent = {
     widget?: any;

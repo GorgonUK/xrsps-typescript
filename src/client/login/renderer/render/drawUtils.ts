@@ -1,5 +1,5 @@
-import type { BitmapFont } from "../../../rs/font/BitmapFont";
-import type { IndexedSprite } from "../../../rs/sprite/IndexedSprite";
+import type { BitmapFont } from "../../../../rs/font/BitmapFont";
+import type { IndexedSprite } from "../../../../rs/sprite/IndexedSprite";
 import type { LoginRendererHost, RenderContext } from "../host";
 import { withContentTransform } from "../layout/geometry";
 

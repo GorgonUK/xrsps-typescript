@@ -2,7 +2,7 @@ import {
     MAP_FLAGS_LEAGUE_WORLD,
     VARBIT_LEAGUE_TYPE,
     VARP_MAP_FLAGS_CACHED,
-} from "../../../src/shared/vars";
+} from "../../../src/common/vars";
 import type { PlayerState } from "../../src/game/player";
 
 export interface PlayerWorldRulesState {

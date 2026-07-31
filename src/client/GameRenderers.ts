@@ -1,6 +1,6 @@
 import { GameRenderer } from "./GameRenderer";
 import { OsrsClient } from "./OsrsClient";
-import { WebGLOsrsRenderer } from "./webgl/WebGLOsrsRenderer";
+import { WebGLOsrsRenderer } from "../render/WebGLOsrsRenderer";
 
 export type OsrsRendererType = "webgl";
 export const WEBGL: OsrsRendererType = "webgl";

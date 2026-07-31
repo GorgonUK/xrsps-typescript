@@ -15,19 +15,19 @@ import {
     isCacheManifestComplete,
     removeCacheManifestEntry,
     writeCacheManifestEntry,
-} from "../util/CacheManifest";
+} from "../common/utils/CacheManifest";
 import {
     checkMobile,
     isIos,
     isStandaloneDisplayMode,
     isTouchDevice,
-} from "../util/DeviceUtil";
+} from "../common/utils/DeviceUtil";
 import {
     describeStorageShortfall,
     ensurePersistentStorage,
     getStorageBudget,
     hasEnoughStorage,
-} from "../util/StorageUtil";
+} from "../common/utils/StorageUtil";
 import { fetchCacheList, loadCacheFiles } from "./Caches";
 import { GameContainer } from "./GameContainer";
 import { getAvailableRenderers } from "./GameRenderers";

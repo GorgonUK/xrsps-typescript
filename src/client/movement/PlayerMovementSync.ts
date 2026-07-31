@@ -6,7 +6,7 @@ import {
     deltaToDirection,
     directionToDelta,
     directionToOrientation,
-} from "../../shared/Direction";
+} from "../../common/Direction";
 import { PlayerAnimController } from "../PlayerAnimController";
 import type { NpcEcs } from "../ecs/NpcEcs";
 import { PlayerEcs } from "../ecs/PlayerEcs";

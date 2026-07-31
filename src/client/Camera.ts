@@ -1,7 +1,7 @@
 import { mat4, vec3 } from "gl-matrix";
 
 import { DEGREES_TO_RADIANS, RS_TO_RADIANS } from "../rs/MathConstants";
-import { clamp } from "../util/MathUtil";
+import { clamp } from "../common/utils/MathUtil";
 import { Frustum } from "./Frustum";
 
 export interface CameraView {

@@ -1,4 +1,4 @@
-import { MAP_FLAGS_LEAGUE_WORLD, VARP_MAP_FLAGS_CACHED } from "../../../src/shared/vars";
+import { MAP_FLAGS_LEAGUE_WORLD, VARP_MAP_FLAGS_CACHED } from "../../../src/common/vars";
 
 const ACCOUNT_SUMMARY_ACCOUNT_AGE_WORLD_FLAG = 1 << 11;
 

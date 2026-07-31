@@ -1,6 +1,6 @@
 import { IndexType } from "../../../rs/cache/IndexType";
-import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../../../shared/ui/widgets";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../../../common/ui/widgets";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import {
     ITEM_SPAWNER_SCROLLBAR_GRAPHICS,
     ITEM_SPAWNER_SCROLLBAR_INIT_SCRIPT_ID,

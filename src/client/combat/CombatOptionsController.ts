@@ -7,7 +7,7 @@ import {
     prayerSetToBitmask,
 } from "../../rs/prayer/prayers";
 import type { VarManager } from "../../rs/config/vartype/VarManager";
-import { VARP_ATTACK_STYLE, VARP_OPTION_RUN } from "../../shared/vars";
+import { VARP_ATTACK_STYLE, VARP_OPTION_RUN } from "../../common/vars";
 
 export type CombatOptionsControllerDeps = {
     getVarManager: () => VarManager | undefined;

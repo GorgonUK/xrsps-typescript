@@ -11,7 +11,7 @@
  * - Animation frame advancement
  */
 import { decodeInteractionIndex } from "../../rs/interaction/InteractionIndex";
-import { deltaToDirection, directionToOrientation } from "../../shared/Direction";
+import { deltaToDirection, directionToOrientation } from "../../common/Direction";
 import { computeFacingRotation } from "../utils/rotation";
 
 /**

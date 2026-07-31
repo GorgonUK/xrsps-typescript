@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { Renderer } from "../components/renderer/Renderer";
+import { Renderer } from "../client/render/Renderer";
 
 export interface CanvasProps {
     renderer: Renderer;

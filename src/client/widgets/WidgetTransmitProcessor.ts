@@ -1,6 +1,6 @@
 import type { Cs2Vm, ScriptEvent } from "../../rs/cs2/Cs2Vm";
 import { createScriptEvent } from "../../rs/cs2/Cs2Vm";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import type { TransmitCycles } from "../TransmitCycles";
 import {
     isTransmitProcessingNeeded,

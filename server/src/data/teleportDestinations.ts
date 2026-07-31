@@ -14,7 +14,7 @@ import {
     VARP_PLAGUE_CITY,
     VARP_PRIEST_IN_PERIL,
     VARP_WATCHTOWER,
-} from "../../../src/shared/vars";
+} from "../../../src/common/vars";
 import type { SpellUnlockRequirement } from "../game/spells/SpellDataProvider";
 import { getSpellWidgetId } from "./spellWidgetLoader";
 

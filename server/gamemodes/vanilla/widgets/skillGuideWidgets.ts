@@ -1,7 +1,7 @@
 import {
     VARBIT_SKILL_GUIDE_SKILL,
     VARBIT_SKILL_GUIDE_SUBSECTION,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import {
     BaseComponentUids,
     type IScriptRegistry,

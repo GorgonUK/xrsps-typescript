@@ -7,7 +7,7 @@
 import {
     CLIENT_PACKET_LENGTHS,
     ClientPacketId,
-} from "../../../../src/shared/network/ClientPacketId";
+} from "../../../../src/common/network/ClientPacketId";
 import { logger } from "../../utils/logger";
 import type { ClientToServer } from "../messages";
 import { ServerPacketBuffer } from "./ServerPacketBuffer";

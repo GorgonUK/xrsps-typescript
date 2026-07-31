@@ -5,7 +5,7 @@ import {
     getCollectionLogEnumCountOverride,
     getCollectionLogEnumValueOverride,
     getCollectionLogStructParamOverride,
-} from "../../../shared/collectionlog/custom";
+} from "../../../common/collectionlog/custom";
 import {
     getCustomEnumCountOverride,
     getCustomEnumValueOverride,
@@ -13,7 +13,7 @@ import {
     getLeagueTaskStructParam,
     getRelicOrMasteryStructParam,
     getReplacedChallengeStructIds,
-} from "../../../shared/gamemode/GamemodeContentStore";
+} from "../../../common/gamemode/GamemodeContentStore";
 import { Opcodes } from "../Opcodes";
 import type { HandlerMap } from "./HandlerTypes";
 

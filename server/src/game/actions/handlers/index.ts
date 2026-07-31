@@ -55,7 +55,7 @@ export {
     type LevelUpPopup,
     type TickFrame,
 } from "./EffectDispatcher";
-export type { ProjectileLaunch } from "../../../../../src/shared/projectiles/ProjectileLaunch";
+export type { ProjectileLaunch } from "../../../../../src/common/projectiles/ProjectileLaunch";
 
 export {
     WidgetDialogHandler,

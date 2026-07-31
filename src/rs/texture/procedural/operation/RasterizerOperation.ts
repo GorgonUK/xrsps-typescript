@@ -1,4 +1,4 @@
-import { clamp } from "../../../../util/MathUtil";
+import { clamp } from "../../../../common/utils/MathUtil";
 import { ByteBuffer } from "../../../io/ByteBuffer";
 import { ArrayUtils } from "../../../util/ArrayUtils";
 import { TextureGenerator } from "../TextureGenerator";

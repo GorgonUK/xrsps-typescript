@@ -29,11 +29,11 @@ import { SceneBuilder } from "../../rs/scene/SceneBuilder";
 import { IndexedSprite } from "../../rs/sprite/IndexedSprite";
 import { SpriteLoader } from "../../rs/sprite/SpriteLoader";
 import { TextureLoader } from "../../rs/texture/TextureLoader";
-import { Hasher } from "../../util/Hasher";
+import { Hasher } from "../../common/utils/Hasher";
 import { LoadedCache } from "../Caches";
-import { NpcGeometryData } from "../webgl/loader/NpcGeometryData";
-import { SdMapDataLoader } from "../webgl/loader/SdMapDataLoader";
-import type { NpcInstance } from "../webgl/npc/NpcRenderTemplate";
+import { NpcGeometryData } from "../../render/loader/NpcGeometryData";
+import { SdMapDataLoader } from "../../render/loader/SdMapDataLoader";
+import type { NpcInstance } from "../../render/npc/NpcRenderTemplate";
 import { RenderDataLoader, renderDataLoaderSerializer } from "./RenderDataLoader";
 
 registerSerializer(renderDataLoaderSerializer);

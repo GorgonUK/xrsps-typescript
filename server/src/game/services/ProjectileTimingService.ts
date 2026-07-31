@@ -1,5 +1,5 @@
-import type { ProjectileLaunch } from "../../../../src/shared/projectiles/ProjectileLaunch";
-import { PLAYER_CHEST_OFFSET_UNITS } from "../../../../src/shared/projectiles/projectileHeights";
+import type { ProjectileLaunch } from "../../../../src/common/projectiles/ProjectileLaunch";
+import { PLAYER_CHEST_OFFSET_UNITS } from "../../../../src/common/projectiles/projectileHeights";
 import type { PathService } from "../../pathfinding/PathService";
 import type { ProjectileParams } from "../data/ProjectileParamsProvider";
 import type { NpcState } from "../npc";

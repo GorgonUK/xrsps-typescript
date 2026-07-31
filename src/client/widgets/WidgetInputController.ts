@@ -1,5 +1,5 @@
 import type { InputManager } from "../InputManager";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import type { WidgetInteractionController } from "./WidgetInteractionController";
 import { buildWidgetInputFrame } from "./input/widgetInputSetup";
 import { shouldSkipWidgetClickInput } from "./input/widgetClickGuard";
@@ -72,6 +72,7 @@ export class WidgetInputController {
             this.deps,
             input,
             widgetManager,
+            widgetInteraction,
         );
 
         processWidgetClickInput(

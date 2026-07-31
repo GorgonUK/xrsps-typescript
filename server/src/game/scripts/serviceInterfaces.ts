@@ -302,7 +302,7 @@ export interface SailingServiceFacade {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;
@@ -319,7 +319,7 @@ export interface SailingServiceFacade {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../src/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;

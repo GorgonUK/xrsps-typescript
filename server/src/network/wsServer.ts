@@ -12,9 +12,9 @@ import { ArchiveHealthBarDefinitionLoader } from "../../../src/rs/config/healthb
 import type { LocTypeLoader } from "../../../src/rs/config/loctype/LocTypeLoader";
 import type { NpcTypeLoader } from "../../../src/rs/config/npctype/NpcTypeLoader";
 import type { ObjTypeLoader } from "../../../src/rs/config/objtype/ObjTypeLoader";
-import { ACCOUNT_SUMMARY_GROUP_ID } from "../../../src/shared/ui/accountSummary";
-import { MUSIC_GROUP_ID } from "../../../src/shared/ui/music";
-import { VARP_FOLLOWER_INDEX } from "../../../src/shared/vars";
+import { ACCOUNT_SUMMARY_GROUP_ID } from "../../../src/common/ui/accountSummary";
+import { MUSIC_GROUP_ID } from "../../../src/common/ui/music";
+import { VARP_FOLLOWER_INDEX } from "../../../src/common/vars";
 import { MusicCatalogService } from "../audio/MusicCatalogService";
 import { MusicRegionService } from "../audio/MusicRegionService";
 import { MusicUnlockService } from "../audio/MusicUnlockService";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { checkMobile, shouldFreezeViewportForVirtualKeyboard } from "../util/DeviceUtil";
+import { checkMobile, shouldFreezeViewportForVirtualKeyboard } from "../common/utils/DeviceUtil";
 
 interface MobileLandscapeLockState {
     enabled: boolean;

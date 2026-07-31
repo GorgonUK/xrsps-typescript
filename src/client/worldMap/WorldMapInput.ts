@@ -1,7 +1,7 @@
 import { ClientPacketId, createPacket, queuePacket } from "../../network/packet";
 import { isServerConnected } from "../../network/ServerConnection";
 import { packWorldMapCoord } from "../../rs/map/WorldMapArea";
-import { getVisibleWidgetSurfaceReason } from "../../ui/gl/widgets-gl";
+import { getVisibleWidgetSurfaceReason } from "../../widgets/gl/widgets-gl";
 import type { WorldMapStateHolder } from "./WorldMapTypes";
 
 export type WorldMapInputDeps = {

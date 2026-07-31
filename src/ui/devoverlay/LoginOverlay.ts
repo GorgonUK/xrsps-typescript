@@ -10,7 +10,7 @@ import {
 
 import type { OsrsClient } from "../../client/OsrsClient";
 import { GameState } from "../../client/login";
-import { getCanvasCssSize } from "../../util/DeviceUtil";
+import { getCanvasCssSize } from "../../common/utils/DeviceUtil";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 /**

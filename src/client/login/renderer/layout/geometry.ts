@@ -105,7 +105,7 @@ export function getWelcomeLayout(host: LoginRendererHost) {
     
 }
 
-function toContentPoint(host: LoginRendererHost, layoutX: number, layoutY: number) {
+export function toContentPoint(host: LoginRendererHost, layoutX: number, layoutY: number) {
 
         const scale = host.contentScale > 0 ? host.contentScale : 1;
         return {

@@ -19,8 +19,8 @@ import {
     rotateObjectChunkX,
     rotateObjectChunkY,
     unpackTemplateChunk,
-} from "../src/shared/instance/InstanceTypes";
-import { SERVER_PACKET_LENGTHS, ServerPacketId } from "../src/shared/packets/ServerPacketId";
+} from "../src/common/instance/InstanceTypes";
+import { SERVER_PACKET_LENGTHS, ServerPacketId } from "../src/common/packets/ServerPacketId";
 
 // ============================================================================
 // Minimal test harness
@@ -573,7 +573,7 @@ describe("REBUILD_NORMAL client dispatch", () => {
     it("WebGLOsrsRenderer has clearInstance method", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../src/client/webgl/WebGLOsrsRenderer.ts"),
+            require("path").resolve(__dirname, "../src/render/WebGLOsrsRenderer.ts"),
             "utf-8",
         );
 

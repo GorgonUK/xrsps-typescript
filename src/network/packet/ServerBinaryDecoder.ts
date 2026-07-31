@@ -9,10 +9,10 @@ import {
     PLANE_COUNT,
     deriveRegionsFromCenter,
     deriveRegionsFromTemplates,
-} from "../../shared/instance/InstanceTypes";
-import { SERVER_PACKET_LENGTHS, ServerPacketId } from "../../shared/packets/ServerPacketId";
-import type { ProjectileLaunch } from "../../shared/projectiles/ProjectileLaunch";
-import type { WorldEntityBuildArea } from "../../shared/worldentity/WorldEntityTypes";
+} from "../../common/instance/InstanceTypes";
+import { SERVER_PACKET_LENGTHS, ServerPacketId } from "../../common/packets/ServerPacketId";
+import type { ProjectileLaunch } from "../../common/projectiles/ProjectileLaunch";
+import type { WorldEntityBuildArea } from "../../common/worldentity/WorldEntityTypes";
 
 /**
  * Binary packet buffer for client decoding

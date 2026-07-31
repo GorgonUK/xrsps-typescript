@@ -1,9 +1,9 @@
 import { createScriptEvent } from "../../rs/cs2/Cs2Vm";
 import type { Cs2Vm } from "../../rs/cs2/Cs2Vm";
 import type { VarManager } from "../../rs/config/vartype/VarManager";
-import { markWidgetInteractionDirty } from "../../ui/widgets/WidgetInteraction";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
-import { isMobileMode } from "../../util/DeviceUtil";
+import { markWidgetInteractionDirty } from "../../widgets/WidgetInteraction";
+import type { WidgetManager } from "../../widgets/WidgetManager";
+import { isMobileMode } from "../../common/utils/DeviceUtil";
 
 const CHATBOX_GROUP_ID = 162;
 /** Component 162:57 — the chat input line written by [proc,chat_promptinput]. */

@@ -1,6 +1,6 @@
 import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
 import { SkillId } from "../../../../src/rs/skill/skills";
-import { VARP_LAST_HOME_TELEPORT } from "../../../../src/shared/vars";
+import { VARP_LAST_HOME_TELEPORT } from "../../../../src/common/vars";
 import { SpellbookName } from "../../../src/data/spellWidgetLoader";
 import { RUNE_IDS } from "../../../src/game/data/RuneDataProvider";
 import type { PlayerState } from "../../../src/game/player";

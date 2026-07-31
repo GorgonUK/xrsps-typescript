@@ -1,4 +1,4 @@
-import type { MinimapIcon } from "../webgl/loader/SdMapData";
+import type { MinimapIcon } from "../../render/loader/SdMapData";
 import type { WorldMapState } from "../../rs/map/WorldMapArea";
 
 export const WORLD_MAP_ELEMENT_TOOLTIP_SCRIPT_ID = 7325;

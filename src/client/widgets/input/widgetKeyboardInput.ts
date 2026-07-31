@@ -1,9 +1,9 @@
 import { chatHistory } from "../../../rs/cs2/ChatHistory";
 import type { ScriptEvent } from "../../../rs/cs2/Cs2Vm";
-import { collectWidgetsWithKeyHandlers } from "../../../ui/widgets/menu/utils";
+import { collectWidgetsWithKeyHandlers } from "../../../widgets/menu/utils";
 import type { WidgetInputControllerDeps, WidgetInputFrame } from "./widgetInputTypes";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 
 export function processWidgetKeyboardInput(
     deps: WidgetInputControllerDeps,
@@ -65,7 +65,7 @@ export function processWidgetKeyboardInput(
                     ) {
                         const value = parseInt(deps.getCs2Vm().inputDialogString, 10) || 0;
                         console.log(`[InputDialog] Submitting value: ${value}`);
-                        deps.getCs2Vm().onInputDialogComplete("count", value);
+                        deps.getCs2Vm().onInputDialogComplete?.("count", value);
                     } else if (deps.getPendingInputDialogAction() || deps.getPendingTradeQuantityAction()) {
                         // No input but pending action - cancel
                         chatHistory.addMessage("game", "No amount entered.");

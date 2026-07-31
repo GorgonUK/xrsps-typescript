@@ -31,7 +31,7 @@ function loadSprites(spriteIndex: CacheIndex, name: string) {
     
 }
 
-export function loadLogoImage(host: LoginRendererHost) {
+export function loadLogoImage(host: LoginRendererHost): Promise<boolean> {
 
         if (host.logoImage && host.logoImageLoaded) {
             return Promise.resolve(true);

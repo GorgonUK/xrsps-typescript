@@ -1,4 +1,4 @@
-import { nextPow2 } from "../../util/MathUtil";
+import { nextPow2 } from "../../common/utils/MathUtil";
 import { HSL_RGB_MAP } from "../util/ColorUtil";
 import { Rasterizer2D } from "./Rasterizer2D";
 

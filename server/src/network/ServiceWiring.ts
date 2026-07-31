@@ -7,7 +7,7 @@ import { EquipmentSlot } from "../../../src/rs/config/player/Equipment";
 import {
     SIDE_JOURNAL_CONTENT_GROUP_BY_TAB,
     SIDE_JOURNAL_TAB_CONTAINER_UID,
-} from "../../../src/shared/ui/sideJournal";
+} from "../../../src/common/ui/sideJournal";
 import {
     VARBIT_SIDE_JOURNAL_TAB,
     VARP_ATTACK_STYLE,
@@ -16,7 +16,7 @@ import {
     VARP_OPTION_RUN,
     VARP_SIDE_JOURNAL_STATE,
     VARP_SPECIAL_ATTACK,
-} from "../../../src/shared/vars";
+} from "../../../src/common/vars";
 import type { ServerServices } from "../game/ServerServices";
 import { interruptForPlayerInput } from "../game/actions/playerInputInterrupt";
 import type { NpcSpawnConfig } from "../game/npc";

@@ -1,9 +1,9 @@
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import type {
     WidgetEventHandler,
     WidgetEventType,
     WidgetNode,
-} from "../../../ui/widgets/WidgetNode";
+} from "../../../widgets/WidgetNode";
 import type { TypeLoader } from "../../config/TypeLoader";
 import type { DbRepository } from "../../config/db/DbRepository";
 import type { EnumType } from "../../config/enumtype/EnumType";

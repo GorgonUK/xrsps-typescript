@@ -1,4 +1,4 @@
-import { getCanvasCssSize, isMobileMode, isTouchDevice } from "../util/DeviceUtil";
+import { getCanvasCssSize, isMobileMode, isTouchDevice } from "../common/utils/DeviceUtil";
 import { computeAutoScale, getUiScale, setUiScale } from "./UiScale";
 
 interface UiDiagWindow {

@@ -4,7 +4,7 @@ import { MusicBuffer } from "../../rs/audio/music/MusicBuffer";
 import { SoundTrack } from "../../rs/audio/music/SoundTrack";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
-import { copyArrayBufferLike, copyArrayBufferView } from "../../util/ArrayBufferUtil";
+import { copyArrayBufferLike, copyArrayBufferView } from "../../common/utils/ArrayBufferUtil";
 import { decodeOggVorbisToAudioBuffer, isOggVorbis } from "./VorbisWasm";
 import {
     addAudioContextResumeListeners,

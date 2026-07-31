@@ -21,7 +21,7 @@ import {
     canTargetNpc,
     canTargetObject,
     canTargetPlayer,
-} from "../../ui/widgets/WidgetFlags";
+} from "../../widgets/WidgetFlags";
 
 /**
  * Active spell state for menu building

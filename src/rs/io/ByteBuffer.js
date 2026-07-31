@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ByteBuffer = void 0;
-const FloatUtil_1 = require("../../util/FloatUtil");
+const FloatUtil_1 = require("../../common/utils/FloatUtil");
 class ByteBuffer {
     constructor(dataOrSize) {
         this.offset = 0;

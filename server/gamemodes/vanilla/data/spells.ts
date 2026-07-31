@@ -6,7 +6,7 @@ import { CacheSystem } from "../../../../src/rs/cache/CacheSystem";
 import { CombatCategoryConst as CombatCategory } from "../../../src/game/combat/WeaponDataProvider";
 import { getWeaponData } from "../../../src/game/combat/WeaponDataProvider";
 import { applyProjectileDefaults } from "../../../src/game/data/ProjectileParamsProvider";
-import { VARP_DESERT_TREASURE } from "../../../../src/shared/vars";
+import { VARP_DESERT_TREASURE } from "../../../../src/common/vars";
 import {
     type AutocastCompatibilityResult,
     type PoweredStaffSpellData,

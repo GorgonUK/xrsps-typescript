@@ -8,14 +8,14 @@ import { ClientPacketId, createPacket, queuePacket } from "../../network/packet"
 import type { Cs2Vm } from "../../rs/cs2/Cs2Vm";
 import type { VarManager } from "../../rs/config/vartype/VarManager";
 import type { Inventory } from "../../rs/inventory/Inventory";
-import { buildSelectedSpellPayload } from "../../shared/spells/selectedSpellPayload";
+import { buildSelectedSpellPayload } from "../../common/spells/selectedSpellPayload";
 import {
     INTERFACE_ACHIEVEMENT_DIARY_ID,
     INTERFACE_QUEST_LIST_ID,
     SIDE_JOURNAL_GROUP_ID,
-} from "../../shared/ui/sideJournal";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
-import { isWidgetUseTarget } from "../../ui/widgets/WidgetFlags";
+} from "../../common/ui/sideJournal";
+import type { WidgetManager } from "../../widgets/WidgetManager";
+import { isWidgetUseTarget } from "../../widgets/WidgetFlags";
 import { ClientState } from "../ClientState";
 import { createSelectedSpellOnWidgetPacket } from "../selectedSpellPackets";
 import type { WidgetActionEvent } from "./widgetActionPayload";

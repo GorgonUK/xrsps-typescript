@@ -14,7 +14,7 @@ import {
     ITEM_SPAWNER_MODAL_COMPONENT_TITLE,
     ITEM_SPAWNER_MODAL_GROUP_ID,
     ITEM_SPAWNER_MODAL_RESULT_SLOT_COUNT,
-} from "../../../src/shared/ui/widgets";
+} from "../../../src/common/ui/widgets";
 import type { PlayerState } from "../../src/game/player";
 import { CustomWidgetRegistry } from "../../src/game/scripts/CustomWidgetRegistry";
 import type {

@@ -1,14 +1,14 @@
 import { sendWidgetAction } from "../../../network/ServerConnection";
 import { ClientPacketId, createPacket, queuePacket } from "../../../network/packet";
 import type { ScriptEvent } from "../../../rs/cs2/Cs2Vm";
-import { shouldTransmitAction } from "../../../ui/widgets/WidgetFlags";
+import { shouldTransmitAction } from "../../../widgets/WidgetFlags";
 import {
     isPauseButtonWidget as isPauseButtonWidgetUtil,
     sanitizeText,
-} from "../../../ui/widgets/menu/utils";
+} from "../../../widgets/menu/utils";
 import { ClientState } from "../../ClientState";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import type { WidgetInputControllerDeps, WidgetInputFrame, WidgetInputState } from "./widgetInputTypes";
 import type { PrimaryWidgetAction } from "./widgetPrimaryAction";
 
@@ -170,9 +170,6 @@ export function processWidgetClickInput(
 
                             // Enter spell targeting mode (for combat spells that need a target)
                             ClientState.clearItemSelection();
-                            try {
-                                this.inventory?.setSelectedSlot?.(null);
-                            } catch {}
                             ClientState.isSpellSelected = true;
                             ClientState.selectedSpellWidget = spellSelection.widgetId;
                             ClientState.selectedSpellChildIndex = spellSelection.childIndex;

@@ -3,13 +3,13 @@ import {
     MAX_ACCOUNT_NAME_LENGTH,
     MAX_PASSWORD_LENGTH,
     MIN_PASSWORD_LENGTH,
-} from "../../shared/authentication";
+} from "../../common/authentication";
 import {
     getDefaultServerAddress,
     getDefaultServerName,
     getDefaultServerSecure,
 } from "../../config/clientEnv";
-import { isIosStandalonePwa } from "../../util/DeviceUtil";
+import { isIosStandalonePwa } from "../../common/utils/DeviceUtil";
 import {
     getClientPreference,
     setClientPreference,

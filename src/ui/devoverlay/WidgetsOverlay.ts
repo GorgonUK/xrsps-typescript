@@ -3,20 +3,20 @@ import { App as PicoApp, Program } from "picogl";
 import { CacheIndex } from "../../rs/cache/CacheIndex";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { BitmapFont } from "../../rs/font/BitmapFont";
-import { isTouchDevice } from "../../util/DeviceUtil";
+import { isTouchDevice } from "../../common/utils/DeviceUtil";
 import { getUiScale } from "../UiScale";
 import { FONT_VERDANA_13 } from "../fonts";
-import { getChooseOptionMenuRect } from "../gl/choose-option";
-import { GLRenderer } from "../gl/renderer";
+import { getChooseOptionMenuRect } from "../../widgets/gl/choose-option";
+import { GLRenderer } from "../../widgets/gl/renderer";
 import {
     GLRenderOpts,
     beginWidgetUiFrame,
     detachGLUI,
     processWidgetUiInput,
     renderWidgetTreeGL,
-} from "../gl/widgets-gl";
-import { drawTextGL } from "../widgets/components/TextRenderer";
-import type { WidgetManager } from "../widgets/WidgetManager";
+} from "../../widgets/gl/widgets-gl";
+import { drawTextGL } from "../../widgets/components/TextRenderer";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import { Overlay, OverlayInitArgs, OverlayUpdateArgs, RenderPhase } from "./Overlay";
 
 export interface WidgetsContext {

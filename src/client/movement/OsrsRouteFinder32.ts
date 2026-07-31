@@ -1,4 +1,4 @@
-import { CollisionFlag } from "../../shared/CollisionFlag";
+import { CollisionFlag } from "../../common/CollisionFlag";
 
 export type CollisionFlagAtFn = (plane: number, tileX: number, tileY: number) => number;
 

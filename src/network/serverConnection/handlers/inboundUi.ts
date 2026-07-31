@@ -8,7 +8,7 @@ import {
     VARP_OPTION_ATTACK_PRIORITY_NPC,
     VARP_OPTION_ATTACK_PRIORITY_PLAYER,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../../../shared/vars";
+} from "../../../common/vars";
 import { send } from "../connection/send";
 import { emitCollectionLog, emitInventory } from "../domain/inventory";
 import { handleShopPayload } from "../domain/shop";
@@ -230,7 +230,7 @@ export function handleInboundUi(msg: any): boolean {
     }
     if (msg.type === "gamemode_data") {
         try {
-            const { loadFromPayload } = require("../../../shared/gamemode/GamemodeContentStore");
+            const { loadFromPayload } = require("../../../common/gamemode/GamemodeContentStore");
             loadFromPayload(msg.payload);
             const g: any = (typeof window !== "undefined" ? window : globalThis) as any;
             const mv = g?.__osrsClient;

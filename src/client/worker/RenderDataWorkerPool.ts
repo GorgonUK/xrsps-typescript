@@ -4,8 +4,8 @@ import { WorkerDescriptor } from "threads/dist/master/pool-types";
 import { ObservablePromise } from "threads/dist/observable-promise";
 
 import { LoadedCache } from "../Caches";
-import { NpcGeometryData } from "../webgl/loader/NpcGeometryData";
-import type { NpcInstance } from "../webgl/npc/NpcRenderTemplate";
+import { NpcGeometryData } from "../../render/loader/NpcGeometryData";
+import type { NpcInstance } from "../../render/npc/NpcRenderTemplate";
 import { RenderDataLoader } from "./RenderDataLoader";
 import type { RenderDataWorker } from "./RenderDataWorker";
 

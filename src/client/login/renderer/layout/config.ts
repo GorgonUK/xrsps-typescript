@@ -1,4 +1,4 @@
-import { getOrientation, isMobileMode, isTouchDevice } from "../../../../util/DeviceUtil";
+import { getOrientation, isMobileMode, isTouchDevice } from "../../../../common/utils/DeviceUtil";
 import { LoginIndex } from "../../GameState";
 import type { LoginState } from "../../LoginState";
 import type { LoginRendererHost, RenderContext } from "../host";

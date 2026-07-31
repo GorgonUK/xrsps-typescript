@@ -7,7 +7,7 @@ import {
     DEFAULT_SCREEN_WIDTH,
 } from "../../../client/ClientState";
 import { getClientClock } from "../../../client/TransmitCycles";
-import { getSafeAreaBounds, isTouchDevice } from "../../../util/DeviceUtil";
+import { getSafeAreaBounds, isTouchDevice } from "../../../common/utils/DeviceUtil";
 import { MenuTargetType } from "../../MenuEntry";
 import { chatHistory } from "../ChatHistory";
 import { Opcodes } from "../Opcodes";

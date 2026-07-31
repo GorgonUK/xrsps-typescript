@@ -6,7 +6,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 
 import { DownloadProgress } from "../rs/cache/CacheFiles";
 import { IndexType } from "../rs/cache/IndexType";
-import { lerp, slerp } from "../util/MathUtil";
+import { lerp, slerp } from "../common/utils/MathUtil";
 import { loadCacheFiles } from "./Caches";
 import { CameraView, ProjectionType } from "./Camera";
 import { ClientState } from "./ClientState";
@@ -18,7 +18,7 @@ import {
     getRendererName,
 } from "./GameRenderers";
 import { OsrsClient } from "./OsrsClient";
-import { profiler } from "./webgl/PerformanceProfiler";
+import { profiler } from "../render/PerformanceProfiler";
 
 interface OsrsClientControlsProps {
     renderer: GameRenderer;

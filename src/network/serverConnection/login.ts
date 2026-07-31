@@ -157,7 +157,7 @@ export function sendHandshake(name?: string): void {
         console.warn("[ws] Cannot send handshake - state.socket not open");
         return;
     }
-    const { isMobileMode } = require("../../../util/DeviceUtil");
+    const { isMobileMode } = require("../../../common/utils/DeviceUtil");
     const clientType = isMobileMode ? 1 : 0;
     send({
         type: "handshake",

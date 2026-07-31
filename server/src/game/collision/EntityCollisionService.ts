@@ -1,7 +1,7 @@
 // =============================================================================
 // Entity Occupation Tracking
 // =============================================================================
-import { CollisionFlag } from "../../../../src/shared/CollisionFlag";
+import { CollisionFlag } from "../../../../src/common/CollisionFlag";
 
 /**
  * Entity Collision Service

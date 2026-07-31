@@ -3,7 +3,7 @@ import {
     MovementDirection,
     directionToDelta,
     runDirectionToDelta,
-} from "../../shared/Direction";
+} from "../../common/Direction";
 import { BitStream } from "./BitStream";
 import { getPlayerSyncHuffman } from "./HuffmanProvider";
 import { PlayerSyncContext, type PlayerSyncState } from "./PlayerSyncContext";

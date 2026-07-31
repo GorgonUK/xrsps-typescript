@@ -9,8 +9,8 @@ import { Scene } from "../../rs/scene/Scene";
 import { MapManager } from "../MapManager";
 import { OsrsClient } from "../OsrsClient";
 import { Ray, rayIntersectsBox } from "../math/Raycast";
-import { InteractType } from "../webgl/InteractType";
-import { WebGLMapSquare } from "../webgl/WebGLMapSquare";
+import { InteractType } from "../../render/InteractType";
+import { WebGLMapSquare } from "../../render/WebGLMapSquare";
 import { sampleBridgeHeightForWorldTile } from "./BridgeHeightSampler";
 import {
     BridgePlaneStrategy,

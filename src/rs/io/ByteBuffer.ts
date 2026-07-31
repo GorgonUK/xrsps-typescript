@@ -1,4 +1,4 @@
-import { FloatUtil } from "../../util/FloatUtil";
+import { FloatUtil } from "../../common/utils/FloatUtil";
 
 export class ByteBuffer {
     _data: Int8Array;

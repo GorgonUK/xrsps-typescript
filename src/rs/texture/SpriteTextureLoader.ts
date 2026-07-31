@@ -1,4 +1,4 @@
-import { clamp } from "../../util/MathUtil";
+import { clamp } from "../../common/utils/MathUtil";
 import { CacheIndex } from "../cache/CacheIndex";
 import { ByteBuffer } from "../io/ByteBuffer";
 import { IndexedSprite } from "../sprite/IndexedSprite";

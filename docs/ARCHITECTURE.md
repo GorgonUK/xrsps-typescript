@@ -62,8 +62,8 @@ The client receives `PLAYER_SYNC` and `NPC_INFO` packets each tick, decodes them
 
 Communication is over **WebSocket** with a **binary protocol**. No JSON at runtime.
 
-- Client packets: `src/shared/network/ClientPacketId.ts`
-- Server packets: `src/shared/packets/ServerPacketId.ts`
+- Client packets: `src/common/network/ClientPacketId.ts`
+- Server packets: `src/common/packets/ServerPacketId.ts`
 - Message routing: `server/src/network/MessageRouter.ts`
 
 Packets cover movement, interactions, widget clicks, combat, inventory, chat, and sync updates.

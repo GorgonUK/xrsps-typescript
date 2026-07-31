@@ -1,4 +1,4 @@
-import { MovementDirection, deltaToDirection, directionToDelta } from "../../shared/Direction";
+import { MovementDirection, deltaToDirection, directionToDelta } from "../../common/Direction";
 
 export interface TileCoord {
     x: number;

@@ -14,8 +14,8 @@ import { VarManager } from "../src/rs/config/vartype/VarManager";
 import { Cs2Vm, createScriptEvent } from "../src/rs/cs2/Cs2Vm";
 import { type Script, parseScriptFromBytes } from "../src/rs/cs2/Script";
 import { Inventory } from "../src/rs/inventory/Inventory";
-import { WidgetManager } from "../src/ui/widgets/WidgetManager";
-import { deriveMenuEntriesForWidget, hasContextMenuOption } from "../src/ui/widgets/menu/utils";
+import { WidgetManager } from "../src/widgets/WidgetManager";
+import { deriveMenuEntriesForWidget, hasContextMenuOption } from "../src/widgets/menu/utils";
 
 const cacheInfo = loadCacheList(loadCacheInfos()).latest;
 const loadedCache = loadCache(cacheInfo);

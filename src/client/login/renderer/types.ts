@@ -1,7 +1,7 @@
 /** Type alias for rendering context (supports both regular and offscreen canvas) */
-type RenderContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+export type RenderContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-interface WorldGridLayout {
+export interface WorldGridLayout {
     cols: number;
     rows: number;
     xGap: number;
@@ -15,7 +15,7 @@ interface WorldGridLayout {
     totalColumns: number;
 }
 
-interface WorldHoverResult {
+export interface WorldHoverResult {
     index: number; // Index in sorted worlds array, or -1 if none
     world: World | null; // The hovered world, or null
     x: number; // X position of hovered cell

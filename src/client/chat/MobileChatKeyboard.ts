@@ -1,6 +1,6 @@
 import type { InputManager } from "../InputManager";
 import type { VarManager } from "../../rs/config/vartype/VarManager";
-import { isMobileMode, isTouchDevice } from "../../util/DeviceUtil";
+import { isMobileMode, isTouchDevice } from "../../common/utils/DeviceUtil";
 
 const CHAT_INPUT_VARC = 335;
 const OSRS_KEY_ENTER = 84;

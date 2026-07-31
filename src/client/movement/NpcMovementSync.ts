@@ -3,7 +3,7 @@ import {
     deltaToDirection,
     directionToDelta,
     directionToOrientation,
-} from "../../shared/Direction";
+} from "../../common/Direction";
 import type { NpcEcs } from "../ecs/NpcEcs";
 import type { MovementStep } from "./MovementPath";
 import { MovementPath } from "./MovementPath";

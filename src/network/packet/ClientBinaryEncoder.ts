@@ -4,7 +4,7 @@
  * Replaces JSON.stringify for client-to-server messages.
  * All encoding methods match OSRS buffer patterns.
  */
-import { CLIENT_PACKET_LENGTHS, ClientPacketId } from "../../shared/packets/ClientPacketId";
+import { CLIENT_PACKET_LENGTHS, ClientPacketId } from "../../common/packets/ClientPacketId";
 
 /**
  * Binary packet buffer for client encoding

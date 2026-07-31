@@ -4,7 +4,7 @@ import {
     SCRIPT_ACCOUNT_SUMMARY_SET_TIME_ID,
     buildAccountSummarySetCombatLevelScriptArgs,
     buildAccountSummarySetTimeScriptArgs,
-} from "../../../src/shared/ui/accountSummary";
+} from "../../../src/common/ui/accountSummary";
 import type { ServerServices } from "../game/ServerServices";
 import { getAccountSummaryTimeMinutes } from "../game/accountSummaryTime";
 import type { PlayerState } from "../game/player";

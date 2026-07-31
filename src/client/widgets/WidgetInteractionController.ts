@@ -1,6 +1,6 @@
 import { ClickMode } from "../InputManager";
 import type { InputManager } from "../InputManager";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import {
     clearDragWidgetVisualState,
     getDragParentDepth,

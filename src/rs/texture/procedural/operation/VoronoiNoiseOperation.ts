@@ -1,6 +1,6 @@
 import JavaRandom from "java-random";
 
-import { nextIntJagex } from "../../../../util/MathUtil";
+import { nextIntJagex } from "../../../../common/utils/MathUtil";
 import { ByteBuffer } from "../../../io/ByteBuffer";
 import { TextureGenerator } from "../TextureGenerator";
 import { TextureOperation } from "./TextureOperation";

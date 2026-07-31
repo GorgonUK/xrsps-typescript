@@ -1,6 +1,6 @@
 import type { Cs2Vm, ScriptEvent } from "../../rs/cs2/Cs2Vm";
 import type { ObjTypeLoader } from "../../rs/config/objtype/ObjTypeLoader";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 import { ClientState } from "../ClientState";
 import type { SelectedSpellInfo, SpellSelectionState } from "./widgetActionHandlers";
 

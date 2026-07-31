@@ -6,12 +6,12 @@ import {
     QUEST_LIST_ENTRY_LIST_UID,
     QUEST_LIST_ENTRY_MAX_SLOT,
     SIDE_JOURNAL_GROUP_ID,
-} from "../../../src/shared/ui/sideJournal";
+} from "../../../src/common/ui/sideJournal";
 import {
     VARBIT_SIDE_JOURNAL_TAB,
     VARBIT_XPDROPS_ENABLED,
     VARP_SIDE_JOURNAL_STATE,
-} from "../../../src/shared/vars";
+} from "../../../src/common/vars";
 import { DIARY_VARBITS } from "../../data/diaryVarbits";
 import { getItemDefinition } from "../data/items";
 import type { ServerServices } from "../game/ServerServices";

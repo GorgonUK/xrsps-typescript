@@ -9,7 +9,7 @@ import {
     rotateObjectChunkX,
     rotateObjectChunkY,
     unpackTemplateChunk,
-} from "../../shared/instance/InstanceTypes";
+} from "../../common/instance/InstanceTypes";
 import { CacheInfo } from "../cache/CacheInfo";
 import { FloorTypeLoader, OverlayFloorTypeLoader } from "../config/floortype/FloorTypeLoader";
 import { ContourGroundInfo, LocModelLoader } from "../config/loctype/LocModelLoader";

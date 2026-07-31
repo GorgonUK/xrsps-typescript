@@ -1,4 +1,4 @@
-import { VARBIT_LEAGUE_TUTORIAL_COMPLETED } from "../../../src/shared/vars";
+import { VARBIT_LEAGUE_TUTORIAL_COMPLETED } from "../../../src/common/vars";
 import type {
     GamemodeUiBridge,
     GamemodeUiController,

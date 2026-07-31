@@ -1,5 +1,5 @@
 import { BitmapFont } from "../../rs/font/BitmapFont";
-import type { GLRenderer } from "../gl/renderer";
+import type { GLRenderer } from "../../widgets/gl/renderer";
 
 export type AtlasTexture = ReturnType<GLRenderer["createTextureFromCanvas"]>;
 

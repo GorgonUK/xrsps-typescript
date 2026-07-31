@@ -1,4 +1,4 @@
-import { parseOutgoingPublicChat, sanitizeChatText } from "../../../chat/chatFormatting";
+import { parseOutgoingPublicChat, sanitizeChatText } from "../../../common/chat/chatFormatting";
 import { INVENTORY_SLOT_COUNT } from "../constants";
 import type { GroundItemActionPayload } from "../types";
 import { send } from "../connection/send";

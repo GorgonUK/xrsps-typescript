@@ -1,7 +1,7 @@
 import { getServerListUrl } from "../../../config/clientEnv";
-import type { ServerListEntry } from "./types";
+import type { ServerListEntry, World } from "./types";
 
-const MOCK_WORLDS: World[] = [
+export const MOCK_WORLDS: World[] = [
     { id: 301, population: 487, location: 0, activity: "Trade - Free", properties: 0 },
     { id: 302, population: 1243, location: 0, activity: "Trade - Members", properties: 1 },
     { id: 303, population: 89, location: 1, activity: "Skill Total 500", properties: 1 },
@@ -20,7 +20,7 @@ const MOCK_WORLDS: World[] = [
     { id: 316, population: 1567, location: 0, activity: "Members", properties: 1 },
 ];
 
-const FALLBACK_SERVERS: ServerListEntry[] = [
+export const FALLBACK_SERVERS: ServerListEntry[] = [
     {
         name: "Local Development",
         address: "localhost:43594",

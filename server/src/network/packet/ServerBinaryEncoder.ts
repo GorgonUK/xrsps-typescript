@@ -4,14 +4,14 @@
  * Replaces JSON.stringify for server-to-client messages.
  * Binary encoding helpers for server packets.
  */
-import { INSTANCE_CHUNK_COUNT, PLANE_COUNT } from "../../../../src/shared/instance/InstanceTypes";
+import { INSTANCE_CHUNK_COUNT, PLANE_COUNT } from "../../../../src/common/instance/InstanceTypes";
 import {
     SERVER_PACKET_LENGTHS,
     ServerPacketId,
-} from "../../../../src/shared/packets/ServerPacketId";
-import type { ProjectileLaunch } from "../../../../src/shared/projectiles/ProjectileLaunch";
-import type { QuestListWidgetGroup } from "../../../../src/shared/ui/questList";
-import type { WorldEntityBuildArea } from "../../../../src/shared/worldentity/WorldEntityTypes";
+} from "../../../../src/common/packets/ServerPacketId";
+import type { ProjectileLaunch } from "../../../../src/common/projectiles/ProjectileLaunch";
+import type { QuestListWidgetGroup } from "../../../../src/common/ui/questList";
+import type { WorldEntityBuildArea } from "../../../../src/common/worldentity/WorldEntityTypes";
 import { BitWriter } from "../BitWriter";
 
 /**

@@ -1,10 +1,10 @@
 import { sendPlayerOption } from "../../../network/ServerConnection";
-import { ClickRegistry } from "../../../ui/gl/click-registry";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import { ClickRegistry } from "../../../widgets/gl/click-registry";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import {
     collectWidgetsAtPointAcrossRoots,
     findBlockingWidgetInHits,
-} from "../../../ui/widgets/menu/utils";
+} from "../../../widgets/menu/utils";
 
 export function getUiClickRegistry(rendererCanvas: unknown): ClickRegistry | null {
     const clicks = (rendererCanvas as any)?.__clicks;

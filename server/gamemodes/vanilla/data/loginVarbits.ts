@@ -5,7 +5,7 @@
 import {
     VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE,
     VARBIT_XPDROPS_ENABLED,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 
 export const DIARY_VARBITS: Array<[number, number]> = [
     // === STARTED FLAGS (1 = started) ===

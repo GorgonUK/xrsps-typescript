@@ -4,7 +4,7 @@ import {
     VARP_AUTOCAST_SPELLPOS,
     VARP_AUTO_RETALIATE,
     VARP_SPECIAL_ATTACK,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import { DisplayMode } from "../../../src/game/scripts/types";
 import { applyAutocastState, clearAutocastState } from "../../../src/game/scripts/types";

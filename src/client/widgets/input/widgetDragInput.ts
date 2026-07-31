@@ -1,8 +1,8 @@
 import type { ScriptEvent } from "../../../rs/cs2/Cs2Vm";
-import { findDropTarget } from "../../../ui/widgets/menu/utils";
+import { findDropTarget } from "../../../widgets/menu/utils";
 import type { WidgetInputControllerDeps, WidgetInputFrame } from "./widgetInputTypes";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 
 export function processWidgetDragInput(
     deps: WidgetInputControllerDeps,

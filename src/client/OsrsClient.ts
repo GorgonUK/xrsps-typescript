@@ -97,7 +97,7 @@ import { ConfigType } from "../rs/cache/ConfigType";
 import { IndexType } from "../rs/cache/IndexType";
 import { CacheLoaderFactory, getCacheLoaderFactory } from "../rs/cache/loader/CacheLoaderFactory";
 import { getPlayerTypeInfo } from "../rs/chat/PlayerType";
-import { ChatMessageType } from "../shared/chat/ChatMessageType";
+import { ChatMessageType } from "../common/chat/ChatMessageType";
 import { BasTypeLoader } from "../rs/config/bastype/BasTypeLoader";
 import { DbRepository } from "../rs/config/db/DbRepository";
 import { IdkTypeLoader } from "../rs/config/idktype/IdkTypeLoader";
@@ -136,16 +136,16 @@ import { CombatOptionsController } from "./combat/CombatOptionsController";
 import { SkillId } from "../rs/skill/skills";
 import { TextureLoader } from "../rs/texture/TextureLoader";
 import { faceAngleRs } from "../rs/utils/rotation";
-import { directionToDelta } from "../shared/Direction";
-import type { ProjectileLaunch } from "../shared/projectiles/ProjectileLaunch";
-import { buildSelectedSpellPayload } from "../shared/spells/selectedSpellPayload";
-import type { QuestListWidgetGroup } from "../shared/ui/questList";
+import { directionToDelta } from "../common/Direction";
+import type { ProjectileLaunch } from "../common/projectiles/ProjectileLaunch";
+import { buildSelectedSpellPayload } from "../common/spells/selectedSpellPayload";
+import type { QuestListWidgetGroup } from "../common/ui/questList";
 import {
     INTERFACE_ACHIEVEMENT_DIARY_ID,
     INTERFACE_QUEST_LIST_ID,
     SIDE_JOURNAL_GROUP_ID,
-} from "../shared/ui/sideJournal";
-import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../shared/ui/widgets";
+} from "../common/ui/sideJournal";
+import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../common/ui/widgets";
 import {
     TRANSMIT_VARPS,
     VARBIT_COMBATLEVEL_TRANSMIT,
@@ -172,9 +172,9 @@ import {
     VARP_OPTION_ATTACK_PRIORITY_PLAYER,
     VARP_OPTION_RUN,
     VARP_SOUND_EFFECTS_VOLUME,
-} from "../shared/vars";
+} from "../common/vars";
 import { getOsrsInterfaceScalingPercent, setOsrsInterfaceScalingPercent } from "../ui/UiScale";
-import { cleanupInterfaceClickTargets } from "../ui/gl/widgets-gl";
+import { cleanupInterfaceClickTargets } from "../widgets/gl/widgets-gl";
 import {
     setNpcExamineIdResolver,
     setSpellSelectionClearHandler,
@@ -187,14 +187,14 @@ import { MenuOpcode, MenuState } from "../ui/menu/MenuState";
 import {
     isDropTarget,
     isWidgetUseTarget,
-} from "../ui/widgets/WidgetFlags";
-import { markWidgetInteractionDirty } from "../ui/widgets/WidgetInteraction";
-import { WidgetManager } from "../ui/widgets/WidgetManager";
-import { WidgetSessionManager } from "../ui/widgets/WidgetSessionManager";
-import { applyQuestListWidgetGroups } from "../ui/widgets/custom/questList";
-import { layoutWidgets } from "../ui/widgets/layout/WidgetLayout";
-import { sanitizeText } from "../ui/widgets/menu/utils";
-import { isMobileMode, isTouchDevice } from "../util/DeviceUtil";
+} from "../widgets/WidgetFlags";
+import { markWidgetInteractionDirty } from "../widgets/WidgetInteraction";
+import { WidgetManager } from "../widgets/WidgetManager";
+import { WidgetSessionManager } from "../widgets/WidgetSessionManager";
+import { applyQuestListWidgetGroups } from "../widgets/custom/questList";
+import { layoutWidgets } from "../widgets/layout/WidgetLayout";
+import { sanitizeText } from "../widgets/menu/utils";
+import { isMobileMode, isTouchDevice } from "../common/utils/DeviceUtil";
 import { ChatTextMetrics } from "./chat/ChatTextMetrics";
 import { EnterToTypeChat } from "./chat/EnterToTypeChat";
 import { MobileChatKeyboard } from "./chat/MobileChatKeyboard";
@@ -216,7 +216,7 @@ import { WidgetTransmitProcessor } from "./widgets/WidgetTransmitProcessor";
 import { NotificationDisplay } from "./widgets/NotificationDisplay";
 import { AudioVarpController } from "./audio/AudioVarpController";
 import { resolveWidgetIdentifiers } from "./widgets/widgetActionPayload";
-import { clamp } from "../util/MathUtil";
+import { clamp } from "../common/utils/MathUtil";
 import { CacheList, LoadedCache } from "./Caches";
 import { Camera, CameraView, ProjectionType } from "./Camera";
 import {
@@ -303,9 +303,9 @@ import { PlayerSyncManager } from "./sync/PlayerSyncManager";
 import type { PlayerSpotAnimationEvent } from "./sync/PlayerSyncTypes";
 import { resolveTradeActionQuantity } from "./trade/TradeActionQuantity";
 import { clampPlane } from "./utils/PlaneUtil";
-import { WebGLMapSquare } from "./webgl/WebGLMapSquare";
-import type { MinimapIcon } from "./webgl/loader/SdMapData";
-import type { NpcInstance } from "./webgl/npc/NpcRenderTemplate";
+import { WebGLMapSquare } from "../render/WebGLMapSquare";
+import type { MinimapIcon } from "../render/loader/SdMapData";
+import type { NpcInstance } from "../render/npc/NpcRenderTemplate";
 import { RenderDataWorkerPool } from "./worker/RenderDataWorkerPool";
 import { WorldViewManager } from "./worldview/WorldViewManager";
 
@@ -1173,7 +1173,8 @@ export class OsrsClient {
             handleTradeWidgetAction: (widget, event, groupId, childId) =>
                 this.handleTradeWidgetAction(widget, event, groupId, childId),
             handleInventorySlotMove: (from, to) => this.handleInventorySlotMove(from, to),
-            buildWidgetActionPayload: (event) => this.widgetActionRouter.buildWidgetActionPayload(event),
+            buildWidgetActionPayload: (event) =>
+                this.widgetActionRouter.buildWidgetActionPayload(event) ?? null,
             resolveTransmitFlagWidget: (eventWidget, payload) =>
                 this.widgetActionRouter.resolveTransmitFlagWidget(eventWidget, payload),
             getSpellSelection: () => this.spellSelectionController,
@@ -1232,7 +1233,8 @@ export class OsrsClient {
             getWidgetManager: () => this.widgetManager,
             getTransmitCycles: () => this.transmitCycles,
             getCs2Vm: () => this.cs2Vm,
-            queueScriptEvent: (event, priority) => this.queueScriptEvent(event, priority),
+            queueScriptEvent: (event, priority) =>
+                this.queueScriptEvent(event, (priority ?? 0) as 0 | 1 | 2),
             executeScriptListener: (widget, listener) =>
                 this.executeScriptListener(widget, listener),
         });
@@ -5619,6 +5621,10 @@ export class OsrsClient {
                 this.widgetManager.tickModelAnimations(1, this.seqTypeLoader);
             } catch {}
         }
+    }
+
+    clearMinimapImageUrls(): void {
+        this.minimapImageUrls.clear();
     }
 
     initCache(cache: LoadedCache): void {

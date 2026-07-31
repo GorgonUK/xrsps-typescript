@@ -7,7 +7,7 @@
  *
  * This gives O(1) lookup + O(m) checks where m is typically 1-5 tasks.
  */
-import type { LeagueTaskRow } from "../../../src/shared/gamemode/GamemodeDataTypes";
+import type { LeagueTaskRow } from "../../../src/common/gamemode/GamemodeDataTypes";
 import {
     type RegisteredCustomChallenge,
     type RegisteredCustomTask,

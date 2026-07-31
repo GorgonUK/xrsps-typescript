@@ -1,5 +1,5 @@
 import type { Cs2Vm } from "../../rs/cs2/Cs2Vm";
-import type { WidgetManager } from "../../ui/widgets/WidgetManager";
+import type { WidgetManager } from "../../widgets/WidgetManager";
 
 export type NotificationDisplayDeps = {
     getWidgetManager: () => WidgetManager | undefined;

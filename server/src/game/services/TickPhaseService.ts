@@ -10,7 +10,7 @@ import {
     VARBIT_PVP_SPEC_ORB,
     VARBIT_RAID_STATE,
     VARP_SPECIAL_ENERGY,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import { NpcSyncSession } from "../../network/NpcSyncSession";
 import { PlayerSyncSession } from "../../network/PlayerSyncSession";
 import type { BroadcastContext } from "../../network/broadcast/BroadcastDomain";

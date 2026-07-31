@@ -1,5 +1,6 @@
 import { LoginActions } from "../../LoginAction";
 import type { LoginState } from "../../LoginState";
+import { GameState, LoginIndex } from "../../GameState";
 import type { LoginRendererHost } from "../host";
 import { getWelcomeLayout } from "../layout/geometry";
 import { measureText } from "../render/drawUtils";

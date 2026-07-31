@@ -2,14 +2,14 @@ import {
     SIDE_JOURNAL_GROUP_ID,
     SIDE_JOURNAL_QUEST_TAB,
     encodeSideJournalTabInStateVarp,
-} from "../../../../src/shared/ui/sideJournal";
+} from "../../../../src/common/ui/sideJournal";
 import {
     VARBIT_FLASHSIDE,
     VARBIT_LEAGUE_TUTORIAL_COMPLETED,
     VARBIT_SIDE_JOURNAL_TAB,
     VARP_LEAGUE_GENERAL,
     VARP_SIDE_JOURNAL_STATE,
-} from "../../../../src/shared/vars";
+} from "../../../../src/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import type { ScriptServices } from "../../../src/game/scripts/types";
 import { DisplayMode, getQuestTabUid } from "../../../src/widgets/viewport";

@@ -1,7 +1,7 @@
 import { MapManager } from "../MapManager";
-import type { MinimapIcon } from "../webgl/loader/SdMapData";
+import type { MinimapIcon } from "../../render/loader/SdMapData";
 import type { WorldMapArchiveRenderer } from "../../rs/map/WorldMapArchiveRenderer";
-import { isTouchDevice } from "../../util/DeviceUtil";
+import { isTouchDevice } from "../../common/utils/DeviceUtil";
 import {
     BASE_PENDING_WORLDMAP_TILE_LOADS,
     BASE_PENDING_WORLDMAP_TILE_LOADS_MOBILE,

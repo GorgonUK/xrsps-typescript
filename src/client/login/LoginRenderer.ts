@@ -1,4 +1,4 @@
-import { isMobileMode, isTouchDevice } from "../../util/DeviceUtil";
+import { isMobileMode, isTouchDevice } from "../../common/utils/DeviceUtil";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { GameState } from "./GameState";
 import { LoginAction } from "./LoginAction";

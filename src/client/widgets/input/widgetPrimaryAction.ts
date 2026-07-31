@@ -1,6 +1,7 @@
 import type { InputManager } from "../../InputManager";
 import type { WidgetInputControllerDeps } from "./widgetInputTypes";
-import type { WidgetManager } from "../../../ui/widgets/WidgetManager";
+import type { WidgetInteractionController } from "../WidgetInteractionController";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
 import { ClientState } from "../../ClientState";
 import {
     chooseDefaultMenuEntry,
@@ -11,7 +12,7 @@ import {
     deriveMenuEntriesForWidget,
     getWidgetTargetLabelForMenu,
     sanitizeText,
-} from "../../../ui/widgets/menu/utils";
+} from "../../../widgets/menu/utils";
 import { resolveWidgetIdentifiers } from "../widgetActionPayload";
 
 export type PrimaryWidgetAction = {
@@ -30,6 +31,7 @@ export function createPrimaryWidgetActionResolver(
     widgetManager: WidgetManager,
     widgetInteraction: WidgetInteractionController,
 ): PrimaryWidgetActionResolver {
+    const getWidgetFlags = (w: any): number => widgetManager.getWidgetFlags(w);
     const getPrimaryWidgetAction = (
         w: any,
     ): { option: string; target: string; slot?: number; itemId?: number; opIndex?: number } => {

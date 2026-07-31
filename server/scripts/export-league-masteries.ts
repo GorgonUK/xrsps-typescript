@@ -44,7 +44,7 @@ function formatLeagueMasteriesTs(
     const challengeLines = challenges.map((c) => `  ${JSON.stringify(c)}`);
 
     return (
-        `import type { LeagueRelicRow, LeagueMasteryNodeRow, LeagueMasteryChallengeRow } from "../../../../src/shared/gamemode/GamemodeDataTypes";\n\n` +
+        `import type { LeagueRelicRow, LeagueMasteryNodeRow, LeagueMasteryChallengeRow } from "../../../../src/common/gamemode/GamemodeDataTypes";\n\n` +
         `// Auto-generated from cache data.\n\n` +
         `// League 5 Relics (structs 1116-1135, param_879=name, param_880=desc)\n` +
         `export const LEAGUE_RELICS: LeagueRelicRow[] = [\n${relicLines.join(",\n")}\n];\n\n` +

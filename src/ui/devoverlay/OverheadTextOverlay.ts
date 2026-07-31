@@ -8,7 +8,7 @@ import {
     VertexBuffer,
 } from "picogl";
 
-import { colourIdToHex } from "../../chat/chatFormatting";
+import { colourIdToHex } from "../../common/chat/chatFormatting";
 import { CacheIndex } from "../../rs/cache/CacheIndex";
 import type { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
