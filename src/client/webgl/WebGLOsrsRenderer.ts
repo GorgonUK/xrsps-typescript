@@ -32,21 +32,6 @@ import { createTextureArray } from "../../picogl/PicoTexture";
 import { RS_TO_RADIANS } from "../../rs/MathConstants";
 import { CollisionFlag } from "../../shared/CollisionFlag";
 import { isInWilderness } from "../../shared/world/Wilderness";
-
-/** Format a player menu target using the OSRS combat-level colour convention. */
-function formatPlayerCombatLabel(
-    username: string,
-    localCombatLevel: number,
-    targetCombatLevel: number,
-): string {
-    const colour =
-        targetCombatLevel < localCombatLevel
-            ? "00ff00"
-            : targetCombatLevel === localCombatLevel
-              ? "ffff00"
-              : "ff0000";
-    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
-}
 import {
     getWorldLocChanges,
     getWorldLocSpawns,
@@ -202,6 +187,21 @@ import {
     createProjectileProgram,
 } from "./shaders/Shaders";
 import { KNOWN_WATER_TEXTURE_IDS } from "./water/WaterTextureIds";
+
+/** Format a player menu target using the OSRS combat-level colour convention. */
+function formatPlayerCombatLabel(
+    username: string,
+    localCombatLevel: number,
+    targetCombatLevel: number,
+): string {
+    const colour =
+        targetCombatLevel < localCombatLevel
+            ? "00ff00"
+            : targetCombatLevel === localCombatLevel
+              ? "ffff00"
+              : "ff0000";
+    return `${username} <col=${colour}>(level-${targetCombatLevel})</col>`;
+}
 
 const MAX_TEXTURES = 1024;
 const TEXTURE_SIZE = 128;
