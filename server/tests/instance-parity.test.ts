@@ -448,7 +448,7 @@ describe("clearTerrainChunk parity", () => {
         // We verify this by reading the source file.
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../client/rs/scene/SceneBuilder.ts"),
+            require("path").resolve(__dirname, "../../client/rs/scene/SceneBuilder.ts"),
             "utf-8",
         );
 
@@ -481,7 +481,7 @@ describe("fillMissingTerrain parity", () => {
     it("sets tileLightOcclusions[0] = 127 for empty chunks", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../client/rs/scene/SceneBuilder.ts"),
+            require("path").resolve(__dirname, "../../client/rs/scene/SceneBuilder.ts"),
             "utf-8",
         );
 
@@ -506,7 +506,7 @@ describe("Overlay ID reading parity", () => {
     it("decodeTerrainTile reads overlay as signed", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../client/rs/scene/SceneBuilder.ts"),
+            require("path").resolve(__dirname, "../../client/rs/scene/SceneBuilder.ts"),
             "utf-8",
         );
 
@@ -531,16 +531,19 @@ describe("Overlay ID reading parity", () => {
 // ============================================================================
 
 describe("REBUILD_NORMAL client dispatch", () => {
-    it("ServerConnection handles rebuild_normal message", () => {
+    it("inbound sync handler handles rebuild_normal message", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../src/network/ServerConnection.ts"),
+            require("path").resolve(
+                __dirname,
+                "../../client/network/serverConnection/handlers/inboundSync.ts",
+            ),
             "utf-8",
         );
 
         assert(
             source.includes('msg.type === "rebuild_normal"'),
-            "ServerConnection dispatches rebuild_normal",
+            "inbound sync handler dispatches rebuild_normal",
         );
         assert(
             source.includes("ClientState.inInstance = false"),
@@ -559,7 +562,7 @@ describe("REBUILD_NORMAL client dispatch", () => {
     it("OsrsClient subscribes to rebuildNormal", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../src/client/OsrsClient.ts"),
+            require("path").resolve(__dirname, "../../client/game/OsrsClient.ts"),
             "utf-8",
         );
 
@@ -573,14 +576,14 @@ describe("REBUILD_NORMAL client dispatch", () => {
     it("WebGLOsrsRenderer has clearInstance method", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../src/render/WebGLOsrsRenderer.ts"),
+            require("path").resolve(__dirname, "../../client/render/WebGLOsrsRenderer.ts"),
             "utf-8",
         );
 
         assert(source.includes("clearInstance(): void"), "clearInstance method exists");
         assert(
-            source.includes("this.instanceActive = false"),
-            "clearInstance resets instanceActive",
+            source.includes("return render.clearInstance(this)"),
+            "clearInstance delegates state cleanup to the renderer module",
         );
     });
 });
@@ -595,7 +598,7 @@ describe("Server-side REBUILD_NORMAL", () => {
         const source = fs.readFileSync(
             require("path").resolve(
                 __dirname,
-                "../server/src/network/packet/ServerBinaryEncoder.ts",
+                "../src/network/packet/ServerBinaryEncoder.ts",
             ),
             "utf-8",
         );
@@ -607,7 +610,7 @@ describe("Server-side REBUILD_NORMAL", () => {
     it("messages.ts routes rebuild_normal", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../server/src/network/messages.ts"),
+            require("path").resolve(__dirname, "../src/network/messages.ts"),
             "utf-8",
         );
 
@@ -619,7 +622,7 @@ describe("Server-side REBUILD_NORMAL", () => {
         const source = fs.readFileSync(
             require("path").resolve(
                 __dirname,
-                "../server/src/game/services/WorldEntityService.ts",
+                "../src/game/services/WorldEntityService.ts",
             ),
             "utf-8",
         );
@@ -639,7 +642,10 @@ describe("ServerBinaryDecoder REBUILD_NORMAL", () => {
     it("decoder case exists", () => {
         const fs = require("fs");
         const source = fs.readFileSync(
-            require("path").resolve(__dirname, "../src/network/packet/ServerBinaryDecoder.ts"),
+            require("path").resolve(
+                __dirname,
+                "../../client/network/packet/ServerBinaryDecoder.ts",
+            ),
             "utf-8",
         );
 
