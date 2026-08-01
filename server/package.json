@@ -6,13 +6,18 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "@foxglove/wasm-bz2": "^0.3.0",
+    "bzip2": "^0.1.1",
+    "denque": "^2.1.0",
+    "gl-matrix": "^3.4.4",
     "java-random": "^0.4.0",
+    "pako": "^2.1.0",
     "ws": "^8.21.0"
   },
   "scripts": {
     "start": "tsx scripts/ensure-cache.ts --server && tsx src/index.ts",
     "dev": "yarn start",
-    "build": "tsc -p tsconfig.json",
+    "build": "yarn typecheck",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build-collision": "tsx scripts/build-collision-cache.ts --include-models --force",
     "build-npc-aggression": "tsx scripts/build-npc-aggression.ts",

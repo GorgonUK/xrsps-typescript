@@ -203,6 +203,10 @@ function OsrsClientApp() {
 
     useEffect(() => {
         const abortController = new AbortController();
+        let disposed = false;
+        let clientToDispose: OsrsClient | undefined;
+        let rendererCheckFrame: number | undefined;
+        let rendererCheckTimer: ReturnType<typeof setTimeout> | undefined;
 
         const load = async () => {
             const cacheList = await cachesPromise;
@@ -294,6 +298,7 @@ function OsrsClientApp() {
                 rendererType,
                 // No cache yet - will be initialized after download
             );
+            clientToDispose = client;
 
             // Set OsrsClient immediately so GameContainer can render the login overlay
             setOsrsClient(client);
@@ -328,15 +333,21 @@ function OsrsClientApp() {
             // and we'd call initCache before the render loop is running
             await new Promise<void>((resolve) => {
                 const checkRenderer = () => {
+                    if (disposed) {
+                        resolve();
+                        return;
+                    }
                     if (client.renderer?.running) {
                         resolve();
                     } else {
-                        requestAnimationFrame(checkRenderer);
+                        rendererCheckFrame = requestAnimationFrame(checkRenderer);
                     }
                 };
                 // Give React time to render (state updates are async)
-                setTimeout(checkRenderer, 100);
+                rendererCheckTimer = setTimeout(checkRenderer, 100);
             });
+
+            if (disposed) return;
 
             // ========== Initialize cache and finalize OsrsClient ==========
             client.initCache(cache);
@@ -386,6 +397,7 @@ function OsrsClientApp() {
         // Attempt to load regardless of platform; rely on feature detection
         // to determine available renderers at runtime.
         load().catch((err) => {
+            if (disposed) return;
             console.error(err);
             try {
                 const msg = err && typeof err.message === "string" ? err.message : String(err);
@@ -396,6 +408,9 @@ function OsrsClientApp() {
         });
 
         return () => {
+            disposed = true;
+            if (rendererCheckTimer !== undefined) clearTimeout(rendererCheckTimer);
+            if (rendererCheckFrame !== undefined) cancelAnimationFrame(rendererCheckFrame);
             while (loginUnsubscribers.length > 0) {
                 const unsub = loginUnsubscribers.pop();
                 if (!unsub) continue;
@@ -404,6 +419,8 @@ function OsrsClientApp() {
                 } catch {}
             }
             abortController.abort();
+            clientToDispose?.dispose();
+            if (window.osrsClient === clientToDispose) window.osrsClient = undefined;
         };
     }, [addStorageWarning, loginUnsubscribers, workerPool]);
 

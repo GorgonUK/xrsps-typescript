@@ -834,6 +834,11 @@ export class OsrsClient {
     private unsubscribeSkills?: () => void;
     private unsubscribeRunEnergy?: () => void;
     private unsubscribeNotifications?: () => void;
+    private readonly serverSubscriptions: Array<() => void> = [];
+
+    private trackServerSubscription(unsubscribe: () => void): void {
+        this.serverSubscriptions.push(unsubscribe);
+    }
     // Skills data from server - maps skill ID to {currentLevel, baseLevel, xp}
     private skillsMap: Map<number, { currentLevel: number; baseLevel: number; xp: number }> =
         new Map();
@@ -3061,16 +3066,16 @@ export class OsrsClient {
         try {
             this.playerEcs.setServerAuthoritative?.(true);
             // Align interpolation to server tick length for consistent speed
-            subscribeWelcome(({ tickMs }) => {
+            this.trackServerSubscription(subscribeWelcome(({ tickMs }) => {
                 try {
                     this.playerAnimController.reset();
                 } catch {}
                 try {
                     this.playerMovementSync.setServerTickMs(tickMs | 0);
                 } catch {}
-            });
+            }));
             // Handle websocket disconnection - show "Connection lost" message while reconnecting
-            subscribeDisconnect(({ willReconnect }) => {
+            this.trackServerSubscription(subscribeDisconnect(({ willReconnect }) => {
                 try {
                     if (willReconnect) {
                         // Show "Connection lost - attempting to reestablish" message
@@ -3080,9 +3085,9 @@ export class OsrsClient {
                         this.updateGameState(GameState.LOGIN_SCREEN);
                     }
                 } catch {}
-            });
+            }));
             // Return to login screen when reconnection attempts are exhausted
-            subscribeReconnectFailed(() => {
+            this.trackServerSubscription(subscribeReconnectFailed(() => {
                 try {
                     // failed connect shows timeout on login screen.
                     if (this.gameState === GameState.CONNECTING) {
@@ -3101,9 +3106,9 @@ export class OsrsClient {
                     this.loginState.reset();
                     this.updateGameState(GameState.LOGIN_SCREEN);
                 } catch {}
-            });
+            }));
             // Promote buffered steps on server tick to keep clients in sync
-            subscribeTick((tick) => {
+            this.trackServerSubscription(subscribeTick((tick) => {
                 try {
                     this.playerSyncManager.advanceServerTick(tick | 0);
                 } catch (err) {
@@ -3116,9 +3121,9 @@ export class OsrsClient {
                 try {
                     this.pruneWalkedWaypoints();
                 } catch {}
-            });
+            }));
             // Capture server-assigned ID as soon as handshake arrives
-            subscribeHandshake(({ id, name, appearance, chatIcons, chatPrefix, isAdmin }) => {
+            this.trackServerSubscription(subscribeHandshake(({ id, name, appearance, chatIcons, chatPrefix, isAdmin }) => {
                 try {
                     // Store the local player name for CS2 scripts (CHAT_PLAYERNAME)
                     if (name) {
@@ -3187,9 +3192,9 @@ export class OsrsClient {
                     // This allows the LOADING_GAME -> LOGGED_IN transition
                     this.loadingTracker.markComplete(LoadingRequirement.HANDSHAKE_COMPLETE);
                 } catch {}
-            });
+            }));
 
-            subscribeRebuildRegion((payload) => {
+            this.trackServerSubscription(subscribeRebuildRegion((payload) => {
                 try {
                     console.log(
                         `[OsrsClient] REBUILD_REGION received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
@@ -3206,9 +3211,9 @@ export class OsrsClient {
                 } catch (err) {
                     console.warn("[OsrsClient] rebuild_region error", err);
                 }
-            });
+            }));
 
-            subscribeRebuildNormal((payload) => {
+            this.trackServerSubscription(subscribeRebuildNormal((payload) => {
                 try {
                     console.log(
                         `[OsrsClient] REBUILD_NORMAL received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
@@ -3221,9 +3226,9 @@ export class OsrsClient {
                 } catch (err) {
                     console.warn("[OsrsClient] rebuild_normal error", err);
                 }
-            });
+            }));
 
-            subscribeRebuildWorldEntity((payload) => {
+            this.trackServerSubscription(subscribeRebuildWorldEntity((payload) => {
                 try {
                     console.log(
                         `[OsrsClient] REBUILD_WORLDENTITY received: entity=${payload.entityIndex} config=${payload.configId} size=${payload.sizeX}x${payload.sizeZ} regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
@@ -3281,11 +3286,11 @@ export class OsrsClient {
                 } catch (err) {
                     console.warn("[OsrsClient] rebuild_worldentity error", err);
                 }
-            });
+            }));
 
-            subscribeWorldEntityInfo((payload) => {
+            this.trackServerSubscription(subscribeWorldEntityInfo((payload) => {
                 this.handleWorldEntityInfo(payload);
-            });
+            }));
 
             this.unsubscribePlayerSync = subscribePlayerSync((frame) => {
                 try {
@@ -3301,7 +3306,7 @@ export class OsrsClient {
             // NOTE: This is now a fallback - animations are primarily sent per-player in the
             // appearance block (). This handler is kept for backward compatibility
             // and for setting initial default animations before player is fully spawned.
-            subscribeAnim((anim) => {
+            this.trackServerSubscription(subscribeAnim((anim) => {
                 try {
                     this.serverPlayerSeqs = { ...anim };
                     // Apply to local player's ECS entry specifically, not as a global default
@@ -3315,42 +3320,42 @@ export class OsrsClient {
                         this.playerEcs.setDefaultAnimSet(anim);
                     }
                 } catch {}
-            });
-            subscribeInventory((update) => {
+            }));
+            this.trackServerSubscription(subscribeInventory((update) => {
                 try {
                     this.handleInventoryServerUpdate(update);
                 } catch (err) {
                     console.warn("inventory update dispatch failed", err);
                 }
-            });
-            subscribeBank((update) => {
+            }));
+            this.trackServerSubscription(subscribeBank((update) => {
                 try {
                     this.handleBankServerUpdate(update);
                 } catch (err) {
                     console.warn("bank update dispatch failed", err);
                 }
-            });
-            subscribeCollectionLog((update) => {
+            }));
+            this.trackServerSubscription(subscribeCollectionLog((update) => {
                 try {
                     this.handleCollectionLogServerUpdate(update);
                 } catch (err) {
                     console.warn("collection log update dispatch failed", err);
                 }
-            });
-            subscribeShop((state) => {
+            }));
+            this.trackServerSubscription(subscribeShop((state) => {
                 try {
                     this.handleShopServerUpdate(state);
                 } catch (err) {
                     console.warn("shop update dispatch failed", err);
                 }
-            });
-            subscribeTrade((state) => {
+            }));
+            this.trackServerSubscription(subscribeTrade((state) => {
                 try {
                     this.handleTradeServerUpdate(state);
                 } catch (err) {
                     console.warn("trade update dispatch failed", err);
                 }
-            });
+            }));
             this.unsubscribeGroundItems = subscribeGroundItems((payload) => {
                 try {
                     this.groundItems.update(payload);
@@ -7415,6 +7420,29 @@ export class OsrsClient {
      */
     dispose(): void {
         console.log("[OsrsClient] Disposing...");
+        const subscriptions = [
+            ...this.serverSubscriptions.splice(0),
+            this.unsubscribeWidgetEvents,
+            this.unsubscribeNpcInfo,
+            this.unsubscribeCombat,
+            this.unsubscribePlayerSync,
+            this.unsubscribeSpot,
+            this.unsubscribeSound,
+            this.unsubscribePlaySong,
+            this.unsubscribePlayJingle,
+            this.unsubscribeSpellResults,
+            this.unsubscribePathDebug,
+            this.unsubscribeGroundItems,
+            this.unsubscribeChatMessages,
+            this.unsubscribeSkills,
+            this.unsubscribeRunEnergy,
+            this.unsubscribeNotifications,
+        ];
+        for (const unsubscribe of subscriptions) {
+            try {
+                unsubscribe?.();
+            } catch {}
+        }
         this.cancelPendingLoginMusicStart();
         this.varcPersistence.dispose();
 
