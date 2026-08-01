@@ -1,4 +1,4 @@
-import type { ProjectileLaunch } from "../../../../src/shared/projectiles/ProjectileLaunch";
+import type { ProjectileLaunch } from "../../../../client/common/projectiles/ProjectileLaunch";
 import type { HitsplatSourceType } from "../combat/OsrsHitsplatIds";
 import { PlayerState } from "../player";
 import type { CoreActionPayloadByKind } from "./actionPayloads";

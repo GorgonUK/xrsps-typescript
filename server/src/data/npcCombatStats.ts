@@ -45,6 +45,10 @@ export interface NpcCombatStats {
     immunities?: string[];
     species?: string[];
     isBoss?: boolean;
+    /** Primary combat spell for magic NPCs (Earth Strike, etc.). */
+    spellId?: number;
+    /** Weighted equally when picking a cast; preferred over spellId when set. */
+    spellIds?: number[];
 }
 
 interface NpcCombatStatsFile {
@@ -65,6 +69,15 @@ export interface NpcAggressionMetadata {
 // Singleton cache
 let npcStatsCache: Map<number, NpcCombatStats> | null = null;
 let npcAggressionMetadataCache: Map<number, NpcAggressionMetadata> | null = null;
+
+function resolveNpcAggressionIndexPath(): string | undefined {
+    const candidates = [
+        path.resolve(__dirname, "../../data/npc-aggression.json"),
+        path.resolve("data/npc-aggression.json"),
+        path.resolve("server/data/npc-aggression.json"),
+    ];
+    return candidates.find((candidate) => fs.existsSync(candidate));
+}
 
 function resolveMonstersCompletePath(): string | undefined {
     const candidates = [
@@ -124,8 +137,39 @@ function loadNpcAggressionMetadata(): Map<number, NpcAggressionMetadata> {
         return npcAggressionMetadataCache;
     }
 
-    const filePath = resolveMonstersCompletePath();
     npcAggressionMetadataCache = new Map();
+
+    // Prefer the slim committed index (built from osrsbox-db).
+    const indexPath = resolveNpcAggressionIndexPath();
+    if (indexPath) {
+        try {
+            const raw = JSON.parse(fs.readFileSync(indexPath, "utf-8")) as {
+                npcs?: Record<string, { aggressive?: unknown; combatLevel?: unknown }>;
+            };
+            for (const [npcIdStr, entry] of Object.entries(raw.npcs ?? {})) {
+                const npcId = parseInt(npcIdStr, 10);
+                if (!Number.isFinite(npcId) || typeof entry?.aggressive !== "boolean") continue;
+                const combatLevel =
+                    typeof entry.combatLevel === "number" && Number.isFinite(entry.combatLevel)
+                        ? Math.trunc(entry.combatLevel)
+                        : undefined;
+                npcAggressionMetadataCache.set(npcId, {
+                    aggressive: entry.aggressive,
+                    combatLevel,
+                });
+            }
+            logger.info(
+                `[NpcCombatStats] Loaded ${npcAggressionMetadataCache.size} NPC aggression flags from ${path.basename(indexPath)}`,
+            );
+            return npcAggressionMetadataCache;
+        } catch (error) {
+            logger.warn("[NpcCombatStats] Failed to load npc-aggression.json:", error);
+            npcAggressionMetadataCache.clear();
+        }
+    }
+
+    // Fallback: stream-parse the full osrsbox monsters dump if present locally.
+    const filePath = resolveMonstersCompletePath();
     if (!filePath) {
         return npcAggressionMetadataCache;
     }
@@ -166,6 +210,9 @@ function loadNpcAggressionMetadata(): Map<number, NpcAggressionMetadata> {
             });
             index = extracted.nextIndex;
         }
+        logger.info(
+            `[NpcCombatStats] Loaded ${npcAggressionMetadataCache.size} NPC aggression flags from monsters-complete.json`,
+        );
     } catch (error) {
         logger.warn("[NpcCombatStats] Failed to load supplemental aggression metadata:", error);
         npcAggressionMetadataCache.clear();
@@ -286,11 +333,18 @@ export function getNpcCombatProfile(npcTypeId: number) {
 }
 
 /**
- * Check if NPC is aggressive
+ * Check if NPC is aggressive (osrsbox index first, then curated combat stats).
  */
 export function isNpcAggressive(npcTypeId: number): boolean {
+    const metadata = getNpcAggressionMetadata(npcTypeId);
+    if (metadata) {
+        return metadata.aggressive;
+    }
     const stats = getNpcCombatStats(npcTypeId);
-    return stats?.aggressive ?? false;
+    if (stats?.aggressive !== undefined) {
+        return !!stats.aggressive;
+    }
+    return (stats?.aggressiveRadius ?? 0) > 0;
 }
 
 /**
@@ -298,7 +352,10 @@ export function isNpcAggressive(npcTypeId: number): boolean {
  */
 export function getNpcAggroRadius(npcTypeId: number): number {
     const stats = getNpcCombatStats(npcTypeId);
-    return stats?.aggressiveRadius ?? 0;
+    if (stats?.aggressiveRadius !== undefined) {
+        return Math.max(0, stats.aggressiveRadius | 0);
+    }
+    return isNpcAggressive(npcTypeId) ? 3 : 0;
 }
 
 /**

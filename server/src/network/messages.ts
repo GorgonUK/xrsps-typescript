@@ -1,4 +1,4 @@
-import type { ProjectileLaunch } from "../../../src/shared/projectiles/ProjectileLaunch";
+import type { ProjectileLaunch } from "../../../client/common/projectiles/ProjectileLaunch";
 import { logger } from "../utils/logger";
 import type { WidgetAction } from "../widgets/WidgetManager";
 import type { RoutedMessage } from "./MessageRouter";

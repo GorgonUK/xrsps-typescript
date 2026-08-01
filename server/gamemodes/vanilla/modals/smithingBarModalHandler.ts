@@ -25,8 +25,8 @@ import {
     SMITHING_BAR_MODAL_COMPONENT_STEEL_TEXT,
     SMITHING_BAR_MODAL_COMPONENT_TITLE,
     SMITHING_BAR_MODAL_GROUP_ID,
-} from "../../../../src/shared/ui/widgets";
-import { FONT_BOLD_12 } from "../../../../src/ui/fonts";
+} from "../../../../client/common/ui/widgets";
+import { FONT_BOLD_12 } from "../../../../client/ui/fonts";
 import type { PlayerState } from "../../../src/game/player";
 import type { ScriptServices } from "../../../src/game/scripts/types";
 

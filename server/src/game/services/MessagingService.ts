@@ -1,5 +1,5 @@
 import type { ServerServices } from "../ServerServices";
-import { ChatMessageType } from "../../../../src/shared/chat/ChatMessageType";
+import { ChatMessageType } from "../../../../client/common/chat/ChatMessageType";
 import { createLootPickupNotification } from "../notifications/LootPickupNotification";
 import type { PlayerState } from "../player";
 import type { ChatMessageSnapshot, ForcedChatBroadcast } from "../systems/BroadcastScheduler";

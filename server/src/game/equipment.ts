@@ -1,9 +1,9 @@
-import type { ObjType } from "../../../src/rs/config/objtype/ObjType";
+import type { ObjType } from "../../../client/rs/config/objtype/ObjType";
 import {
     EquipmentSlot,
     deriveAdditionalEquipSlotsFromParams,
     deriveEquipSlotFromParams,
-} from "../../../src/rs/config/player/Equipment";
+} from "../../../client/rs/config/player/Equipment";
 import { getItemDefinition } from "../data/items";
 import type { InventoryAddResult, PlayerAppearance } from "./player";
 

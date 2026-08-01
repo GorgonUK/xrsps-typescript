@@ -10,8 +10,8 @@
  */
 import type { WebSocket } from "ws";
 
-import { faceAngleRs } from "../../../../../src/rs/utils/rotation";
-import { resolveSelectedSpellPayload } from "../../../../../src/shared/spells/selectedSpellPayload";
+import { faceAngleRs } from "../../../../../client/rs/utils/rotation";
+import { resolveSelectedSpellPayload } from "../../../../../client/common/spells/selectedSpellPayload";
 import { SPELL_BUTTON_PARAM_ID } from "../../../data/spellWidgetLoader";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
@@ -35,6 +35,7 @@ import {
     resolveMagicCastSpotAnimHeight,
     resolveMagicImpactSpotAnimHeight,
 } from "../../spells/SpellDataProvider";
+import { resolveElementalSpellBaseMaxHit } from "../../spells/ElementalSpellMaxHit";
 import { CombatEngine } from "../../systems/combat/CombatEngine";
 import { TEST_HIT_FORCE, testRandFloat } from "../../testing/TestRng";
 import type { ActionRequest } from "../types";
@@ -1214,7 +1215,14 @@ export class SpellActionHandler {
             spellData,
         });
         const impactDelay = this.magicHitDelayTicks(player, targetNpc, targetPlayer);
-        base.maxHit = spellData.baseMaxHit;
+        const magicSkill = player.skillSystem.getSkill(SkillId.Magic);
+        const magicLevel = Math.max(1, (magicSkill?.baseLevel ?? 1) + (magicSkill?.boost ?? 0));
+        const spellMaxHit = resolveElementalSpellBaseMaxHit(
+            spellId,
+            magicLevel,
+            spellData.baseMaxHit,
+        );
+        base.maxHit = spellMaxHit;
         base.hitDelay = impactDelay;
 
         // Queue projectile for viewers
@@ -1248,8 +1256,8 @@ export class SpellActionHandler {
             if (TEST_HIT_FORCE !== undefined && TEST_HIT_FORCE >= 0) {
                 outcome = {
                     landed: true,
-                    maxHit: spellData.baseMaxHit ?? 0,
-                    damage: Math.max(0, Math.min(spellData.baseMaxHit ?? 0, TEST_HIT_FORCE)),
+                    maxHit: spellMaxHit,
+                    damage: Math.max(0, Math.min(spellMaxHit, TEST_HIT_FORCE)),
                 };
             } else {
                 try {
@@ -1260,10 +1268,10 @@ export class SpellActionHandler {
                         damage: Math.max(0, res.damage),
                     };
                 } catch {
-                    const damage = Math.floor(testRandFloat() * ((spellData.baseMaxHit ?? 0) + 1));
+                    const damage = Math.floor(testRandFloat() * (spellMaxHit + 1));
                     outcome = {
                         landed: damage > 0,
-                        maxHit: spellData.baseMaxHit ?? 0,
+                        maxHit: spellMaxHit,
                         damage,
                     };
                 }
@@ -1328,8 +1336,8 @@ export class SpellActionHandler {
                     damage: res.damage,
                 };
             } catch {
-                const dmg = Math.floor(testRandFloat() * ((spellData.baseMaxHit ?? 0) + 1));
-                outcome = { landed: dmg > 0, maxHit: spellData.baseMaxHit ?? 0, damage: dmg };
+                const dmg = Math.floor(testRandFloat() * (spellMaxHit + 1));
+                outcome = { landed: dmg > 0, maxHit: spellMaxHit, damage: dmg };
             }
 
             const hitDelayTicks = impactDelay;

@@ -3,7 +3,7 @@ import {
     PRAYER_NAME_SET,
     type PrayerHeadIcon,
     type PrayerName,
-} from "../../../../src/rs/prayer/prayers";
+} from "../../../../client/rs/prayer/prayers";
 
 export interface PlayerPrayerDeps {
     getPrayerSkillLevel: () => number;

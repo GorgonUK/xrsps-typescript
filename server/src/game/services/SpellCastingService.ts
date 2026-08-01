@@ -1,7 +1,7 @@
 import type { WebSocket } from "ws";
 
-import { SkillId } from "../../../../src/rs/skill/skills";
-import { resolveSelectedSpellPayload } from "../../../../src/shared/spells/selectedSpellPayload";
+import { SkillId } from "../../../../client/rs/skill/skills";
+import { resolveSelectedSpellPayload } from "../../../../client/common/spells/selectedSpellPayload";
 import { SPELL_BUTTON_PARAM_ID } from "../../data/spellWidgetLoader";
 import { getItemDefinition } from "../../data/items";
 import { logger } from "../../utils/logger";

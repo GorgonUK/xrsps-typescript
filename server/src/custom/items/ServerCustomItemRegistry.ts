@@ -1,5 +1,5 @@
-import { CustomItemRegistry } from "../../../../src/custom/items/CustomItemRegistry";
-import type { CustomItemDefProps } from "../../../../src/custom/items/CustomItemTypes";
+import { CustomItemRegistry } from "../../../../client/custom/items/CustomItemRegistry";
+import type { CustomItemDefProps } from "../../../../client/custom/items/CustomItemTypes";
 import type { ItemDefinition } from "../../data/items";
 
 /**

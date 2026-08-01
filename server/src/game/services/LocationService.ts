@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 
-import { faceAngleRs } from "../../../../src/rs/utils/rotation";
+import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import { encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";
 import {

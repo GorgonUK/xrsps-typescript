@@ -45,6 +45,8 @@ import {
     getAutocastCompatibilityMessage,
     getPoweredStaffSpellData,
     getSpellData,
+    resolveMagicCastSpotAnimHeight,
+    resolveMagicImpactSpotAnimHeight,
 } from "../../spells/SpellDataProvider";
 import type {
     CombatAttackActionData,
@@ -289,6 +291,21 @@ export interface CombatActionServices {
     pickSpellSound(spellId: number, stage: "impact" | "splash"): number | undefined;
     /** Reset autocast state. */
     resetAutocast(player: PlayerState): void;
+    /** Play NPC spell cast visuals (cast GFX + projectile). */
+    playNpcSpellCastVisuals(
+        npc: NpcState,
+        player: PlayerState,
+        spellId: number,
+        hitDelayTicks: number,
+        tick: number,
+    ): void;
+    /** Play NPC spell impact/splash GFX on the player when the hit lands. */
+    playNpcSpellImpactVisuals(
+        player: PlayerState,
+        spellId: number,
+        landed: boolean,
+        tick: number,
+    ): void;
 
     // --- Effect Dispatching ---
     /** Broadcast sound to nearby players. */
@@ -695,6 +712,59 @@ export class CombatActionHandler {
             pickSpellSound: (spellId, stage) =>
                 svc.playerCombatService!.pickSpellSound(spellId, stage),
             resetAutocast: (player) => svc.equipmentService.resetAutocast(player),
+            playNpcSpellCastVisuals: (npc, player, spellId, hitDelayTicks, tick) => {
+                const spellData = getSpellData(spellId);
+                if (!spellData) return;
+                if (spellData.castSpotAnim !== undefined && spellData.castSpotAnim >= 0) {
+                    svc.broadcastService.enqueueSpotAnimation({
+                        tick,
+                        npcId: npc.id,
+                        spotId: spellData.castSpotAnim,
+                        delay: 0,
+                        height: resolveMagicCastSpotAnimHeight(spellData),
+                    });
+                }
+                svc.projectileSystem?.queueNpcSpellProjectileLaunch({
+                    npc,
+                    targetPlayer: player,
+                    spellData,
+                    timing: {
+                        startDelay: 0,
+                        travelTime: Math.max(1, hitDelayTicks),
+                    },
+                });
+            },
+            playNpcSpellImpactVisuals: (player, spellId, landed, tick) => {
+                const spellData = getSpellData(spellId);
+                if (!spellData) return;
+                const spotId = landed
+                    ? spellData.impactSpotAnim
+                    : (spellData.splashSpotAnim ?? spellData.impactSpotAnim);
+                if (spotId === undefined || spotId < 0) return;
+                svc.broadcastService.enqueueSpotAnimation({
+                    tick,
+                    playerId: player.id,
+                    spotId,
+                    delay: 0,
+                    height: resolveMagicImpactSpotAnimHeight(landed, spellData),
+                });
+                const soundId = svc.playerCombatService?.pickSpellSound(
+                    spellId,
+                    landed ? "impact" : "splash",
+                );
+                if (soundId !== undefined) {
+                    svc.broadcastService.broadcastSound(
+                        {
+                            soundId,
+                            x: player.tileX,
+                            y: player.tileY,
+                            level: player.level,
+                            delay: 0,
+                        },
+                        "combat_npc_spell_impact",
+                    );
+                }
+            },
 
             broadcastSound: (request, tag) => svc.broadcastService.broadcastSound(request, tag),
             withDirectSendBypass: (tag, fn) => svc.networkLayer.withDirectSendBypass(tag, fn),
@@ -953,7 +1023,7 @@ export class CombatActionHandler {
         const isNewRetaliationTarget =
             !npc.isInCombat(tick) || npc.getCombatTargetPlayerId() !== player.id;
         if (isNewRetaliationTarget) {
-            npc.engageCombat(player.id, tick);
+            npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
             const initialRetaliationDelay = Math.floor(Math.max(1, npc.attackSpeed) / 2) + 1;
             npc.setNextAttackTick(tick + initialRetaliationDelay);
         }

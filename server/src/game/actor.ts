@@ -1,10 +1,10 @@
-import { faceAngleRs } from "../../../src/rs/utils/rotation";
+import { faceAngleRs } from "../../../client/rs/utils/rotation";
 import {
     MovementDirection,
     deltaToDirection,
     deltaToRunDirection,
     directionToDelta,
-} from "../../../src/shared/Direction";
+} from "../../../client/common/Direction";
 import { logger } from "../utils/logger";
 import {
     type InteractionIndex,

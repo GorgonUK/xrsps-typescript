@@ -4,8 +4,9 @@
  */
 import {
     VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE,
+    VARBIT_ROOF_REMOVAL,
     VARBIT_XPDROPS_ENABLED,
-} from "../../../../src/shared/vars";
+} from "../../../../client/common/vars";
 
 export const DIARY_VARBITS: Array<[number, number]> = [
     // === STARTED FLAGS (1 = started) ===
@@ -213,6 +214,7 @@ export const DEFAULT_LOGIN_VARBITS: Array<[number, number]> = [
     ...DIARY_VARBITS,
     [VARBIT_XPDROPS_ENABLED, 1],
     [VARBIT_MUSIC_UNLOCK_TEXT_TOGGLE, 1],
+    [VARBIT_ROOF_REMOVAL, 1], // Hide roofs by default
     // Quest journal defaults
     [6347, 0], // quests_completed_count
     [11877, 158], // quests_total_count (158 total quests in OSRS)

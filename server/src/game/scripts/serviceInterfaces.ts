@@ -1,4 +1,4 @@
-import type { PrayerName } from "../../../../src/rs/prayer/prayers";
+import type { PrayerName } from "../../../../client/rs/prayer/prayers";
 import type { ItemDefinition } from "../../data/items";
 import type { PathService } from "../../pathfinding/PathService";
 import type { InterfaceService } from "../../widgets/InterfaceService";
@@ -302,7 +302,7 @@ export interface SailingServiceFacade {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../client/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;
@@ -319,7 +319,7 @@ export interface SailingServiceFacade {
         sizeX: number,
         sizeZ: number,
         templateChunks: number[][][],
-        buildAreas: import("../../../../src/shared/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
+        buildAreas: import("../../../../client/common/worldentity/WorldEntityTypes").WorldEntityBuildArea[],
         extraLocs?: Array<{
             id: number;
             x: number;

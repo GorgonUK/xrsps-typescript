@@ -1,8 +1,8 @@
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import {
     DEFAULT_WEAPON_CATEGORY,
     resolveWeaponCategoryFromObj,
-} from "../../../../src/rs/config/player/WeaponCategory";
+} from "../../../../client/rs/config/player/WeaponCategory";
 import { getItemDefinition } from "../../data/items";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";

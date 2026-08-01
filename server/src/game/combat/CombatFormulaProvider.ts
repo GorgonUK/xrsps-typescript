@@ -22,6 +22,12 @@ export interface MaxHitParams {
     strengthBonus: number;
 }
 
+/**
+ * RSMod InternalNpcAccuracy / InternalNpcMaxHits style bonus.
+ * NPCs use Controlled-equivalent (+9), not the player +8 baseline.
+ */
+export const NPC_EFFECTIVE_LEVEL_BONUS = 9;
+
 export interface NpcAttackBonusProfile {
     attackBonus: number;
     magicBonus: number;
@@ -40,10 +46,20 @@ export interface NpcMaxHitProfile {
     maxHit: number;
     strengthLevel: number;
     strengthBonus: number;
+    magicLevel?: number;
+    /** Magic strength / npc_magic_damage_bonus */
+    magicBonus?: number;
+    rangedLevel?: number;
+    rangedBonus?: number;
+    attackType?: AttackType;
 }
 
 export interface NpcVsPlayerProfile {
     attackLevel: number;
+    /** Used for magic accuracy when attackType is magic. Falls back to attackLevel. */
+    magicLevel?: number;
+    /** Used for ranged accuracy when attackType is ranged. Falls back to attackLevel. */
+    rangedLevel?: number;
     attackBonus: number;
     magicBonus: number;
     rangedBonus: number;

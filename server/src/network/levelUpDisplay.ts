@@ -1,4 +1,4 @@
-import { SkillId } from "../../../src/rs/skill/skills";
+import { SkillId } from "../../../client/rs/skill/skills";
 
 // Cache parity: interface 233 component ids in this revision do not match newer RuneLite constants.
 // Verified against cache group 233.

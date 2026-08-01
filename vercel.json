@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "create-react-app",
-  "buildCommand": "CI=false yarn build",
-  "outputDirectory": "build",
-  "installCommand": "yarn install --frozen-lockfile",
+  "installCommand": "yarn --cwd client install --frozen-lockfile",
+  "buildCommand": "CI=false yarn --cwd client build",
+  "outputDirectory": "client/build",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../../../client/rs/skill/skills";
 import type { IScriptRegistry, ScriptServices } from "../../../../../src/game/scripts/types";
 import type { QuestDefinition } from "../../types";
 import {

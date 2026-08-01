@@ -1,4 +1,4 @@
-import { DIRECTION_TO_ORIENTATION } from "../../../../src/shared/Direction";
+import { DIRECTION_TO_ORIENTATION } from "../../../../client/common/Direction";
 
 /**
  * Player update mask bit flags.

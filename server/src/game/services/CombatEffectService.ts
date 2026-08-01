@@ -1,5 +1,5 @@
-import { PRAYER_DEACTIVATE_SOUND_ID, type PrayerName } from "../../../../src/rs/prayer/prayers";
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { PRAYER_DEACTIVATE_SOUND_ID, type PrayerName } from "../../../../client/rs/prayer/prayers";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import type { ActionEffect } from "../actions/types";

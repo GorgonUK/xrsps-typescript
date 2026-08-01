@@ -1,4 +1,4 @@
-import { DirectionFlag } from "../../../src/shared/Direction";
+import { DirectionFlag } from "../../../client/common/Direction";
 import type { SailingWorldView } from "../game/sailing/SailingWorldView";
 import { CollisionOverlayStore } from "../world/CollisionOverlayStore";
 import { MapCollisionService } from "../world/MapCollisionService";

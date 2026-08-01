@@ -1,5 +1,7 @@
 import { canNpcAttackPlayerFromCurrentPosition } from "../../combat/CombatAction";
+import { AttackType } from "../../combat/AttackType";
 import { HITMARK_DAMAGE } from "../../combat/HitEffects";
+import { pickNpcSpellId } from "../../combat/NpcSpellKits";
 import type { NpcState } from "../../npc";
 import type { PlayerState } from "../../player";
 import type { CombatNpcRetaliateActionData } from "../actionPayloads";
@@ -51,6 +53,7 @@ export class NpcRetaliationHandler {
             type2: rawType2,
             damage2: rawDamage2,
             attackType: rawAttackType,
+            spellId: rawSpellId,
         } = data;
         const maxHit = Math.max(0, rawMaxHit);
         const attackType = this.services.resolveNpcAttackType(
@@ -67,6 +70,14 @@ export class NpcRetaliationHandler {
         );
         const type2 = Number.isFinite(rawType2) ? rawType2 : undefined;
         const damage2 = Number.isFinite(rawDamage2) ? rawDamage2 : undefined;
+        const spellId =
+            typeof rawSpellId === "number" && Number.isFinite(rawSpellId) && rawSpellId > 0
+                ? Math.trunc(rawSpellId)
+                : undefined;
+
+        if (spellId !== undefined && attackType === AttackType.Magic) {
+            this.services.playNpcSpellImpactVisuals(player, spellId, damage > 0, tick);
+        }
 
         const playerHitsplat = this.services.applyPlayerHitsplat(
             player,
@@ -80,7 +91,7 @@ export class NpcRetaliationHandler {
         // Being attacked interrupts weak queue tasks (e.g. Home Teleport)
         player.interruptWeakQueues();
 
-        npc.engageCombat(player.id, tick);
+        npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
 
         // Player block animation - only play block animation if no other
         // animation is pending. This prevents block animations from interrupting attack
@@ -124,20 +135,22 @@ export class NpcRetaliationHandler {
             hpMax: playerHitsplat.hpMax,
         });
 
-        // NPC attack sound
-        const npcAttackSoundId = this.services.getNpcAttackSoundId(npc.typeId);
-        this.services.withDirectSendBypass("combat_npc_sound", () =>
-            this.services.broadcastSound(
-                {
-                    soundId: npcAttackSoundId,
-                    x: npc.tileX,
-                    y: npc.tileY,
-                    level: npc.level,
-                    delay: COMBAT_SOUND_DELAY_CYCLES,
-                },
-                "combat_npc_sound",
-            ),
-        );
+        // NPC attack sound (melee / non-spell). Spell impacts play their own sound.
+        if (spellId === undefined) {
+            const npcAttackSoundId = this.services.getNpcAttackSoundId(npc.typeId);
+            this.services.withDirectSendBypass("combat_npc_sound", () =>
+                this.services.broadcastSound(
+                    {
+                        soundId: npcAttackSoundId,
+                        x: npc.tileX,
+                        y: npc.tileY,
+                        level: npc.level,
+                        delay: COMBAT_SOUND_DELAY_CYCLES,
+                    },
+                    "combat_npc_sound",
+                ),
+            );
+        }
 
         // Keep the player-side combat focus alive after a successful retaliation.
         this.services.extendAggroHold(player.id, 6);
@@ -145,7 +158,7 @@ export class NpcRetaliationHandler {
         if (!this.services.isActiveFrame() && effects.length > 0) {
             this.services.dispatchActionEffects(effects);
         }
-        return { ok: true, cooldownTicks: 0, groups: [], effects };
+        return { ok: true, cooldownTicks: 0, effects };
     }
 
     handleNpcRetaliateSwing(
@@ -203,7 +216,21 @@ export class NpcRetaliationHandler {
             0,
             rawHitDelay ?? this.services.pickNpcHitDelay(npc, player, npc.attackSpeed),
         );
-        const hitData = {
+
+        // Magic NPCs with a spell kit cast a real spell (cast GFX + projectile).
+        const spellId =
+            attackType === AttackType.Magic ? pickNpcSpellId(npc.typeId) : undefined;
+        if (spellId !== undefined) {
+            this.services.playNpcSpellCastVisuals(
+                npc,
+                player,
+                spellId,
+                Math.max(1, hitDelay),
+                tick,
+            );
+        }
+
+        const hitData: CombatNpcRetaliateActionData = {
             npcId: npc.id,
             damage,
             maxHit,
@@ -211,7 +238,8 @@ export class NpcRetaliationHandler {
             type2,
             damage2,
             attackType,
-            phase: "hit" as const,
+            phase: "hit",
+            ...(spellId !== undefined ? { spellId } : {}),
         };
         if (hitDelay <= 0) {
             // The scheduler drains its queue once per tick, so a queued 0-delay
@@ -247,7 +275,7 @@ export class NpcRetaliationHandler {
         if (!this.services.isActiveFrame() && effects.length > 0) {
             this.services.dispatchActionEffects(effects);
         }
-        return { ok: true, cooldownTicks: 0, groups: [], effects };
+        return { ok: true, cooldownTicks: 0, effects };
     }
 
     handlePlayerAutoRetaliate(

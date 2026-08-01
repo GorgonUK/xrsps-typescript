@@ -3,14 +3,14 @@ import {
     PRAYER_NAME_TO_BIT,
     type PrayerDefinition,
     type PrayerName,
-} from "../../../../src/rs/prayer/prayers";
+} from "../../../../client/rs/prayer/prayers";
 import {
     VARBIT_PRAYER_FILTER_ALLOW_COMBINED_TIER,
     VARBIT_PRAYER_FILTER_BLOCK_HEALING,
     VARBIT_PRAYER_FILTER_BLOCK_LACK_LEVEL,
     VARBIT_PRAYER_FILTER_BLOCK_LOCKED,
     VARBIT_PRAYER_FILTER_BLOCK_LOW_TIER,
-} from "../../../../src/shared/vars";
+} from "../../../../client/common/vars";
 import type { PlayerState } from "../../../src/game/player";
 import {
     DisplayMode,

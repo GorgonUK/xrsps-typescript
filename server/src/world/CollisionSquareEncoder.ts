@@ -1,4 +1,4 @@
-import { CollisionMap } from "../../../src/rs/scene/CollisionMap";
+import { CollisionMap } from "../../../client/rs/scene/CollisionMap";
 import { bitsetByteLength, bitsetSet } from "../utils/bitset";
 import { ServerMapSquare } from "./MapCollisionService";
 

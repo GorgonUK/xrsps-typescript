@@ -1,6 +1,6 @@
 import type { WebSocket } from "ws";
 
-import type { LocTypeLoader } from "../../../src/rs/config/loctype/LocTypeLoader";
+import type { LocTypeLoader } from "../../../client/rs/config/loctype/LocTypeLoader";
 import { PathService } from "../pathfinding/PathService";
 import { logger } from "../utils/logger";
 import { DoorStateManager } from "../world/DoorStateManager";

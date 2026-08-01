@@ -1,7 +1,7 @@
 import path from "path";
 
-import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
-import { ModelData } from "../../src/rs/model/ModelData";
+import { getCacheLoaderFactory } from "../../client/rs/cache/loader/CacheLoaderFactory";
+import { ModelData } from "../../client/rs/model/ModelData";
 import { initCacheEnv } from "../src/world/CacheEnv";
 
 type CliOptions = {
@@ -429,7 +429,7 @@ function main(): void {
         process.exit(1);
     }
 
-    const repoRoot = path.resolve(__dirname, "../..");
+    const repoRoot = path.resolve(__dirname, "..");
     const env = initCacheEnv(path.join(repoRoot, "caches"), opts.cacheName);
     const factory = getCacheLoaderFactory(env.info, env.cacheSystem as any) as any;
     const locTypeLoader = factory.getLocTypeLoader();

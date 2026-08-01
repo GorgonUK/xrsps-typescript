@@ -1,5 +1,5 @@
-import { PRAYER_RECHARGE_SOUND_ID } from "../../../../../src/rs/prayer/prayers";
-import { SkillId } from "../../../../../src/rs/skill/skills";
+import { PRAYER_RECHARGE_SOUND_ID } from "../../../../../client/rs/prayer/prayers";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { IScriptRegistry, ScriptServices } from "../../../../src/game/scripts/types";
 import { BURIABLE_BONES_XP } from "./prayerData";
 import { formatOfferMessage } from "./prayerMessages";

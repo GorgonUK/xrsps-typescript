@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-import { DbRepository } from "../../../src/rs/config/db/DbRepository";
-import { NpcType } from "../../../src/rs/config/npctype/NpcType";
+import { DbRepository } from "../../../client/rs/config/db/DbRepository";
+import { NpcType } from "../../../client/rs/config/npctype/NpcType";
 import { logger } from "../utils/logger";
 
 export type NpcSoundType = "attack" | "death" | "hit" | "defend";
@@ -81,10 +81,10 @@ export class NpcSoundLookup {
         }
 
         this.loadNpcSoundMapFile(
-            path.resolve(__dirname, "../../../data/npc-sounds.generated.json"),
+            path.resolve(__dirname, "../../data/npc-sounds.generated.json"),
         );
         this.loadNpcSoundMapFile(
-            path.resolve(__dirname, "../../../data/npc-sounds.overrides.json"),
+            path.resolve(__dirname, "../../data/npc-sounds.overrides.json"),
         );
 
         this.initialized = true;

@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { getItemDefinition } from "../../data/items";
 import { encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";

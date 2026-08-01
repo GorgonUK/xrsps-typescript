@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import type { InstantUtilitySpecialProvider } from "../../../src/game/combat/InstantUtilitySpecialProvider";
 import type { PlayerState } from "../../../src/game/player";
 

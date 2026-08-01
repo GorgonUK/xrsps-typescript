@@ -25,7 +25,7 @@ import {
     VARP_SOUND_EFFECTS_VOLUME,
     VARP_SPECIAL_ATTACK,
     XPDROPS_TRANSMIT_VARPS,
-} from "../../../../src/shared/vars";
+} from "../../../../client/common/vars";
 import { encodeMessage } from "../../network/messages";
 import type { ServerServices } from "../ServerServices";
 import type { PlayerState } from "../player";

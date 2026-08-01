@@ -2,7 +2,7 @@ import type {
     LeagueMasteryChallengeRow,
     LeagueMasteryNodeRow,
     LeagueRelicRow,
-} from "../../../../src/shared/gamemode/GamemodeDataTypes";
+} from "../../../../client/common/gamemode/GamemodeDataTypes";
 
 // Auto-generated from cache data.
 

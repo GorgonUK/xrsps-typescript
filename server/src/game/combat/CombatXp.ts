@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import { AttackType } from "./AttackType";
 
 export type { AttackType };

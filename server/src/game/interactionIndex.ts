@@ -12,4 +12,4 @@ export {
     isPlayerInteractionIndex,
     isValidInteractionIndex,
     resolveInteractionTargetId,
-} from "../../../src/rs/interaction/InteractionIndex";
+} from "../../../client/rs/interaction/InteractionIndex";

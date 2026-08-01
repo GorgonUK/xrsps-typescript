@@ -17,14 +17,17 @@
   "include": [
     "src/**/*",
     "data/**/*",
-    "../src/rs/**/*",
-    "../src/shared/**/*"
+    "../client/rs/**/*",
+    "../client/common/**/*"
   ],
   "exclude": [
-    "../src/rs/cs2/**/*",
-    "../src/**/*.tsx",
-    "../src/client/**/*",
-    "../src/ui/**/*",
-    "../src/webgl/**/*"
+    "../client/rs/cs2/**/*",
+    "../client/**/*.tsx",
+    "../client/game/**/*",
+    "../client/ui/**/*",
+    "../client/render/**/*",
+    "../client/widgets/**/*",
+    "../client/network/**/*",
+    "../client/components/**/*"
   ]
 }

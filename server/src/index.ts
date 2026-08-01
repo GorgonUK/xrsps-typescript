@@ -1,6 +1,4 @@
-import path from "path";
-
-import { getCacheLoaderFactory } from "../../src/rs/cache/loader/CacheLoaderFactory";
+import { getCacheLoaderFactory } from "../../client/rs/cache/loader/CacheLoaderFactory";
 import { config } from "./config";
 import { damageTracker } from "./game/combat/DamageTracker";
 import { createGamemode } from "./game/gamemodes/GamemodeRegistry";
@@ -8,6 +6,7 @@ import { NpcManager } from "./game/npcManager";
 import { initSpellWidgetMapping } from "./game/spells/SpellDataProvider";
 import { GameTicker } from "./game/ticker";
 import { WSServer } from "./network/wsServer";
+import { serverPath } from "./paths";
 import { PathService } from "./pathfinding/PathService";
 import { logger } from "./utils/logger";
 import { setViewportEnumService } from "./widgets/viewport";
@@ -29,7 +28,7 @@ async function main() {
     // Build full scenes like the editor (models included) so server has parity
     logger.info("Boot: creating map collision service (precomputed=true)...");
     const mapService = new MapCollisionService(cacheEnv, false, {
-        precomputedRoot: "server/cache/collision",
+        precomputedRoot: serverPath("cache", "collision"),
         usePrecomputed: true,
     });
     logger.info("Boot: map collision service ready");
@@ -60,7 +59,7 @@ async function main() {
 
     const npcManager = new NpcManager(mapService, pathService, npcTypeLoader, basTypeLoader);
     if (gamemode.shouldLoadDefaultNpcSpawns()) {
-        npcManager.loadFromFile(path.resolve("server/data/npc-spawns.json"));
+        npcManager.loadFromFile(serverPath("data", "npc-spawns.json"));
         logger.info("Boot: NPC manager ready (default spawns loaded)");
     } else {
         logger.info(`Boot: NPC manager ready (default spawns disabled by ${gamemode.id})`);

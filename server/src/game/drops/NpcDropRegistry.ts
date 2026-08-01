@@ -1,5 +1,5 @@
-import type { NpcType } from "../../../../src/rs/config/npctype/NpcType";
-import type { NpcTypeLoader } from "../../../../src/rs/config/npctype/NpcTypeLoader";
+import type { NpcType } from "../../../../client/rs/config/npctype/NpcType";
+import type { NpcTypeLoader } from "../../../../client/rs/config/npctype/NpcTypeLoader";
 import { logger } from "../../utils/logger";
 import { normalizeName, resolveDropTable } from "./helpers";
 import { MANUAL_NPC_DROP_OVERRIDES } from "./manualTables";

@@ -1,6 +1,6 @@
 import path from "path";
 
-import type { EnumTypeLoader } from "../../../../src/rs/config/enumtype/EnumTypeLoader";
+import type { EnumTypeLoader } from "../../../../client/rs/config/enumtype/EnumTypeLoader";
 import type { NpcSoundType } from "../../audio/NpcSoundLookup";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
@@ -33,7 +33,7 @@ export class CombatDataService {
     loadNpcCombatDefs(): void {
         if (this.npcCombatDefs) return;
         try {
-            const raw = require(path.resolve("server/data/npc-combat-defs.json")) as {
+            const raw = require(path.resolve(__dirname, "../../../data/npc-combat-defs.json")) as {
                 defaults?: {
                     humanoid?: {
                         attack?: number;
@@ -102,7 +102,7 @@ export class CombatDataService {
     loadNpcCombatStats(): void {
         if (this.npcCombatStats) return;
         try {
-            const raw = require(path.resolve("server/data/npc-combat-stats.json"));
+            const raw = require(path.resolve(__dirname, "../../../data/npc-combat-stats.json"));
             this.npcCombatStats = raw ?? {};
         } catch {
             this.npcCombatStats = {};

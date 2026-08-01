@@ -3,7 +3,7 @@ import type { WebSocket } from "ws";
 import {
     MODIFIER_FLAG_CTRL,
     MODIFIER_FLAG_CTRL_SHIFT,
-} from "../../../../src/shared/input/modifierFlags";
+} from "../../../../client/common/input/modifierFlags";
 import { hasDirectReachToArea } from "../../pathfinding/DirectReach";
 import { PathService } from "../../pathfinding/PathService";
 import {

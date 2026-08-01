@@ -1,4 +1,4 @@
-import { VARBIT_SHOP_QUANTITY } from "../../../../src/shared/vars";
+import { VARBIT_SHOP_QUANTITY } from "../../../../client/common/vars";
 import {
     type IScriptRegistry,
     type ScriptServices,

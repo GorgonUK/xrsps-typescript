@@ -1,39 +1,41 @@
-<p align="center">
-  <img src="docs/public/xrsps.png" alt="XRSPS" width="128">
-</p>
+# XRSPS
 
-<p align="center">
-  <strong>A community-driven project inspired by Project Zanaris.</strong><br>
-  OSRS in the browser with a React/WebGL client and TypeScript WebSocket server.
-</p>
+A community-driven project inspired by Project Zanaris.
+OSRS in the browser with a React/WebGL client and TypeScript WebSocket server.
 
-<p align="center">
-  <a href="https://xrsps.com"><img src="https://img.shields.io/badge/Docs-xrsps.com-5b8def?style=for-the-badge&logo=bookstack&logoColor=white" alt="Docs"></a>
-  <br>
-  <a href="https://discord.gg/3dzttF2q73"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <br>
-  <a href="https://trello.com/b/UjMvJYrl/xrsps"><img src="https://img.shields.io/badge/Trello-Board-0052CC?style=for-the-badge&logo=trello&logoColor=white" alt="Trello"></a>
-</p>
+## Packages
 
----
+This repository root contains only:
+
+- [`client/`](client/) — `@xrsps/client` (browser app)
+- [`server/`](server/) — `@xrsps/server` (game server)
+- [`docs/`](docs/) — documentation site
 
 ## Quick Start
 
 Requires **Node.js v22.16+** and **Yarn**.
 
 ```bash
-git clone https://github.com/xrsps/xrsps-typescript.git
-cd xrsps-typescript
+# Server
+cd server
 yarn install
-yarn server:build-collision
-yarn server:start        # terminal 1
-yarn start               # terminal 2
+yarn build-collision
+yarn start
+
+# Client (separate terminal)
+cd client
+yarn install
+yarn start
+
+# Docs (optional)
+cd docs
+yarn install
+yarn dev
 ```
 
-See the [full setup guide](https://xrsps.com/setup) for details.
+See [docs/setup.md](docs/setup.md) for details.
 
 ---
 
-<p align="center">
-  <sub>Fan project. Not affiliated with, endorsed by, or connected to Jagex Ltd.<br>Old School RuneScape and related assets/trademarks belong to their respective owners.</sub>
-</p>
+Fan project. Not affiliated with, endorsed by, or connected to Jagex Ltd.
+Old School RuneScape and related assets/trademarks belong to their respective owners.

@@ -1,1 +1,1 @@
-export * from "../../../../src/shared/items/CacheItemSearchIndex";
+export * from "../../../../client/common/items/CacheItemSearchIndex";

@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import type { SkillConfiguration } from "../../../src/game/combat/SkillConfigurationProvider";
 import type { SkillEntry } from "../../../src/game/state/PlayerSkillSystem";
 

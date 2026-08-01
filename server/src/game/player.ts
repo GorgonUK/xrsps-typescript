@@ -1,6 +1,6 @@
-import { EquipmentSlot } from "../../../src/rs/config/player/Equipment";
-import { PrayerName } from "../../../src/rs/prayer/prayers";
-import { SKILL_IDS, SkillId } from "../../../src/rs/skill/skills";
+import { EquipmentSlot } from "../../../client/rs/config/player/Equipment";
+import { PrayerName } from "../../../client/rs/prayer/prayers";
+import { SKILL_IDS, SkillId } from "../../../client/rs/skill/skills";
 import { logger } from "../utils/logger";
 import { DisplayMode, PlayerWidgetManager } from "../widgets/WidgetManager";
 import { Actor, RUN_ENERGY_MAX, Tile } from "./actor";

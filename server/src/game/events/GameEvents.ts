@@ -1,4 +1,4 @@
-import type { SkillId } from "../../../../src/rs/skill/skills";
+import type { SkillId } from "../../../../client/rs/skill/skills";
 import type { NpcState } from "../npc";
 import type { PlayerState } from "../player";
 

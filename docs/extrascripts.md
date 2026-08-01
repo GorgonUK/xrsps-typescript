@@ -71,8 +71,8 @@ Both gamemodes and extrascripts can define **custom items** and **custom widgets
 Use `CustomItemBuilder` and `CustomItemRegistry` to define items that don't exist in the OSRS cache. Custom items use IDs starting at **50000+** to avoid conflicts.
 
 ```typescript
-import { CustomItemBuilder } from "../../src/custom/items/CustomItemBuilder";
-import { CustomItemRegistry } from "../../src/custom/items/CustomItemRegistry";
+import { CustomItemBuilder } from "../../client/custom/items/CustomItemBuilder";
+import { CustomItemRegistry } from "../../client/custom/items/CustomItemRegistry";
 
 CustomItemRegistry.register(
     CustomItemBuilder.create(50100)

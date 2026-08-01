@@ -1,5 +1,5 @@
 /**
  * Server collision flags - re-exported from shared module.
- * @see src/shared/CollisionFlag.ts for the canonical definitions.
+ * @see client/common/CollisionFlag.ts for the canonical definitions.
  */
-export { CollisionFlag, CollisionFlagBits } from "../../../../../../src/shared/CollisionFlag";
+export { CollisionFlag, CollisionFlagBits } from "../../../../../../client/common/CollisionFlag";

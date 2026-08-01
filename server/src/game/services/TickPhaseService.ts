@@ -1,7 +1,7 @@
 import { WebSocket } from "ws";
 
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
-import { faceAngleRs } from "../../../../src/rs/utils/rotation";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
+import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import {
     VARBIT_IN_LMS,
     VARBIT_IN_RAID,
@@ -10,7 +10,7 @@ import {
     VARBIT_PVP_SPEC_ORB,
     VARBIT_RAID_STATE,
     VARP_SPECIAL_ENERGY,
-} from "../../../../src/shared/vars";
+} from "../../../../client/common/vars";
 import { NpcSyncSession } from "../../network/NpcSyncSession";
 import { PlayerSyncSession } from "../../network/PlayerSyncSession";
 import type { BroadcastContext } from "../../network/broadcast/BroadcastDomain";

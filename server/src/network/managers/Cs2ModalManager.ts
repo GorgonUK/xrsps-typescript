@@ -4,7 +4,7 @@ import {
     INDEXED_MENU_LIST_UID,
     INDEXED_MENU_PAUSE_BUTTON_FLAGS,
     INDEXED_MENU_SCRIPT_ID,
-} from "../../../../src/shared/ui/indexedMenu";
+} from "../../../../client/common/ui/indexedMenu";
 import type { ServerServices } from "../../game/ServerServices";
 import type { PlayerState } from "../../game/player";
 

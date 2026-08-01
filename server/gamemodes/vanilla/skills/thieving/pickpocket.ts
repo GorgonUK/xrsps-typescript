@@ -828,9 +828,6 @@ function executePickpocketAction(ctx: ScriptActionHandlerContext): ActionExecuti
         }
         services.animation.playPlayerSeq(player, PICKPOCKET_ANIM);
         player.lock = LockState.FULL_WITH_ITEM_INTERACTION;
-        effects.push(
-            buildMessageEffect(player, `You attempt to pick the ${npcNameLower}'s pocket.`),
-        );
         schedulePickpocket(services, player.id, { ...data, phase: 1 }, tick);
         return { ok: true, cooldownTicks: 1, effects };
     }

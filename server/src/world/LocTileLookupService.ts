@@ -1,6 +1,6 @@
-import { getCacheLoaderFactory } from "../../../src/rs/cache/loader/CacheLoaderFactory";
-import { ByteBuffer } from "../../../src/rs/io/ByteBuffer";
-import { MapFileLoader } from "../../../src/rs/map/MapFileLoader";
+import { getCacheLoaderFactory } from "../../../client/rs/cache/loader/CacheLoaderFactory";
+import { ByteBuffer } from "../../../client/rs/io/ByteBuffer";
+import { MapFileLoader } from "../../../client/rs/map/MapFileLoader";
 import { logger } from "../utils/logger";
 import type { CacheEnv } from "./CacheEnv";
 

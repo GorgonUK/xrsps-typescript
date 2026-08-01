@@ -1,4 +1,4 @@
-import { SkillId } from "../../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { ActionEffect, ActionExecutionResult } from "../../../../src/game/actions/types";
 import type { PlayerState } from "../../../../src/game/player";
 import type { ItemOnItemEvent } from "../../../../src/game/scripts/types";

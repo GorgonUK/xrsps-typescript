@@ -10,7 +10,7 @@
  * - Apply special attack effects (freeze, heal, prayer restore)
  * - Handle status effects (poison, venom, disease)
  */
-import { SkillId } from "../../../../src/rs/skill/skills";
+import { SkillId } from "../../../../client/rs/skill/skills";
 import type { NpcState } from "../npc";
 import type { PlayerState } from "../player";
 import { AttackType } from "./AttackType";

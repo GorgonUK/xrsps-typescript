@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 
-import { BasTypeLoader } from "../../../src/rs/config/bastype/BasTypeLoader";
-import { NpcType } from "../../../src/rs/config/npctype/NpcType";
-import { NpcTypeLoader } from "../../../src/rs/config/npctype/NpcTypeLoader";
-import { DIRECTION_TO_ORIENTATION } from "../../../src/shared/Direction";
+import { BasTypeLoader } from "../../../client/rs/config/bastype/BasTypeLoader";
+import { NpcType } from "../../../client/rs/config/npctype/NpcType";
+import { NpcTypeLoader } from "../../../client/rs/config/npctype/NpcTypeLoader";
+import { DIRECTION_TO_ORIENTATION } from "../../../client/common/Direction";
 import {
     getNpcAggressionMetadata,
     getNpcCombatStats,
@@ -25,6 +25,7 @@ import { StatusHitsplat } from "./combat/HitEffects";
 import { isInWilderness, multiCombatSystem } from "./combat/MultiCombatZones";
 import {
     AGGRESSION_TIMER_TICKS,
+    isPlayerSafeFromStandardNpcAggression,
     type PlayerAggressionState,
     TARGET_SEARCH_INTERVAL,
 } from "./combat/NpcCombatAI";
@@ -461,15 +462,16 @@ export class NpcManager {
         npcType: NpcType,
         combatStats?: NpcCombatStatsData,
     ): boolean {
-        if (combatStats) {
-            if (combatStats.aggressive !== undefined) {
-                return !!combatStats.aggressive;
-            }
-            if ((combatStats.aggressiveRadius ?? 0) > 0) {
-                return true;
-            }
+        // Prefer the global osrsbox aggression index (npc-aggression.json).
+        // Curated combat-stats cover only a small subset and often omit/override wrongly.
+        const metadata = getNpcAggressionMetadata(npcType.id);
+        if (metadata) {
+            return metadata.aggressive;
         }
-        return getNpcAggressionMetadata(npcType.id)?.aggressive ?? false;
+        if (combatStats?.aggressive !== undefined) {
+            return !!combatStats.aggressive;
+        }
+        return (combatStats?.aggressiveRadius ?? 0) > 0;
     }
 
     private deriveAggressionRadius(
@@ -957,6 +959,14 @@ export class NpcManager {
                                     this.pathService,
                                     attackRange,
                                 );
+                                // OSRS retreat max range: never step more than 7 tiles from spawn.
+                                this.clampNpcPathToRoamArea(npc);
+                            }
+                            // Can't close without leaving the 7-tile box → cancel chase, go home.
+                            if (!npc.hasPath() && !canAttackFromCurrentPosition) {
+                                npc.disengageCombat();
+                                npc.scheduleNextAggressionCheck(currentTick);
+                                this.processRecoveryNpcMovement(npc);
                             }
                         } else {
                             // The chase queues steps toward the target's own tile, so a
@@ -968,7 +978,7 @@ export class NpcManager {
                     } else {
                         npc.disengageCombat();
                         npc.scheduleNextAggressionCheck(currentTick);
-                        this.processIdleNpcMovement(npc, currentTick, roamBudget);
+                        this.processRecoveryNpcMovement(npc);
                     }
                 } else {
                     this.processIdleNpcMovement(npc, currentTick, roamBudget);
@@ -1191,6 +1201,31 @@ export class NpcManager {
         npc.setPath(validSteps, !!npc.running);
     }
 
+    /** Truncate chase paths so the NPC stays inside its combat leash from spawn. */
+    private clampNpcPathToRoamArea(npc: NpcState): void {
+        const queuedSteps = npc.getPathQueue();
+        if (queuedSteps.length === 0) {
+            return;
+        }
+
+        const validSteps: { x: number; y: number }[] = [];
+        for (const step of queuedSteps) {
+            if (npc.isTileOutsideCombatLeash(step.x, step.y)) {
+                break;
+            }
+            validSteps.push(step);
+        }
+
+        if (validSteps.length === queuedSteps.length) {
+            return;
+        }
+        if (validSteps.length === 0) {
+            npc.clearPath();
+            return;
+        }
+        npc.setPath(validSteps, !!npc.running);
+    }
+
     forEach(cb: (npc: NpcState) => void): void {
         for (const npc of this.npcs.values()) cb(npc);
     }
@@ -1358,18 +1393,14 @@ export class NpcManager {
     }
 
     /**
-     * Check if an aggressive NPC should target a nearby player.
+     * OSRS aggression targeting (wiki: Aggressiveness / Tolerance).
      *
-     * OSRS Aggression Rules:
-     * 1. NPC must be aggressive (has aggressive flag)
-     * 2. Player must be within aggression radius (using NPC's SW tile as origin)
-     * 3. Player's combat level must be <= 2 * NPC's combat level (or NPC level >= 63)
-     * 4. NPC must not already be in combat
-     * 5. Player must not be in combat (unless multi-combat zone)
-     * 6. Player must not have aggression expired (10-minute tolerance timer)
-     * 7. Wilderness NPCs ignore combat level check and tolerance timer
+     * Categories:
+     * - Passive: isAggressive=false → never auto-attacks
+     * - Standard aggressive: combat-level gate (player > 2×npc → safe; npc≥63 always)
+     * - Always aggressive: Wilderness ignores combat level and tolerance
      *
-     * Reference: docs/npc-behavior.md, NpcCombatAI.ts
+     * @see https://oldschool.runescape.wiki/w/Aggressiveness
      */
     private checkNpcAggression(
         npc: NpcState,
@@ -1381,6 +1412,7 @@ export class NpcManager {
             radius: number,
         ) => NearbyAggressionPlayer[],
     ): NpcAggressionEvent | undefined {
+        if (!npc.isAggressive) return undefined;
         const npcCombatLevel = npc.getCombatLevel();
         if (npcCombatLevel <= 0) return undefined;
         if (!npc.isAggressionCheckReady(currentTick)) {
@@ -1442,7 +1474,7 @@ export class NpcManager {
                 const target =
                     validTargets[Math.floor(Math.random() * validTargets.length)] ??
                     validTargets[0];
-                npc.engageCombat(target.id, currentTick);
+                npc.engageCombat(target.id, currentTick, { tileX: target.x, tileY: target.y });
                 npc.recordAttack(currentTick);
                 return {
                     npcId: npc.id,
@@ -1477,11 +1509,10 @@ export class NpcManager {
                 npc.hasPath()
             );
         }
-        // The roam-area leash never interrupts an active fight: an engaged NPC
-        // chases and attacks until its target dies, leaves the plane, or moves
-        // beyond the hard chase limit. Recovery starts only after combat ends.
+        // During combat, retreat if the NPC itself stepped past the 7-tile max range.
+        // Out of combat, recover if they left the smaller idle roam area.
         if (npc.isInCombat(currentTick)) {
-            return false;
+            return npc.level !== npc.spawnLevel || npc.isTileOutsideCombatLeash(npc.tileX, npc.tileY);
         }
         return npc.level !== npc.spawnLevel || npc.isOutsideRoamArea();
     }
@@ -1501,7 +1532,16 @@ export class NpcManager {
             return false;
         }
 
-        if (!npcInWilderness && npcCombatLevel < 63 && player.combatLevel > npcCombatLevel * 2) {
+        // OSRS retreat interaction range: never aggro from >18 tiles of spawn.
+        if (npc.isBeyondRetreatInteractionRange(player.x, player.y)) {
+            return false;
+        }
+
+        // Standard "double + 1" gate. Wilderness always-aggressive NPCs skip this.
+        if (
+            !npcInWilderness &&
+            isPlayerSafeFromStandardNpcAggression(player.combatLevel, npcCombatLevel)
+        ) {
             return false;
         }
 

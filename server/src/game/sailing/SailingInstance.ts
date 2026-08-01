@@ -1,8 +1,8 @@
 import {
     createEmptyTemplateChunks,
     packTemplateChunk,
-} from "../../../../src/shared/instance/InstanceTypes";
-import type { WorldEntityBuildArea } from "../../../../src/shared/worldentity/WorldEntityTypes";
+} from "../../../../client/common/instance/InstanceTypes";
+import type { WorldEntityBuildArea } from "../../../../client/common/worldentity/WorldEntityTypes";
 
 // ============================================================================
 // Source Region — m60_100 (boat template in cache)

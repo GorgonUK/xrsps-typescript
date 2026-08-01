@@ -1,5 +1,5 @@
-import type { CacheInfo } from "../../../../src/rs/cache/CacheInfo";
-import type { CacheSystem } from "../../../../src/rs/cache/CacheSystem";
+import type { CacheInfo } from "../../../../client/rs/cache/CacheInfo";
+import type { CacheSystem } from "../../../../client/rs/cache/CacheSystem";
 // =============================================================================
 // Provider Registration & Delegation
 // =============================================================================

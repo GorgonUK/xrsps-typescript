@@ -177,7 +177,7 @@ export class NpcHitHandler {
         );
 
         // Refresh NPC combat timer
-        npc.engageCombat(player.id, tick);
+        npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
 
         // Award combat XP
         const xpGrantedOnAttack =

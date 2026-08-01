@@ -4,7 +4,7 @@
  * Calculates which items are kept vs lost on death following OSRS rules.
  * Security: Uses server-side item values only, never trusts client data.
  */
-import { EquipmentSlot } from "../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import type { ItemDefinition } from "../../data/items";
 import type { EquipmentSnapshotEntry, InventoryEntry, PlayerState } from "../player";
 import {

@@ -1,4 +1,4 @@
-import { EquipmentSlot } from "../../../../../src/rs/config/player/Equipment";
+import { EquipmentSlot } from "../../../../../client/rs/config/player/Equipment";
 import type { PlayerState } from "../../../../src/game/player";
 import type { ScriptServices } from "../../../../src/game/scripts/types";
 import type { SmeltingRecipe } from "./smithingData";

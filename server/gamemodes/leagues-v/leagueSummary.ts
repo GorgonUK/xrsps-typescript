@@ -2,7 +2,7 @@ import {
     LEAGUE_SUMMARY_GROUP_ID,
     SCRIPT_CC_TEXT_SWAPPER_ID,
     buildLeagueSummaryAccountAgeArgs,
-} from "../../../src/shared/ui/leagueSummary";
+} from "../../../client/common/ui/leagueSummary";
 import type { PlayerState } from "../../src/game/player";
 import type { WidgetAction } from "../../src/game/scripts/types";
 

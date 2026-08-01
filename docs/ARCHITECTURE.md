@@ -4,37 +4,62 @@ XRSPS is a full-stack OSRS emulation engine. The client runs in the browser with
 
 ## Project Layout
 
+The repository root contains only **`client/`**, **`server/`**, and **`docs/`** (plus dotfiles such as `.git` / `.github`).
+
 ```
-src/                    # Browser client
-  client/               # Game engine, rendering, input, sync
+client/                 # @xrsps/client — browser CRA/craco app
+  package.json
+  craco.config.js
+  public/
+  scripts/cache/        # Cache export tooling
+  common/               # Shared protocol/types (imported by server)
+  game/                 # Game domains: chat, combat, ecs, login, input, sync…
+  render/               # WebGL + overlays
+  widgets/              # Widget tree, CS2 glue, GL widget draw
+  components/           # React shell only
+  network/              # Browser WebSocket client
   rs/                   # Cache loaders and OSRS engine code
-  network/              # Client-side networking
-  ui/                   # Game UI overlays
-  components/           # React components
-  shared/               # Types and constants shared with server
+  ui/                   # Canvas, menus, overlays
 
-server/
-  src/                  # Server core (engine — never gamemode-specific)
-    game/               # Gameplay systems (players, NPCs, combat, skills, actions)
-    network/            # WebSocket server, packet encoding, message routing
-    world/              # Cache environment, collision, map data
-    data/               # Item/NPC/spell definitions
-    scripts/            # Script registry and bootstrap loader
-  gamemodes/            # Gamemode implementations (vanilla, leagues-v, yours)
-  extrascripts/         # Optional content modules (universal tools)
-  data/                 # Static JSON data (spawns, doors, combat defs)
+server/                 # @xrsps/server — Node WebSocket game server
+  package.json
+  caches/               # OSRS cache on disk (gitignored; downloaded via ensure-cache)
+  scripts/              # ensure-cache, collision build, tooling
+  tests/
+  src/                  # Server core
+  gamemodes/
+  extrascripts/
+  data/
 
-scripts/                # Cache export and build tools
+docs/                   # @xrsps/docs — VitePress documentation
+  package.json
 ```
+
+Install and run each package from its own directory (`cd client && yarn install && yarn start`, etc.).
+
+Shared protocol/cache code lives in `client/common` and `client/rs`; the server TypeScript project includes those paths.
 
 ### Where code lives
 
 | Layer            | Directory                   | Purpose                                                                                                           |
 | ---------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Client**       | `client/`                   | Browser React + WebGL game client.                                                                                |
+| **Server**       | `server/`                   | Node WebSocket game server.                                                                                       |
+| **Docs**         | `docs/`                     | Architecture and contributor docs.                                                                                |
 | **Engine**       | `server/src/`               | Tick loop, networking, collision, pathfinding, packet routing, player sync. Never references a specific gamemode. |
 | **Gamemodes**    | `server/gamemodes/{id}/`    | Server identity — rules, progression, content handlers, providers. Each gamemode is a self-contained directory.   |
 | **Extrascripts** | `server/extrascripts/{id}/` | Universal modules that work on any server regardless of gamemode.                                                 |
-| **Shared**       | `src/shared/`               | Types, constants, and utilities used by both client and server.                                                   |
+| **Common**       | `client/common/`            | Types, constants, and utilities used by both client and server.                                                   |
+
+### Client code conventions
+
+Adopted from our Vite site discipline, adapted for a game client:
+
+- **File size:** Prefer **100–150** lines for app/domain code; **hard cap 400**. Exceptions: `client/rs/**` Jagex ports, generated/static data, opcode/ID tables, shaders.
+- **`client/common`:** Non-UI code shared by **2+** domains (or by client + server). Prefer extending shared helpers over rewriting.
+- **`client/components`:** React shell only. PascalCase folder = single component; lowercase folder = group with barrel; nested pieces under `ComponentName/components/`. Prefer `components/common` bases.
+- **Game domains** (`game/`, `render/`, `widgets/`): lowercase folders for groups (`chat/`, `combat/`); PascalCase files for one class/module (`EnterToTypeChat.ts`). Groups may use `index.ts` barrels when stable.
+- **Orchestrators stay thin:** `OsrsClient` and renderer facades wire explicit `*Deps`; feature logic lives in domain modules.
 
 ## Game Loop
 
@@ -51,8 +76,8 @@ The client receives `PLAYER_SYNC` and `NPC_INFO` packets each tick, decodes them
 
 Communication is over **WebSocket** with a **binary protocol**. No JSON at runtime.
 
-- Client packets: `src/shared/network/ClientPacketId.ts`
-- Server packets: `src/shared/packets/ServerPacketId.ts`
+- Client packets: `client/common/network/ClientPacketId.ts`
+- Server packets: `client/common/packets/ServerPacketId.ts`
 - Message routing: `server/src/network/MessageRouter.ts`
 
 Packets cover movement, interactions, widget clicks, combat, inventory, chat, and sync updates.
@@ -61,11 +86,11 @@ Packets cover movement, interactions, widget clicks, combat, inventory, chat, an
 
 Both client and server load the OSRS cache — the same binary format Jagex uses. It contains models, animations, maps, widgets, item definitions, NPC definitions, and more.
 
-- **Server:** loads from disk via `initCacheEnv("caches")`
+- **Server:** loads from disk via `initCacheEnv("caches")` (cwd = `server/`)
 - **Client:** loads from IndexedDB (downloaded from CDN on first visit)
 - **Loaders:** `CacheLoaderFactory` provides typed loaders (NPC types, obj types, loc types, animations, textures, etc.)
 
-Cache files are stored in `caches/` (gitignored) and managed by `scripts/ensure-cache.ts`.
+Cache files are stored in `server/caches/` (gitignored) and managed by `server/scripts/ensure-cache.ts`.
 
 ## Varps and Varbits
 
@@ -139,7 +164,7 @@ Gamemodes and extrascripts can define content that doesn't exist in the OSRS cac
 
 ### Custom Items
 
-`CustomItemRegistry` (`src/custom/items/`) stores item definitions keyed by ID (50000+). Items can clone properties from existing cache items via `basedOn` and override specific fields.
+`CustomItemRegistry` (`client/custom/items/`) stores item definitions keyed by ID (50000+). Items can clone properties from existing cache items via `basedOn` and override specific fields.
 
 - **Server:** `ServerCustomItemRegistry` merges custom definitions with base cache lookups
 - **Client:** `CustomObjTypeLoader` wraps the base `ObjTypeLoader` and injects custom items transparently
