@@ -70,6 +70,40 @@ const TEST_WEAPONS_SHOP: ShopDefinition = {
     ],
 };
 
+// This F2P shop is absent from the imported DayV catalog, but its shopkeeper
+// and assistant (2884/2885) are registered with a trade dialogue in Varrock.
+const VARROCK_SWORDSHOP: ShopDefinition = {
+    id: "varrock_swordshop",
+    name: "Varrock Swordshop",
+    npcIds: [2884, 2885],
+    currencyItemId: 995,
+    capacity: 40,
+    generalStore: false,
+    restockTicks: 100,
+    buyPriceMultiplier: 1,
+    sellPriceMultiplier: 0.6,
+    stock: [
+        { itemId: 1205, quantity: 5 }, // Bronze dagger
+        { itemId: 1203, quantity: 5 }, // Iron dagger
+        { itemId: 1207, quantity: 5 }, // Steel dagger
+        { itemId: 1217, quantity: 5 }, // Black dagger
+        { itemId: 1209, quantity: 5 }, // Mithril dagger
+        { itemId: 1211, quantity: 5 }, // Adamant dagger
+        { itemId: 1277, quantity: 5 }, // Bronze sword
+        { itemId: 1279, quantity: 5 }, // Iron sword
+        { itemId: 1281, quantity: 5 }, // Steel sword
+        { itemId: 1283, quantity: 5 }, // Black sword
+        { itemId: 1285, quantity: 5 }, // Mithril sword
+        { itemId: 1287, quantity: 5 }, // Adamant sword
+        { itemId: 1291, quantity: 5 }, // Bronze longsword
+        { itemId: 1293, quantity: 5 }, // Iron longsword
+        { itemId: 1295, quantity: 5 }, // Steel longsword
+        { itemId: 1297, quantity: 5 }, // Black longsword
+        { itemId: 1299, quantity: 5 }, // Mithril longsword
+        { itemId: 1301, quantity: 5 }, // Adamant longsword
+    ],
+};
+
 function loadGeneratedShops(): ShopDefinition[] {
     const candidates = [
         path.resolve(__dirname, "../../../data/shops.json"),
@@ -99,7 +133,7 @@ function loadGeneratedShops(): ShopDefinition[] {
 
 const GENERATED_SHOPS = loadGeneratedShops();
 
-const SHOP_OVERRIDES: ShopDefinition[] = [TEST_WEAPONS_SHOP];
+const SHOP_OVERRIDES: ShopDefinition[] = [TEST_WEAPONS_SHOP, VARROCK_SWORDSHOP];
 
 const SHOP_DEFINITIONS: ShopDefinition[] = (() => {
     const byId = new Map<string, ShopDefinition>();
