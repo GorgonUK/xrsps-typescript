@@ -39,6 +39,8 @@ export interface QuestDefinition {
     key: string;
     /** Display name exactly as it appears in the cache quest DB (table 0) */
     name: string;
+    /** Whether the quest belongs in the members quest-list group. */
+    members?: boolean;
     /** Quest progress varp */
     varpId: number;
     /** Varp value once the quest has been started */

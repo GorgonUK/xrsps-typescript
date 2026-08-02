@@ -1,24 +1,28 @@
-import type { InputManager } from "../InputManager";
 import type { WidgetManager } from "../../widgets/WidgetManager";
+import type { InputManager } from "../InputManager";
 import type { WidgetInteractionController } from "./WidgetInteractionController";
-import { buildWidgetInputFrame } from "./input/widgetInputSetup";
+import {
+    isQuestListScrollbarWidget,
+    processQuestListScrollbarInput,
+} from "./input/questListScrollbarInput";
 import { shouldSkipWidgetClickInput } from "./input/widgetClickGuard";
-import { createPrimaryWidgetActionResolver } from "./input/widgetPrimaryAction";
 import { processWidgetClickInput } from "./input/widgetClickInput";
 import { processWidgetDragInput } from "./input/widgetDragInput";
 import { processWidgetHoldInput } from "./input/widgetHoldInput";
 import { processWidgetHoverInput } from "./input/widgetHoverInput";
 import { processWidgetIf1ScrollbarInput } from "./input/widgetIf1ScrollbarInput";
+import { buildWidgetInputFrame } from "./input/widgetInputSetup";
+import {
+    type WidgetInputControllerDeps,
+    type WidgetInputState,
+    createWidgetInputState,
+} from "./input/widgetInputTypes";
 import { processWidgetKeyboardInput } from "./input/widgetKeyboardInput";
 import { processWidgetMenuWheelInput } from "./input/widgetMenuWheelInput";
 import { processWidgetMinimapWheelInput } from "./input/widgetMinimapWheelInput";
+import { createPrimaryWidgetActionResolver } from "./input/widgetPrimaryAction";
 import { processWidgetReleaseInput } from "./input/widgetReleaseInput";
 import { processWidgetScrollWheelInput } from "./input/widgetScrollWheelInput";
-import {
-    createWidgetInputState,
-    type WidgetInputControllerDeps,
-    type WidgetInputState,
-} from "./input/widgetInputTypes";
 
 export type { WidgetInputControllerDeps } from "./input/widgetInputTypes";
 
@@ -58,6 +62,7 @@ export class WidgetInputController {
             widgetManager,
             widgetInteraction,
         );
+        processQuestListScrollbarInput(frame, widgetManager, widgetInteraction);
         processWidgetScrollWheelInput(this.deps, frame, widgetManager, widgetInteraction);
 
         if (shouldSkipWidgetClickInput(this.deps, frame)) return;
@@ -84,13 +89,11 @@ export class WidgetInputController {
             getPrimaryWidgetAction,
             isNewClick,
         );
-        processWidgetDragInput(
-            this.deps,
-            frame,
-            widgetManager,
-            widgetInteraction,
-            isHolding,
-        );
+        // The quest list has a dedicated scroll controller. Its cached
+        // scrollbar thumb must not become a generic draggable widget.
+        if (!isQuestListScrollbarWidget(widgetInteraction.clickedWidget, widgetManager)) {
+            processWidgetDragInput(this.deps, frame, widgetManager, widgetInteraction, isHolding);
+        }
         processWidgetHoldInput(this.deps, frame, widgetInteraction, isHolding, isNewClick);
         processWidgetReleaseInput(
             this.deps,

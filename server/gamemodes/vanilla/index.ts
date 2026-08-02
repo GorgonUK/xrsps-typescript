@@ -44,7 +44,9 @@ import { computeTargetBonusPercentages } from "./equipment/targetBonuses";
 import { registerSmithingBarModalHandler } from "./modals/smithingBarModalHandler";
 import { registerWidgetCloseHandlers } from "./modals/widgetCloseHandlers";
 import { registerWidgetOpenHandlers } from "./modals/widgetOpenHandlers";
+import { registerNpcDialogueHandlers } from "./npcs";
 import { getRegisteredQuests, registerQuestHandlers } from "./quests";
+import { registerVanillaCommandHandlers } from "./scripts/commands";
 import { registerAlKharidBorderHandlers } from "./scripts/content/alKharidBorder";
 import { registerBobHandlers } from "./scripts/content/bob";
 import { registerClimbingHandlers } from "./scripts/content/climbing";
@@ -54,11 +56,9 @@ import { registerDoorHandlers } from "./scripts/content/doors";
 import { registerPohPoolHandlers } from "./scripts/content/pohPools";
 import { registerRomeoHandlers } from "./scripts/content/romeo";
 import { registerWildernessAccessHandlers } from "./scripts/content/wildernessAccess";
-import { registerVanillaCommandHandlers } from "./scripts/commands";
 import { registerFollowerItemHandlers } from "./scripts/items/followers";
 import { registerPacksHandlers } from "./scripts/items/packs";
 import { handleDismiss, handleResumePauseButton, registerLevelUpHandlers } from "./scripts/levelup";
-import { registerNpcDialogueHandlers } from "./npcs";
 import { registerShopInterfaceHooks } from "./shops";
 import { ShopService } from "./shops/ShopService";
 import { registerShopInteractionHandlers } from "./shops/shopInteractions";
@@ -119,9 +119,15 @@ export class VanillaGamemode extends BaseGamemode {
     }
 
     override getQuestListGroups(_player: PlayerState): readonly GamemodeQuestListGroup[] {
-        const quests = getRegisteredQuests().map((quest) => quest.key);
-        if (quests.length === 0) return [];
-        return [{ title: "Free Quests", quests }];
+        const registered = getRegisteredQuests();
+        const freeQuests = registered.filter((quest) => !quest.members).map((quest) => quest.key);
+        const memberQuests = registered.filter((quest) => quest.members).map((quest) => quest.key);
+        const groups: GamemodeQuestListGroup[] = [];
+        if (freeQuests.length > 0) groups.push({ title: "Free Quests", quests: freeQuests });
+        if (memberQuests.length > 0) {
+            groups.push({ title: "Member Quests", quests: memberQuests });
+        }
+        return groups;
     }
 
     private registerProviders(): void {
@@ -185,8 +191,7 @@ export class VanillaGamemode extends BaseGamemode {
                 collapseTab: (player, tabIndex) => bm.collapseTab(player, tabIndex),
                 releasePlaceholder: (player, slot, itemIdHint) =>
                     bm.releasePlaceholder(player, slot, itemIdHint),
-                releasePlaceholders: (player, tabIndex) =>
-                    bm.releasePlaceholders(player, tabIndex),
+                releasePlaceholders: (player, tabIndex) => bm.releasePlaceholders(player, tabIndex),
                 addItemToBank: (player, itemId, qty) => bm.addItemToBank(player, itemId, qty),
             };
         }

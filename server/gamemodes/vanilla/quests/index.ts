@@ -2,14 +2,34 @@ import type { IScriptRegistry, ScriptServices } from "../../../src/game/scripts/
 import { registerQuestDefinition } from "./QuestRegistry";
 import {
     VARP_QUEST_POINTS,
+    completeAllQuests,
     registerQuestCompletedWidgetHandlers,
     setQuestStage,
 } from "./QuestService";
+import { deathPlateauQuest } from "./definitions/deathPlateau";
+import { desertTreasureIQuest } from "./definitions/desertTreasureI";
+import { digSiteQuest } from "./definitions/digSite";
 import { doricsQuest } from "./definitions/dorics";
+import { priestInPerilQuest } from "./definitions/priestInPeril";
 import { sheepShearerQuest } from "./definitions/sheepShearer";
+import { templeOfIkovQuest } from "./definitions/templeOfIkov";
+import { touristTrapQuest } from "./definitions/touristTrap";
+import { trollStrongholdQuest } from "./definitions/trollStronghold";
+import { waterfallQuest } from "./definitions/waterfallQuest";
 import type { QuestDefinition } from "./types";
 
-const QUEST_DEFINITIONS: QuestDefinition[] = [doricsQuest, sheepShearerQuest];
+const QUEST_DEFINITIONS: QuestDefinition[] = [
+    doricsQuest,
+    sheepShearerQuest,
+    deathPlateauQuest,
+    digSiteQuest,
+    templeOfIkovQuest,
+    touristTrapQuest,
+    trollStrongholdQuest,
+    priestInPerilQuest,
+    waterfallQuest,
+    desertTreasureIQuest,
+];
 
 /**
  * Register all implemented quests: their interaction handlers, the shared
@@ -33,10 +53,22 @@ export function registerQuestHandlers(registry: IScriptRegistry, services: Scrip
         }
         player.varps.setVarpValue(VARP_QUEST_POINTS, 0);
         services.variables.sendVarp(player, VARP_QUEST_POINTS, 0);
+        // Desert Treasure's secondary varp stores the lit-torch and placed-diamond masks.
+        player.varps.setVarpValue(441, 0);
+        services.variables.sendVarp(player, 441, 0);
         services.system.logger.info?.(
             `[quests] ::resetquests - Reset ${QUEST_DEFINITIONS.length} quest(s) for player ${player.id}`,
         );
         return `Reset ${QUEST_DEFINITIONS.length} quest(s) and quest points.`;
+    });
+
+    // Dev command: complete every implemented quest in one idempotent operation.
+    registry.registerCommand("completequests", ({ player }) => {
+        const questPoints = completeAllQuests(player, services, QUEST_DEFINITIONS);
+        services.system.logger.info?.(
+            `[quests] ::completequests - Completed ${QUEST_DEFINITIONS.length} quest(s) for player ${player.id}`,
+        );
+        return `Completed ${QUEST_DEFINITIONS.length} quest(s). Quest points: ${questPoints}.`;
     });
 
     services.system.logger.info?.(`[quests] Registered ${QUEST_DEFINITIONS.length} quest(s)`);

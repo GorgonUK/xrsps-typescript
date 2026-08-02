@@ -197,13 +197,18 @@ export function applyQuestListWidgetGroups(
         }
     }
 
-    const contentHeight = Math.max(30, y + ROW_EXTRA_BOTTOM);
-    list.rawHeight = contentHeight;
-    list.height = contentHeight;
-    list.scrollHeight = contentHeight;
-    list.scrollY = Math.min(list.scrollY | 0, Math.max(0, list.scrollHeight - (list.height | 0)));
-
     const textContainer = widgetManager.getWidgetByUid(QUEST_LIST_TEXT_CONTAINER_UID);
+    // The enclosing text pane is the actual viewport. The row list can retain
+    // an old content height across a tab refresh, so using list.height here can
+    // incorrectly hide the scrollbar after an overflowed list is rebuilt.
+    const enclosingHeight = textContainer?.height ?? 0;
+    const viewportHeight = Math.max(0, (enclosingHeight > 0 ? enclosingHeight : list.height) | 0);
+    const contentHeight = Math.max(viewportHeight, y + ROW_EXTRA_BOTTOM);
+    list.rawHeight = viewportHeight;
+    list.height = viewportHeight;
+    list.scrollHeight = contentHeight;
+    list.scrollY = Math.min(list.scrollY | 0, Math.max(0, contentHeight - viewportHeight));
+
     if (textContainer) {
         textContainer.scrollHeight = list.scrollHeight;
         textContainer.scrollY = Math.min(
@@ -215,7 +220,16 @@ export function applyQuestListWidgetGroups(
 
     const scrollbar = widgetManager.getWidgetByUid(QUEST_LIST_SCROLLBAR_UID);
     if (scrollbar) {
-        scrollbar.isHidden = list.scrollHeight <= (textContainer?.height ?? list.height);
+        // The list (399:7) is the component that owns the dynamic rows and
+        // therefore the scroll position. Make the link explicit so the custom
+        // quest list does not depend on a cache script's inferred linkage.
+        (
+            scrollbar as WidgetNode & { scrollBarTargetUid?: number; scrollBarAxis?: "y" }
+        ).scrollBarTargetUid = list.uid;
+        (
+            scrollbar as WidgetNode & { scrollBarTargetUid?: number; scrollBarAxis?: "y" }
+        ).scrollBarAxis = "y";
+        scrollbar.isHidden = contentHeight <= viewportHeight;
         scrollbar.hidden = scrollbar.isHidden;
         widgetManager.invalidateWidget(scrollbar, "quest-list");
     }

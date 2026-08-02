@@ -77,8 +77,12 @@ export function hasQuestItems(
     services: ScriptServices,
     requirements: QuestItemRequirement[],
 ): boolean {
-    return requirements.every(
-        (req) => countCarriedItem(player, services, req.itemId) >= req.quantity,
+    const totals = new Map<number, number>();
+    for (const req of requirements) {
+        totals.set(req.itemId, (totals.get(req.itemId) ?? 0) + req.quantity);
+    }
+    return [...totals].every(
+        ([itemId, quantity]) => countCarriedItem(player, services, itemId) >= quantity,
     );
 }
 
@@ -89,15 +93,26 @@ export function takeQuestItems(
     requirements: QuestItemRequirement[],
 ): boolean {
     if (!hasQuestItems(player, services, requirements)) return false;
+    const totals = new Map<number, number>();
     for (const req of requirements) {
-        let remaining = req.quantity;
-        while (remaining > 0) {
-            const slot = services.inventory.findInventorySlotWithItem(player, req.itemId);
-            if (slot === undefined || !services.inventory.consumeItem(player, slot)) {
-                services.inventory.snapshotInventory(player);
-                return false;
-            }
-            remaining--;
+        totals.set(req.itemId, (totals.get(req.itemId) ?? 0) + req.quantity);
+    }
+    for (const [itemId, quantity] of totals) {
+        let remaining = quantity;
+        const entries = services.inventory
+            .getInventoryItems(player)
+            .filter((entry) => entry.itemId === itemId && entry.quantity > 0);
+        for (const entry of entries) {
+            if (remaining <= 0) break;
+            const amount = Math.min(remaining, entry.quantity);
+            const nextQuantity = entry.quantity - amount;
+            services.inventory.setInventorySlot(
+                player,
+                entry.slot,
+                nextQuantity > 0 ? entry.itemId : -1,
+                nextQuantity,
+            );
+            remaining -= amount;
         }
     }
     services.inventory.snapshotInventory(player);
@@ -141,6 +156,28 @@ export function completeQuest(
     services.system.logger.info?.(
         `[quests] Quest completed player=${player.id} quest="${quest.name}" qp=${questPointTotal}`,
     );
+}
+
+/**
+ * Developer helper: mark every implemented quest complete without granting
+ * XP, items, jingles, or opening a stack of completion scrolls.
+ *
+ * Quest points are recomputed from the definitions so repeated use is
+ * idempotent and cannot duplicate points.
+ */
+export function completeAllQuests(
+    player: PlayerState,
+    services: ScriptServices,
+    quests: readonly QuestDefinition[],
+): number {
+    let questPoints = 0;
+    for (const quest of quests) {
+        setQuestStage(player, quest, services, quest.completionValue);
+        questPoints += quest.rewards.questPoints;
+    }
+    player.varps.setVarpValue(VARP_QUEST_POINTS, questPoints);
+    services.variables.sendVarp(player, VARP_QUEST_POINTS, questPoints);
+    return questPoints;
 }
 
 function buildRewardLines(quest: QuestDefinition): string[] {

@@ -89,7 +89,7 @@ const ARCEUUS_SPELLBOOK_UNLOCK: SpellUnlockRequirement = {
 
 const PRIEST_IN_PERIL_UNLOCK: SpellUnlockRequirement = {
     varpId: VARP_PRIEST_IN_PERIL,
-    minValue: 61,
+    minValue: 60,
     message: "You need to have completed Priest in Peril to cast this spell.",
 };
 

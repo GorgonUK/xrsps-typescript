@@ -70,6 +70,7 @@ export function buildQuestMap(services: ScriptServices): Map<number, QuestEntry>
 
 const QUEST_COMPLETION_DATA = new Map<string, QuestCompletionInfo>([
     ["desert treasure", { varpId: 440, completionValue: 15 }],
+    ["desert treasure i", { varpId: 440, completionValue: 15 }],
     ["lunar diplomacy", { varpId: 823, completionValue: 190 }],
     ["legend's quest", { varpId: 139, completionValue: 180 }],
     ["underground pass", { varpId: 161, completionValue: 110 }],

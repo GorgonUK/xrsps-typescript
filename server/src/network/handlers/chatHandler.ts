@@ -1,5 +1,10 @@
-import { MAX_REAL_LEVEL, SKILL_IDS, SkillId, getXpForLevel } from "../../../../client/rs/skill/skills";
 import { VARBIT_ACTIVE_SPELLBOOK } from "../../../../client/common/vars";
+import {
+    MAX_REAL_LEVEL,
+    SKILL_IDS,
+    SkillId,
+    getXpForLevel,
+} from "../../../../client/rs/skill/skills";
 import { getItemDefinition } from "../../data/items";
 import { SpellbookName } from "../../data/spellWidgetLoader";
 import { getCollectionLogItems } from "../../game/collectionlog";
@@ -11,8 +16,8 @@ import { getSpellData } from "../../game/spells/SpellDataProvider";
 import { logger } from "../../utils/logger";
 import type { MessageHandlerServices } from "../MessageHandlers";
 import type { MessageHandler, MessageRouter } from "../MessageRouter";
-import { getBuiltinChatCommandPermission } from "../commands/ChatCommands";
 import { hasPermission } from "../PlayerPermission";
+import { getBuiltinChatCommandPermission } from "../commands/ChatCommands";
 
 const DEBUG_SCROLL_TITLE = "Clue Compass";
 const DEBUG_SCROLL_OPTIONS = [
@@ -45,8 +50,8 @@ const DEFAULT_CHAT_PREFIX = "";
 // that state, which previously made ::allrunes clear the inventory and then
 // report a successful loadout of zero runes.
 const DEFAULT_ALL_RUNE_ITEM_IDS: readonly number[] = [
-    554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 4694, 4695, 4696, 4697,
-    4698, 4699, 9075, 21880,
+    554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 4694, 4695, 4696, 4697, 4698,
+    4699, 9075, 21880,
 ];
 
 function getAllRuneItemIdsForCommand(): readonly number[] {
@@ -106,8 +111,8 @@ const QUEST_DATA: Array<{
     unlocks: string;
 }> = [
     {
-        name: "Desert Treasure",
-        aliases: ["dt", "desert", "deserttreasure"],
+        name: "Desert Treasure I",
+        aliases: ["dt", "dt1", "desert", "deserttreasure", "deserttreasurei"],
         varpId: 440,
         completionValue: 15,
         unlocks: "Ancient Magicks spellbook",
@@ -351,12 +356,10 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                     }
 
                     const runeItemIds = getAllRuneItemIdsForCommand();
-                    const runeLoadout: InventoryLoadoutEntry[] = runeItemIds.map(
-                        (itemId) => ({
-                            itemId,
-                            quantity,
-                        }),
-                    );
+                    const runeLoadout: InventoryLoadoutEntry[] = runeItemIds.map((itemId) => ({
+                        itemId,
+                        quantity,
+                    }));
                     if (!replaceInventoryContents(sender, runeLoadout)) {
                         services.queueChatMessage({
                             messageType: "game",
@@ -591,7 +594,9 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                         text: `Teleported to (${x}, ${y}, ${level}).`,
                         targetPlayerIds: [sender.id],
                     });
-                    logger.info(`[cmd] ::tele - Player ${sender.id} teleported to (${x}, ${y}, ${level})`);
+                    logger.info(
+                        `[cmd] ::tele - Player ${sender.id} teleported to (${x}, ${y}, ${level})`,
+                    );
                     return;
                 }
 
