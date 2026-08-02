@@ -40,6 +40,22 @@ const DEBUG_SCROLL_OPTIONS = [
 
 const DEFAULT_CHAT_PREFIX = "";
 
+// Keep the developer command usable while a gamemode's rune provider is still
+// being registered. ALL_RUNE_ITEM_IDS deliberately reads as an empty array in
+// that state, which previously made ::allrunes clear the inventory and then
+// report a successful loadout of zero runes.
+const DEFAULT_ALL_RUNE_ITEM_IDS: readonly number[] = [
+    554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 4694, 4695, 4696, 4697,
+    4698, 4699, 9075, 21880,
+];
+
+function getAllRuneItemIdsForCommand(): readonly number[] {
+    const configuredRuneIds = Array.from(ALL_RUNE_ITEM_IDS).filter(
+        (itemId) => Number.isInteger(itemId) && itemId > 0,
+    );
+    return configuredRuneIds.length > 0 ? configuredRuneIds : DEFAULT_ALL_RUNE_ITEM_IDS;
+}
+
 function pickRandomUnownedCollectionLogItemId(player: PlayerState): number | null {
     const candidates = Array.from(getCollectionLogItems()).filter(
         (itemId) => !player.collectionLog.hasItem(itemId),
@@ -334,7 +350,8 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                         logger.warn("Failed to clear inventory actions on ::allrunes command", err);
                     }
 
-                    const runeLoadout: InventoryLoadoutEntry[] = ALL_RUNE_ITEM_IDS.map(
+                    const runeItemIds = getAllRuneItemIdsForCommand();
+                    const runeLoadout: InventoryLoadoutEntry[] = runeItemIds.map(
                         (itemId) => ({
                             itemId,
                             quantity,
@@ -351,11 +368,11 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
 
                     services.queueChatMessage({
                         messageType: "game",
-                        text: `Replaced your inventory with all ${ALL_RUNE_ITEM_IDS.length} rune types x${quantity}.`,
+                        text: `Replaced your inventory with all ${runeItemIds.length} rune types x${quantity}.`,
                         targetPlayerIds: [sender.id],
                     });
                     logger.info(
-                        `[cmd] ::${root} - Loaded player ${sender.id} inventory with ${ALL_RUNE_ITEM_IDS.length} rune types x${quantity}`,
+                        `[cmd] ::${root} - Loaded player ${sender.id} inventory with ${runeItemIds.length} rune types x${quantity}`,
                     );
                     return;
                 }
