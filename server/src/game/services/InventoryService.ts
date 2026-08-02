@@ -37,11 +37,13 @@ export class InventoryService {
         const inv = this.getInventory(p);
         const slotEntry = inv[slotIndex];
         if (!slotEntry || slotEntry.itemId <= 0 || slotEntry.quantity <= 0) return false;
-        slotEntry.quantity = Math.max(0, slotEntry.quantity - 1);
-        if (slotEntry.quantity <= 0) {
-            slotEntry.itemId = -1;
-            slotEntry.quantity = 0;
-        }
+        const nextQuantity = slotEntry.quantity - 1;
+        this.setInventorySlot(
+            p,
+            slotIndex,
+            nextQuantity > 0 ? slotEntry.itemId : -1,
+            nextQuantity,
+        );
         return true;
     }
 
