@@ -185,15 +185,54 @@ export class DynamicNpcAnimLoader {
             return undefined;
         }
 
+        return this.cacheModelGeometry(
+            key,
+            resolvedNpcType.id | 0,
+            seqId | 0,
+            normalizedFrame | 0,
+            model,
+            overlaySeqId >= 0 ? overlaySeqId | 0 : undefined,
+            overlaySeqId >= 0 ? normalizedOverlayFrame | 0 : undefined,
+        );
+    }
+
+    getBaseGeometry(npcTypeId: number): DynamicNpcFrameGeometry | undefined {
+        if (!this.isReady()) return undefined;
+
+        const resolvedNpcType = this.getResolvedNpcType(npcTypeId);
+        if (!resolvedNpcType) return undefined;
+
+        const key = `${resolvedNpcType.id}:base`;
+        const cached = this.geomCache.get(key);
+        if (cached) {
+            this.promoteGeometryEntry(key, cached);
+            return cached;
+        }
+
+        const model = this.npcModelLoader?.getModel(resolvedNpcType, -1, -1);
+        if (!model) return undefined;
+
+        return this.cacheModelGeometry(key, resolvedNpcType.id | 0, -1, 0, model);
+    }
+
+    private cacheModelGeometry(
+        key: string,
+        npcTypeId: number,
+        seqId: number,
+        frameId: number,
+        model: Model,
+        overlaySeqId?: number,
+        overlayFrameId?: number,
+    ): DynamicNpcFrameGeometry {
         const opaque = this.buildGeometry(model, false);
         const alpha = this.buildGeometry(model, true);
         const entry: DynamicNpcFrameGeometry = {
             key,
-            npcTypeId: resolvedNpcType.id | 0,
-            seqId: seqId | 0,
-            frameId: normalizedFrame | 0,
-            overlaySeqId: overlaySeqId >= 0 ? overlaySeqId | 0 : undefined,
-            overlayFrameId: overlaySeqId >= 0 ? normalizedOverlayFrame | 0 : undefined,
+            npcTypeId,
+            seqId,
+            frameId,
+            overlaySeqId,
+            overlayFrameId,
             opaqueVertices: opaque.vertices,
             opaqueIndices: opaque.indices,
             alphaVertices: alpha.vertices,

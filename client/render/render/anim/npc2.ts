@@ -414,3 +414,59 @@ export function uploadDynamicNpcGeometry(host: WebGLOsrsRendererHost,
         return indices.length;
     
 }
+
+export function resolveUnbatchedNpcGeometry(
+        host: WebGLOsrsRendererHost,
+        ecsId: number,
+    ): DynamicNpcFrameGeometry | undefined {
+
+        const loader = host.dynamicNpcAnimLoader;
+        if (!loader?.isReady()) return undefined;
+
+        const ecs = host.osrsClient.npcEcs;
+        const npcTypeId = ecs.getNpcTypeId(ecsId) | 0;
+        const actionSeqId = ecs.getSeqId(ecsId) | 0;
+        const actionActive = actionSeqId >= 0 && (ecs.getSeqDelay?.(ecsId) | 0) === 0;
+        const { movementSeqId, idleSeqId } = host.resolveNpcMovementSequenceIds(ecs, ecsId);
+        const renderSeqId = actionActive ? actionSeqId : movementSeqId | 0;
+        const overlaySeqId =
+            actionActive &&
+            host.shouldLayerNpcMovementSequence(
+                actionSeqId,
+                movementSeqId | 0,
+                idleSeqId | 0,
+            )
+                ? movementSeqId | 0
+                : -1;
+        const frameId = actionActive
+            ? ecs.getFrameIndex(ecsId) | 0
+            : ecs.getMovementFrameIndex?.(ecsId) | 0;
+        const overlayFrameId =
+            overlaySeqId >= 0 ? ecs.getMovementFrameIndex?.(ecsId) | 0 : -1;
+
+        let geometry: DynamicNpcFrameGeometry | undefined;
+        try {
+            if (renderSeqId >= 0) {
+                geometry = loader.getFrameGeometry(
+                    npcTypeId,
+                    renderSeqId,
+                    frameId,
+                    overlaySeqId,
+                    overlayFrameId,
+                );
+            }
+            const hasGraphics =
+                !!geometry &&
+                ((geometry.opaqueVertices.length > 0 && geometry.opaqueIndices.length > 0) ||
+                    (geometry.alphaVertices.length > 0 && geometry.alphaIndices.length > 0));
+            if (!hasGraphics) geometry = loader.getBaseGeometry(npcTypeId);
+        } catch {
+            try {
+                geometry = loader.getBaseGeometry(npcTypeId);
+            } catch {
+                geometry = undefined;
+            }
+        }
+        return geometry;
+
+}

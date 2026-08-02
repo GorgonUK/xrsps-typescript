@@ -6911,8 +6911,16 @@ export class OsrsClient {
 
         if (prev) {
             const prevMapId = this.getNpcInstanceRenderMapId(prev);
+            const appearanceChanged =
+                (prev.typeId | 0) !== (nextInstance.typeId | 0) ||
+                (prev.level | 0) !== (nextInstance.level | 0) ||
+                (prev.worldViewId ?? -1) !== (nextInstance.worldViewId ?? -1);
             if (prevMapId !== mapId) {
                 this.npcInstances.markMapPendingReload(prevMapId);
+                this.npcInstances.markMapPendingReload(mapId);
+            } else if (appearanceChanged) {
+                // Position is sampled from ECS every frame, but type/plane and
+                // world-view changes alter the baked graphical state.
                 this.npcInstances.markMapPendingReload(mapId);
             }
             prev.typeId = nextInstance.typeId;

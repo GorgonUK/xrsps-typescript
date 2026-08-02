@@ -23,6 +23,9 @@ export class NpcInstanceFlushController {
     readonly mapsPendingReload: Set<number> = new Set();
 
     private flushScheduled = false;
+    private flushInProgress = false;
+    private flushRequested = false;
+    private lifecycleGeneration = 0;
     private flushFallbackTimer?: ReturnType<typeof setTimeout>;
     private flushFallbackAttempt = 0;
 
@@ -39,20 +42,21 @@ export class NpcInstanceFlushController {
     }
 
     scheduleFlush(): void {
-        if (this.flushScheduled) return;
+        this.flushRequested = true;
+        if (this.flushScheduled || this.flushInProgress) return;
         this.flushScheduled = true;
         Promise.resolve().then(() => {
             this.flushScheduled = false;
-            this.flushInstances().catch((err) => {
-                console.warn("[OsrsClient] failed to flush NPC instances", err);
-            });
+            void this.drainFlushQueue();
         });
     }
 
     clearLocal(): void {
+        this.lifecycleGeneration++;
         this.instanceMap.clear();
         this.mapsPendingReload.clear();
         this.flushScheduled = false;
+        this.flushRequested = false;
         this.resetFlushFallback();
     }
 
@@ -99,14 +103,61 @@ export class NpcInstanceFlushController {
         this.flushFallbackTimer = undefined;
     }
 
-    private async flushInstances(): Promise<void> {
-        const instances = Array.from(this.instanceMap.values());
-        await this.deps.workerPool.setNpcInstances(instances);
+    private async drainFlushQueue(): Promise<void> {
+        if (this.flushInProgress) return;
+        this.flushInProgress = true;
+        try {
+            // Serialize worker-state changes and geometry builds. Concurrent
+            // flushes can otherwise finish out of order and briefly restore an
+            // older NPC appearance, or clear a newer pending map refresh.
+            while (this.flushRequested) {
+                this.flushRequested = false;
+                const generation = this.lifecycleGeneration;
+                try {
+                    await this.flushInstances(generation);
+                } catch (err) {
+                    console.warn("[OsrsClient] failed to flush NPC instances", err);
+                    if (
+                        generation === this.lifecycleGeneration &&
+                        this.mapsPendingReload.size > 0
+                    ) {
+                        this.scheduleFlushFallback();
+                    }
+                }
+            }
+        } finally {
+            this.flushInProgress = false;
+            if (this.flushRequested) {
+                this.scheduleFlush();
+            }
+        }
+    }
+
+    private async flushInstances(generation: number): Promise<void> {
+        // Clone each mutable entry so this worker update represents one
+        // coherent appearance snapshot even if sync mutates instanceMap while
+        // the worker RPC is in flight.
+        const instances = Array.from(this.instanceMap.values(), (instance) => ({ ...instance }));
+        const pending = Array.from(this.mapsPendingReload);
+        for (const mapId of pending) {
+            this.mapsPendingReload.delete(mapId);
+        }
+
+        try {
+            await this.deps.workerPool.setNpcInstances(instances);
+        } catch (err) {
+            if (generation === this.lifecycleGeneration) {
+                for (const mapId of pending) this.mapsPendingReload.add(mapId);
+            }
+            throw err;
+        }
+
+        if (generation !== this.lifecycleGeneration) return;
 
         this.applyNameOverrides();
 
-        if (this.mapsPendingReload.size === 0) {
-            this.resetFlushFallback();
+        if (pending.length === 0) {
+            if (this.mapsPendingReload.size === 0) this.resetFlushFallback();
             return;
         }
 
@@ -124,15 +175,17 @@ export class NpcInstanceFlushController {
             !!mapManager && (mapManager.currentMapX | 0) >= 0 && (mapManager.currentMapY | 0) >= 0;
 
         if (!rendererReady || !mapManagerReady) {
+            for (const mapId of pending) this.mapsPendingReload.add(mapId);
             this.scheduleFlushFallback();
             return;
         }
 
         this.resetFlushFallback();
 
-        const pending = Array.from(this.mapsPendingReload);
         const remaining = new Set<number>();
-        const geometryPromises: Array<Promise<{ mapId: number; ok: boolean }>> = [];
+        const geometryPromises: Array<
+            Promise<{ mapId: number; status: "applied" | "retry" | "stale" }>
+        > = [];
         const seqTypeLoader = this.deps.getSeqTypeLoader();
         const seqFrameLoader = this.deps.getSeqFrameLoader();
         const npcTypeLoader = this.deps.getNpcTypeLoader();
@@ -164,9 +217,30 @@ export class NpcInstanceFlushController {
                             renderer.maxLevel ?? 3,
                             Array.from(renderer.loadedTextureIds ?? []),
                         );
-                        if (!npcGeometry) return { mapId, ok: false };
+                        if (!npcGeometry) return { mapId, status: "retry" as const };
+
+                        // A new request for this map means this result was built
+                        // from an older instance snapshot. Do not swap it into
+                        // the live map, since that is the one-frame appearance
+                        // rollback perceived as flicker.
+                        if (
+                            generation !== this.lifecycleGeneration ||
+                            this.mapsPendingReload.has(mapId) ||
+                            mapManager.getMap(mapX, mapY) !== map
+                        ) {
+                            if (generation === this.lifecycleGeneration) {
+                                this.mapsPendingReload.add(mapId);
+                            }
+                            return { mapId, status: "stale" as const };
+                        }
+
+                        const refreshNpcGeometry = (map as any).refreshNpcGeometry;
+                        if (typeof refreshNpcGeometry !== "function") {
+                            return { mapId, status: "retry" as const };
+                        }
                         renderer.updateTextureArray?.(npcGeometry.loadedTextures);
-                        (map as any).refreshNpcGeometry?.(
+                        refreshNpcGeometry.call(
+                            map,
                             renderer.app,
                             renderer.npcProgram,
                             renderer.textureArray,
@@ -179,7 +253,7 @@ export class NpcInstanceFlushController {
                             basTypeLoader,
                             npcGeometry,
                         );
-                        return { mapId, ok: true };
+                        return { mapId, status: "applied" as const };
                     } catch (err) {
                         console.warn(
                             "[OsrsClient] failed to refresh NPC geometry",
@@ -187,7 +261,7 @@ export class NpcInstanceFlushController {
                             mapY,
                             err,
                         );
-                        return { mapId, ok: false };
+                        return { mapId, status: "retry" as const };
                     }
                 })(),
             );
@@ -195,12 +269,13 @@ export class NpcInstanceFlushController {
 
         const results = await Promise.all(geometryPromises);
         for (const res of results) {
-            if (!res.ok) remaining.add(res.mapId | 0);
+            if (res.status === "retry") remaining.add(res.mapId | 0);
         }
 
-        this.mapsPendingReload.clear();
-        for (const mapId of remaining) {
-            this.mapsPendingReload.add(mapId);
+        if (generation === this.lifecycleGeneration) {
+            for (const mapId of remaining) {
+                this.mapsPendingReload.add(mapId);
+            }
         }
     }
 }

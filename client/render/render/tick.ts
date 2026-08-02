@@ -253,6 +253,11 @@ export function tickPass(host: WebGLOsrsRendererHost,
             host.addWorldGfxRenderData(map);
         }
 
+        // A server spawn reaches ECS before its asynchronous map batch rebuild.
+        // Give those NPCs actor-data slots immediately so the dynamic fallback
+        // pass can draw them during that gap.
+        host.addUnbatchedNpcRenderData();
+
         host.worldEntityAnimator?.tick(clientCycle);
         host.osrsClient.worldViewManager.interpolateEntities(clientCycle, host.clientTickPhase);
 

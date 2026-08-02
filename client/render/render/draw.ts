@@ -286,6 +286,93 @@ export function addNpcRenderData(host: WebGLOsrsRendererHost, map: WebGLMapSquar
     
 }
 
+export function addUnbatchedNpcRenderData(host: WebGLOsrsRendererHost): void {
+
+        const entries = host.unbatchedNpcRenderEntries;
+        entries.length = 0;
+        if (!host.unifiedActorData || !host.loadNpcs) return;
+
+        const ecs = host.osrsClient.npcEcs;
+        const batchedIds = new Set<number>();
+        for (let i = 0; i < host.mapManager.visibleMapCount; i++) {
+            const map = host.mapManager.visibleMaps[i];
+            const ids = map?.npcEntityIds;
+            if (!map?.drawCallNpc || !ids) continue;
+            for (const id of ids) {
+                if (host.shouldRenderNpcFromMap(map, id | 0)) batchedIds.add(id | 0);
+            }
+        }
+
+        for (const idRaw of ecs.getServerLinkedEcsIds()) {
+            const ecsId = idRaw | 0;
+            if (batchedIds.has(ecsId) || (ecs.getWorldViewId(ecsId) | 0) >= 0) continue;
+            if (!host.getEffectiveNpcType(ecs.getNpcTypeId(ecsId) | 0)) continue;
+
+            const ownerMapX = ecs.getMapX(ecsId) | 0;
+            const ownerMapY = ecs.getMapY(ecsId) | 0;
+            let map: WebGLMapSquare | undefined;
+            for (let i = 0; i < host.mapManager.visibleMapCount; i++) {
+                const candidate = host.mapManager.visibleMaps[i];
+                if (
+                    (candidate.mapX | 0) === ownerMapX &&
+                    (candidate.mapY | 0) === ownerMapY
+                ) {
+                    map = candidate;
+                    break;
+                }
+            }
+            if (!map) continue;
+
+            const dataOffset = host.actorRenderCount | 0;
+            const required = dataOffset + 1;
+            if (host.actorRenderData.length / 8 < required) {
+                const newData = new Uint16Array(Math.ceil((required * 2) / 16) * 16 * 8);
+                newData.set(host.actorRenderData);
+                host.actorRenderData = newData;
+            }
+
+            const offset = dataOffset * 8;
+            const npcX = ecs.getLocalXForMap(ecsId, map.mapX) | 0;
+            const npcY = ecs.getLocalYForMap(ecsId, map.mapY) | 0;
+            const mapTileSpan = map.getLocalTileSpan();
+            const localTileX = clamp((npcX >> 7) | 0, 0, Math.max(0, mapTileSpan - 1));
+            const localTileY = clamp((npcY >> 7) | 0, 0, Math.max(0, mapTileSpan - 1));
+            const renderPlane = resolveHeightSamplePlaneForLocal(
+                map,
+                ecs.getLevel(ecsId) | 0,
+                localTileX,
+                localTileY,
+            );
+
+            host.actorRenderData[offset + 0] = npcX;
+            host.actorRenderData[offset + 1] = npcY;
+            host.actorRenderData[offset + 2] = renderPlane | (ecs.getRotation(ecsId) << 2);
+            host.actorRenderData[offset + 3] = ecs.getServerId(ecsId);
+
+            const npcOverride = ecs.getColorOverride(ecsId);
+            const clientCycle = getClientCycle() | 0;
+            if (
+                npcOverride.amount !== 0 &&
+                clientCycle >= npcOverride.startCycle &&
+                clientCycle < npcOverride.endCycle
+            ) {
+                host.actorRenderData[offset + 4] =
+                    (npcOverride.hue & 0x7f) | ((npcOverride.sat & 0x7f) << 7);
+                host.actorRenderData[offset + 5] =
+                    (npcOverride.lum & 0x7f) | ((npcOverride.amount & 0xff) << 7);
+            } else {
+                host.actorRenderData[offset + 4] = 0;
+                host.actorRenderData[offset + 5] = 0;
+            }
+            host.actorRenderData[offset + 6] = 0;
+            host.actorRenderData[offset + 7] = 0;
+
+            host.actorRenderCount = required;
+            entries.push({ map, ecsId, dataOffset });
+        }
+
+}
+
 export function addPlayerRenderData(host: WebGLOsrsRendererHost, map: WebGLMapSquare) {
 
         host.playerRenderer.addPlayerRenderData(map);

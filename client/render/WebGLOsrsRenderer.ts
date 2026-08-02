@@ -625,6 +625,11 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     // ECS is authoritative for actors (NPCs and Players migrated)
     actorRenderCount: number = 0;
     actorRenderData: Uint16Array = new Uint16Array(16 * 8);
+    public readonly unbatchedNpcRenderEntries: Array<{
+        map: WebGLMapSquare;
+        ecsId: number;
+        dataOffset: number;
+    }> = [];
     // mirror sceneDrawCycleMarker/tileDrawCycleMarkers submission dedupe
     // for tile-centered single-tile actors.
     public frameActorTileSelectionId: number = -1;
@@ -1307,6 +1312,10 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         transparent: boolean,
     ): number {
         return render.uploadDynamicNpcGeometry(this, geometry, transparent);
+    }
+
+    public resolveUnbatchedNpcGeometry(ecsId: number): DynamicNpcFrameGeometry | undefined {
+        return render.resolveUnbatchedNpcGeometry(this, ecsId);
     }
 
     initFramebuffers(): void {
@@ -2262,6 +2271,10 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
 
     addNpcRenderData(map: WebGLMapSquare) {
         return render.addNpcRenderData(this, map);
+    }
+
+    addUnbatchedNpcRenderData(): void {
+        return render.addUnbatchedNpcRenderData(this);
     }
 
     addPlayerRenderData(map: WebGLMapSquare) {

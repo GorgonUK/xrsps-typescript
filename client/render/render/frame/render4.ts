@@ -212,6 +212,7 @@ export function renderOpaqueActorPass(host: WebGLOsrsRendererHost,
             overlayFrameId: number;
             dataOffset: number;
             frameId: number;
+            geometry: DynamicNpcFrameGeometry;
         }> = [];
 
         // Iterate maps front-to-back (same as opaque ordering for map chunks)
@@ -306,26 +307,38 @@ export function renderOpaqueActorPass(host: WebGLOsrsRendererHost,
                                 )
                                 : undefined;
 
-                        if (
-                            renderSeqId >= 0 &&
-                            (forceDynamic || !actionActive || !map.npcExtraAnims?.[j]?.[seqId]) &&
-                            dynamicMeta
-                        ) {
-                            (drawCall as any).offsets[j] = 0;
-                            (drawCall as any).numElements[j] = 0;
-                            drawRanges[j] = NULL_DRAW_RANGE;
-                            dynamicNpcs.push({
-                                map,
-                                npcIndex: j,
-                                ecsId: id,
+                        if (dynamicMeta) {
+                            const geometry = host.dynamicNpcAnimLoader?.getFrameGeometry(
                                 npcTypeId,
-                                seqId: renderSeqId | 0,
-                                overlaySeqId: overlaySeqId | 0,
-                                overlayFrameId: overlayFrameId | 0,
-                                dataOffset: baseOffsetNpc,
+                                renderSeqId | 0,
                                 frameId,
-                            });
-                            continue;
+                                overlaySeqId | 0,
+                                overlayFrameId | 0,
+                            );
+                            const hasDynamicGraphics =
+                                !!geometry &&
+                                ((geometry.opaqueVertices.length > 0 &&
+                                    geometry.opaqueIndices.length > 0) ||
+                                    (geometry.alphaVertices.length > 0 &&
+                                        geometry.alphaIndices.length > 0));
+                            if (geometry && hasDynamicGraphics) {
+                                (drawCall as any).offsets[j] = 0;
+                                (drawCall as any).numElements[j] = 0;
+                                drawRanges[j] = NULL_DRAW_RANGE;
+                                dynamicNpcs.push({
+                                    map,
+                                    npcIndex: j,
+                                    ecsId: id,
+                                    npcTypeId,
+                                    seqId: renderSeqId | 0,
+                                    overlaySeqId: overlaySeqId | 0,
+                                    overlayFrameId: overlayFrameId | 0,
+                                    dataOffset: baseOffsetNpc,
+                                    frameId,
+                                    geometry,
+                                });
+                                continue;
+                            }
                         }
 
                         const anim = host._resolveNpcAnimation(map, j, ecs, id);
@@ -415,20 +428,37 @@ export function renderOpaqueActorPass(host: WebGLOsrsRendererHost,
             } catch {}
         }
 
+        for (const entry of host.unbatchedNpcRenderEntries) {
+            if (
+                !host.isMapWithinRenderDistance(
+                    entry.map,
+                    cullTile.x,
+                    cullTile.y,
+                    renderDistanceTiles,
+                    renderDistancePadTiles,
+                )
+            ) {
+                continue;
+            }
+            const geometry = host.resolveUnbatchedNpcGeometry(entry.ecsId);
+            if (!geometry) continue;
+            dynamicNpcs.push({
+                map: entry.map,
+                npcIndex: 0,
+                ecsId: entry.ecsId,
+                npcTypeId: geometry.npcTypeId,
+                seqId: geometry.seqId,
+                overlaySeqId: geometry.overlaySeqId ?? -1,
+                overlayFrameId: geometry.overlayFrameId ?? -1,
+                dataOffset: entry.dataOffset,
+                frameId: geometry.frameId,
+                geometry,
+            });
+        }
+
         if (dynamicNpcs.length > 0 && actorDataTexture) {
             for (const dyn of dynamicNpcs) {
-                const geometry = host.dynamicNpcAnimLoader?.getFrameGeometry(
-                    dyn.npcTypeId,
-                    dyn.seqId,
-                    dyn.frameId,
-                    dyn.overlaySeqId,
-                    dyn.overlayFrameId,
-                );
-                if (!geometry) {
-                    continue;
-                }
-
-                const indexCount = host.uploadDynamicNpcGeometry(geometry, false);
+                const indexCount = host.uploadDynamicNpcGeometry(dyn.geometry, false);
                 if (indexCount <= 0 || !host.dynamicNpcDrawCall) {
                     continue;
                 }

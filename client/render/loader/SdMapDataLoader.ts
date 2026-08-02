@@ -43,7 +43,6 @@ import { createNpcDatas } from "../npc/NpcData";
 import type {
     NpcInstance,
     NpcRenderBundle,
-    NpcRenderExtraAnim,
     NpcRenderTemplate,
 } from "../npc/NpcRenderTemplate";
 import { isKnownWaterTextureId } from "../water/WaterTextureIds";
@@ -1074,6 +1073,29 @@ function addNpcAnimationFrames(
     };
 }
 
+function addNpcStaticFrame(
+    npcModelLoader: NpcModelLoader,
+    sceneBuf: SceneBuffer,
+    npcType: NpcType,
+): AnimationFrames | undefined {
+    let model;
+    try {
+        model = npcModelLoader.getModel(npcType, -1, -1);
+    } catch {
+        return undefined;
+    }
+    if (!model) {
+        return undefined;
+    }
+
+    const frame = sceneBuf.addModelAnimFrame(model, false);
+    const alphaFrame = sceneBuf.addModelAnimFrame(model, true);
+    return {
+        frames: [frame],
+        framesAlpha: alphaFrame[1] > 0 ? [alphaFrame] : undefined,
+    };
+}
+
 function getSeqFrameLengths(npcModelLoader: NpcModelLoader, seqId: number): number[] {
     const seqType = npcModelLoader.seqTypeLoader.load(seqId);
     if (!seqType) return [];
@@ -1140,50 +1162,20 @@ function createNpcRenderBundles(
     for (const instances of groupedInstances.values()) {
         const npcType = npcModelLoader.npcTypeLoader.load(instances[0].typeId);
 
-        const idleSeqId = npcType.getIdleSeqId(basTypeLoader);
-        const walkSeqId = npcType.getWalkSeqId(basTypeLoader);
-
-        if (idleSeqId === -1) {
+        // Region geometry only needs one always-valid graphical state. Sequence
+        // frames are produced and cached by DynamicNpcAnimLoader at render time.
+        // Baking every idle/walk frame here delays newly streamed NPCs by seconds
+        // and leaves no drawable fallback when an animation frame is malformed.
+        const baseAnim = addNpcStaticFrame(npcModelLoader, npcSceneBuf, npcType);
+        if (!baseAnim) {
             continue;
         }
 
-        const idleAnim = addNpcAnimationFrames(npcModelLoader, npcSceneBuf, npcType, idleSeqId);
-        let walkAnim = idleAnim;
-        if (walkSeqId !== -1 && walkSeqId !== idleSeqId) {
-            walkAnim = addNpcAnimationFrames(npcModelLoader, npcSceneBuf, npcType, walkSeqId);
-        }
-
-        if (!idleAnim) {
-            continue;
-        }
-
-        // No pre-baking of combat animations - they are loaded dynamically
-        // when the server sends the animation ID (like real OSRS).
-        // DynamicNpcAnimLoader handles building animations at render time.
         const template: NpcRenderTemplate = {
             typeId: npcType.id,
-            idleAnim,
-            walkAnim,
+            idleAnim: baseAnim,
+            walkAnim: baseAnim,
         };
-
-        const extraMovementSeqs = collectNpcPrebakedMovementSeqs(npcType, basTypeLoader);
-        if (extraMovementSeqs.length > 0) {
-            const extraAnims: NpcRenderExtraAnim[] = [];
-            for (const seqId of extraMovementSeqs) {
-                const anim = addNpcAnimationFrames(npcModelLoader, npcSceneBuf, npcType, seqId | 0);
-                if (!anim) {
-                    continue;
-                }
-                extraAnims.push({
-                    seqId: seqId | 0,
-                    anim,
-                    frameLengths: getSeqFrameLengths(npcModelLoader, seqId | 0),
-                });
-            }
-            if (extraAnims.length > 0) {
-                template.extraAnims = extraAnims;
-            }
-        }
 
         bundles.push({
             template,
