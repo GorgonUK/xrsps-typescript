@@ -1,8 +1,6 @@
+import { VARP_SPECIAL_ATTACK, VARP_SPECIAL_ENERGY } from "../../../../../client/common/vars";
+import { EquipmentSlot } from "../../../../../client/rs/config/player/Equipment";
 import type { TickFrame } from "../../../network/wsServerTypes";
-import {
-    VARP_SPECIAL_ATTACK,
-    VARP_SPECIAL_ENERGY,
-} from "../../../../../client/common/vars";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
 import { getProjectileParams } from "../../data/ProjectileParamsProvider";
@@ -18,6 +16,7 @@ import {
 import { AttackType } from "../AttackType";
 import { DamageType, damageTracker } from "../DamageTracker";
 import { multiCombatSystem } from "../MultiCombatZones";
+import { getNpcPoisonConfig, hasVenomImmunityEquipment } from "../PoisonVenomSystem";
 import type { CombatAttack } from "../model/CombatAttack";
 import {
     type CombatEntityRef,
@@ -26,7 +25,7 @@ import {
     playerCombatEntityRef,
 } from "../model/CombatEntityRef";
 import { CombatPluginRegistry } from "../plugins/CombatPluginRegistry";
-import { CombatAttributes } from "../state/CombatAttributes";
+import { SpecialAttackContainer } from "../plugins/SpecialAttackContainer";
 import {
     type WeaponCombatContext,
     type WeaponCombatProfile,
@@ -36,17 +35,27 @@ import {
     resolveWeaponProfileValue,
 } from "../plugins/WeaponCombatProfile";
 import {
+    clearWeaponSpecialAttackTraitOverrides,
+    getWeaponSpecialAttackTraitOverrides,
+    markWeaponSpecialAttackExecuted,
+    wasWeaponSpecialAttackExecuted,
+} from "../plugins/WeaponSpecialAttackScript";
+import {
+    ANCIENT_GODSWORD_BLOOD_SACRIFICE_PROFILE_ID,
+    applyAncientGodswordBloodSacrificeHeal,
+    createAncientGodswordBloodSacrificeAttack,
+    getAncientGodswordBloodSacrificeDamage,
+    takeDueAncientGodswordBloodSacrifices,
+} from "../plugins/special-attacks/AncientGodswordSpec";
+import { CombatAttributes } from "../state/CombatAttributes";
+import {
     type CombatHitEvaluation,
     type CombatHitEvaluator,
     createCombatHitEvaluator,
 } from "./CombatHitEvaluator";
-import type { CombatEntity } from "./CombatTargetResolver";
 import type { CombatRetaliationEngine } from "./CombatRetaliationEngine";
-import {
-    type AppliedCombatHit,
-    DeferredHitQueue,
-    DeferredHitsplatType,
-} from "./DeferredHitQueue";
+import type { CombatEntity } from "./CombatTargetResolver";
+import { type AppliedCombatHit, DeferredHitQueue, DeferredHitsplatType } from "./DeferredHitQueue";
 
 interface CombatVisualDefinition {
     readonly attackAnimation?: number;
@@ -56,6 +65,12 @@ interface CombatVisualDefinition {
     readonly projectile?: WeaponProjectileProfile;
     readonly spellData?: SpellDataEntry;
 }
+
+const TOXIC_BLOWPIPE_ITEM_ID = 12926;
+const SERPENTINE_HELM_IDS = new Set([12931, 13197, 13199]);
+const AVAS_ATTRACTOR_ITEM_ID = 10498;
+const AVAS_ASSEMBLER_ITEM_IDS = new Set([22109, 27374]);
+const AVAS_ACCUMULATOR_ITEM_IDS = new Set([10499, 9756, 9757, 13342]);
 
 export interface CombatHitProcessingResult {
     readonly processedAttacks: number;
@@ -73,6 +88,7 @@ export class CombatHitProcessor {
         private readonly plugins: CombatPluginRegistry = CombatPluginRegistry.shared,
         private readonly retaliationEngine?: CombatRetaliationEngine,
     ) {
+        SpecialAttackContainer.initialize();
         this.evaluator = createCombatHitEvaluator(this.services);
         this.deferredHits = new DeferredHitQueue({
             resolveEntity: (reference) => this.resolveEntity(reference),
@@ -112,9 +128,23 @@ export class CombatHitProcessor {
                 distanceTiles,
             });
 
+            if (
+                attacker instanceof PlayerState &&
+                attack.traits.weaponId === TOXIC_BLOWPIPE_ITEM_ID &&
+                attack.traits.type === AttackType.Ranged &&
+                !this.consumeToxicBlowpipeShot(attacker, clock)
+            ) {
+                rejectedAttacks++;
+                continue;
+            }
+
             this.invokePlugin(profile.id, "onAttack", () => profile.onAttack?.(context));
 
             const specialAttack = this.resolveSpecialAttack(profile, context);
+            if (specialAttack?.skipAttack) {
+                processedAttacks++;
+                continue;
+            }
             const rawEvaluations = specialAttack
                 ? this.evaluator.evaluateSpecialAttack(attack, specialAttack)
                 : [this.evaluator.evaluate(attack)];
@@ -132,13 +162,7 @@ export class CombatHitProcessor {
             const travelDelayTicks = this.resolveTravelDelay(profile, context);
             const visuals = this.resolveVisuals(profile, context, specialAttack);
 
-            this.playAttackVisuals(
-                context,
-                profile,
-                visuals,
-                travelDelayTicks,
-                specialAttack,
-            );
+            this.playAttackVisuals(context, profile, visuals, travelDelayTicks, specialAttack);
 
             for (const evaluation of evaluations) {
                 this.deferredHits.enqueue({
@@ -151,7 +175,7 @@ export class CombatHitProcessor {
                     hitsplatType: evaluation.landed
                         ? DeferredHitsplatType.Normal
                         : DeferredHitsplatType.Block,
-                    attackType: attack.traits.type,
+                    attackType: specialAttack?.damageType ?? attack.traits.type,
                     revealClock: clock + travelDelayTicks,
                     profileId: profile.id,
                 });
@@ -176,6 +200,7 @@ export class CombatHitProcessor {
     }
 
     processDeferredHits(currentMapClock: number, frame: TickFrame): readonly AppliedCombatHit[] {
+        this.queueDueAncientGodswordBloodSacrifices(currentMapClock);
         return this.deferredHits.processTick(currentMapClock, frame);
     }
 
@@ -235,7 +260,12 @@ export class CombatHitProcessor {
 
             const visuals = this.resolveVisuals(profile, context);
             if (visuals.projectile) {
-                this.queueProjectile(context, visuals.projectile, visuals.spellData, travelDelayTicks);
+                this.queueProjectile(
+                    context,
+                    visuals.projectile,
+                    visuals.spellData,
+                    travelDelayTicks,
+                );
             }
 
             this.deferredHits.enqueue({
@@ -275,12 +305,7 @@ export class CombatHitProcessor {
 
         return candidates
             .filter((candidate) =>
-                this.isValidAncientAreaTarget(
-                    attacker,
-                    primaryTarget,
-                    candidate,
-                    currentMapClock,
-                ),
+                this.isValidAncientAreaTarget(attacker, primaryTarget, candidate, currentMapClock),
             )
             .sort((first, second) => first.id - second.id)
             .slice(0, Math.max(0, Math.trunc(limit)));
@@ -312,13 +337,7 @@ export class CombatHitProcessor {
         if (candidate.worldViewId !== primaryTarget.worldViewId) return false;
         if (Math.abs(candidate.tileX - primaryTarget.tileX) > 1) return false;
         if (Math.abs(candidate.tileY - primaryTarget.tileY) > 1) return false;
-        if (
-            !multiCombatSystem.isMultiCombat(
-                candidate.tileX,
-                candidate.tileY,
-                candidate.level,
-            )
-        ) {
+        if (!multiCombatSystem.isMultiCombat(candidate.tileX, candidate.tileY, candidate.level)) {
             return false;
         }
 
@@ -360,33 +379,80 @@ export class CombatHitProcessor {
         if (!(context.attacker instanceof PlayerState)) return undefined;
 
         const player = context.attacker;
-        if (!profile.handleSpecialAttack) {
+        if (!player.combatAttributes.get(CombatAttributes.SPECIAL_ATTACK_ACTIVE)) {
+            return undefined;
+        }
+
+        const weaponId = context.attack.traits.weaponId;
+        const script = weaponId === undefined ? undefined : SpecialAttackContainer.get(weaponId);
+        clearWeaponSpecialAttackTraitOverrides(context.attack);
+
+        let profileSpecial: WeaponSpecialAttack | null = null;
+        if (profile.handleSpecialAttack) {
+            try {
+                profileSpecial = profile.handleSpecialAttack(
+                    context.attacker,
+                    context.target,
+                    context.attack,
+                );
+            } catch (error) {
+                logger.warn(`[combat-plugin:${profile.id}] handleSpecialAttack failed`, error);
+            }
+        }
+
+        if (!script && !profileSpecial) {
             player.specEnergy.setActivated(false);
             this.syncSpecialAttackUi(player);
             return undefined;
         }
 
-        let special: WeaponSpecialAttack | null;
-        try {
-            special = profile.handleSpecialAttack(
-                context.attacker,
-                context.target,
-                context.attack,
-            );
-        } catch (error) {
-            logger.warn(`[combat-plugin:${profile.id}] handleSpecialAttack failed`, error);
-            player.specEnergy.setActivated(false);
-            this.syncSpecialAttackUi(player);
-            return undefined;
-        }
-        if (!special) {
-            player.specEnergy.setActivated(false);
-            this.syncSpecialAttackUi(player);
-            return undefined;
+        if (script) {
+            try {
+                script.modifyAttackTraits(context.attack);
+            } catch (error) {
+                logger.warn(`[special-attack:${script.itemId}] modifyAttackTraits failed`, error);
+                clearWeaponSpecialAttackTraitOverrides(context.attack);
+                player.specEnergy.setActivated(false);
+                this.syncSpecialAttackUi(player);
+                return undefined;
+            }
         }
 
-        const energyCost = Math.max(0, Math.min(100, Math.trunc(special.energyCostPercent)));
+        const overrides = getWeaponSpecialAttackTraitOverrides(context.attack);
+        const energyCost = Math.max(
+            0,
+            Math.min(100, Math.trunc(script?.energyCost ?? profileSpecial?.energyCostPercent ?? 0)),
+        );
+        if (script?.onSpecialActivated) {
+            if (player.specEnergy.getPercent() < energyCost) {
+                clearWeaponSpecialAttackTraitOverrides(context.attack);
+                player.specEnergy.setActivated(false);
+                this.services.messagingService.queueChatMessage({
+                    messageType: "game",
+                    text: "You do not have enough special attack energy.",
+                    targetPlayerIds: [player.id],
+                });
+                this.syncSpecialAttackUi(player);
+                return undefined;
+            }
+
+            try {
+                if (script.onSpecialActivated(player, context.target, context.currentMapClock) === false) {
+                    clearWeaponSpecialAttackTraitOverrides(context.attack);
+                    player.specEnergy.setActivated(false);
+                    this.syncSpecialAttackUi(player);
+                    return undefined;
+                }
+            } catch (error) {
+                logger.warn(`[special-attack:${script.itemId}] onSpecialActivated failed`, error);
+                clearWeaponSpecialAttackTraitOverrides(context.attack);
+                player.specEnergy.setActivated(false);
+                this.syncSpecialAttackUi(player);
+                return undefined;
+            }
+        }
         if (!player.specEnergy.consume(energyCost)) {
+            clearWeaponSpecialAttackTraitOverrides(context.attack);
             this.services.messagingService.queueChatMessage({
                 messageType: "game",
                 text: "You do not have enough special attack energy.",
@@ -396,8 +462,27 @@ export class CombatHitProcessor {
             return undefined;
         }
 
+        if (script) markWeaponSpecialAttackExecuted(context.attack);
         this.syncSpecialAttackUi(player);
-        return special;
+        return Object.freeze({
+            ...profileSpecial,
+            energyCostPercent: energyCost,
+            hitCount: overrides?.hitCount ?? profileSpecial?.hitCount ?? 1,
+            accuracyMultiplier:
+                overrides?.accuracyMultiplier ?? profileSpecial?.accuracyMultiplier ?? 1,
+            damageMultiplier: overrides?.damageMultiplier ?? profileSpecial?.damageMultiplier ?? 1,
+            guaranteedHit: overrides?.guaranteedHit ?? profileSpecial?.guaranteedHit,
+            rollAttackType: overrides?.rollAttackType ?? profileSpecial?.rollAttackType,
+            damageType: overrides?.damageType ?? profileSpecial?.damageType,
+            maximumHitSource: overrides?.maximumHitSource ?? profileSpecial?.maximumHitSource,
+            visibleMagicMaximumHit:
+                overrides?.visibleMagicMaximumHit ?? profileSpecial?.visibleMagicMaximumHit,
+            minimumDamageMultiplier:
+                overrides?.minimumDamageMultiplier ?? profileSpecial?.minimumDamageMultiplier,
+            maximumDamageMultiplier:
+                overrides?.maximumDamageMultiplier ?? profileSpecial?.maximumDamageMultiplier,
+            skipAttack: overrides?.skipAttack ?? profileSpecial?.skipAttack,
+        });
     }
 
     private syncSpecialAttackUi(player: PlayerState): void {
@@ -499,7 +584,30 @@ export class CombatHitProcessor {
             this.enqueueGraphic(context.attacker, visuals.castGraphic, context.currentMapClock);
         }
         if (visuals.projectile) {
-            this.queueProjectile(context, visuals.projectile, visuals.spellData, travelDelayTicks);
+            const projectileCount = Math.max(
+                1,
+                Math.min(
+                    16,
+                    this.nonNegativeInteger(
+                        specialAttack?.projectileCount ?? 1,
+                        "special attack projectile count",
+                    ),
+                ),
+            );
+            for (let projectileIndex = 0; projectileIndex < projectileCount; projectileIndex++) {
+                const releaseDelay = specialAttack?.projectileReleaseDelaysTicks?.[projectileIndex];
+                const projectile =
+                    releaseDelay === undefined
+                        ? visuals.projectile
+                        : {
+                              ...visuals.projectile,
+                              startDelayTicks: this.nonNegativeNumber(
+                                  releaseDelay,
+                                  `special attack projectile ${projectileIndex + 1} release delay`,
+                              ),
+                          };
+                this.queueProjectile(context, projectile, visuals.spellData, travelDelayTicks);
+            }
         }
 
         const spellCastSound = visuals.spellData?.castSoundId;
@@ -556,7 +664,10 @@ export class CombatHitProcessor {
             projectileStartDelay: projectile.startDelayTicks ?? defaults?.startDelay,
         };
         const startDelay = Math.max(0, projectile.startDelayTicks ?? defaults?.startDelay ?? 0);
-        const travelTime = Math.max(1, travelDelayTicks - startDelay);
+        // travelDelayTicks is the impact deadline. A delayed projectile uses
+        // the remaining portion of that window so it still arrives with the hit.
+        // ProjectileSystem guarantees at least one client cycle of flight.
+        const travelTime = Math.max(0, travelDelayTicks - startDelay);
         let launch;
 
         if (context.attacker instanceof PlayerState && context.target instanceof NpcState) {
@@ -611,6 +722,9 @@ export class CombatHitProcessor {
 
     private onHitApplied(hit: AppliedCombatHit, frame: TickFrame): void {
         this.playImpactVisuals(hit);
+        this.applyAncientGodswordBloodSacrificeHeal(hit);
+        this.applyWeaponSpecialAttackScript(hit);
+        this.applyToxicBlowpipeVenom(hit);
         this.applyAncientMagicEffects(hit);
         this.playBlockAnimation(hit);
         this.recordLootDamage(hit);
@@ -628,6 +742,129 @@ export class CombatHitProcessor {
             distanceTiles: this.distanceBetween(hit.source, hit.target),
         });
         this.invokePlugin(profile.id, "onHitApplied", () => profile.onHitApplied?.(hit, context));
+    }
+
+    private applyWeaponSpecialAttackScript(hit: AppliedCombatHit): void {
+        if (!hit.source) return;
+        if (!wasWeaponSpecialAttackExecuted(hit.pending.attack)) return;
+
+        const weaponId = hit.pending.attack.traits.weaponId;
+        if (weaponId === undefined) return;
+        const script = SpecialAttackContainer.get(weaponId);
+        if (!script) return;
+
+        try {
+            script.onHitApplied(
+                hit.source,
+                hit.target,
+                hit.pending.damage,
+                hit.appliedClock,
+            );
+        } catch (error) {
+            logger.warn(`[special-attack:${script.itemId}] onHitApplied failed`, error);
+        }
+    }
+
+    private consumeToxicBlowpipeShot(player: PlayerState, currentMapClock: number): boolean {
+        const state = player.equipment.getBlowpipeChargeState();
+        if (state.scales <= 0 || state.dartCount <= 0 || state.dartId <= 0) {
+            player.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
+            this.services.messagingService.queueChatMessage({
+                messageType: "game",
+                text:
+                    state.scales <= 0
+                        ? "Your toxic blowpipe has no Zulrah's scales left."
+                        : "Your toxic blowpipe has no darts left.",
+                targetPlayerIds: [player.id],
+            });
+            return false;
+        }
+
+        const capeId = player.appearance.equip[EquipmentSlot.CAPE] ?? -1;
+        const dartRoll = Math.random();
+        const dartRetrieved = AVAS_ASSEMBLER_ITEM_IDS.has(capeId)
+            ? dartRoll < 0.8
+            : AVAS_ACCUMULATOR_ITEM_IDS.has(capeId)
+              ? dartRoll < 0.72
+              : capeId === AVAS_ATTRACTOR_ITEM_ID
+                ? dartRoll < 0.6
+                : false;
+        const dartDropped = !dartRetrieved
+            ? AVAS_ACCUMULATOR_ITEM_IDS.has(capeId)
+                ? dartRoll < 0.92
+                : capeId === AVAS_ATTRACTOR_ITEM_ID
+                  ? dartRoll < 0.9
+                  : !AVAS_ASSEMBLER_ITEM_IDS.has(capeId) && dartRoll < 0.8
+            : false;
+        const dartConsumed = !dartRetrieved;
+        const scaleConsumed = Math.random() >= 1 / 3;
+
+        player.equipment.setBlowpipeChargeState({
+            scales: state.scales - (scaleConsumed ? 1 : 0),
+            dartId: state.dartId,
+            dartCount: state.dartCount - (dartConsumed ? 1 : 0),
+        });
+        if (dartDropped) {
+            this.services.groundItems.spawn(
+                state.dartId,
+                1,
+                { x: player.tileX, y: player.tileY, level: player.level },
+                currentMapClock,
+                { ownerId: player.id, privateTicks: 100 },
+                player.worldViewId,
+            );
+        }
+        return true;
+    }
+
+    private applyToxicBlowpipeVenom(hit: AppliedCombatHit): void {
+        if (!hit.pending.landed) return;
+        if (!(hit.source instanceof PlayerState)) return;
+        if (hit.pending.attack.traits.weaponId !== TOXIC_BLOWPIPE_ITEM_ID) return;
+
+        const attackerHead = hit.source.appearance.equip[EquipmentSlot.HEAD] ?? -1;
+        const chance =
+            hit.target instanceof NpcState && SERPENTINE_HELM_IDS.has(attackerHead) ? 1 : 0.25;
+        if (Math.random() >= chance) return;
+
+        if (hit.target instanceof PlayerState) {
+            const targetHead = hit.target.appearance.equip[EquipmentSlot.HEAD] ?? -1;
+            if (hasVenomImmunityEquipment(targetHead)) return;
+            hit.target.skillSystem.inflictVenom(6, hit.appliedClock);
+            return;
+        }
+
+        if (getNpcPoisonConfig(hit.target.typeId).venomImmune) return;
+        hit.target.inflictVenom(6, hit.appliedClock);
+    }
+
+    private queueDueAncientGodswordBloodSacrifices(currentMapClock: number): void {
+        for (const sacrifice of takeDueAncientGodswordBloodSacrifices(currentMapClock)) {
+            const attack = createAncientGodswordBloodSacrificeAttack(
+                sacrifice.attacker,
+                sacrifice.target,
+                currentMapClock,
+            );
+            const damage = getAncientGodswordBloodSacrificeDamage();
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage,
+                maxHit: damage,
+                landed: true,
+                hitsplatType: DeferredHitsplatType.Normal,
+                attackType: AttackType.Magic,
+                revealClock: currentMapClock,
+                profileId: ANCIENT_GODSWORD_BLOOD_SACRIFICE_PROFILE_ID,
+            });
+        }
+    }
+
+    private applyAncientGodswordBloodSacrificeHeal(hit: AppliedCombatHit): void {
+        if (hit.pending.profileId !== ANCIENT_GODSWORD_BLOOD_SACRIFICE_PROFILE_ID) return;
+        if (!(hit.source instanceof PlayerState)) return;
+        applyAncientGodswordBloodSacrificeHeal(hit.source, hit.target, hit.amount, hit.hpMax);
     }
 
     private applyAncientMagicEffects(hit: AppliedCombatHit): void {
@@ -739,11 +976,7 @@ export class CombatHitProcessor {
             this.services.combatEffectService.tryActivateRedemption(target);
         }
 
-        this.retaliationEngine?.intercept(
-            target,
-            hit.pending.source,
-            hit.appliedClock,
-        );
+        this.retaliationEngine?.intercept(target, hit.pending.source, hit.appliedClock);
 
         if (source instanceof PlayerState) {
             source.setLastHit(target);
@@ -934,5 +1167,12 @@ export class CombatHitProcessor {
             throw new RangeError(`Combat ${field} must be finite; received ${value}`);
         }
         return Math.max(0, Math.trunc(value));
+    }
+
+    private nonNegativeNumber(value: number, field: string): number {
+        if (!Number.isFinite(value)) {
+            throw new RangeError(`Combat ${field} must be finite; received ${value}`);
+        }
+        return Math.max(0, value);
     }
 }

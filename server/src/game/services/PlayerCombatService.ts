@@ -25,6 +25,7 @@ const MELEE_HIT_DELAY_TICKS = 0;
 const UNARMED_PUNCH_SOUND = 2566;
 const UNARMED_KICK_SOUND = 2565;
 const WEAPON_SPEED_PARAM = 771;
+const TOXIC_BLOWPIPE_ITEM_ID = 12926;
 
 const MAGIC_WEAPON_CATEGORY_IDS = new Set([18, 24, 29, 31]);
 const RANGED_WEAPON_CATEGORY_IDS = new Set([
@@ -316,6 +317,10 @@ export class PlayerCombatService {
         try {
             const equip = this.ensureEquipArray(player);
             const weaponId = equip[EquipmentSlot.WEAPON];
+            if (weaponId === TOXIC_BLOWPIPE_ITEM_ID) {
+                const style = getAttackStyle(weaponId, player.combat.styleSlot ?? 0);
+                return style === AttackStyle.LONGRANGE ? 7 : 5;
+            }
             if (weaponId > 0) {
                 const obj = this.services.dataLoaderService.getObjType(weaponId);
                 const rawRange = obj?.params?.get(13) as number | undefined;

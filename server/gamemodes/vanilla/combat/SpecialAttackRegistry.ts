@@ -524,7 +524,7 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
             name: "Toxic Siphon",
             weaponIds: [12926],
             energyCost: 50,
-            accuracyMultiplier: 1.0,
+            accuracyMultiplier: 2.0,
             damageMultiplier: 1.5,
             hitCount: 1,
             attackType: "ranged",

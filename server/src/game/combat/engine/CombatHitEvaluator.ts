@@ -8,6 +8,7 @@ import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { ServerServices } from "../../ServerServices";
 import { NpcState } from "../../npc";
 import { PlayerState } from "../../player";
+import { OverheadType } from "../../prayer/OverheadType";
 import { resolveElementalSpellBaseMaxHit } from "../../spells/ElementalSpellMaxHit";
 import {
     calculatePoweredStaffBaseDamage,
@@ -28,8 +29,8 @@ import type { CombatAttack, CombatAttackStyle } from "../model/CombatAttack";
 import type { CombatEntityRef } from "../model/CombatEntityRef";
 import { CombatEntityType } from "../model/CombatEntityRef";
 import type { WeaponSpecialAttack } from "../plugins/WeaponCombatProfile";
+import { SpecialAttackMaximumHitSource } from "../plugins/WeaponSpecialAttackScript";
 import { CombatAttributes } from "../state/CombatAttributes";
-import { OverheadType } from "../../prayer/OverheadType";
 import type { CombatEntity } from "./CombatTargetResolver";
 
 const PLAYER_EFFECTIVE_LEVEL_BONUS = 8;
@@ -109,7 +110,12 @@ export class CombatHitEvaluator {
     }
 
     evaluate(attack: CombatAttack): CombatHitEvaluation {
-        return this.evaluateRoll(attack, 1, 1);
+        return this.evaluateRoll(attack, {
+            energyCostPercent: 0,
+            hitCount: 1,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+        });
     }
 
     evaluateSpecialAttack(
@@ -119,46 +125,71 @@ export class CombatHitEvaluator {
         const hitCount = Math.max(1, Math.trunc(special.hitCount));
         const evaluations: CombatHitEvaluation[] = [];
         for (let hitIndex = 0; hitIndex < hitCount; hitIndex++) {
-            evaluations.push(
-                this.evaluateRoll(
-                    attack,
-                    this.nonNegativeMultiplier(
-                        special.accuracyMultiplier,
-                        "special attack accuracy",
-                    ),
-                    this.nonNegativeMultiplier(
-                        special.damageMultiplier,
-                        "special attack damage",
-                    ),
-                ),
-            );
+            evaluations.push(this.evaluateRoll(attack, special));
         }
         return Object.freeze(evaluations);
     }
 
-    private evaluateRoll(
-        attack: CombatAttack,
-        accuracyMultiplier: number,
-        damageMultiplier: number,
-    ): CombatHitEvaluation {
+    private evaluateRoll(attack: CombatAttack, special: WeaponSpecialAttack): CombatHitEvaluation {
         const attacker = this.options.resolveEntity(attack.attacker);
         if (!attacker) return this.invalid(attack, "attacker_not_found");
 
         const target = this.options.resolveEntity(attack.target);
         if (!target) return this.invalid(attack, "target_not_found", attacker);
 
-        const rolls = this.buildRollProfile(attack, attacker, target);
+        const rollAttack = this.withRollAttackType(attack, special.rollAttackType);
+        const rolls = this.buildRollProfile(rollAttack, attacker, target);
+        const accuracyMultiplier = this.nonNegativeMultiplier(
+            special.accuracyMultiplier,
+            "special attack accuracy",
+        );
+        const damageMultiplier = this.nonNegativeMultiplier(
+            special.damageMultiplier,
+            "special attack damage",
+        );
         const attackRoll = Math.floor(
             calculateAttackRoll(rolls.effectiveAttack, rolls.attackBonus) * accuracyMultiplier,
         );
         const defenceRoll = calculateDefenceRoll(rolls.effectiveDefence, rolls.defenceBonus);
-        const hitChance = calculateHitChance(attackRoll, defenceRoll);
-        const maxHit = Math.max(0, Math.floor(rolls.maxHit * damageMultiplier));
-        const landed = rollAccuracy(hitChance, this.random);
-        const rolledDamage = landed ? Math.floor(this.nextRandom() * (maxHit + 1)) : 0;
+        const hitChance = special.guaranteedHit ? 1 : calculateHitChance(attackRoll, defenceRoll);
+        const sourcedMaxHit =
+            special.maximumHitSource === SpecialAttackMaximumHitSource.PhysicalMelee
+                ? this.buildPhysicalMeleeMaxHit(attack, attacker)
+                : special.maximumHitSource === SpecialAttackMaximumHitSource.VisibleMagic
+                  ? this.buildVisibleMagicMaxHit(attacker, special.visibleMagicMaximumHit ?? 0)
+                  : rolls.maxHit;
+        const baseMaxHit =
+            special.maxHitOverride === undefined
+                ? sourcedMaxHit
+                : this.nonNegativeInteger(special.maxHitOverride, "special attack max hit");
+        const scaledMaxHit = Math.max(0, Math.floor(baseMaxHit * damageMultiplier));
+        const minimumDamage = Math.floor(
+            scaledMaxHit *
+                this.nonNegativeMultiplier(
+                    special.minimumDamageMultiplier ?? 0,
+                    "special attack minimum damage",
+                ),
+        );
+        const maximumDamage = Math.floor(
+            scaledMaxHit *
+                this.nonNegativeMultiplier(
+                    special.maximumDamageMultiplier ?? 1,
+                    "special attack maximum damage",
+                ),
+        );
+        if (maximumDamage < minimumDamage) {
+            throw new RangeError(
+                `Combat special attack maximum damage ${maximumDamage} cannot be below minimum damage ${minimumDamage}`,
+            );
+        }
+        const maxHit = Math.max(0, maximumDamage);
+        const landed = special.guaranteedHit === true || rollAccuracy(hitChance, this.random);
+        const rolledDamage = landed
+            ? minimumDamage + Math.floor(this.nextRandom() * (maximumDamage - minimumDamage + 1))
+            : 0;
         const damage = this.applyProtectionPrayer(
             rolledDamage,
-            attack.traits.type,
+            special.damageType ?? rollAttack.traits.type,
             attacker,
             target,
         );
@@ -177,6 +208,45 @@ export class CombatHitEvaluator {
         });
     }
 
+    private buildPhysicalMeleeMaxHit(attack: CombatAttack, attacker: CombatEntity): number {
+        const physicalMeleeAttack: CombatAttack = {
+            ...attack,
+            traits: {
+                ...attack.traits,
+                type: AttackType.Melee,
+            },
+        };
+        return this.buildAttackProfile(physicalMeleeAttack, attacker).maxHit;
+    }
+
+    private buildVisibleMagicMaxHit(attacker: CombatEntity, baseMaximumHit: number): number {
+        if (!(attacker instanceof PlayerState)) return 0;
+        const base = Math.max(0, Math.floor(baseMaximumHit));
+        if (base <= 0) return 0;
+
+        const visibleMagicLevel = this.getBoostedLevel(attacker, SkillId.Magic);
+        const internalMaximumHit = Math.min(base, Math.floor((base * visibleMagicLevel) / 99 + 1));
+        return this.applyMagicDamageBonuses(
+            internalMaximumHit,
+            attacker,
+            this.options.getEquipmentBonuses(attacker),
+        );
+    }
+
+    private withRollAttackType(
+        attack: CombatAttack,
+        rollAttackType: AttackType | undefined,
+    ): CombatAttack {
+        if (rollAttackType === undefined || rollAttackType === attack.traits.type) return attack;
+        return {
+            ...attack,
+            traits: {
+                ...attack.traits,
+                type: rollAttackType,
+            },
+        };
+    }
+
     private applyProtectionPrayer(
         damage: number,
         attackType: AttackType,
@@ -188,9 +258,7 @@ export class CombatHitEvaluator {
         const requiredOverhead = this.overheadForAttackType(attackType);
         if (requiredOverhead === OverheadType.NONE) return damage;
 
-        const activeOverhead = target.combatAttributes.get(
-            CombatAttributes.ACTIVE_OVERHEAD_PRAYER,
-        );
+        const activeOverhead = target.combatAttributes.get(CombatAttributes.ACTIVE_OVERHEAD_PRAYER);
         if (activeOverhead !== requiredOverhead) return damage;
 
         // Protection prayers fully block ordinary NPC damage. Against another
@@ -213,9 +281,18 @@ export class CombatHitEvaluator {
 
     private nonNegativeMultiplier(value: number, field: string): number {
         if (!Number.isFinite(value) || value < 0) {
-            throw new RangeError(`Combat ${field} multiplier must be non-negative; received ${value}`);
+            throw new RangeError(
+                `Combat ${field} multiplier must be non-negative; received ${value}`,
+            );
         }
         return value;
+    }
+
+    private nonNegativeInteger(value: number, field: string): number {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new RangeError(`Combat ${field} must be non-negative; received ${value}`);
+        }
+        return Math.trunc(value);
     }
 
     buildRollProfile(
@@ -437,12 +514,20 @@ export class CombatHitEvaluator {
         }
 
         baseDamage ??= Math.max(0, Math.floor(effectiveMagic / 3));
+        return this.applyMagicDamageBonuses(baseDamage, player, bonuses);
+    }
+
+    private applyMagicDamageBonuses(
+        baseDamage: number,
+        player: PlayerState,
+        bonuses: readonly number[],
+    ): number {
         const equipmentPercent = Math.max(0, this.bonusAt(bonuses, MAGIC_DAMAGE_BONUS_INDEX));
         const prayerPercent = Math.max(
             0,
             (this.getPrayerMultiplier(player, "magic_damage") - 1) * 100,
         );
-        return Math.floor(baseDamage * (1 + (equipmentPercent + prayerPercent) / 100));
+        return Math.floor(Math.max(0, baseDamage) * (1 + (equipmentPercent + prayerPercent) / 100));
     }
 
     private resolveMeleeBonusIndex(player: PlayerState, bonuses: readonly number[]): number {

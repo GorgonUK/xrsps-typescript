@@ -25,6 +25,9 @@ const EQUIPMENT_STATS_BONUS_COUNT = 14;
 const COMBAT_OPTIONS_GROUP_ID = 593;
 const AUTOCAST_SELECTION_GROUP_ID = 201;
 const AUTOCAST_CONTROL_COMPONENT_IDS = [23, 28] as const;
+const TOXIC_BLOWPIPE_ITEM_ID = 12926;
+const RANGED_ATTACK_BONUS_INDEX = 4;
+const RANGED_STRENGTH_BONUS_INDEX = 11;
 
 /**
  * Manages equipment operations: equip/unequip, stat bonuses, weapon categories.
@@ -230,6 +233,31 @@ export class EquipmentService {
                 const bonus = itemBonuses[i] ?? 0;
                 if (!Number.isFinite(bonus)) continue;
                 totals[i] = (totals[i] ?? 0) + bonus;
+            }
+        }
+
+        if (equip[EquipmentSlot.WEAPON] === TOXIC_BLOWPIPE_ITEM_ID) {
+            // The bundled cache predates the 2021 rebalance (+60 accuracy,
+            // no strength). Charged blowpipes now provide +30/+20.
+            totals[RANGED_ATTACK_BONUS_INDEX] -= 30;
+            totals[RANGED_STRENGTH_BONUS_INDEX] += 20;
+
+            // Blowpipe damage comes from its internal dart, never from an item
+            // left in the ordinary ammunition equipment slot.
+            const quiverBonuses = getItemDefinition(equip[EquipmentSlot.AMMO] ?? -1)?.bonuses;
+            const quiverRangedStrength =
+                quiverBonuses?.[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+            if (Number.isFinite(quiverRangedStrength)) {
+                totals[RANGED_STRENGTH_BONUS_INDEX] -= quiverRangedStrength;
+            }
+
+            const loadedDart = player.equipment.getBlowpipeChargeState();
+            const dartBonuses = getItemDefinition(loadedDart.dartId)?.bonuses;
+            if (loadedDart.dartCount > 0 && dartBonuses) {
+                const rangedStrength = dartBonuses[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+                if (Number.isFinite(rangedStrength)) {
+                    totals[RANGED_STRENGTH_BONUS_INDEX] += rangedStrength;
+                }
             }
         }
         return totals;
