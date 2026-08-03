@@ -1,7 +1,11 @@
 import { PlayerState } from "../../../player";
 import { AttackType } from "../../AttackType";
 import type { CombatAttack } from "../../model/CombatAttack";
-import { SpecialAttackTiming, type WeaponCombatProfile } from "../WeaponCombatProfile";
+import {
+    SpecialAttackTiming,
+    type WeaponCombatContext,
+    type WeaponCombatProfile,
+} from "../WeaponCombatProfile";
 import {
     type WeaponSpecialAttackScript,
     setWeaponSpecialAttackTraitOverrides,
@@ -24,9 +28,9 @@ const TOXIC_SIPHON = Object.freeze({
 export const TOXIC_BLOWPIPE_PROFILE: WeaponCombatProfile = Object.freeze({
     id: "core:toxic_blowpipe",
     itemIds: Object.freeze([TOXIC_BLOWPIPE_ITEM_ID]),
-    attackAnimation: (context) =>
+    attackAnimation: (context: WeaponCombatContext) =>
         context.attack.traits.type === AttackType.Ranged ? 5061 : undefined,
-    attackSoundId: (context) =>
+    attackSoundId: (context: WeaponCombatContext) =>
         context.attack.traits.type === AttackType.Ranged ? 5765 : undefined,
     specialAttackEnergyCost: TOXIC_SIPHON_ENERGY_COST,
     specialAttackTiming: SpecialAttackTiming.Standard,

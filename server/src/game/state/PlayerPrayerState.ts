@@ -18,6 +18,8 @@ export class PlayerPrayerState {
     drainAccumulator: number = 0;
     /** True when a prayer was enabled this tick; OSRS skips that tick's drain. */
     private activatedThisTick: boolean = false;
+    /** Remaining game ticks during which protection prayers cannot be activated. */
+    private protectionPrayerLockTicks: number = 0;
     headIcon: PrayerHeadIcon | null = null;
 
     private deps?: PlayerPrayerDeps;
@@ -93,6 +95,23 @@ export class PlayerPrayerState {
 
     hasPrayerActive(prayer: PrayerName): boolean {
         return this.activePrayers.has(prayer);
+    }
+
+    lockProtectionPrayers(ticks: number): void {
+        this.protectionPrayerLockTicks = Math.max(
+            this.protectionPrayerLockTicks,
+            Math.max(0, Math.floor(ticks)),
+        );
+    }
+
+    areProtectionPrayersLocked(): boolean {
+        return this.protectionPrayerLockTicks > 0;
+    }
+
+    advancePrayerLocks(): void {
+        if (this.protectionPrayerLockTicks > 0) {
+            this.protectionPrayerLockTicks--;
+        }
     }
 
     getPrayerLevel(): number {

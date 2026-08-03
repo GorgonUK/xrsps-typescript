@@ -55,7 +55,12 @@ import {
 } from "./CombatHitEvaluator";
 import type { CombatRetaliationEngine } from "./CombatRetaliationEngine";
 import type { CombatEntity } from "./CombatTargetResolver";
-import { type AppliedCombatHit, DeferredHitQueue, DeferredHitsplatType } from "./DeferredHitQueue";
+import {
+    type AppliedCombatHit,
+    DeferredHitQueue,
+    DeferredHitsplatType,
+    type PendingCombatHit,
+} from "./DeferredHitQueue";
 
 interface CombatVisualDefinition {
     readonly attackAnimation?: number;
@@ -67,6 +72,16 @@ interface CombatVisualDefinition {
 }
 
 const TOXIC_BLOWPIPE_ITEM_ID = 12926;
+const STAFF_OF_THE_DEAD_ITEM_ID = 11791;
+const TOXIC_STAFF_OF_THE_DEAD_CHARGED_ITEM_ID = 12904;
+const STAFF_OF_LIGHT_ITEM_ID = 22296;
+const STAFF_OF_BALANCE_ITEM_ID = 24144;
+const POWER_OF_DEATH_STAFF_ITEM_IDS = new Set([
+    STAFF_OF_THE_DEAD_ITEM_ID,
+    TOXIC_STAFF_OF_THE_DEAD_CHARGED_ITEM_ID,
+    STAFF_OF_LIGHT_ITEM_ID,
+    STAFF_OF_BALANCE_ITEM_ID,
+]);
 const SERPENTINE_HELM_IDS = new Set([12931, 13197, 13199]);
 const AVAS_ATTRACTOR_ITEM_ID = 10498;
 const AVAS_ASSEMBLER_ITEM_IDS = new Set([22109, 27374]);
@@ -92,6 +107,8 @@ export class CombatHitProcessor {
         this.evaluator = createCombatHitEvaluator(this.services);
         this.deferredHits = new DeferredHitQueue({
             resolveEntity: (reference) => this.resolveEntity(reference),
+            transformDamage: (pending, target, source) =>
+                this.transformIncomingDamage(pending, target, source),
             onHitApplied: (hit, frame) => this.onHitApplied(hit, frame),
         });
     }
@@ -742,6 +759,27 @@ export class CombatHitProcessor {
             distanceTiles: this.distanceBetween(hit.source, hit.target),
         });
         this.invokePlugin(profile.id, "onHitApplied", () => profile.onHitApplied?.(hit, context));
+    }
+
+    private transformIncomingDamage(
+        pending: PendingCombatHit,
+        target: CombatEntity,
+        source: CombatEntity | undefined,
+    ): number {
+        void source;
+        if (pending.attackType !== AttackType.Melee || !(target instanceof PlayerState)) {
+            return pending.damage;
+        }
+        if (
+            pending.revealClock >=
+            target.combatAttributes.get(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK)
+        ) {
+            return pending.damage;
+        }
+        const weaponId = target.appearance.equip[EquipmentSlot.WEAPON] ?? -1;
+        if (!POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId)) return pending.damage;
+
+        return Math.max(0, Math.floor(pending.damage * 0.5));
     }
 
     private applyWeaponSpecialAttackScript(hit: AppliedCombatHit): void {

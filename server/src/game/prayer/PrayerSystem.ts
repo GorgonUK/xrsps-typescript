@@ -18,6 +18,12 @@ export type PrayerSelectionResult = {
     errors: PrayerSelectionError[];
 };
 
+const PROTECTION_PRAYER_NAMES = new Set<PrayerName>([
+    "protect_from_magic",
+    "protect_from_missiles",
+    "protect_from_melee",
+]);
+
 export class PrayerSystem {
     applySelection(player: PlayerState, requested: Iterable<string>): PrayerSelectionResult {
         const normalized = this.normalizeRequest(requested);
@@ -40,6 +46,16 @@ export class PrayerSystem {
         }
         const next: PrayerName[] = [];
         for (const prayer of normalized) {
+            if (
+                PROTECTION_PRAYER_NAMES.has(prayer) &&
+                player.prayer.areProtectionPrayersLocked()
+            ) {
+                errors.push({
+                    prayer,
+                    message: "Your protection prayers have been disabled.",
+                });
+                continue;
+            }
             const def = getPrayerDefinition(prayer);
             if (!this.meetsLevel(skill.baseLevel, def)) {
                 errors.push({

@@ -426,11 +426,18 @@ export class NpcState extends Actor {
         this.regenEffect = undefined;
         this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
         this.combatAttributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, 0);
+        this.combatAttributes.set(CombatAttributes.MAGIC_DEFENCE_BONUS_DRAIN, 0);
+        this.combatAttributes.set(CombatAttributes.MAGIC_DEFENCE_BONUS_CURRENT, 0);
         this.returningToSpawn = false;
     }
 
     getCombatStat(stat: NpcCombatStat): number {
         return this.combat[NPC_COMBAT_STAT_FIELD[stat]];
+    }
+
+    isCombatStatReduced(stat: NpcCombatStat): boolean {
+        const field = NPC_COMBAT_STAT_FIELD[stat];
+        return Math.floor(this.combat[field]) < Math.floor(this.baseCombatLevels[stat]);
     }
 
     drainCombatStat(stat: NpcCombatStat, amountRaw: number): number {
