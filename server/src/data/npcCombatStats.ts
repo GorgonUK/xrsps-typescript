@@ -2,7 +2,7 @@
  * NPC Combat Stats Loader
  *
  * Loads NPC combat statistics from npc-combat-stats.json
- * Used by CombatEngine for accurate NPC defence/attack calculations
+ * Used by the canonical combat evaluator for NPC defence and attack calculations.
  */
 import fs from "fs";
 import path from "path";
@@ -273,7 +273,7 @@ export function getNpcAggressionMetadata(npcTypeId: number): NpcAggressionMetada
 }
 
 /**
- * Convert NpcCombatStats to NpcCombatProfile format used by CombatEngine
+ * Convert NpcCombatStats to the runtime NPC combat profile format.
  */
 export function toNpcCombatProfile(stats: NpcCombatStats): {
     defenceLevel: number;
@@ -324,7 +324,7 @@ export function toNpcCombatProfile(stats: NpcCombatStats): {
 }
 
 /**
- * Get NPC combat profile in CombatEngine format
+ * Get an NPC combat profile in runtime format.
  */
 export function getNpcCombatProfile(npcTypeId: number) {
     const stats = getNpcCombatStats(npcTypeId);

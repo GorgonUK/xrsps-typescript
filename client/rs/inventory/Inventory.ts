@@ -50,6 +50,30 @@ export class Inventory {
         return cloneSlot(this.slots[index | 0]);
     }
 
+    matchesSlot(index: number, itemId: number, quantity: number = 1): boolean {
+        if (!this.isValidIndex(index)) return false;
+        const current = this.slots[index | 0];
+        const normalized = this.normalizeSlot(index, itemId, quantity);
+        return current.itemId === normalized.itemId && current.quantity === normalized.quantity;
+    }
+
+    matchesSnapshot(entries: InventorySlotInput[]): boolean {
+        const candidate = this.buildSnapshot(entries);
+        for (let index = 0; index < this.slots.length; index++) {
+            const current = this.slots[index];
+            const incoming = candidate[index];
+            if (current.itemId !== incoming.itemId || current.quantity !== incoming.quantity) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    snapshotSignature(entries?: InventorySlotInput[]): string {
+        const snapshot = entries ? this.buildSnapshot(entries) : this.slots;
+        return snapshot.map((slot) => `${slot.itemId}:${slot.quantity}`).join("|");
+    }
+
     getSelectedSlot(): number | null {
         return this.selectedSlot;
     }
@@ -63,11 +87,7 @@ export class Inventory {
 
     setSlot(index: number, itemId: number, quantity: number = 1): InventorySlot {
         const slotIndex = this.requireValidIndex(index);
-        const nextId = itemId > 0 ? itemId | 0 : -1;
-        // Some containers (notably bank placeholders) can have an itemId with quantity 0.
-        // Treat emptiness by itemId only; quantity 0 is still a valid occupied slot.
-        const nextQty = nextId > 0 ? Math.max(0, quantity | 0) : 0;
-        const next: InventorySlot = { slot: slotIndex, itemId: nextId, quantity: nextQty };
+        const next = this.normalizeSlot(slotIndex, itemId, quantity);
         const current = this.slots[slotIndex];
         if (current.itemId === next.itemId && current.quantity === next.quantity) {
             return cloneSlot(current);
@@ -102,18 +122,7 @@ export class Inventory {
     }
 
     setSnapshot(entries: InventorySlotInput[], opts?: { selectedSlot?: number | null }): void {
-        const fresh = this.slots.map((_, index) => ({
-            slot: index,
-            itemId: -1,
-            quantity: 0,
-        }));
-        for (const entry of entries) {
-            if (!this.isValidIndex(entry.slot)) continue;
-            const idx = entry.slot | 0;
-            const nextId = (entry.itemId | 0) > 0 ? entry.itemId | 0 : -1;
-            const nextQty = nextId > 0 ? Math.max(0, (entry.quantity ?? 1) | 0) : 0;
-            fresh[idx] = { slot: idx, itemId: nextId, quantity: nextQty };
-        }
+        const fresh = this.buildSnapshot(entries);
         for (let i = 0; i < fresh.length; i++) this.slots[i] = fresh[i];
         this.selectedSlot = this.normalizeSelectedSlot(opts?.selectedSlot, true);
         this.emit({
@@ -189,6 +198,28 @@ export class Inventory {
             throw new RangeError(`Inventory slot index out of range: ${index}`);
         }
         return index | 0;
+    }
+
+    private normalizeSlot(index: number, itemId: number, quantity: number): InventorySlot {
+        const normalizedId = itemId > 0 ? itemId | 0 : -1;
+        // Some containers (notably bank placeholders) can have an itemId with quantity 0.
+        // Treat emptiness by itemId only; quantity 0 is still a valid occupied slot.
+        const normalizedQuantity = normalizedId > 0 ? Math.max(0, quantity | 0) : 0;
+        return {
+            slot: index | 0,
+            itemId: normalizedId,
+            quantity: normalizedQuantity,
+        };
+    }
+
+    private buildSnapshot(entries: InventorySlotInput[]): InventorySlot[] {
+        const snapshot = this.slots.map((_, index) => this.normalizeSlot(index, -1, 0));
+        for (const entry of entries) {
+            if (!this.isValidIndex(entry.slot)) continue;
+            const index = entry.slot | 0;
+            snapshot[index] = this.normalizeSlot(index, entry.itemId, entry.quantity ?? 1);
+        }
+        return snapshot;
     }
 
     private normalizeSelectedSlot(

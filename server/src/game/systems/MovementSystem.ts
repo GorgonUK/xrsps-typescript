@@ -1,23 +1,12 @@
-import type { PathService } from "../../pathfinding/PathService";
 import { logger } from "../../utils/logger";
-import type { PlayerCombatManager } from "../combat";
 import { NpcManager } from "../npcManager";
 import { PlayerManager } from "../player";
-import type { PlayerState } from "../player";
 
 export class MovementSystem {
-    private playerCombatManager?: PlayerCombatManager;
-
     constructor(
         private readonly players: PlayerManager,
-        private readonly pathService?: PathService,
         private readonly npcManager?: NpcManager,
-        private readonly onCannotReachTarget?: (player: PlayerState) => void,
     ) {}
-
-    setPlayerCombatManager(playerCombatManager: PlayerCombatManager | undefined): void {
-        this.playerCombatManager = playerCombatManager;
-    }
 
     runPreMovement(tick: number): void {
         // Update follow positions BEFORE processing following logic
@@ -46,16 +35,6 @@ export class MovementSystem {
             logger.warn("[movement-system] failed to update npc interactions (pre)", err);
         }
         try {
-            this.playerCombatManager?.updateNpcCombatMovement({
-                tick,
-                pathService: this.pathService,
-                npcLookup: (npcId) => this.npcManager?.getById(npcId),
-                onCannotReachTarget: this.onCannotReachTarget,
-            });
-        } catch (err) {
-            logger.warn("[movement-system] failed to update npc combat movement (pre)", err);
-        }
-        try {
             this.players.updateLocInteractions(tick);
         } catch (err) {
             logger.warn("[movement-system] failed to update loc interactions", err);
@@ -64,15 +43,6 @@ export class MovementSystem {
             this.players.updateGroundItemInteractions(tick);
         } catch (err) {
             logger.warn("[movement-system] failed to update ground item interactions (pre)", err);
-        }
-        try {
-            this.playerCombatManager?.applyPreMovementLocks({
-                tick,
-                pathService: this.pathService,
-                npcLookup: (npcId) => this.npcManager?.getById(npcId),
-            });
-        } catch (err) {
-            logger.warn("[movement-system] failed to apply pre-movement locks", err);
         }
     }
 
@@ -86,16 +56,6 @@ export class MovementSystem {
             this.players.updateNpcInteractions(tick, (npcId) => this.npcManager?.getById(npcId));
         } catch (err) {
             logger.warn("[movement-system] failed to update npc interactions (post)", err);
-        }
-        try {
-            this.playerCombatManager?.updateNpcCombatMovement({
-                tick,
-                pathService: this.pathService,
-                npcLookup: (npcId) => this.npcManager?.getById(npcId),
-                onCannotReachTarget: this.onCannotReachTarget,
-            });
-        } catch (err) {
-            logger.warn("[movement-system] failed to update npc combat movement (post)", err);
         }
     }
 }

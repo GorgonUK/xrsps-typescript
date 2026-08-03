@@ -14,13 +14,9 @@ import { PathService } from "../pathfinding/PathService";
 import { CollisionFlag } from "../pathfinding/legacy/pathfinder/flag/CollisionFlag";
 import { logger } from "../utils/logger";
 import { MapCollisionService } from "../world/MapCollisionService";
-import type { Actor } from "./actor";
 import { BossScript, createBossScript } from "./combat/BossScriptFramework";
-import {
-    canNpcAttackPlayerFromCurrentPosition,
-    walkToAttackRange,
-} from "./combat/CombatAction";
-import { resolveNpcAttackRange, resolveNpcAttackType } from "./combat/CombatRules";
+import { damageTracker } from "./combat/DamageTracker";
+import { interceptFrozenCombatMovement } from "./combat/engine/CombatMovementInterceptor";
 import { StatusHitsplat } from "./combat/HitEffects";
 import { isInWilderness, multiCombatSystem } from "./combat/MultiCombatZones";
 import {
@@ -28,7 +24,7 @@ import {
     isPlayerSafeFromStandardNpcAggression,
     type PlayerAggressionState,
     TARGET_SEARCH_INTERVAL,
-} from "./combat/NpcCombatAI";
+} from "./combat/NpcAggression";
 import {
     DEFAULT_NPC_COMBAT_PROFILE,
     DEFAULT_NPC_WANDER_RADIUS,
@@ -38,6 +34,7 @@ import {
     NpcUpdateDelta,
     NpcUpdateSnapshot,
 } from "./npc";
+import { MovementProcessor } from "./movement/engine/MovementProcessor";
 import { StatusEffectSystem } from "./systems/StatusEffectSystem";
 
 export type NpcStatusEvent = {
@@ -68,15 +65,6 @@ export interface PendingNpcDrop {
     isMonsterDrop: boolean;
     worldViewId?: number;
     isWilderness: boolean;
-}
-
-/** Player data returned by playerLookup for NPC combat targeting. */
-export interface CombatTargetPlayer {
-    id: number;
-    tileX: number;
-    tileY: number;
-    level: number;
-    getCombatTarget(): { id: number; isPlayer?: boolean } | null | undefined;
 }
 
 type NearbyAggressionPlayer = {
@@ -213,6 +201,7 @@ function regionKey(x: number, y: number, level: number): number {
 
 export class NpcManager {
     private readonly pathService: PathService;
+    private readonly movementProcessor: MovementProcessor;
     private readonly npcTypeLoader: NpcTypeLoader;
     private readonly basTypeLoader: BasTypeLoader;
 
@@ -253,6 +242,7 @@ export class NpcManager {
         basTypeLoader: BasTypeLoader,
     ) {
         this.pathService = pathService;
+        this.movementProcessor = new MovementProcessor(pathService);
         this.npcTypeLoader = npcTypeLoader;
         this.basTypeLoader = basTypeLoader;
     }
@@ -363,6 +353,18 @@ export class NpcManager {
                 aggressionSearchDelayTicks,
             },
         );
+        npc.setMovementPathfinder((targetX, targetY) => {
+            const route = this.pathService.findPathSteps(
+                {
+                    from: { x: npc.tileX, y: npc.tileY, plane: npc.level },
+                    to: { x: targetX, y: targetY },
+                    size: npc.size,
+                    worldViewId: npc.worldViewId,
+                },
+                { maxSteps: 128 },
+            );
+            return route.ok ? route.steps : undefined;
+        });
         // Use direction from spawn config if provided, otherwise fall back to NPC type config
         const resolvedDirection =
             spawn.direction !== undefined ? spawn.direction & 7 : npcType.spawnDirection & 7;
@@ -577,6 +579,13 @@ export class NpcManager {
             }
         }
         return true;
+    }
+
+    /** Clears all cross-system combat ownership after death processing finishes. */
+    cleanupCombatState(npc: NpcState): void {
+        npc.disengageCombat();
+        damageTracker.clearNpc(npc);
+        multiCombatSystem.removeActor(npc);
     }
 
     queueRespawn(npcId: number, respawnTick: number): boolean {
@@ -827,7 +836,6 @@ export class NpcManager {
      */
     tick(
         currentTick: number,
-        playerLookup?: (playerId: number) => CombatTargetPlayer | undefined,
         activeNpcIds?: ReadonlySet<number>,
         /**
          * Get nearby players for aggression checks.
@@ -913,83 +921,24 @@ export class NpcManager {
                     }
                 }
 
-                // 2. Movement processes AFTER timers but BEFORE combat
-                // This allows NPCs to move into attack range before attempting to attack
-
-                // 2a. If NPC has a combat target, pursue them using combat movement.
+                // CombatTickEngine owns pursuit. NpcManager only handles recovery and
+                // idle roaming, then consumes paths queued by the combat phase.
                 const combatTargetId = npc.getCombatTargetPlayerId();
-                if (shouldRecoverToSpawn) {
+                const movementFrozen = interceptFrozenCombatMovement(npc, currentTick);
+                if (!movementFrozen && shouldRecoverToSpawn) {
                     if (combatTargetId !== undefined) {
                         npc.disengageCombatPreservingInteraction();
                         npc.scheduleNextAggressionCheck(currentTick);
                     }
                     this.processRecoveryNpcMovement(npc);
-                } else if (
-                    combatTargetId !== undefined &&
-                    npc.isInCombat(currentTick) &&
-                    playerLookup
-                ) {
-                    const targetPlayer = npc.resolveCombatTargetPlayer(playerLookup);
-                    if (targetPlayer) {
-                        const attackType = resolveNpcAttackType(npc);
-                        const attackRange = resolveNpcAttackRange(npc, attackType);
-                        const canAttackFromCurrentPosition = canNpcAttackPlayerFromCurrentPosition(
-                            npc,
-                            targetPlayer,
-                            attackRange,
-                            attackType,
-                            { pathService: this.pathService },
-                        );
-
-                        if (!canAttackFromCurrentPosition) {
-                            // Route to a legal attack position, never the player's occupied
-                            // tile. Targeting that tile leaves a melee NPC overlapping the
-                            // player with no valid next step when the player walks onto it.
-                            const isOverlappingTarget =
-                                npc.size === 1 &&
-                                npc.tileX === targetPlayer.tileX &&
-                                npc.tileY === targetPlayer.tileY;
-                            const steppedOutOfOverlap =
-                                isOverlappingTarget &&
-                                this.queueNpcStepOutOfOverlappingPlayer(npc);
-                            if (!steppedOutOfOverlap) {
-                                walkToAttackRange(
-                                    npc,
-                                    targetPlayer as unknown as Actor,
-                                    this.pathService,
-                                    attackRange,
-                                );
-                                // OSRS retreat max range: never step more than 7 tiles from spawn.
-                                this.clampNpcPathToRoamArea(npc);
-                            }
-                            // Can't close without leaving the 7-tile box → cancel chase, go home.
-                            if (!npc.hasPath() && !canAttackFromCurrentPosition) {
-                                npc.disengageCombat();
-                                npc.scheduleNextAggressionCheck(currentTick);
-                                this.processRecoveryNpcMovement(npc);
-                            }
-                        } else {
-                            // The chase queues steps toward the target's own tile, so a
-                            // leftover step can remain once the NPC reaches attack
-                            // position. Discard it, or the NPC walks onto/past the
-                            // target after swinging.
-                            npc.clearPath();
-                        }
-                    } else {
-                        npc.disengageCombat();
-                        npc.scheduleNextAggressionCheck(currentTick);
-                        this.processRecoveryNpcMovement(npc);
-                    }
-                } else {
+                } else if (!movementFrozen && combatTargetId === undefined) {
                     this.processIdleNpcMovement(npc, currentTick, roamBudget);
                 }
 
-                this.prunePathAgainstCurrentCollision(npc);
-                npc.setMovementTick(currentTick);
-                const moved = npc.tickStep();
-
-                // 3. Combat processes AFTER movement
-                npc.tickCombat(currentTick, playerLookup);
+                if (!movementFrozen) {
+                    this.prunePathAgainstCurrentCollision(npc);
+                }
+                const moved = this.movementProcessor.processEntity(npc, currentTick);
 
                 // Tick boss script if present
                 const bossScript = this.bossScripts.get(npc.id);
@@ -1088,84 +1037,6 @@ export class NpcManager {
         return { statusEvents, aggressionEvents };
     }
 
-    /**
-     * Collect NPC swings after player movement has completed for the tick.
-     * This avoids consuming an NPC's attack cooldown for a position that was
-     * valid before movement but became an overlap once the player stepped.
-     */
-    collectCombatAttackEvents(
-        currentTick: number,
-        playerLookup: (playerId: number) => CombatTargetPlayer | undefined,
-    ): NpcAggressionEvent[] {
-        const events: NpcAggressionEvent[] = [];
-        for (const npc of this.npcs.values()) {
-            const targetPlayerId = npc.getCombatTargetPlayerId();
-            if (
-                targetPlayerId === undefined ||
-                !npc.isInCombat(currentTick) ||
-                !npc.canAttack(currentTick)
-            ) {
-                continue;
-            }
-
-            const target = playerLookup(targetPlayerId);
-            if (!target) continue;
-
-            const attackType = resolveNpcAttackType(npc);
-            const attackRange = resolveNpcAttackRange(npc, attackType);
-            if (
-                !canNpcAttackPlayerFromCurrentPosition(npc, target, attackRange, attackType, {
-                    pathService: this.pathService,
-                })
-            ) {
-                continue;
-            }
-
-            const inMultiCombat = multiCombatSystem.isMultiCombat(npc.tileX, npc.tileY, npc.level);
-            const playerTarget = target.getCombatTarget();
-            const fightingThisNpc =
-                playerTarget?.isPlayer === false && playerTarget.id === npc.id;
-            const blockedBySingleCombat =
-                !inMultiCombat && playerTarget != null && !fightingThisNpc;
-            if (blockedBySingleCombat) {
-                continue;
-            }
-
-            npc.recordAttack(currentTick);
-            events.push({ npcId: npc.id, targetPlayerId });
-        }
-        return events;
-    }
-
-    /**
-     * Resolve the exceptional state where a player has walked onto a 1x1 NPC.
-     * Generic pursuit routes are calculated toward an attack position and can
-     * have no usable first step from an occupied tile. Pick the first legal
-     * cardinal exit instead; normal chase logic selects an attack tile again
-     * on the following tick.
-     */
-    private queueNpcStepOutOfOverlappingPlayer(npc: NpcState): boolean {
-        const candidates = [
-            { x: npc.tileX - 1, y: npc.tileY },
-            { x: npc.tileX + 1, y: npc.tileY },
-            { x: npc.tileX, y: npc.tileY - 1 },
-            { x: npc.tileX, y: npc.tileY + 1 },
-        ];
-        for (const candidate of candidates) {
-            if (
-                this.pathService.canNpcStep(
-                    { x: npc.tileX, y: npc.tileY, plane: npc.level },
-                    candidate,
-                    npc.size,
-                )
-            ) {
-                npc.setPath([candidate], false);
-                return true;
-            }
-        }
-        return false;
-    }
-
     private prunePathAgainstCurrentCollision(npc: NpcState): void {
         const queuedSteps = npc.getPathQueue();
         if (queuedSteps.length === 0) {
@@ -1189,31 +1060,6 @@ export class NpcManager {
             validSteps.push(step);
             currentX = step.x;
             currentY = step.y;
-        }
-
-        if (validSteps.length === queuedSteps.length) {
-            return;
-        }
-        if (validSteps.length === 0) {
-            npc.clearPath();
-            return;
-        }
-        npc.setPath(validSteps, !!npc.running);
-    }
-
-    /** Truncate chase paths so the NPC stays inside its combat leash from spawn. */
-    private clampNpcPathToRoamArea(npc: NpcState): void {
-        const queuedSteps = npc.getPathQueue();
-        if (queuedSteps.length === 0) {
-            return;
-        }
-
-        const validSteps: { x: number; y: number }[] = [];
-        for (const step of queuedSteps) {
-            if (npc.isTileOutsideCombatLeash(step.x, step.y)) {
-                break;
-            }
-            validSteps.push(step);
         }
 
         if (validSteps.length === queuedSteps.length) {
@@ -1475,7 +1321,6 @@ export class NpcManager {
                     validTargets[Math.floor(Math.random() * validTargets.length)] ??
                     validTargets[0];
                 npc.engageCombat(target.id, currentTick, { tileX: target.x, tileY: target.y });
-                npc.recordAttack(currentTick);
                 return {
                     npcId: npc.id,
                     targetPlayerId: target.id,

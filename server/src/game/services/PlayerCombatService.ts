@@ -8,6 +8,7 @@ import { AttackStyle, type WeaponDataEntry } from "../combat/WeaponDataProvider"
 import { getAttackStyle, getHitSoundForStyle, getMissSound } from "../combat/WeaponDataProvider";
 import type { NpcState } from "../npc";
 import type { PlayerState } from "../player";
+import { getSpellData } from "../spells/SpellDataProvider";
 
 const DEFAULT_ATTACK_SEQ = 422;
 const DEFAULT_ATTACK_SPEED = 4;
@@ -124,6 +125,23 @@ export class PlayerCombatService {
         return DEFAULT_ATTACK_SEQ;
     }
 
+    /** Resolves the equipped weapon's defensive animation override. */
+    pickBlockSequence(player: PlayerState): number {
+        try {
+            const equip = this.ensureEquipArray(player);
+            const weaponId = equip[EquipmentSlot.WEAPON];
+            if (weaponId > 0) {
+                const blockSequence = this.weaponData.get(weaponId)?.animOverrides?.block;
+                if (blockSequence !== undefined && blockSequence >= 0) {
+                    return blockSequence;
+                }
+            }
+        } catch (err) {
+            logger.warn("[combat] failed to resolve block sequence", err);
+        }
+        return -1;
+    }
+
     pickCombatSound(player: PlayerState, isHit: boolean): number {
         try {
             const spellId = player.combat.spellId ?? -1;
@@ -151,12 +169,25 @@ export class PlayerCombatService {
     }
 
     pickSpellSound(spellId: number, stage: "cast" | "impact" | "splash"): number | undefined {
+        try {
+            const spell = getSpellData(spellId);
+            if (stage === "cast" && spell?.castSoundId !== undefined) {
+                return spell.castSoundId;
+            }
+            if (stage === "impact" && spell?.impactSoundId !== undefined) {
+                return spell.impactSoundId;
+            }
+        } catch {
+            // Startup tools may query sound mappings before the active gamemode
+            // registers its spell provider. The static fallback remains valid.
+        }
+
         const castMap: Record<number, number> = {
             3273: 220,
             3281: 218,
             3294: 216,
             3313: 222,
-            21876: 4028,
+            21876: 4011,
             3275: 211,
             3285: 209,
             3297: 207,
@@ -171,7 +202,8 @@ export class PlayerCombatService {
             3291: 157,
             3307: 155,
             3321: 162,
-            21879: 4032,
+            21879: 4013,
+            4651: 171,
             3274: 119,
             3278: 3011,
             3282: 127,
@@ -197,7 +229,7 @@ export class PlayerCombatService {
             3281: 219,
             3294: 217,
             3313: 223,
-            21876: 4027,
+            21876: 4012,
             3275: 212,
             3285: 210,
             3297: 208,
@@ -212,7 +244,8 @@ export class PlayerCombatService {
             3291: 158,
             3307: 156,
             3321: 163,
-            21879: 4031,
+            21879: 4014,
+            4651: 168,
             3274: 121,
             3278: 3010,
             3282: 126,

@@ -3,7 +3,7 @@ import {
     type PlayerAggressionState,
     createAggressionState,
     updateAggressionStateWithPosition,
-} from "../combat/NpcCombatAI";
+} from "../combat/NpcAggression";
 
 /**
  * Tracks OSRS aggression tolerance state for a player.

@@ -19,10 +19,12 @@ import { RectAdjacentRouteStrategy } from "../../../pathfinding/legacy/pathfinde
 import type { RouteStrategy } from "../../../pathfinding/legacy/pathfinder/RouteStrategy";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
+import { combatConsumableManager } from "../../combat/engine/CombatConsumableManager";
 import { pickEquipSound, unequipItemApply } from "../../equipment";
 import type { NpcState } from "../../npc";
 import type { InventoryAddResult, PlayerState } from "../../player";
 import type {
+    InventoryConsumableType,
     InventoryConsumeActionData,
     InventoryConsumeScriptActionData,
     InventoryEquipActionData,
@@ -48,6 +50,16 @@ export interface InventoryEntry {
     itemId: number;
     quantity: number;
 }
+
+const POTION_OPTIONS = new Set(["drink", "quaff", "sip", "imbibe", "swig"]);
+
+const resolveConsumableType = (
+    option: string | undefined,
+    explicitType?: InventoryConsumableType,
+): InventoryConsumableType => {
+    if (explicitType) return explicitType;
+    return POTION_OPTIONS.has(option?.trim().toLowerCase() ?? "") ? "potion" : "food";
+};
 
 /** Action schedule request. */
 export type InventoryScheduledActionKind = string;
@@ -366,6 +378,7 @@ export class InventoryActionHandler {
     executeInventoryConsumeAction(
         player: PlayerState,
         data: InventoryConsumeActionData,
+        tick: number,
     ): ActionExecutionResult {
         const slotIndex = Math.max(0, Math.min(INVENTORY_SLOT_COUNT - 1, data.slotIndex));
         const expectedItemId = data.itemId;
@@ -384,13 +397,18 @@ export class InventoryActionHandler {
         ) {
             return { ok: false, reason: "item_not_consumable" };
         }
+        const consumableType = resolveConsumableType(data.option, data.consumableType);
+        if (!this.canConsume(player, consumableType, tick)) {
+            return { ok: false, reason: `${consumableType}_delay` };
+        }
         const consumed = this.svc.inventoryService.consumeItem(player, slotIndex);
         if (!consumed) {
             return { ok: false, reason: "consume_failed" };
         }
+        this.applyConsumableDelay(player, consumableType, tick);
         return {
             ok: true,
-            cooldownTicks: 3,
+            cooldownTicks: 0,
             effects: [{ type: "inventorySnapshot", playerId: player.id }],
         };
     }
@@ -406,10 +424,15 @@ export class InventoryActionHandler {
         const slotIndex = Math.max(0, Math.min(INVENTORY_SLOT_COUNT - 1, data.slotIndex));
         const expectedItemId = data.itemId;
         const option = data.option;
+        const consumableType = resolveConsumableType(option, data.consumableType);
         const inv = this.svc.inventoryService.getInventory(player);
         const slotEntry = inv[slotIndex];
         if (!slotEntry || slotEntry.quantity <= 0 || slotEntry.itemId !== expectedItemId) {
             return { ok: false, reason: "item_missing" };
+        }
+
+        if (!this.canConsume(player, consumableType, tick)) {
+            return { ok: false, reason: `${consumableType}_delay` };
         }
 
         const consumed = this.svc.inventoryService.consumeItem(player, slotIndex);
@@ -421,12 +444,40 @@ export class InventoryActionHandler {
         } catch (err) {
             logger.warn("[inventory] scripted consume apply failed", err);
         }
+        this.applyConsumableDelay(player, consumableType, tick);
 
         return {
             ok: true,
-            cooldownTicks: 3,
+            cooldownTicks: 0,
             effects: [{ type: "inventorySnapshot", playerId: player.id }],
         };
+    }
+
+    private canConsume(
+        player: PlayerState,
+        consumableType: InventoryConsumableType,
+        tick: number,
+    ): boolean {
+        if (consumableType === "comboFood") return true;
+        return consumableType === "potion"
+            ? combatConsumableManager.canDrinkPotion(player, tick)
+            : combatConsumableManager.canEatFood(player, tick);
+    }
+
+    private applyConsumableDelay(
+        player: PlayerState,
+        consumableType: InventoryConsumableType,
+        tick: number,
+    ): void {
+        if (consumableType === "comboFood") {
+            combatConsumableManager.applyComboFoodAttackDelay(player, tick);
+            return;
+        }
+        if (consumableType === "potion") {
+            combatConsumableManager.applyPotionDelay(player, tick);
+            return;
+        }
+        combatConsumableManager.applyFoodDelay(player, tick);
     }
 
     /**
@@ -512,9 +563,10 @@ export class InventoryActionHandler {
             this.svc.equipmentService.refreshCombatWeaponCategory(player);
         this.svc.appearanceService.refreshAppearanceKits(player);
 
-        // Reset autocast when weapon is unequipped
-        if (weaponItemChanged && player.combat.autocastEnabled) {
-            this.svc.equipmentService.resetAutocast(player);
+        // Weapon removal invalidates active autocast and any open chooser, even
+        // when the player had not selected a spell yet.
+        if (weaponItemChanged) {
+            this.svc.equipmentService.handleWeaponSlotChanged(player);
         }
 
         // Mark dirty flags

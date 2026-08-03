@@ -1,0 +1,938 @@
+import type { TickFrame } from "../../../network/wsServerTypes";
+import {
+    VARP_SPECIAL_ATTACK,
+    VARP_SPECIAL_ENERGY,
+} from "../../../../../client/common/vars";
+import { logger } from "../../../utils/logger";
+import type { ServerServices } from "../../ServerServices";
+import { getProjectileParams } from "../../data/ProjectileParamsProvider";
+import { NpcState } from "../../npc";
+import { PlayerState } from "../../player";
+import {
+    type PoweredStaffSpellData,
+    type SpellDataEntry,
+    getPoweredStaffSpellData,
+    getSpellData,
+    resolveMagicCastSpotAnimHeight,
+} from "../../spells/SpellDataProvider";
+import { AttackType } from "../AttackType";
+import { DamageType, damageTracker } from "../DamageTracker";
+import { multiCombatSystem } from "../MultiCombatZones";
+import type { CombatAttack } from "../model/CombatAttack";
+import {
+    type CombatEntityRef,
+    CombatEntityType,
+    npcCombatEntityRef,
+    playerCombatEntityRef,
+} from "../model/CombatEntityRef";
+import { CombatPluginRegistry } from "../plugins/CombatPluginRegistry";
+import { CombatAttributes } from "../state/CombatAttributes";
+import {
+    type WeaponCombatContext,
+    type WeaponCombatProfile,
+    type WeaponGraphicProfile,
+    type WeaponProjectileProfile,
+    type WeaponSpecialAttack,
+    resolveWeaponProfileValue,
+} from "../plugins/WeaponCombatProfile";
+import {
+    type CombatHitEvaluation,
+    type CombatHitEvaluator,
+    createCombatHitEvaluator,
+} from "./CombatHitEvaluator";
+import type { CombatEntity } from "./CombatTargetResolver";
+import type { CombatRetaliationEngine } from "./CombatRetaliationEngine";
+import {
+    type AppliedCombatHit,
+    DeferredHitQueue,
+    DeferredHitsplatType,
+} from "./DeferredHitQueue";
+
+interface CombatVisualDefinition {
+    readonly attackAnimation?: number;
+    readonly castGraphic?: WeaponGraphicProfile;
+    readonly impactGraphic?: WeaponGraphicProfile;
+    readonly splashGraphic?: WeaponGraphicProfile;
+    readonly projectile?: WeaponProjectileProfile;
+    readonly spellData?: SpellDataEntry;
+}
+
+export interface CombatHitProcessingResult {
+    readonly processedAttacks: number;
+    readonly queuedHits: number;
+    readonly rejectedAttacks: number;
+}
+
+/** Converts prepared attack cycles into visuals, rolls, and deferred hits. */
+export class CombatHitProcessor {
+    private readonly evaluator: CombatHitEvaluator;
+    private readonly deferredHits: DeferredHitQueue;
+
+    constructor(
+        private readonly services: ServerServices,
+        private readonly plugins: CombatPluginRegistry = CombatPluginRegistry.shared,
+        private readonly retaliationEngine?: CombatRetaliationEngine,
+    ) {
+        this.evaluator = createCombatHitEvaluator(this.services);
+        this.deferredHits = new DeferredHitQueue({
+            resolveEntity: (reference) => this.resolveEntity(reference),
+            onHitApplied: (hit, frame) => this.onHitApplied(hit, frame),
+        });
+    }
+
+    processPreparedAttacks(
+        attacks: readonly CombatAttack[],
+        currentMapClock: number,
+    ): CombatHitProcessingResult {
+        const clock = this.mapClock(currentMapClock);
+        let processedAttacks = 0;
+        let queuedHits = 0;
+        let rejectedAttacks = 0;
+
+        for (const attack of attacks) {
+            const attacker = this.resolveEntity(attack.attacker);
+            const target = this.resolveEntity(attack.target);
+            if (
+                !attacker ||
+                !target ||
+                !this.isAlive(attacker, clock) ||
+                !this.isAlive(target, clock)
+            ) {
+                rejectedAttacks++;
+                continue;
+            }
+
+            const distanceTiles = this.distanceBetween(attacker, target);
+            const profile = this.resolveWeaponProfile(attack, attacker);
+            const context: WeaponCombatContext = Object.freeze({
+                attack,
+                attacker,
+                target,
+                currentMapClock: clock,
+                distanceTiles,
+            });
+
+            this.invokePlugin(profile.id, "onAttack", () => profile.onAttack?.(context));
+
+            const specialAttack = this.resolveSpecialAttack(profile, context);
+            const rawEvaluations = specialAttack
+                ? this.evaluator.evaluateSpecialAttack(attack, specialAttack)
+                : [this.evaluator.evaluate(attack)];
+            if (rawEvaluations.some((evaluation) => !evaluation.valid)) {
+                rejectedAttacks++;
+                continue;
+            }
+            const evaluations = rawEvaluations.map((evaluation) =>
+                this.normalizeEvaluation(this.invokeTransform(profile, evaluation, context)),
+            );
+            if (evaluations.some((evaluation) => !evaluation.valid)) {
+                rejectedAttacks++;
+                continue;
+            }
+            const travelDelayTicks = this.resolveTravelDelay(profile, context);
+            const visuals = this.resolveVisuals(profile, context, specialAttack);
+
+            this.playAttackVisuals(
+                context,
+                profile,
+                visuals,
+                travelDelayTicks,
+                specialAttack,
+            );
+
+            for (const evaluation of evaluations) {
+                this.deferredHits.enqueue({
+                    attack,
+                    source: attack.attacker,
+                    target: attack.target,
+                    damage: evaluation.damage,
+                    maxHit: evaluation.maxHit,
+                    landed: evaluation.landed,
+                    hitsplatType: evaluation.landed
+                        ? DeferredHitsplatType.Normal
+                        : DeferredHitsplatType.Block,
+                    attackType: attack.traits.type,
+                    revealClock: clock + travelDelayTicks,
+                    profileId: profile.id,
+                });
+
+                this.invokePlugin(profile.id, "onHitEvaluated", () =>
+                    profile.onHitEvaluated?.(evaluation, context),
+                );
+            }
+            processedAttacks++;
+            queuedHits += evaluations.length;
+            queuedHits += this.queueAncientAreaHits(
+                attack,
+                attacker,
+                target,
+                profile,
+                clock,
+                travelDelayTicks,
+            );
+        }
+
+        return { processedAttacks, queuedHits, rejectedAttacks };
+    }
+
+    processDeferredHits(currentMapClock: number, frame: TickFrame): readonly AppliedCombatHit[] {
+        return this.deferredHits.processTick(currentMapClock, frame);
+    }
+
+    getPendingHitCount(): number {
+        return this.deferredHits.size();
+    }
+
+    private resolveEntity(reference: CombatEntityRef): CombatEntity | undefined {
+        return reference.type === CombatEntityType.Player
+            ? this.services.players?.getById(reference.id)
+            : this.services.npcManager?.getById(reference.id);
+    }
+
+    private queueAncientAreaHits(
+        primaryAttack: CombatAttack,
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        profile: WeaponCombatProfile,
+        currentMapClock: number,
+        travelDelayTicks: number,
+    ): number {
+        const spellId = primaryAttack.traits.spellId;
+        if (primaryAttack.traits.type !== AttackType.Magic || spellId === undefined) return 0;
+
+        const spell = getSpellData(spellId);
+        if (spell?.spellbook !== "ancient" || (spell.maxTargets ?? 1) <= 1) return 0;
+        if (!this.isAncientAreaCombatAllowed(attacker, primaryTarget)) {
+            return 0;
+        }
+
+        let queuedHits = 0;
+        for (const secondaryTarget of this.findAncientAreaTargets(
+            attacker,
+            primaryTarget,
+            currentMapClock,
+            9,
+        )) {
+            const secondaryAttack: CombatAttack = Object.freeze({
+                ...primaryAttack,
+                target: this.entityReference(secondaryTarget),
+                traits: Object.freeze({ ...primaryAttack.traits }),
+            });
+            const context: WeaponCombatContext = Object.freeze({
+                attack: secondaryAttack,
+                attacker,
+                target: secondaryTarget,
+                currentMapClock,
+                distanceTiles: this.distanceBetween(attacker, secondaryTarget),
+            });
+            const rawEvaluation = this.evaluator.evaluate(secondaryAttack);
+            if (!rawEvaluation.valid) continue;
+
+            const evaluation = this.normalizeEvaluation(
+                this.invokeTransform(profile, rawEvaluation, context),
+            );
+            if (!evaluation.valid) continue;
+
+            const visuals = this.resolveVisuals(profile, context);
+            if (visuals.projectile) {
+                this.queueProjectile(context, visuals.projectile, visuals.spellData, travelDelayTicks);
+            }
+
+            this.deferredHits.enqueue({
+                attack: secondaryAttack,
+                source: secondaryAttack.attacker,
+                target: secondaryAttack.target,
+                damage: evaluation.damage,
+                maxHit: evaluation.maxHit,
+                landed: evaluation.landed,
+                hitsplatType: evaluation.landed
+                    ? DeferredHitsplatType.Normal
+                    : DeferredHitsplatType.Block,
+                attackType: secondaryAttack.traits.type,
+                revealClock: currentMapClock + travelDelayTicks,
+                profileId: profile.id,
+            });
+            this.invokePlugin(profile.id, "onHitEvaluated", () =>
+                profile.onHitEvaluated?.(evaluation, context),
+            );
+            queuedHits++;
+        }
+        return queuedHits;
+    }
+
+    private findAncientAreaTargets(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        currentMapClock: number,
+        limit: number,
+    ): CombatEntity[] {
+        const candidates: CombatEntity[] = [];
+        if (primaryTarget instanceof PlayerState) {
+            candidates.push(...(this.services.players?.getAllPlayersForSync() ?? []));
+        } else {
+            this.services.npcManager?.forEach((npc) => candidates.push(npc));
+        }
+
+        return candidates
+            .filter((candidate) =>
+                this.isValidAncientAreaTarget(
+                    attacker,
+                    primaryTarget,
+                    candidate,
+                    currentMapClock,
+                ),
+            )
+            .sort((first, second) => first.id - second.id)
+            .slice(0, Math.max(0, Math.trunc(limit)));
+    }
+
+    private isAncientAreaCombatAllowed(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+    ): boolean {
+        return (
+            multiCombatSystem.isMultiCombat(attacker.tileX, attacker.tileY, attacker.level) &&
+            multiCombatSystem.isMultiCombat(
+                primaryTarget.tileX,
+                primaryTarget.tileY,
+                primaryTarget.level,
+            )
+        );
+    }
+
+    private isValidAncientAreaTarget(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        candidate: CombatEntity,
+        currentMapClock: number,
+    ): boolean {
+        if (candidate === attacker || candidate === primaryTarget) return false;
+        if (!this.isAlive(candidate, currentMapClock)) return false;
+        if (candidate.level !== primaryTarget.level) return false;
+        if (candidate.worldViewId !== primaryTarget.worldViewId) return false;
+        if (Math.abs(candidate.tileX - primaryTarget.tileX) > 1) return false;
+        if (Math.abs(candidate.tileY - primaryTarget.tileY) > 1) return false;
+        if (
+            !multiCombatSystem.isMultiCombat(
+                candidate.tileX,
+                candidate.tileY,
+                candidate.level,
+            )
+        ) {
+            return false;
+        }
+
+        if (candidate instanceof NpcState) {
+            if (candidate.isPlayerFollower()) return false;
+            if (candidate.getCombatLevel() <= 0) return false;
+            if (this.services.npcManager?.hasNpcOption(candidate, "Attack") !== true) {
+                return false;
+            }
+        } else if (!candidate.canBeAttacked()) {
+            return false;
+        }
+
+        return multiCombatSystem.canAttack(attacker, candidate, currentMapClock).allowed;
+    }
+
+    private entityReference(entity: CombatEntity): CombatEntityRef {
+        return entity instanceof PlayerState
+            ? playerCombatEntityRef(entity.id)
+            : npcCombatEntityRef(entity.id);
+    }
+
+    private resolveWeaponProfile(
+        attack: CombatAttack,
+        attacker: CombatEntity,
+    ): WeaponCombatProfile {
+        return this.plugins.resolve({
+            weaponId: attack.traits.weaponId,
+            categoryId:
+                attacker instanceof PlayerState ? attacker.combat.weaponCategory : undefined,
+        });
+    }
+
+    private resolveSpecialAttack(
+        profile: WeaponCombatProfile,
+        context: WeaponCombatContext,
+    ): WeaponSpecialAttack | undefined {
+        if (context.attack.traits.specialAttack !== true) return undefined;
+        if (!(context.attacker instanceof PlayerState)) return undefined;
+
+        const player = context.attacker;
+        if (!profile.handleSpecialAttack) {
+            player.specEnergy.setActivated(false);
+            this.syncSpecialAttackUi(player);
+            return undefined;
+        }
+
+        let special: WeaponSpecialAttack | null;
+        try {
+            special = profile.handleSpecialAttack(
+                context.attacker,
+                context.target,
+                context.attack,
+            );
+        } catch (error) {
+            logger.warn(`[combat-plugin:${profile.id}] handleSpecialAttack failed`, error);
+            player.specEnergy.setActivated(false);
+            this.syncSpecialAttackUi(player);
+            return undefined;
+        }
+        if (!special) {
+            player.specEnergy.setActivated(false);
+            this.syncSpecialAttackUi(player);
+            return undefined;
+        }
+
+        const energyCost = Math.max(0, Math.min(100, Math.trunc(special.energyCostPercent)));
+        if (!player.specEnergy.consume(energyCost)) {
+            this.services.messagingService.queueChatMessage({
+                messageType: "game",
+                text: "You do not have enough special attack energy.",
+                targetPlayerIds: [player.id],
+            });
+            this.syncSpecialAttackUi(player);
+            return undefined;
+        }
+
+        this.syncSpecialAttackUi(player);
+        return special;
+    }
+
+    private syncSpecialAttackUi(player: PlayerState): void {
+        const activeValue = player.specEnergy.isActivated() ? 1 : 0;
+        const energyValue = player.specEnergy.getPercent() * 10;
+        player.varps.setVarpValue(VARP_SPECIAL_ATTACK, activeValue);
+        player.varps.setVarpValue(VARP_SPECIAL_ENERGY, energyValue);
+        this.services.variableService.queueVarp(player.id, VARP_SPECIAL_ATTACK, activeValue);
+        this.services.variableService.queueVarp(player.id, VARP_SPECIAL_ENERGY, energyValue);
+        this.services.queueCombatState(player);
+    }
+
+    private resolveTravelDelay(profile: WeaponCombatProfile, context: WeaponCombatContext): number {
+        const custom = resolveWeaponProfileValue(profile.travelDelayTicks, context);
+        if (custom !== undefined) {
+            return this.nonNegativeInteger(custom, "weapon travel delay");
+        }
+
+        const distance = Math.max(0, Math.trunc(context.distanceTiles));
+        switch (context.attack.traits.type) {
+            case AttackType.Magic:
+                return Math.max(1, 1 + Math.floor((1 + distance) / 3));
+            case AttackType.Ranged:
+                return Math.max(1, 1 + Math.floor((3 + distance) / 6));
+            case AttackType.Melee:
+            default:
+                return 0;
+        }
+    }
+
+    private resolveVisuals(
+        profile: WeaponCombatProfile,
+        context: WeaponCombatContext,
+        specialAttack?: WeaponSpecialAttack,
+    ): CombatVisualDefinition {
+        const attack = context.attack;
+        const spellData =
+            attack.traits.type === AttackType.Magic &&
+            attack.traits.spellId !== undefined &&
+            attack.traits.spellId > 0
+                ? getSpellData(attack.traits.spellId)
+                : undefined;
+        const poweredStaff =
+            attack.traits.type === AttackType.Magic &&
+            !spellData &&
+            attack.traits.weaponId !== undefined
+                ? getPoweredStaffSpellData(attack.traits.weaponId)
+                : undefined;
+
+        return {
+            attackAnimation:
+                context.attacker instanceof NpcState
+                    ? undefined
+                    : (specialAttack?.attackAnimation ??
+                      resolveWeaponProfileValue(profile.attackAnimation, context) ??
+                      spellData?.castAnimId ??
+                      this.resolveDefaultPlayerAttackAnimation(context.attacker)),
+            castGraphic:
+                specialAttack?.castGraphic ??
+                resolveWeaponProfileValue(profile.castGraphic, context) ??
+                this.resolveSpellCastGraphic(spellData, poweredStaff),
+            impactGraphic:
+                resolveWeaponProfileValue(profile.impactGraphic, context) ??
+                this.resolveSpellImpactGraphic(spellData, poweredStaff, true),
+            splashGraphic:
+                resolveWeaponProfileValue(profile.splashGraphic, context) ??
+                this.resolveSpellImpactGraphic(spellData, poweredStaff, false),
+            projectile:
+                resolveWeaponProfileValue(profile.projectile, context) ??
+                this.resolveSpellProjectile(spellData, poweredStaff),
+            spellData,
+        };
+    }
+
+    private playAttackVisuals(
+        context: WeaponCombatContext,
+        profile: WeaponCombatProfile,
+        visuals: CombatVisualDefinition,
+        travelDelayTicks: number,
+        specialAttack?: WeaponSpecialAttack,
+    ): void {
+        if (context.attacker instanceof NpcState) {
+            const definition = this.services.combatDataService.getNpcDefinition(context.attacker);
+            const attackAnimation = definition.animations.attack;
+            if (attackAnimation > 0) {
+                this.services.combatEffectService.broadcastNpcSequence(
+                    context.attacker,
+                    attackAnimation,
+                );
+            }
+        } else {
+            const attackAnimation = visuals.attackAnimation;
+            if (attackAnimation !== undefined && attackAnimation > 0) {
+                context.attacker.queueOneShotSeq(attackAnimation, 0);
+            }
+        }
+
+        if (visuals.castGraphic) {
+            this.enqueueGraphic(context.attacker, visuals.castGraphic, context.currentMapClock);
+        }
+        if (visuals.projectile) {
+            this.queueProjectile(context, visuals.projectile, visuals.spellData, travelDelayTicks);
+        }
+
+        const spellCastSound = visuals.spellData?.castSoundId;
+        const attackSound = specialAttack?.attackSoundId ?? spellCastSound;
+        if (attackSound !== undefined && attackSound > 0) {
+            if (spellCastSound === attackSound && context.attacker instanceof PlayerState) {
+                // Direct spell sounds are full-volume for the caster. The sound
+                // packet's omitted volume field uses the client's 255 default.
+                this.services.soundService.sendSound(context.attacker, attackSound, {
+                    delayMs: 0,
+                });
+            } else {
+                this.queueSound(attackSound, context.attacker);
+            }
+        } else {
+            const profileAttackSound = resolveWeaponProfileValue(profile.attackSoundId, context);
+            if (profileAttackSound !== undefined && profileAttackSound > 0) {
+                this.queueSound(profileAttackSound, context.attacker);
+                return;
+            }
+
+            if (!(context.attacker instanceof NpcState)) return;
+            const npcAttackSound = this.services.combatDataService.getNpcAttackSoundId(
+                context.attacker,
+            );
+            if (npcAttackSound !== undefined && npcAttackSound > 0) {
+                this.queueSound(npcAttackSound, context.attacker);
+            }
+        }
+    }
+
+    private queueProjectile(
+        context: WeaponCombatContext,
+        projectile: WeaponProjectileProfile,
+        spellData: SpellDataEntry | undefined,
+        travelDelayTicks: number,
+    ): void {
+        if (!(projectile.id > 0)) return;
+        const system = this.services.projectileSystem;
+        const timingService = this.services.projectileTimingService;
+        if (!system || !timingService) return;
+
+        const defaults = this.safeProjectileDefaults(projectile.id);
+        const syntheticSpell: SpellDataEntry = {
+            ...(spellData ?? {
+                id: context.attack.traits.spellId ?? -projectile.id,
+                baseMaxHit: 0,
+            }),
+            projectileId: projectile.id,
+            projectileStartHeight: projectile.startHeight ?? defaults?.startHeight,
+            projectileEndHeight: projectile.endHeight ?? defaults?.endHeight,
+            projectileSlope: projectile.slope ?? defaults?.slope,
+            projectileSteepness: projectile.steepness ?? defaults?.steepness,
+            projectileStartDelay: projectile.startDelayTicks ?? defaults?.startDelay,
+        };
+        const startDelay = Math.max(0, projectile.startDelayTicks ?? defaults?.startDelay ?? 0);
+        const travelTime = Math.max(1, travelDelayTicks - startDelay);
+        let launch;
+
+        if (context.attacker instanceof PlayerState && context.target instanceof NpcState) {
+            if (context.attack.traits.type === AttackType.Ranged && !spellData) {
+                launch = timingService.buildPlayerRangedProjectileLaunch({
+                    player: context.attacker,
+                    npc: context.target,
+                    projectile: {
+                        projectileId: projectile.id,
+                        startHeight: projectile.startHeight ?? defaults?.startHeight,
+                        endHeight: projectile.endHeight ?? defaults?.endHeight,
+                        slope: projectile.slope ?? defaults?.slope,
+                        steepness: projectile.steepness ?? defaults?.steepness,
+                        startDelay,
+                        lifeModel: projectile.lifeModel ?? defaults?.lifeModel,
+                        sourceHeightOffset: defaults?.sourceHeightOffset,
+                    },
+                    timing: { startDelay, travelTime },
+                });
+            } else {
+                launch = system.buildSpellProjectileLaunch({
+                    player: context.attacker,
+                    targetNpc: context.target,
+                    spellData: syntheticSpell,
+                    projectileDefaults: defaults,
+                    timing: { startDelay, travelTime },
+                });
+            }
+        } else if (
+            context.attacker instanceof PlayerState &&
+            context.target instanceof PlayerState
+        ) {
+            launch = system.buildSpellProjectileLaunch({
+                player: context.attacker,
+                targetPlayer: context.target,
+                spellData: syntheticSpell,
+                projectileDefaults: defaults,
+                timing: { startDelay, travelTime },
+            });
+        } else if (context.attacker instanceof NpcState && context.target instanceof PlayerState) {
+            launch = system.buildNpcSpellProjectileLaunch({
+                npc: context.attacker,
+                targetPlayer: context.target,
+                spellData: syntheticSpell,
+                projectileDefaults: defaults,
+                timing: { startDelay, travelTime },
+            });
+        }
+
+        if (launch) timingService.queueProjectileForViewers(launch);
+    }
+
+    private onHitApplied(hit: AppliedCombatHit, frame: TickFrame): void {
+        this.playImpactVisuals(hit);
+        this.applyAncientMagicEffects(hit);
+        this.playBlockAnimation(hit);
+        this.recordLootDamage(hit);
+        this.updateCombatState(hit);
+        this.awardCombatExperience(hit, frame);
+        this.handleDeath(hit);
+
+        const profile = this.plugins.getById(hit.pending.profileId);
+        if (!profile?.onHitApplied || !hit.source) return;
+        const context: WeaponCombatContext = Object.freeze({
+            attack: hit.pending.attack,
+            attacker: hit.source,
+            target: hit.target,
+            currentMapClock: hit.appliedClock,
+            distanceTiles: this.distanceBetween(hit.source, hit.target),
+        });
+        this.invokePlugin(profile.id, "onHitApplied", () => profile.onHitApplied?.(hit, context));
+    }
+
+    private applyAncientMagicEffects(hit: AppliedCombatHit): void {
+        if (!hit.pending.landed || hit.hpCurrent <= 0) return;
+        const spellId = hit.pending.attack.traits.spellId;
+        if (spellId === undefined || spellId <= 0) return;
+
+        const spell = getSpellData(spellId);
+        if (spell?.spellbook !== "ancient" || !(spell.freezeDuration && spell.freezeDuration > 0)) {
+            return;
+        }
+
+        const freezeUntil = hit.target.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK);
+        if (hit.appliedClock < freezeUntil) {
+            return;
+        }
+
+        const immunityUntil = hit.target.combatAttributes.get(
+            CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK,
+        );
+        if (hit.appliedClock < immunityUntil) {
+            return;
+        }
+
+        const durationTicks = spell.name === "Ice Barrage" ? 32 : Math.trunc(spell.freezeDuration);
+        hit.target.applyFreeze(durationTicks, hit.appliedClock);
+    }
+
+    private playBlockAnimation(hit: AppliedCombatHit): void {
+        if (hit.hpCurrent <= 0) return;
+
+        if (hit.target instanceof NpcState) {
+            const definition = this.services.combatDataService.getNpcDefinition(hit.target);
+            const defenceAnimation = definition.animations.defence;
+            if (defenceAnimation > 0) {
+                this.services.combatEffectService.broadcastNpcSequence(
+                    hit.target,
+                    defenceAnimation,
+                    { yieldToExisting: true },
+                );
+            }
+            return;
+        }
+
+        if (hit.target.hasPendingSeq()) return;
+        const blockSequence = this.services.playerCombatService?.pickBlockSequence(hit.target);
+        if (blockSequence !== undefined && blockSequence > 0) {
+            hit.target.queueOneShotSeq(blockSequence, 0, { interruptible: true });
+        }
+    }
+
+    private recordLootDamage(hit: AppliedCombatHit): void {
+        if (!(hit.amount > 0) || !(hit.source instanceof PlayerState)) return;
+        if (!(hit.target instanceof NpcState)) return;
+
+        const damageType: DamageType = hit.pending.attackType;
+        damageTracker.recordDamage(
+            hit.source,
+            hit.target,
+            hit.amount,
+            damageType,
+            hit.appliedClock,
+        );
+        multiCombatSystem.recordEngagement(hit.source, hit.target, hit.appliedClock);
+    }
+
+    private playImpactVisuals(hit: AppliedCombatHit): void {
+        const profile = this.plugins.getById(hit.pending.profileId);
+        const source = hit.source;
+        const target = hit.target;
+        if (!profile || !source) return;
+
+        const context: WeaponCombatContext = Object.freeze({
+            attack: hit.pending.attack,
+            attacker: source,
+            target,
+            currentMapClock: hit.appliedClock,
+            distanceTiles: this.distanceBetween(source, target),
+        });
+        const visuals = this.resolveVisuals(profile, context);
+        const graphic = hit.pending.landed ? visuals.impactGraphic : visuals.splashGraphic;
+        if (graphic) this.enqueueGraphic(target, graphic, hit.appliedClock);
+
+        // This callback runs from DeferredHitQueue only after revealClock is
+        // reached, so positional impact audio stays locked to the hitsplat tick.
+        const impactSound = hit.pending.landed
+            ? (visuals.spellData?.impactSoundId ??
+              resolveWeaponProfileValue(profile.impactSoundId, context))
+            : resolveWeaponProfileValue(profile.impactSoundId, context);
+        if (impactSound !== undefined && impactSound > 0) {
+            this.queueSound(impactSound, target);
+        } else if (source instanceof PlayerState) {
+            const sound = this.services.playerCombatService?.pickCombatSound(
+                source,
+                hit.pending.landed,
+            );
+            if (sound !== undefined && sound > 0) this.queueSound(sound, target);
+        }
+    }
+
+    private updateCombatState(hit: AppliedCombatHit): void {
+        const source = hit.source;
+        const target = hit.target;
+
+        if (target instanceof PlayerState) {
+            target.refreshActiveCombatTimer();
+            target.interruptWeakQueues();
+            if (source) target.setLastHitBy(source);
+            this.services.combatEffectService.tryActivateRedemption(target);
+        }
+
+        this.retaliationEngine?.intercept(
+            target,
+            hit.pending.source,
+            hit.appliedClock,
+        );
+
+        if (source instanceof PlayerState) {
+            source.setLastHit(target);
+        }
+    }
+
+    private awardCombatExperience(hit: AppliedCombatHit, frame: TickFrame): void {
+        if (!(hit.amount > 0) || !(hit.source instanceof PlayerState)) return;
+        this.services.skillService.awardCombatXp(
+            hit.source,
+            hit.amount,
+            {
+                attackType: hit.pending.attack.traits.type,
+                attackStyleMode: hit.pending.attack.traits.style ?? "accurate",
+                spellId: hit.pending.attack.traits.spellId,
+            },
+            frame.actionEffects,
+        );
+    }
+
+    private handleDeath(hit: AppliedCombatHit): void {
+        if (hit.hpCurrent > 0) return;
+        if (hit.target instanceof NpcState) {
+            // A fatal hitsplat ends combat immediately. The NPC object and index
+            // are reused on respawn, so retaining either target representation
+            // would make attackers resume following the newly spawned NPC.
+            hit.target.disengageCombat();
+            this.services.players?.clearInteractionsWithNpc(hit.target.id);
+
+            if (hit.source instanceof PlayerState) {
+                this.services.npcManager?.scheduleDeathProcessing(
+                    hit.target.id,
+                    hit.source.id,
+                    hit.appliedClock + 1,
+                );
+            }
+            return;
+        }
+
+        this.services.playerDeathService?.startPlayerDeath(hit.target, {
+            killer: hit.source instanceof PlayerState ? hit.source : undefined,
+        });
+    }
+
+    private resolveDefaultPlayerAttackAnimation(attacker: PlayerState): number | undefined {
+        return this.services.playerCombatService?.pickAttackSequence(attacker);
+    }
+
+    private resolveSpellCastGraphic(
+        spell: SpellDataEntry | undefined,
+        powered: PoweredStaffSpellData | undefined,
+    ): WeaponGraphicProfile | undefined {
+        const id = spell?.castSpotAnim ?? powered?.castSpotAnim;
+        if (id === undefined || id < 0) return undefined;
+        return {
+            id,
+            height: resolveMagicCastSpotAnimHeight(spell, powered),
+        };
+    }
+
+    private resolveSpellImpactGraphic(
+        spell: SpellDataEntry | undefined,
+        powered: PoweredStaffSpellData | undefined,
+        landed: boolean,
+    ): WeaponGraphicProfile | undefined {
+        const id = landed
+            ? (spell?.impactSpotAnim ?? powered?.impactSpotAnim)
+            : (spell?.splashSpotAnim ?? powered?.splashSpotAnim);
+        if (id === undefined || id < 0) return undefined;
+        return {
+            id,
+            height: landed
+                ? (spell?.impactSpotAnimHeight ?? powered?.impactSpotAnimHeight)
+                : (spell?.splashSpotAnimHeight ?? powered?.splashSpotAnimHeight),
+        };
+    }
+
+    private resolveSpellProjectile(
+        spell: SpellDataEntry | undefined,
+        powered: PoweredStaffSpellData | undefined,
+    ): WeaponProjectileProfile | undefined {
+        const id = spell?.projectileId ?? powered?.projectileId;
+        if (id === undefined || id <= 0) return undefined;
+        return {
+            id,
+            startHeight: spell?.projectileStartHeight,
+            endHeight: spell?.projectileEndHeight,
+            slope: spell?.projectileSlope,
+            steepness: spell?.projectileSteepness,
+            startDelayTicks: spell?.projectileStartDelay,
+            lifeModel: "magic",
+        };
+    }
+
+    private enqueueGraphic(
+        target: CombatEntity,
+        graphic: WeaponGraphicProfile,
+        currentMapClock: number,
+    ): void {
+        if (!(graphic.id >= 0)) return;
+        this.services.broadcastService.enqueueSpotAnimation({
+            tick: currentMapClock,
+            playerId: target instanceof PlayerState ? target.id : undefined,
+            npcId: target instanceof NpcState ? target.id : undefined,
+            spotId: graphic.id,
+            delay: Math.max(0, Math.trunc(graphic.delayTicks ?? 0)),
+            height: graphic.height,
+        });
+    }
+
+    private queueSound(soundId: number, source: CombatEntity): void {
+        this.services.broadcastService.queueBroadcastSound({
+            soundId,
+            x: source.tileX,
+            y: source.tileY,
+            level: source.level,
+        });
+    }
+
+    private safeProjectileDefaults(projectileId: number) {
+        try {
+            return getProjectileParams(projectileId);
+        } catch (error) {
+            logger.warn(`[combat-hit] projectile defaults unavailable for ${projectileId}`, error);
+            return undefined;
+        }
+    }
+
+    private invokeTransform(
+        profile: WeaponCombatProfile,
+        evaluation: CombatHitEvaluation,
+        context: WeaponCombatContext,
+    ): CombatHitEvaluation {
+        if (!profile.transformHit) return evaluation;
+        try {
+            return profile.transformHit(evaluation, context);
+        } catch (error) {
+            logger.warn(`[combat-plugin:${profile.id}] transformHit failed`, error);
+            return evaluation;
+        }
+    }
+
+    private normalizeEvaluation(evaluation: CombatHitEvaluation): CombatHitEvaluation {
+        const maxHit = this.nonNegativeInteger(evaluation.maxHit, "maximum hit");
+        const landed = evaluation.landed === true;
+        const damage = landed
+            ? Math.min(maxHit, this.nonNegativeInteger(evaluation.damage, "damage"))
+            : 0;
+        return Object.freeze({ ...evaluation, maxHit, landed, damage });
+    }
+
+    private invokePlugin(profileId: string, hook: string, callback: () => void): void {
+        try {
+            callback();
+        } catch (error) {
+            logger.warn(`[combat-plugin:${profileId}] ${hook} failed`, error);
+        }
+    }
+
+    private isAlive(entity: CombatEntity, currentMapClock: number): boolean {
+        if (entity instanceof PlayerState) {
+            return entity.skillSystem.getHitpointsCurrent() > 0;
+        }
+        return entity.getHitpoints() > 0 && !entity.isDead(currentMapClock);
+    }
+
+    private distanceBetween(first: CombatEntity, second: CombatEntity): number {
+        const firstSize = Math.max(1, Math.trunc(first.size));
+        const secondSize = Math.max(1, Math.trunc(second.size));
+        const firstMaxX = first.tileX + firstSize - 1;
+        const firstMaxY = first.tileY + firstSize - 1;
+        const secondMaxX = second.tileX + secondSize - 1;
+        const secondMaxY = second.tileY + secondSize - 1;
+        const dx = Math.max(0, Math.max(second.tileX - firstMaxX, first.tileX - secondMaxX));
+        const dy = Math.max(0, Math.max(second.tileY - firstMaxY, first.tileY - secondMaxY));
+        return Math.max(dx, dy);
+    }
+
+    private mapClock(value: number): number {
+        if (!Number.isFinite(value)) {
+            throw new RangeError(`Combat hit clock must be finite; received ${value}`);
+        }
+        return Math.trunc(value);
+    }
+
+    private nonNegativeInteger(value: number, field: string): number {
+        if (!Number.isFinite(value)) {
+            throw new RangeError(`Combat ${field} must be finite; received ${value}`);
+        }
+        return Math.max(0, Math.trunc(value));
+    }
+}

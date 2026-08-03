@@ -21,7 +21,6 @@ import { VanillaUiController } from "./VanillaUiController";
 import { BankingManager, registerBankInterfaceHooks, registerBankingHandlers } from "./banking";
 import type { BankingProviderServices } from "./banking/BankingProvider";
 import "./combat/BossCombatScript";
-import { createCombatFormulaProvider } from "./combat/CombatFormulas";
 import { createCombatStyleSequenceProvider } from "./combat/CombatStyleSequences";
 import { createEquipmentBonusProvider } from "./combat/EquipmentBonuses";
 import { createInstantUtilitySpecialProvider } from "./combat/RockKnockerSpecial";
@@ -137,7 +136,6 @@ export class VanillaGamemode extends BaseGamemode {
         registry.instantUtilitySpecial = createInstantUtilitySpecialProvider();
         registry.weaponData = createWeaponDataProvider();
         registry.specialAttack = createSpecialAttackProvider();
-        registry.combatFormula = createCombatFormulaProvider();
         registry.combatStyleSequence = createCombatStyleSequenceProvider();
         registry.skillConfiguration = createSkillConfiguration();
         registry.equipmentBonus = createEquipmentBonusProvider();

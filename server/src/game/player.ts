@@ -1,3 +1,4 @@
+import { VARBIT_ACTIVE_SPELLBOOK } from "../../../client/common/vars";
 import { EquipmentSlot } from "../../../client/rs/config/player/Equipment";
 import { PrayerName } from "../../../client/rs/prayer/prayers";
 import { SKILL_IDS, SkillId } from "../../../client/rs/skill/skills";
@@ -7,7 +8,14 @@ import { Actor, RUN_ENERGY_MAX, Tile } from "./actor";
 import type { AttackType } from "./combat/AttackType";
 import type { ChargeTracker } from "./combat/DegradationSystem";
 import type { StatusHitsplat } from "./combat/HitEffects";
-import type { PlayerAggressionState } from "./combat/NpcCombatAI";
+import type { PlayerAggressionState } from "./combat/NpcAggression";
+import {
+    type CombatEntityRef,
+    npcCombatEntityRef,
+    playerCombatEntityRef,
+} from "./combat/model/CombatEntityRef";
+import { CombatAttributes } from "./combat/state/CombatAttributes";
+import { CombatAttributeStore } from "./combat/state/CombatAttributeStore";
 import { DEFAULT_EQUIP_SLOT_COUNT, ensureEquipArrayOn, ensureEquipQtyArrayOn } from "./equipment";
 import type { GamemodeDefinition } from "./gamemodes/GamemodeDefinition";
 import { LockState, LockStateChecks } from "./model/LockState";
@@ -22,6 +30,8 @@ import {
     TimerMap,
 } from "./model/timer";
 import { NpcState } from "./npc";
+import { OverheadType } from "./prayer/OverheadType";
+import { normalizeSpellbookType, SpellbookType } from "./spells/SpellbookType";
 import { PlayerAccountState } from "./state/PlayerAccountState";
 import { PlayerAggressionTracker } from "./state/PlayerAggressionTracker";
 import { PlayerBankSystem } from "./state/PlayerBankSystem";
@@ -237,6 +247,8 @@ export class PlayerState extends Actor {
     private pidPriority: number;
     /** Composed combat state (weapon, style, targets, freeze, special energy, etc.) */
     readonly combat = new PlayerCombatState();
+    /** Canonical typed runtime state for the replacement combat engine. */
+    readonly combatAttributes = new CombatAttributeStore();
 
     /** Save key for persistence. */
     __saveKey?: string;
@@ -260,7 +272,7 @@ export class PlayerState extends Actor {
     /** Composed varp/varbit storage */
     readonly varps = new PlayerVarpState();
     /** Composed special attack energy state */
-    readonly specEnergy = new PlayerSpecialEnergyState(this.combat);
+    readonly specEnergy = new PlayerSpecialEnergyState(this.combat, this.combatAttributes);
     /** Composed equipment charge tracking & queries */
     readonly equipment = new PlayerEquipmentAccessor();
     private walkDestination?: { x: number; y: number };
@@ -274,19 +286,23 @@ export class PlayerState extends Actor {
     // ========================================================================
 
     // Combat target accessors
-    /** @deprecated Use player.combat.getCombatTarget() directly */
-    getCombatTarget(): NpcState | PlayerState | null {
-        return (this.combat.combatTargetFocus?.deref() as NpcState | PlayerState | null) ?? null;
+    getCombatTarget(): CombatEntityRef | null {
+        return this.combatAttributes.get(CombatAttributes.COMBAT_TARGET);
     }
 
-    /** @deprecated Use player.combat.setCombatTarget() directly */
     setCombatTarget(target: NpcState | PlayerState | null): void {
-        this.combat.combatTargetFocus = target ? new WeakRef(target) : null;
+        this.combatAttributes.set(
+            CombatAttributes.COMBAT_TARGET,
+            target instanceof NpcState
+                ? npcCombatEntityRef(target.id)
+                : target
+                  ? playerCombatEntityRef(target.id)
+                  : null,
+        );
     }
 
-    /** @deprecated Use player.combat.isAttacking() directly */
     isAttacking(): boolean {
-        return this.combat.combatTargetFocus?.deref() != null;
+        return this.combatAttributes.get(CombatAttributes.COMBAT_TARGET) != null;
     }
 
     isBeingAttacked(): boolean {
@@ -343,20 +359,21 @@ export class PlayerState extends Actor {
     }
 
     resetInteractions(): void {
-        this.combat.combatTargetFocus = null;
         this.combat.interactingNpc = null;
         this.combat.interactingPlayer = null;
+        this.combat.pendingManualCombatSpell = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
         this.clearInteractionTarget();
     }
 
-    /** @deprecated Use player.combat.resetCombat() directly */
     resetCombat(): void {
-        this.combat.combatTargetFocus = null;
+        this.combat.pendingManualCombatSpell = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
     }
 
-    /** @deprecated Use player.combat.removeCombatTarget() directly */
     removeCombatTarget(): void {
-        this.combat.combatTargetFocus = null;
+        this.combat.pendingManualCombatSpell = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
     }
 
     // ========================================================================
@@ -558,6 +575,7 @@ export class PlayerState extends Actor {
         public readonly gamemode: GamemodeDefinition,
     ) {
         super(id, spawnTileX, spawnTileY, level);
+        this.combat.bindCombatAttributes(this.combatAttributes);
         // Random per-session priority similar to OSRS PID randomness.
         this.pidPriority = Math.random() * 0x7fffffff;
         this.rot = 1024;
@@ -592,6 +610,13 @@ export class PlayerState extends Actor {
                 // Head icons are encoded in the appearance update block, so a
                 // prayer toggle must invalidate that block for nearby clients.
                 this.markAppearanceDirty();
+            },
+            setActiveOverheadPrayer: (icon) => {
+                let overhead = OverheadType.NONE;
+                if (icon === "protect_melee") overhead = OverheadType.MELEE;
+                else if (icon === "protect_missiles") overhead = OverheadType.RANGED;
+                else if (icon === "protect_magic") overhead = OverheadType.MAGIC;
+                this.combatAttributes.set(CombatAttributes.ACTIVE_OVERHEAD_PRAYER, overhead);
             },
         });
         // Default to post-design for existing saves; new accounts can override to 0.
@@ -744,23 +769,11 @@ export class PlayerState extends Actor {
         const normalized: Tile[] = Array.isArray(steps)
             ? steps.map((step) => ({ x: step.x, y: step.y }))
             : [];
-        let isSingleAdjacent = false;
-        if (normalized.length === 1) {
-            const first = normalized[0]!;
-            const sx = this.tileX;
-            const sy = this.tileY;
-            const dx = Math.abs(first.x - sx);
-            const dy = Math.abs(first.y - sy);
-            isSingleAdjacent = dx <= 1 && dy <= 1 && (dx !== 0 || dy !== 0);
-        }
         super.setPath(normalized, run);
-        if (!isSingleAdjacent) {
-            this.markSingleStepRoutePending(false);
-        }
     }
 
     public prepareMovementIntent(_maxSteps?: number): void {
-        // Path buffer is populated eagerly; nothing to prepare.
+        // Routes are populated eagerly; MovementProcessor validates frame steps.
     }
 
     setCombatStyle(style: number | null | undefined, category?: number): void {
@@ -892,6 +905,12 @@ export class PlayerState extends Actor {
         this.combat.spellId = spellId;
     }
 
+    getSpellbookType(): SpellbookType {
+        return normalizeSpellbookType(
+            this.varps.getVarbitValue(VARBIT_ACTIVE_SPELLBOOK),
+        );
+    }
+
     setActivePrayers(prayers: Iterable<PrayerName>): boolean {
         return this.prayer.setActivePrayers(prayers);
     }
@@ -917,6 +936,7 @@ export class PlayerState extends Actor {
         if (expires < 0) return false;
         this.lockMovementUntil(expires);
         this.clearPath();
+        this.clearWalkDestination();
         this.running = false;
         this.setColorOverride(42, 5, 80, 30, Math.max(1, durationTicks));
         return true;
@@ -1121,7 +1141,11 @@ export class PlayerState extends Actor {
      */
     addAttackDelay(ticks: number, currentTick: number): void {
         if (!(ticks > 0)) return;
-        this.combat.delayNextAttack(currentTick + ticks);
+        const deadline = Math.trunc(currentTick) + Math.max(1, Math.trunc(ticks));
+        this.combatAttributes.set(
+            CombatAttributes.ATTACK_DELAY,
+            Math.max(this.combatAttributes.get(CombatAttributes.ATTACK_DELAY), deadline),
+        );
     }
 }
 

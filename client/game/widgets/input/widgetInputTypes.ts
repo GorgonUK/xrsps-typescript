@@ -1,17 +1,18 @@
 import type { ObjTypeLoader } from "../../../rs/config/objtype/ObjTypeLoader";
 import type { VarManager } from "../../../rs/config/vartype/VarManager";
 import type { Cs2Vm, ScriptEvent } from "../../../rs/cs2/Cs2Vm";
+import type { Inventory } from "../../../rs/inventory/Inventory";
 import type { WidgetManager } from "../../../widgets/WidgetManager";
-import type { EnterToTypeChat } from "../../chat/EnterToTypeChat";
 import type { GameRenderer } from "../../GameRenderer";
 import type { InputManager } from "../../InputManager";
 import type { TransmitCycles } from "../../TransmitCycles";
+import type { EnterToTypeChat } from "../../chat/EnterToTypeChat";
 import type { WorldMapController } from "../../worldMap/WorldMapController";
-import type { ItemSpawnerUi } from "../itemSpawner";
 import type { PlayerDesignController } from "../PlayerDesignController";
 import type { SpellSelectionController } from "../SpellSelectionController";
-import type { WidgetActionEvent } from "../widgetActionPayload";
 import type { WidgetInteractionController } from "../WidgetInteractionController";
+import type { ItemSpawnerUi } from "../itemSpawner";
+import type { WidgetActionEvent } from "../widgetActionPayload";
 
 export type WidgetInputState = {
     hoveredWidgetUids: Set<number>;
@@ -52,6 +53,7 @@ export type WidgetInputControllerDeps = {
     getEnterToTypeChat: () => EnterToTypeChat;
     getPlayerDesign: () => PlayerDesignController;
     getObjTypeLoader: () => ObjTypeLoader | undefined;
+    getInventory: () => Inventory;
     getSettings: () => { shiftClickEnabled: boolean };
     getMinimapZoomEnabled: () => boolean;
     getMenuOpen: () => boolean;
@@ -70,7 +72,12 @@ export type WidgetInputControllerDeps = {
         groupId: number,
         childId: number,
     ) => boolean;
-    handleInventorySlotMove: (fromSlot: number, toSlot: number) => void;
+    handleInventorySlotMove: (
+        fromSlot: number,
+        toSlot: number,
+        localPredictionApplied: boolean,
+        previousSnapshotSignature: string,
+    ) => void;
     buildWidgetActionPayload: (
         event: Parameters<
             import("../WidgetActionRouter").WidgetActionRouter["buildWidgetActionPayload"]

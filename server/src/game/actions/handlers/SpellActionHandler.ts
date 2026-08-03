@@ -16,8 +16,16 @@ import { SPELL_BUTTON_PARAM_ID } from "../../../data/spellWidgetLoader";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
 import { hasProjectileLineOfSightToNpc } from "../../combat/CombatAction";
+import { AttackType } from "../../combat/AttackType";
 import { HITMARK_BLOCK, HITMARK_DAMAGE } from "../../combat/HitEffects";
 import { getSpellBaseXp } from "../../combat/SpellXpProvider";
+import {
+    type CombatHitEvaluator,
+    createCombatHitEvaluator,
+} from "../../combat/engine/CombatHitEvaluator";
+import type { CombatAttack } from "../../combat/model/CombatAttack";
+import { npcCombatEntityRef, playerCombatEntityRef } from "../../combat/model/CombatEntityRef";
+import { CombatAttributes } from "../../combat/state/CombatAttributes";
 import type { ProjectileParams as CachedProjectileParams } from "../../data/ProjectileParamsProvider";
 import { getProjectileParams } from "../../data/ProjectileParamsProvider";
 import type { NpcState } from "../../npc";
@@ -36,7 +44,6 @@ import {
     resolveMagicImpactSpotAnimHeight,
 } from "../../spells/SpellDataProvider";
 import { resolveElementalSpellBaseMaxHit } from "../../spells/ElementalSpellMaxHit";
-import { CombatEngine } from "../../systems/combat/CombatEngine";
 import { TEST_HIT_FORCE, testRandFloat } from "../../testing/TestRng";
 import type { ActionRequest } from "../types";
 
@@ -204,7 +211,11 @@ const SkillId = {
  * Handles spell action execution.
  */
 export class SpellActionHandler {
-    constructor(private readonly svc: ServerServices) {}
+    private readonly hitEvaluator: CombatHitEvaluator;
+
+    constructor(private readonly svc: ServerServices) {
+        this.hitEvaluator = createCombatHitEvaluator(svc);
+    }
 
     // ========================================================================
     // Private helpers (replacing lambda services)
@@ -313,10 +324,7 @@ export class SpellActionHandler {
                 });
             }
         } else if (opts.targetPlayer) {
-            const blockSeq = this.svc.playerCombatManager?.pickBlockSequence(
-                opts.targetPlayer,
-                this.svc.appearanceService.getWeaponAnimOverrides(),
-            );
+            const blockSeq = this.svc.playerCombatService?.pickBlockSequence(opts.targetPlayer);
             if (blockSeq !== undefined && blockSeq >= 0) {
                 opts.targetPlayer.queueOneShotSeq(blockSeq, delayCycles, { interruptible: true });
             }
@@ -374,12 +382,14 @@ export class SpellActionHandler {
     private planPlayerVsPlayerMagic(
         attacker: PlayerState,
         target: PlayerState,
+        spellId: number,
     ): { hitLanded: boolean; maxHit: number; damage: number } {
         try {
-            const engine = new CombatEngine();
-            const res = engine.planPlayerVsPlayerMagic(attacker, target);
+            const res = this.hitEvaluator.evaluate(
+                this.createMagicAttack(attacker, playerCombatEntityRef(target.id), spellId),
+            );
             return {
-                hitLanded: !!res.hitLanded,
+                hitLanded: res.valid && res.landed,
                 maxHit: res.maxHit,
                 damage: res.damage,
             };
@@ -394,24 +404,11 @@ export class SpellActionHandler {
         spellId: number,
     ): { hitLanded: boolean; maxHit: number; damage: number } {
         try {
-            const engine = new CombatEngine();
-            const magicCaster = Object.create(attacker) as PlayerState;
-            (magicCaster as unknown as { combat: typeof attacker.combat }).combat = Object.create(
-                attacker.combat,
+            const res = this.hitEvaluator.evaluate(
+                this.createMagicAttack(attacker, npcCombatEntityRef(target.id), spellId),
             );
-            magicCaster.combat.spellId = spellId;
-            magicCaster.combat.autocastEnabled = false;
-            magicCaster.combat.autocastMode = null;
-            (
-                magicCaster as unknown as { getCurrentAttackType: () => string }
-            ).getCurrentAttackType = () => "magic";
-            const res = engine.planPlayerAttack({
-                player: magicCaster,
-                npc: target,
-                attackSpeed: this.svc.playerCombatService!.pickAttackSpeed(attacker),
-            });
             return {
-                hitLanded: !!res.hitLanded,
+                hitLanded: res.valid && res.landed,
                 maxHit: res.maxHit,
                 damage: res.damage,
             };
@@ -420,10 +417,30 @@ export class SpellActionHandler {
         }
     }
 
-    private beginManualNpcSpellCombat(player: PlayerState, npc: NpcState, tick: number): void {
-        const attackSpeed = Math.max(1, this.svc.playerCombatService!.pickAttackSpeed(player));
-        this.svc.playerCombatManager?.startCombat(player, npc, tick, attackSpeed);
-        this.svc.playerCombatManager?.stopAutoAttack(player.id);
+    private createMagicAttack(
+        attacker: PlayerState,
+        target: ReturnType<typeof playerCombatEntityRef> | ReturnType<typeof npcCombatEntityRef>,
+        spellId: number,
+    ): CombatAttack {
+        return Object.freeze({
+            attacker: playerCombatEntityRef(attacker.id),
+            target,
+            attackClock: this.getCurrentTick(),
+            traits: Object.freeze({
+                type: AttackType.Magic,
+                style: null,
+                rangeTiles: 10,
+                speedTicks: Math.max(
+                    1,
+                    this.svc.playerCombatService!.pickAttackSpeed(attacker),
+                ),
+                weaponId:
+                    attacker.combat.weaponItemId > 0
+                        ? attacker.combat.weaponItemId
+                        : undefined,
+                spellId,
+            }),
+        });
     }
 
     /**
@@ -436,7 +453,12 @@ export class SpellActionHandler {
         tick: number,
     ): SpellResultPayload | undefined {
         const pending = player.combat.pendingManualCombatSpell;
-        if (!pending || !player.combat.isAttackReady(tick)) return undefined;
+        if (
+            !pending ||
+            tick < player.combatAttributes.get(CombatAttributes.ATTACK_DELAY)
+        ) {
+            return undefined;
+        }
 
         player.combat.pendingManualCombatSpell = undefined;
         return this.processSpellCastRequest(
@@ -448,6 +470,35 @@ export class SpellActionHandler {
             },
             tick,
         );
+    }
+
+    /**
+     * Retains a manual combat-spell click while the shared combat interaction
+     * processor walks the caster into range and projectile line of sight.
+     */
+    private queueManualCombatSpellInteraction(
+        player: PlayerState,
+        spellId: number,
+        targetNpc: NpcState | undefined,
+        targetPlayer: PlayerState | undefined,
+        tick: number,
+    ): void {
+        if (targetNpc) {
+            player.combat.pendingManualCombatSpell = {
+                spellId,
+                target: { type: "npc", npcId: targetNpc.id },
+            };
+            player.setCombatTarget(targetNpc);
+            player.setInteraction("npc", targetNpc.id);
+        } else if (targetPlayer) {
+            player.combat.pendingManualCombatSpell = {
+                spellId,
+                target: { type: "player", playerId: targetPlayer.id },
+            };
+            player.setCombatTarget(targetPlayer);
+            player.setInteraction("player", targetPlayer.id);
+        }
+        player.combatAttributes.set(CombatAttributes.LAST_COMBAT_CLOCK, tick);
     }
 
     // ========================================================================
@@ -1032,6 +1083,18 @@ export class SpellActionHandler {
                 spellRange,
             )
         ) {
+            if (!isAutocast && (targetNpc || targetPlayer)) {
+                this.queueManualCombatSpellInteraction(
+                    player,
+                    spellId,
+                    targetNpc,
+                    targetPlayer,
+                    tick,
+                );
+                base.outcome = "success";
+                base.reason = "queued";
+                return base;
+            }
             base.reason = "out_of_range";
             return base;
         }
@@ -1042,6 +1105,18 @@ export class SpellActionHandler {
             targetNpc,
             pathService,
         )) {
+            if (!isAutocast) {
+                this.queueManualCombatSpellInteraction(
+                    player,
+                    spellId,
+                    targetNpc,
+                    targetPlayer,
+                    tick,
+                );
+                base.outcome = "success";
+                base.reason = "queued";
+                return base;
+            }
             base.reason = "line_of_sight";
             return base;
         }
@@ -1051,6 +1126,18 @@ export class SpellActionHandler {
                 { x: targetPlayer.tileX, y: targetPlayer.tileY },
             );
             if (!ray.clear) {
+                if (!isAutocast) {
+                    this.queueManualCombatSpellInteraction(
+                        player,
+                        spellId,
+                        targetNpc,
+                        targetPlayer,
+                        tick,
+                    );
+                    base.outcome = "success";
+                    base.reason = "queued";
+                    return base;
+                }
                 base.reason = "line_of_sight";
                 return base;
             }
@@ -1059,18 +1146,17 @@ export class SpellActionHandler {
         // Match the shared action-delay model: retain the latest valid manual
         // combat click until the current melee/ranged/magic action completes.
         // This prevents a spell click from being lost during fallback melee.
-        if (!isAutocast && !player.combat.isAttackReady(tick)) {
-            if (targetNpc) {
-                player.combat.pendingManualCombatSpell = {
-                    spellId,
-                    target: { type: "npc", npcId: targetNpc.id },
-                };
-            } else if (targetPlayer) {
-                player.combat.pendingManualCombatSpell = {
-                    spellId,
-                    target: { type: "player", playerId: targetPlayer.id },
-                };
-            }
+        if (
+            !isAutocast &&
+            tick < player.combatAttributes.get(CombatAttributes.ATTACK_DELAY)
+        ) {
+            this.queueManualCombatSpellInteraction(
+                player,
+                spellId,
+                targetNpc,
+                targetPlayer,
+                tick,
+            );
             base.outcome = "success";
             base.reason = "queued";
             return base;
@@ -1121,7 +1207,7 @@ export class SpellActionHandler {
         player.combat.lastSpellCastTick = tick;
         if (!isAutocast) {
             player.combat.attackDelay = MANUAL_COMBAT_SPELL_DELAY_TICKS;
-            player.combat.delayNextAttack(tick + MANUAL_COMBAT_SPELL_DELAY_TICKS);
+            player.addAttackDelay(MANUAL_COMBAT_SPELL_DELAY_TICKS, tick);
         }
 
         const sock = this.svc.players?.getSocketByPlayerId(player.id);
@@ -1140,12 +1226,6 @@ export class SpellActionHandler {
             }
         } catch (err) {
             logger.warn("[spell] failed to clear interactions after manual cast", err);
-        }
-
-        // combat spells cast on NPCs enter the normal combat loop so the NPC can
-        // retaliate on-hit, but manual spellbook casts remain one-shot and must not auto-repeat.
-        if (targetNpc && !isAutocast) {
-            this.beginManualNpcSpellCombat(player, targetNpc, tick);
         }
 
         // Face target and queue animation
@@ -1329,7 +1409,7 @@ export class SpellActionHandler {
             targetPlayer.refreshActiveCombatTimer();
             let outcome: { landed: boolean; maxHit: number; damage: number };
             try {
-                const res = this.planPlayerVsPlayerMagic(player, targetPlayer);
+                const res = this.planPlayerVsPlayerMagic(player, targetPlayer, spellId);
                 outcome = {
                     landed: !!res.hitLanded,
                     maxHit: res.maxHit,

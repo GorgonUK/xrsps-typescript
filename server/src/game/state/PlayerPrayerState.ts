@@ -8,6 +8,7 @@ import {
 export interface PlayerPrayerDeps {
     getPrayerSkillLevel: () => number;
     setHeadIconIndex: (index: number) => void;
+    setActiveOverheadPrayer: (icon: PrayerHeadIcon | null) => void;
 }
 
 export class PlayerPrayerState {
@@ -138,6 +139,7 @@ export class PlayerPrayerState {
     private setHeadIcon(icon: PrayerHeadIcon | null): void {
         if (this.headIcon === icon) return;
         this.headIcon = icon;
+        this.deps?.setActiveOverheadPrayer(icon);
         const index = icon != null ? (PRAYER_HEAD_ICON_IDS[icon] ?? -1) : -1;
         this.deps?.setHeadIconIndex(index);
     }

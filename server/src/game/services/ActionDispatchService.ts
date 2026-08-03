@@ -4,7 +4,6 @@ import type {
     CombatAttackActionData,
     CombatAutocastActionData,
     CombatCompanionHitActionData,
-    CombatNpcRetaliateActionData,
     CombatPlayerHitActionData,
     EmotePlayActionData,
     InventoryConsumeActionData,
@@ -37,6 +36,7 @@ export class ActionDispatchService {
                 return this.services.inventoryActionHandler!.executeInventoryConsumeAction(
                     player,
                     action.data as InventoryConsumeActionData,
+                    tick,
                 );
             case "inventory.consume_script":
                 return this.services.inventoryActionHandler!.executeScriptedConsumeAction(
@@ -70,12 +70,6 @@ export class ActionDispatchService {
                 return this.services.combatActionHandler!.executeCombatPlayerHitAction(
                     player,
                     action.data as CombatPlayerHitActionData,
-                    tick,
-                );
-            case "combat.npcRetaliate":
-                return this.services.combatActionHandler!.executeCombatNpcRetaliateAction(
-                    player,
-                    action.data as CombatNpcRetaliateActionData,
                     tick,
                 );
             case "combat.companionHit":
