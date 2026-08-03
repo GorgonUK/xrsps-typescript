@@ -9,12 +9,13 @@ import type { PlayerState } from "../../../src/game/player";
 import { DisplayMode } from "../../../src/game/scripts/types";
 import { applyAutocastState, clearAutocastState } from "../../../src/game/scripts/types";
 import { type IScriptRegistry, type ScriptServices } from "../../../src/game/scripts/types";
+import { MagicStaffValidator } from "../../../src/game/combat/plugins/MagicStaffValidator";
 import {
-    buildVisibleAutocastIndices,
     canWeaponAutocastSpell,
     getAutocastCompatibilityMessage,
-    getSpellIdFromAutocastIndex,
 } from "../../../src/game/spells/SpellDataProvider";
+import { resolveAutocastSlot } from "../../../src/game/spells/AutocastSlotResolver";
+import { SpellbookType } from "../../../src/game/spells/SpellbookType";
 import {
     ROCK_KNOCKER_SOUND_ID,
     applyFishstabberFishingBoost,
@@ -54,9 +55,15 @@ const AUTOCAST_BUTTON_COMPONENT = 28; // "Choose spell" button
 const DEFENSIVE_AUTOCAST_BUTTON_COMPONENT = 23; // "Defensive autocast" choose spell button
 const SPECIAL_ATTACK_BUTTON_COMPONENT = 39; // "Use Special Attack" button
 
-// Autocast popup (201) components
-const AUTOCAST_CANCEL_COMPONENT = 0; // Cancel button
-const AUTOCAST_SPELL_CONTAINER_COMPONENT = 1; // Layer where CS2 CC_CREATEs dynamic spell icons
+// Client script 2098 creates Cancel and every spell icon as dynamic children
+// beneath the 201:1 container.
+const AUTOCAST_ROOT_COMPONENT = 0;
+const AUTOCAST_SPELL_CONTAINER_COMPONENT = 1;
+const AUTOCAST_CANCEL_SLOT = 0;
+const AUTOCAST_CONTROL_COMPONENTS = [
+    DEFENSIVE_AUTOCAST_BUTTON_COMPONENT,
+    AUTOCAST_BUTTON_COMPONENT,
+] as const;
 
 // Special weapons that use their item id as the autocast "spellpos" selector (script 243 switch table).
 // For normal staves, passing the raw weapon id causes script 243 to return (-1,-1) for all spells,
@@ -294,45 +301,49 @@ export function registerCombatWidgetHandlers(
         openAutocastPopup(event.player, true, services);
     });
 
-    // ============ AUTOCAST POPUP SPELL SELECTION (201:1 dynamic children) ============
-    // The CS2 autocast_setup script creates spell icon widgets via CC_CREATE under
-    // component 1 (the spell grid layer). Clicks on dynamic children arrive with
-    // group=201, child=1 (the parent layer), and slot = CC_CREATE childIndex.
-    // We map the sequential slot back to the autocast spell index using the same
-    // weapon-based visible spell list that the CS2 script builds.
-    registry.onButton(AUTOCAST_POPUP_GROUP_ID, AUTOCAST_SPELL_CONTAINER_COMPONENT, (event) => {
-        const slot = event.slot;
-        if (slot === undefined || slot < 1 || slot === 0xffff) {
-            // Background click on the layer or slot 0 header — ignore
-            return;
-        }
-        const weaponId = event.player.combat.pendingAutocastWeaponId ?? 0;
-        const visibleSpells = buildVisibleAutocastIndices(weaponId);
-        // CC_CREATE childIndex is 1-based (slot 0 is a header/spacer), so subtract 1
-        const arrayIndex = slot - 1;
-        if (arrayIndex >= visibleSpells.length) {
-            services.system.logger.warn?.(
-                `[script:combat-widgets] Autocast slot=${slot} out of range ` +
-                    `(visible=${visibleSpells.length}) for player=${event.player.id}`,
-            );
-            return;
-        }
-        const autocastIndex = visibleSpells[arrayIndex];
-        handleAutocastSpellSelection(event.player, autocastIndex, services);
-    });
-
-    // ============ AUTOCAST POPUP CANCEL (201:0) ============
-    registry.onButton(AUTOCAST_POPUP_GROUP_ID, AUTOCAST_CANCEL_COMPONENT, (event) => {
-        const player = event.player;
-        // Clear temporary state
+    const closeAutocastPopup = (player: PlayerState): void => {
         player.combat.pendingAutocastDefensive = undefined;
         player.combat.pendingAutocastWeaponId = undefined;
-
-        const combatTabUid = getCombatTabUid(player, services);
-        services.dialog.openSubInterface(player, combatTabUid, COMBAT_WIDGET_GROUP_ID, 1);
+        restoreCombatOptions(player, services);
         services.system.logger.info?.(
             `[script:combat-widgets] Autocast popup cancelled for player=${player.id}`,
         );
+    };
+
+    // Script 2098 creates Cancel at childIndex 0 and spell icons at their exact
+    // canonical autocast indices (1..58). These are not sequential visible slots.
+    registry.onButton(AUTOCAST_POPUP_GROUP_ID, AUTOCAST_SPELL_CONTAINER_COMPONENT, (event) => {
+        const slot = event.slot;
+        if (slot === AUTOCAST_CANCEL_SLOT) {
+            closeAutocastPopup(event.player);
+            return;
+        }
+        if (slot === undefined || slot < 1 || slot === 0xffff) {
+            // Ignore non-child/background actions.
+            return;
+        }
+        const weaponId = event.player.combat.pendingAutocastWeaponId ?? 0;
+        const activeSpellbook = event.player.getSpellbookType();
+        const selection = resolveAutocastSlot(activeSpellbook, slot, weaponId);
+        if (!selection) {
+            services.system.logger.warn?.(
+                `[script:combat-widgets] Invalid autocast slot=${slot} ` +
+                    `spellbook=${activeSpellbook} weapon=${weaponId} player=${event.player.id}`,
+            );
+            return;
+        }
+        handleAutocastSpellSelection(
+            event.player,
+            selection.spellId,
+            selection.autocastIndex,
+            services,
+        );
+    });
+
+    // Compatibility fallback for clients that report the root component rather
+    // than the dynamic Cancel child.
+    registry.onButton(AUTOCAST_POPUP_GROUP_ID, AUTOCAST_ROOT_COMPONENT, (event) => {
+        closeAutocastPopup(event.player);
     });
 }
 
@@ -346,8 +357,47 @@ function openAutocastPopup(
 ): void {
     const equip = player.appearance?.equip;
     const weaponObjId = Array.isArray(equip) ? equip[EquipmentSlot.WEAPON] : 0;
-    const spellposSelector =
-        weaponObjId > 0 && AUTOCAST_SPELLPOS_WEAPON_IDS.has(weaponObjId) ? weaponObjId : -1;
+    const activeSpellbook = player.getSpellbookType();
+    const spellposSelector = MagicStaffValidator.resolveAutocastMenuSelector(
+        weaponObjId,
+        activeSpellbook,
+        AUTOCAST_SPELLPOS_WEAPON_IDS.has(weaponObjId),
+    );
+    if (spellposSelector === null) {
+        player.combat.pendingAutocastDefensive = undefined;
+        player.combat.pendingAutocastWeaponId = undefined;
+        clearAutocastState(player, {
+            sendVarbit: services.variables.sendVarbit,
+            queueCombatState: services.combat.queueCombatState,
+        });
+        resetAutocastChooserVarp(player, services);
+        services.messaging.sendGameMessage(
+            player,
+            "You cannot autocast spells from your current spellbook with this staff.",
+        );
+        restoreCombatOptions(player, services);
+        services.system.logger.info?.(
+            `[script:combat-widgets] Autocast chooser rejected for player=${player.id} ` +
+                `spellbook=${activeSpellbook} weapon=${weaponObjId}`,
+        );
+        return;
+    }
+
+    const requestedMenuSpellbook =
+        spellposSelector === weaponObjId && activeSpellbook === SpellbookType.ANCIENT
+            ? SpellbookType.ANCIENT
+            : SpellbookType.NORMAL;
+    if (!MagicStaffValidator.isCompatible(
+        weaponObjId,
+        activeSpellbook,
+        requestedMenuSpellbook,
+    )) {
+        player.combat.pendingAutocastDefensive = undefined;
+        player.combat.pendingAutocastWeaponId = undefined;
+        resetAutocastChooserVarp(player, services);
+        restoreCombatOptions(player, services);
+        return;
+    }
 
     // Store autocast popup state so the handler can reconstruct the visible spell list
     player.combat.pendingAutocastDefensive = isDefensive;
@@ -367,22 +417,13 @@ function openAutocastPopup(
     // IMPORTANT: Flags must be sent AFTER openSubInterface because opening resets flags.
     const IF_SETEVENTS_TRANSMIT_OP1 = 1 << 1;
 
-    // Enable transmission for dynamic spell icon children under the spell container (201:1).
-    // The CS2 creates children at sequential childIndex 0..N for each visible spell.
+    // Enable transmission for dynamic children under 201:1. Slot 0 is Cancel;
+    // spell slots use their canonical autocast indices from 1 through 58.
     services.dialog.queueWidgetEvent(player.id, {
         action: "set_flags_range",
         uid: (AUTOCAST_POPUP_GROUP_ID << 16) | AUTOCAST_SPELL_CONTAINER_COMPONENT,
         fromSlot: 0,
         toSlot: 64, // generous upper bound for all possible spell slots
-        flags: IF_SETEVENTS_TRANSMIT_OP1,
-    });
-
-    // Enable transmission for the cancel button (201:0, static widget).
-    services.dialog.queueWidgetEvent(player.id, {
-        action: "set_flags_range",
-        uid: (AUTOCAST_POPUP_GROUP_ID << 16) | AUTOCAST_CANCEL_COMPONENT,
-        fromSlot: -1,
-        toSlot: -1,
         flags: IF_SETEVENTS_TRANSMIT_OP1,
     });
 
@@ -397,23 +438,30 @@ function openAutocastPopup(
  */
 function handleAutocastSpellSelection(
     player: PlayerState,
-    spellIndex: number,
+    spellId: number,
+    autocastIndex: number,
     services: ScriptServices,
 ): void {
     const isDefensive = player.combat.pendingAutocastDefensive ?? false;
 
-    // Convert spell index to actual spell ID
-    const spellId = getSpellIdFromAutocastIndex(spellIndex);
-    if (!spellId) {
-        services.system.logger.warn?.(
-            `[script:combat-widgets] Invalid autocast spell index=${spellIndex}`,
-        );
-        return;
-    }
-
     // Validate staff-spell compatibility ()
     const equip = player.appearance?.equip;
     const weaponObjId = Array.isArray(equip) ? equip[EquipmentSlot.WEAPON] : 0;
+    if (!MagicStaffValidator.isCompatible(weaponObjId, player.getSpellbookType())) {
+        clearAutocastState(player, {
+            sendVarbit: services.variables.sendVarbit,
+            queueCombatState: services.combat.queueCombatState,
+        });
+        player.combat.pendingAutocastDefensive = undefined;
+        player.combat.pendingAutocastWeaponId = undefined;
+        resetAutocastChooserVarp(player, services);
+        restoreCombatOptions(player, services);
+        services.messaging.sendGameMessage(
+            player,
+            "You cannot autocast spells from your current spellbook with this staff.",
+        );
+        return;
+    }
     const compatibility = canWeaponAutocastSpell(weaponObjId, spellId);
     if (!compatibility.compatible) {
         const message = getAutocastCompatibilityMessage(compatibility.reason);
@@ -425,12 +473,11 @@ function handleAutocastSpellSelection(
         // Clear temporary state and close popup
         player.combat.pendingAutocastDefensive = undefined;
         player.combat.pendingAutocastWeaponId = undefined;
-        const combatTabUid = getCombatTabUid(player, services);
-        services.dialog.openSubInterface(player, combatTabUid, COMBAT_WIDGET_GROUP_ID, 1);
+        restoreCombatOptions(player, services);
         return;
     }
 
-    applyAutocastState(player, spellId, spellIndex, isDefensive, {
+    applyAutocastState(player, spellId, autocastIndex, isDefensive, {
         sendVarbit: services.variables.sendVarbit,
         queueCombatState: services.combat.queueCombatState,
     });
@@ -438,11 +485,39 @@ function handleAutocastSpellSelection(
     player.combat.pendingAutocastWeaponId = undefined;
 
     // Return to the combat options tab UI
-    const combatTabUid = getCombatTabUid(player, services);
-    services.dialog.openSubInterface(player, combatTabUid, COMBAT_WIDGET_GROUP_ID, 1);
+    restoreCombatOptions(player, services);
 
     services.system.logger.info?.(
         `[script:combat-widgets] Autocast spell set for player=${player.id} ` +
-            `spellIndex=${spellIndex} spellId=${spellId} defensive=${isDefensive}`,
+            `spellbook=${player.getSpellbookType()} autocastIndex=${autocastIndex} ` +
+            `spellId=${spellId} defensive=${isDefensive}`,
     );
+}
+
+function restoreCombatOptions(
+    player: PlayerState,
+    services: ScriptServices,
+): void {
+    const combatTabUid = getCombatTabUid(player, services);
+
+    // A same-group replacement does not unload cached widget definitions on the
+    // client. Explicitly close the tab mount first so interface 593 reruns its
+    // weapon-category onLoad/onVarTransmit setup from a clean parent binding.
+    player.widgets.closeByTargetUid(combatTabUid);
+    services.dialog.openSubInterface(player, combatTabUid, COMBAT_WIDGET_GROUP_ID, 1);
+
+    // Undo visibility overrides sent by older/incompatible chooser frames. The
+    // freshly rebound combat interface now owns subsequent visibility decisions.
+    for (const componentId of AUTOCAST_CONTROL_COMPONENTS) {
+        services.dialog.queueWidgetEvent(player.id, {
+            action: "set_hidden",
+            uid: (COMBAT_WIDGET_GROUP_ID << 16) | componentId,
+            hidden: false,
+        });
+    }
+}
+
+function resetAutocastChooserVarp(player: PlayerState, services: ScriptServices): void {
+    player.varps.setVarpValue(VARP_AUTOCAST_SPELLPOS, -1);
+    services.variables.sendVarp(player, VARP_AUTOCAST_SPELLPOS, -1);
 }

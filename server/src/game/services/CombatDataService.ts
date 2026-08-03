@@ -5,6 +5,11 @@ import type { NpcSoundType } from "../../audio/NpcSoundLookup";
 import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import type { NpcCombatProfile, NpcState } from "../npc";
+import {
+    type NpcCombatAnimations,
+    type NpcDefinition,
+    resolveNpcCombatAnimations,
+} from "../npc/NpcDefinition";
 
 /**
  * Loads and provides NPC combat definitions, stats, special attack data,
@@ -114,20 +119,35 @@ export class CombatDataService {
         attack?: number;
         death?: number;
     } {
+        const animations = this.getNpcCombatAnimations(typeId);
+        return {
+            block: animations.defence,
+            attack: animations.attack,
+            death: animations.death,
+        };
+    }
+
+    getNpcCombatAnimations(npc: NpcState | number): NpcCombatAnimations {
         this.loadNpcCombatDefs();
+        const typeId = typeof npc === "number" ? Math.trunc(npc) : npc.typeId;
+        const idle = typeof npc === "number" ? undefined : npc.idleSeqId;
+        const walk = typeof npc === "number" ? undefined : npc.walkSeqId;
         const key = String(typeId);
         const entry = this.npcCombatDefs?.[key];
-        if (entry) {
-            return {
-                block: entry.block ?? this.npcCombatDefaults?.block,
-                attack: entry.attack ?? this.npcCombatDefaults?.attack,
-                death: entry.death ?? this.npcCombatDefaults?.death,
-            };
-        }
+        return resolveNpcCombatAnimations({
+            npcTypeId: typeId,
+            configured: entry,
+            defaults: this.npcCombatDefaults,
+            idle,
+            walk,
+        });
+    }
+
+    getNpcDefinition(npc: NpcState): NpcDefinition {
         return {
-            block: this.npcCombatDefaults?.block,
-            attack: this.npcCombatDefaults?.attack,
-            death: this.npcCombatDefaults?.death,
+            id: npc.typeId,
+            name: npc.name,
+            animations: this.getNpcCombatAnimations(npc),
         };
     }
 

@@ -14,7 +14,6 @@ import { SkillId } from "../../../../client/rs/skill/skills";
 import type { NpcState } from "../npc";
 import type { PlayerState } from "../player";
 import { AttackType } from "./AttackType";
-import type { HitsplatResult, SpecialAttackEffects } from "./CombatState";
 import {
     type AttackType as CombatXpAttackType,
     type CombatXpAward,
@@ -61,6 +60,30 @@ import { getSpellBaseXp } from "./SpellXpProvider";
  * Callback for syncing skill updates to clients.
  */
 export type SkillSyncCallback = (playerId: number, sync: unknown) => void;
+
+export interface SpecialAttackEffects {
+    freezeTicks?: number;
+    healFraction?: number;
+    prayerFraction?: number;
+    siphonRunEnergyPercent?: number;
+    prayerDisableTicks?: number;
+    drainMagicByDamage?: boolean;
+    drainCombatStatByDamage?: boolean;
+    drainDefence?: number;
+    drainDefenceByDamage?: number;
+    drainDefenceOnlyByDamage?: number;
+    drainAttack?: number;
+    drainStrength?: number;
+    drainRanged?: number;
+    drainAllCombatByDamage?: boolean;
+}
+
+export interface HitsplatResult {
+    style: number;
+    amount: number;
+    hpCurrent: number;
+    hpMax: number;
+}
 
 // =============================================================================
 // Utility Functions

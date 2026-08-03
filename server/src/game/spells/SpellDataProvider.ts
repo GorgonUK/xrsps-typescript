@@ -31,7 +31,7 @@ export type SpellDataEntry = {
     levelRequired?: number;
     baseMaxHit: number;
     castSpotAnim?: number;
-    /** Height offset for cast GFX on the caster. Standard combat spells use 92. */
+    /** Height offset for cast GFX on the caster. Standard combat spells use 96. */
     castSpotAnimHeight?: number;
     projectileId?: number;
     impactSpotAnim?: number;
@@ -41,6 +41,10 @@ export type SpellDataEntry = {
     /** Height offset for splash GFX on target (default 100). */
     splashSpotAnimHeight?: number;
     castAnimId?: number;
+    /** Sound effect sent to the caster when the spell is released. */
+    castSoundId?: number;
+    /** Positional sound effect emitted when an accurate spell reaches its target. */
+    impactSoundId?: number;
     runeCosts?: RuneCost[];
     unlockRequirements?: SpellUnlockRequirement[];
     spellbook?: "standard" | "ancient" | "lunar" | "arceuus";
@@ -134,7 +138,7 @@ export type PoweredStaffSpellData = {
     };
 };
 
-export const DEFAULT_MAGIC_CAST_SPOT_ANIM_HEIGHT = 92;
+export const DEFAULT_MAGIC_CAST_SPOT_ANIM_HEIGHT = 96;
 export const DEFAULT_MAGIC_IMPACT_SPOT_ANIM_HEIGHT = 124;
 export const DEFAULT_MAGIC_SPLASH_SPOT_ANIM_HEIGHT = 100;
 

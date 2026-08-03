@@ -661,7 +661,7 @@ export class SoundManager {
             3281: 218,
             3294: 216,
             3313: 222,
-            21876: 4028,
+            21876: 4011,
             // Water family
             3275: 211,
             3285: 209,
@@ -679,7 +679,7 @@ export class SoundManager {
             3291: 157,
             3307: 155,
             3321: 162,
-            21879: 4032,
+            21879: 4013,
             // Debuffs
             3274: 119,
             3278: 3011,
@@ -718,7 +718,7 @@ export class SoundManager {
             4647: 6589, // Smoke Barrage
             4648: 6589, // Shadow Barrage
             4650: 6589, // Blood Barrage
-            4651: 6589, // Ice Barrage
+            4651: 171, // Ice Barrage
         };
 
         const impactMap: Record<number, number> = {
@@ -727,7 +727,7 @@ export class SoundManager {
             3281: 219,
             3294: 217,
             3313: 223,
-            21876: 4027,
+            21876: 4012,
             // Water family
             3275: 212,
             3285: 210,
@@ -745,7 +745,7 @@ export class SoundManager {
             3291: 158,
             3307: 156,
             3321: 163,
-            21879: 4031,
+            21879: 4014,
             // Debuffs
             3274: 121,
             3278: 3010,

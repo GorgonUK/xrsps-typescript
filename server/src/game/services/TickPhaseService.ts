@@ -1,7 +1,5 @@
 import { WebSocket } from "ws";
 
-import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
-import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import {
     VARBIT_IN_LMS,
     VARBIT_IN_RAID,
@@ -11,34 +9,14 @@ import {
     VARBIT_RAID_STATE,
     VARP_SPECIAL_ENERGY,
 } from "../../../../client/common/vars";
+import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
+import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import { NpcSyncSession } from "../../network/NpcSyncSession";
 import { PlayerSyncSession } from "../../network/PlayerSyncSession";
 import type { BroadcastContext } from "../../network/broadcast/BroadcastDomain";
 import type { PlayerTickFrameData } from "../../network/encoding";
 import { encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";
-import type { ServerServices } from "../ServerServices";
-import { DEBUG_PLAYER_IDS } from "../actor";
-import {
-    getWildernessLevel,
-    isInLMS,
-    isInPvPArea,
-    isInRaid,
-    isInWilderness,
-    multiCombatSystem,
-} from "../combat/MultiCombatZones";
-import { hasHitpointsCapeRegenPerk } from "../equipment";
-import { deriveInteractionIndex } from "../interactions/InteractionViewBuilder";
-import type { NpcUpdateDelta } from "../npc";
-import type { PlayerState } from "../player";
-import type { TickFrame } from "../tick/TickPhaseOrchestrator";
-import { EQUIPMENT_STATS_GROUP_ID } from "./EquipmentStatsUiService";
-import {
-    SCRIPT_WORLDMAP_TRANSMIT_DATA,
-    WORLD_MAP_GROUP_ID,
-    getWorldMapTransmitDataArgs,
-    packWorldMapPlayerCoord,
-} from "../../widgets/worldMapInterfaces";
 import {
     SCRIPT_HEALTH_REGEN_TIMER,
     SCRIPT_HITPOINTS_CAPE_REGEN_TIMER,
@@ -47,6 +25,39 @@ import {
     SCRIPT_SPEC_REGEN_TIMER,
     VARP_MAP_CLOCK,
 } from "../../widgets/minimapOrbs";
+import {
+    SCRIPT_WORLDMAP_TRANSMIT_DATA,
+    WORLD_MAP_GROUP_ID,
+    getWorldMapTransmitDataArgs,
+    packWorldMapPlayerCoord,
+} from "../../widgets/worldMapInterfaces";
+import type { ServerServices } from "../ServerServices";
+import { DEBUG_PLAYER_IDS } from "../actor";
+import { AttackType } from "../combat/AttackType";
+import {
+    getWildernessLevel,
+    isInLMS,
+    isInPvPArea,
+    isInRaid,
+    isInWilderness,
+    multiCombatSystem,
+} from "../combat/MultiCombatZones";
+import { getAttackStyle as getWeaponAttackStyle } from "../combat/WeaponDataProvider";
+import { CombatHitProcessor } from "../combat/engine/CombatHitProcessor";
+import { interceptFrozenCombatMovement } from "../combat/engine/CombatMovementInterceptor";
+import { CombatRetaliationEngine } from "../combat/engine/CombatRetaliationEngine";
+import type { CombatEntity } from "../combat/engine/CombatTargetResolver";
+import { CombatTickEngine } from "../combat/engine/CombatTickEngine";
+import { CombatAttackStyle, type CombatAttackTraits } from "../combat/model/CombatAttack";
+import { CombatAttributes } from "../combat/state/CombatAttributes";
+import { hasHitpointsCapeRegenPerk } from "../equipment";
+import { deriveInteractionIndex } from "../interactions/InteractionViewBuilder";
+import { NpcState, type NpcUpdateDelta } from "../npc";
+import { MovementProcessor } from "../movement/engine/MovementProcessor";
+import { PlayerState } from "../player";
+import { PrayerDrainProcessor } from "../prayer/engine/PrayerDrainProcessor";
+import type { TickFrame } from "../tick/TickPhaseOrchestrator";
+import { EQUIPMENT_STATS_GROUP_ID } from "./EquipmentStatsUiService";
 
 type StepRecord = {
     x: number;
@@ -82,6 +93,9 @@ interface StepSummary {
 const NPC_STREAM_RADIUS_TILES = 15;
 const NPC_STREAM_EXIT_RADIUS_TILES = NPC_STREAM_RADIUS_TILES + 2;
 const NPC_SIM_RADIUS_TILES = NPC_STREAM_EXIT_RADIUS_TILES + 12;
+const DEFAULT_NPC_RANGED_RANGE = 7;
+const DEFAULT_NPC_MAGIC_RANGE = 10;
+const DEFAULT_PLAYER_MAGIC_RANGE = 10;
 
 /**
  * Extracts tick phase logic from wsServer into a standalone service.
@@ -89,8 +103,27 @@ const NPC_SIM_RADIUS_TILES = NPC_STREAM_EXIT_RADIUS_TILES + 12;
  */
 export class TickPhaseService {
     private readonly lastWorldMapCoordByPlayer = new WeakMap<PlayerState, number>();
+    private combatTickEngine?: CombatTickEngine;
+    private combatHitProcessor?: CombatHitProcessor;
+    private combatRetaliationEngine?: CombatRetaliationEngine;
+    private movementProcessor?: MovementProcessor;
+    private prayerDrainProcessor?: PrayerDrainProcessor;
 
     constructor(private readonly svc: ServerServices) {}
+
+    private getMovementProcessor(): MovementProcessor {
+        if (this.movementProcessor) return this.movementProcessor;
+        if (!this.svc.pathService) {
+            throw new Error("MovementProcessor requires PathService initialization.");
+        }
+        this.movementProcessor = new MovementProcessor(this.svc.pathService);
+        return this.movementProcessor;
+    }
+
+    private getPrayerDrainProcessor(): PrayerDrainProcessor {
+        this.prayerDrainProcessor ??= new PrayerDrainProcessor(this.svc);
+        return this.prayerDrainProcessor;
+    }
 
     private playerHasHitpointsCapeRegen(player: PlayerState): boolean {
         const equip =
@@ -107,8 +140,6 @@ export class TickPhaseService {
 
         if (npcManager) {
             try {
-                const playerLookup = (id: number) =>
-                    players?.getById(id) as import("../npcManager").CombatTargetPlayer | undefined;
                 const activeNpcIds = new Set<number>();
                 if (players) {
                     players.forEach((_client, player) => {
@@ -170,7 +201,7 @@ export class TickPhaseService {
                                 y: player.tileY,
                                 level: player.level,
                                 combatLevel: player.skillSystem.combatLevel,
-                                inCombat: player.combat.isAttacking() || player.isBeingAttacked(),
+                                inCombat: player.isAttacking() || player.isBeingAttacked(),
                                 aggressionState: player.aggression.getAggressionState(
                                     frame.tick,
                                     player.tileX,
@@ -194,20 +225,10 @@ export class TickPhaseService {
 
                 const npcTickResult = npcManager.tick(
                     frame.tick,
-                    playerLookup,
                     activeNpcIds,
                     getNearbyPlayers,
                 );
                 frame.npcEffectEvents = npcTickResult.statusEvents;
-
-                for (const aggroEvent of npcTickResult.aggressionEvents) {
-                    this.executeNpcAggressionAttack(
-                        aggroEvent.npcId,
-                        aggroEvent.targetPlayerId,
-                        frame.tick,
-                        frame,
-                    );
-                }
 
                 const emittedNpcUpdates = npcManager.consumeUpdates();
                 if (frame.npcUpdates.length === 0) {
@@ -265,6 +286,7 @@ export class TickPhaseService {
     runMovementPhase(frame: TickFrame): void {
         const { players, npcManager } = this.svc;
         if (!players) return;
+        const movementProcessor = this.getMovementProcessor();
         this.flushPendingWalkCommands(frame.tick, "movement");
         const playerLookup = (id: number) => players.getById(id);
         const npcLookup = (npcId: number) => npcManager?.getById(npcId);
@@ -278,10 +300,13 @@ export class TickPhaseService {
 
             player.processDeferredMovement();
             player.processTimersAndQueue();
+            const movementFrozen = interceptFrozenCombatMovement(player, frame.tick);
 
             try {
-                const hadPath = player.hasPath();
-                const walkUpdate = players.continueWalkToDestination(player, frame.tick);
+                const hadPath = movementFrozen ? false : player.hasPath();
+                const walkUpdate = movementFrozen
+                    ? undefined
+                    : players.continueWalkToDestination(player, frame.tick);
                 if (walkUpdate?.pathDestination) {
                     const corrected = walkUpdate.pathDestination;
                     this.svc.networkLayer.withDirectSendBypass("destination_repath", () =>
@@ -382,18 +407,26 @@ export class TickPhaseService {
                     );
                 }
             }
-            const prayerTick = this.svc.prayerSystem.processPlayer(player);
-            if (prayerTick?.prayerDepleted) {
-                this.svc.combatEffectService.handlePrayerDepleted(player);
-            }
+            this.getPrayerDrainProcessor().processPlayer(player);
         }
 
         players.forEachBot((bot) => bot.processDeferredMovement());
         players.resolveMoveReservations();
 
+        for (const { player } of entries) {
+            interceptFrozenCombatMovement(player, frame.tick);
+        }
+        const movementResults = new Map(
+            movementProcessor
+                .processMovementTicks(
+                    entries.map(({ player }) => player),
+                    frame.tick,
+                )
+                .map((result) => [result.entity.id, result.moved] as const),
+        );
+
         for (const { sock, player } of entries) {
-            player.setMovementTick(frame.tick);
-            const moved = player.tickStep();
+            const moved = movementResults.get(player.id) ?? false;
             const steps = player.drainStepPositions() as StepRecord[] | undefined;
 
             if (steps && steps.length > 0) {
@@ -587,7 +620,7 @@ export class TickPhaseService {
             }
         }
         try {
-            players.tickBots(frame.tick);
+            players.tickBots(frame.tick, movementProcessor);
         } catch (err) {
             logger.warn("Failed to tick bots", err);
         }
@@ -663,73 +696,49 @@ export class TickPhaseService {
     }
 
     runCombatPhase(frame: TickFrame): void {
-        const { players, playerCombatManager, npcManager } = this.svc;
-        if (!players || !playerCombatManager) return;
-
-        // A manual spell click made during another attack's shared delay is
-        // executed at the first legal combat tick, before fallback melee can
-        // schedule another swing.
-        players.forEach((_client, player) => {
-            const outcome = this.svc.spellActionHandler?.processPendingManualCombatSpell(
-                player,
-                frame.tick,
-            );
-            if (outcome) {
-                this.svc.broadcastService.queueSpellResult(player.id, outcome);
-            }
-        });
-
-        // NPC swings must be selected after the movement phase. A player can
-        // step onto an NPC's old tile during movement, which makes a swing
-        // selected earlier in the tick invalid by the time it executes.
-        if (npcManager) {
-            const npcAttackEvents = npcManager.collectCombatAttackEvents(
-                frame.tick,
-                (playerId) =>
-                    players.getById(playerId) as import("../npcManager").CombatTargetPlayer | undefined,
-            );
-            for (const event of npcAttackEvents) {
-                this.executeNpcAggressionAttack(event.npcId, event.targetPlayerId, frame.tick, frame);
-            }
+        const tickResult = this.getCombatTickEngine()?.processTick(frame.tick);
+        this.processPendingManualCombatSpells(frame.tick);
+        const hitProcessor = this.getCombatHitProcessor();
+        if (tickResult && hitProcessor) {
+            hitProcessor.processPreparedAttacks(tickResult.preparedAttacks, frame.tick);
         }
-
-        const combatResult = playerCombatManager.processTick({
-            tick: frame.tick,
-            npcLookup: (npcId) => npcManager?.getById(npcId),
-            pathService: this.svc.pathService!,
-            pickAttackSpeed: (player) => this.svc.playerCombatService!.pickAttackSpeed(player),
-            pickNpcHitDelay: (npc, player, attackSpeed) =>
-                this.svc.combatEffectService.pickNpcHitDelay(npc, player, attackSpeed),
-            getWeaponSpecialCostPercent: (weaponItemId) =>
-                this.svc.combatDataService.getWeaponSpecialCostPercent(weaponItemId),
-            getAttackReach: (player) => this.svc.playerCombatService!.getPlayerAttackReach(player),
-            queueSpotAnimation: (event) => {
-                this.svc.broadcastService.enqueueSpotAnimation(event);
-            },
-            onMagicAttack: ({ player, npc, plan, tick }) =>
-                this.svc.spellActionHandler!.handleAutocastMagicAttack({
-                    player,
-                    npc,
-                    plan,
-                    tick,
-                }),
-            logger,
-        });
-        for (const ended of combatResult.endedEngagements) {
-            try {
-                players.finishNpcCombatByPlayerId(ended.playerId);
-            } catch (err) {
-                logger.warn("Failed to finish NPC combat engagement", err);
-            }
-        }
-        frame.actionEffects.push(...combatResult.effects);
+        hitProcessor?.processDeferredHits(frame.tick, frame);
         this.refreshInteractionFacing(frame);
         this.processGamemodeTickCallbacks(frame);
+    }
+
+    private processPendingManualCombatSpells(currentMapClock: number): void {
+        const handler = this.svc.spellActionHandler;
+        const players = this.svc.players;
+        if (!handler || !players) return;
+
+        for (const player of players.getAllPlayersForSync()) {
+            if (!player.combat.pendingManualCombatSpell) continue;
+            const outcome = handler.processPendingManualCombatSpell(player, currentMapClock);
+            // The original click already acknowledged a queued chase. Only
+            // publish the eventual cast/failure result, not a result every
+            // travel tick while the target remains outside casting range.
+            if (outcome && outcome.reason !== "queued") {
+                this.svc.broadcastService.queueSpellResult(player.id, outcome);
+            }
+        }
     }
 
     runScriptPhase(frame: TickFrame): void {
         this.svc.scriptRuntime.queueTick(frame.tick);
         this.svc.scriptScheduler.process(frame.tick);
+    }
+
+    /**
+     * Executes queued player actions independently of the combat lifecycle.
+     * Inventory, equipment, movement-adjacent, and combat actions all share
+     * this scheduler, so its lifecycle remains owned by the action phase.
+     */
+    runActionPhase(frame: TickFrame): void {
+        const effects = this.svc.actionScheduler.processTick(frame.tick);
+        if (effects.length > 0) {
+            frame.actionEffects.push(...effects);
+        }
     }
 
     runDeathPhase(_frame: TickFrame): void {
@@ -878,40 +887,124 @@ export class TickPhaseService {
 
     // --- Private helpers ---
 
-    /**
-     * NPC swings are executed by the NPC tick, not queued behind player-owned
-     * actions. This mirrors the reference server's NPC queue and prevents a
-     * manual walk from dropping a ready NPC swing.
-     */
-    private executeNpcAggressionAttack(
-        npcId: number,
-        targetPlayerId: number,
-        currentTick: number,
-        frame: TickFrame,
-    ): void {
-        const player = this.svc.players?.getById(targetPlayerId);
-        if (!player) return;
+    private getCombatTickEngine(): CombatTickEngine | undefined {
+        if (this.combatTickEngine) return this.combatTickEngine;
 
-        const npc = this.svc.npcManager?.getById(npcId);
-        if (!npc || npc.isDead?.(currentTick)) return;
+        const { players, npcManager, pathService } = this.svc;
+        if (!players || !npcManager || !pathService) return undefined;
 
-        const result = this.svc.combatActionHandler?.executeCombatNpcRetaliateAction(
-            player,
-            {
-                npcId: npc.id,
-                phase: "swing",
-                isAggression: true,
+        this.combatTickEngine = new CombatTickEngine({
+            pathService,
+            getPlayer: (id) => players.getById(id),
+            getNpc: (id) => npcManager.getById(id),
+            getCombatants: () => {
+                const playerCombatants = players
+                    .getAllPlayersForSync()
+                    .sort((first, second) => first.getPidPriority() - second.getPidPriority());
+                const npcCombatants: NpcState[] = [];
+                npcManager.forEach((npc) => npcCombatants.push(npc));
+                npcCombatants.sort((first, second) => first.id - second.id);
+                return [...playerCombatants, ...npcCombatants];
             },
-            currentTick,
+            resolveAttackTraits: (attacker, target) =>
+                this.resolveCombatAttackTraits(attacker, target),
+        });
+        return this.combatTickEngine;
+    }
+
+    private getCombatHitProcessor(): CombatHitProcessor | undefined {
+        if (this.combatHitProcessor) return this.combatHitProcessor;
+        if (!this.svc.players || !this.svc.npcManager) return undefined;
+        const retaliationEngine = this.getCombatRetaliationEngine();
+        if (!retaliationEngine) return undefined;
+        this.combatHitProcessor = new CombatHitProcessor(
+            this.svc,
+            undefined,
+            retaliationEngine,
         );
-        if (!result?.ok) {
-            logger.info(
-                `[aggression] NPC attack rejected (npc=${npcId}, player=${targetPlayerId}): ${result?.reason ?? "combat handler unavailable"}`,
-            );
-            return;
+        return this.combatHitProcessor;
+    }
+
+    private getCombatRetaliationEngine(): CombatRetaliationEngine | undefined {
+        if (this.combatRetaliationEngine) return this.combatRetaliationEngine;
+        const { players, npcManager, pathService } = this.svc;
+        if (!players || !npcManager || !pathService) return undefined;
+
+        this.combatRetaliationEngine = new CombatRetaliationEngine({
+            pathService,
+            getPlayer: (id) => players.getById(id),
+            getNpc: (id) => npcManager.getById(id),
+            resolveAttackTraits: (attacker, target) =>
+                this.resolveCombatAttackTraits(attacker, target),
+        });
+        return this.combatRetaliationEngine;
+    }
+
+    private resolveCombatAttackTraits(
+        attacker: CombatEntity,
+        _target: CombatEntity,
+    ): CombatAttackTraits | null {
+        if (attacker instanceof NpcState) {
+            const type = attacker.getAttackType() ?? attacker.combat.attackType;
+            const rangeTiles =
+                type === AttackType.Magic
+                    ? DEFAULT_NPC_MAGIC_RANGE
+                    : type === AttackType.Ranged
+                      ? DEFAULT_NPC_RANGED_RANGE
+                      : 1;
+            return {
+                type,
+                style: null,
+                rangeTiles,
+                speedTicks: Math.max(1, Math.trunc(attacker.attackSpeed)),
+            };
         }
-        if (result.effects?.length) {
-            frame.actionEffects.push(...result.effects);
+
+        const service = this.svc.playerCombatService;
+        if (!service) return null;
+        const type = service.deriveAttackTypeFromStyle(attacker.combat.styleSlot, attacker);
+        const weaponId = attacker.combat.weaponItemId;
+        const spellId = attacker.combat.spellId;
+        const style = this.resolvePlayerCombatAttackStyle(attacker);
+        const autocastSpellId =
+            attacker.combat.pendingManualCombatSpell === undefined
+                ? attacker.combatAttributes.get(CombatAttributes.AUTOCAST_SPELL_ID)
+                : null;
+        if (autocastSpellId !== null && autocastSpellId > 0) {
+            return {
+                type: AttackType.Magic,
+                style,
+                rangeTiles: DEFAULT_PLAYER_MAGIC_RANGE,
+                speedTicks: 5,
+                weaponId: weaponId > 0 ? weaponId : undefined,
+                spellId: autocastSpellId,
+                specialAttack: attacker.specEnergy.isActivated(),
+                autocast: true,
+            };
+        }
+        return {
+            type,
+            style,
+            rangeTiles: Math.max(1, Math.trunc(service.getPlayerAttackReach(attacker))),
+            speedTicks: Math.max(1, Math.trunc(service.pickAttackSpeed(attacker))),
+            weaponId: weaponId > 0 ? weaponId : undefined,
+            spellId: type === AttackType.Magic && spellId > 0 ? spellId : undefined,
+            specialAttack: attacker.specEnergy.isActivated(),
+            autocast: attacker.combat.autocastEnabled,
+        };
+    }
+
+    private resolvePlayerCombatAttackStyle(player: PlayerState): CombatAttackStyle | null {
+        try {
+            const style = getWeaponAttackStyle(
+                player.combat.weaponItemId > 0 ? player.combat.weaponItemId : 0,
+                player.combat.styleSlot,
+            );
+            return Object.values(CombatAttackStyle).includes(style as CombatAttackStyle)
+                ? (style as CombatAttackStyle)
+                : null;
+        } catch {
+            return null;
         }
     }
 

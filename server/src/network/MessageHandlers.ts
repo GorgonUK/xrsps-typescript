@@ -211,7 +211,6 @@ export interface MessageHandlerServices {
         modifierFlags?: number,
     ) => { ok: boolean; message?: string } | undefined;
     pickAttackSpeed: (player: PlayerState) => number;
-    startCombat: (player: PlayerState, npc: NpcState, tick: number, attackSpeed: number) => void;
     hasNpcOption: (npc: NpcState, option: string) => boolean;
     resolveNpcOption: (npc: NpcState, opNum: number) => string | undefined;
     resolveLocAction: (

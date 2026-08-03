@@ -209,7 +209,7 @@ export class PlayerEcs {
     private overheadModIcon!: Int16Array;
 
     // Head icons (prayer/pk overhead)
-    private headIconPrayer!: Int8Array; // -1 = none, 0 = Protect from Melee, 1 = Missiles, 2 = Magic, etc.
+    private headIconPrayer!: Int8Array; // -1 = none, 0 = Melee, 1 = Missiles, 2 = Magic, etc.
     private headIconPk!: Int8Array; // -1 = none, skull types
 
     // Color override (damage/poison/freeze tints)

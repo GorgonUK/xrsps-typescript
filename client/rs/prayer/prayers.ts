@@ -20,17 +20,19 @@ export const PRAYER_HEAD_ICON_ORDER: PrayerHeadIcon[] = [
     "protect_missiles",
     "protect_magic",
     "retribution",
-    "redemption",
     "smite",
+    "redemption",
 ];
 
-export const PRAYER_HEAD_ICON_IDS: Record<PrayerHeadIcon, number> = PRAYER_HEAD_ICON_ORDER.reduce(
-    (acc, icon, idx) => {
-        acc[icon] = idx;
-        return acc;
-    },
-    {} as Record<PrayerHeadIcon, number>,
-);
+/** Protocol indices for the headicons_prayer sprite archive. */
+export const PRAYER_HEAD_ICON_IDS: Readonly<Record<PrayerHeadIcon, number>> = Object.freeze({
+    protect_melee: 0,
+    protect_missiles: 1,
+    protect_magic: 2,
+    retribution: 3,
+    smite: 4,
+    redemption: 5,
+});
 
 export type PrayerSpecialEffect =
     | "rapid_restore"

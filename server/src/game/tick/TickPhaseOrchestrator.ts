@@ -78,6 +78,7 @@ export class TickPhaseOrchestrator {
             { name: "movement", fn: () => tps.runMovementPhase(frame) },
             { name: "music", fn: () => tps.runMusicPhase(frame) },
             { name: "scripts", fn: () => tps.runScriptPhase(frame) },
+            { name: "actions", fn: () => tps.runActionPhase(frame) },
             { name: "combat", fn: () => tps.runCombatPhase(frame) },
             { name: "death", fn: () => tps.runDeathPhase(frame) },
             { name: "post_scripts", fn: () => tps.runPostScriptPhase(frame) },

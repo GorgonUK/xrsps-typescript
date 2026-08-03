@@ -12,7 +12,10 @@ import {
     HITMARK_VENOM,
     StatusHitsplat,
 } from "./combat/HitEffects";
-import { AGGRESSION_TIMER_TICKS, TARGET_SEARCH_INTERVAL } from "./combat/NpcCombatAI";
+import { AGGRESSION_TIMER_TICKS, TARGET_SEARCH_INTERVAL } from "./combat/NpcAggression";
+import { CombatEntityType, playerCombatEntityRef } from "./combat/model/CombatEntityRef";
+import { CombatAttributes } from "./combat/state/CombatAttributes";
+import { CombatAttributeStore } from "./combat/state/CombatAttributeStore";
 import type { InteractionTargetType } from "./interactionIndex";
 
 /**
@@ -209,15 +212,13 @@ export class NpcState extends Actor {
      * Loaded at spawn time - no runtime lookups needed.
      */
     readonly combat: NpcCombatProfile;
+    /** Canonical typed runtime state for the replacement combat engine. */
+    readonly combatAttributes = new CombatAttributeStore();
     private readonly baseCombatLevels: Record<NpcCombatStat, number>;
     private hitpoints: number;
     private maxHitpoints: number;
     private combatLevel: number;
     private attackType?: AttackType;
-    /** Tick when this NPC can next attack (for aggression-initiated combat) */
-    private nextAttackTick: number = 0;
-
-    private combatTargetPlayerId?: number;
     /** Tick when NPC was last hit (for flinch mechanics) */
     private lastHitTick: number = 0;
     /** RSMod parity: Timer-based roaming - tick when next roam attempt can occur */
@@ -235,9 +236,6 @@ export class NpcState extends Actor {
     private venomEffect?: VenomEffectState;
     private diseaseEffect?: DiseaseEffectState;
     private regenEffect?: RegenerationEffectState;
-    private freezeExpiryTick: number = 0;
-    /** OSRS: 5 tick immunity after freeze ends */
-    private freezeImmunityUntilTick: number = 0;
     private deadUntilTick: number = 0;
     private readonly healthBarDefId: number;
     /** Flag to force a sync update to clients (e.g., when path is cleared during combat) */
@@ -366,16 +364,23 @@ export class NpcState extends Actor {
 
     /**
      * Apply a freeze effect to this NPC.
-     * OSRS: Cannot be frozen while immune (5 ticks after previous freeze ends).
+     * Cannot be frozen while the absolute immunity deadline is active.
      */
     applyFreeze(durationTicks: number, currentTick: number): boolean {
-        // Check freeze immunity (5 ticks after previous freeze)
-        if (currentTick < this.freezeImmunityUntilTick) {
-            return false; // Immune to freeze
+        const clock = Math.trunc(currentTick);
+        if (
+            clock <
+            this.combatAttributes.get(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK)
+        ) {
+            return false;
         }
 
-        const expires = Math.max(this.freezeExpiryTick, currentTick + Math.max(1, durationTicks));
-        this.freezeExpiryTick = expires;
+        const expires = Math.max(
+            this.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+            clock + Math.max(1, Math.trunc(durationTicks)),
+        );
+        this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, expires);
+        this.combatAttributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, expires + 3);
         this.lockMovementUntil(expires);
         this.clearPath();
         // OSRS: Ice blue tint for freeze duration
@@ -384,17 +389,17 @@ export class NpcState extends Actor {
     }
 
     isFrozen(currentTick: number): boolean {
-        if (this.freezeExpiryTick > 0 && currentTick >= this.freezeExpiryTick) {
-            // Freeze just ended - start 5 tick immunity
-            this.freezeImmunityUntilTick = currentTick + 5;
-            this.freezeExpiryTick = 0;
-            return false;
-        }
-        return this.freezeExpiryTick > currentTick;
+        return (
+            Math.trunc(currentTick) <
+            this.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK)
+        );
     }
 
     isFreezeImmune(currentTick: number): boolean {
-        return currentTick < this.freezeImmunityUntilTick;
+        return (
+            Math.trunc(currentTick) <
+            this.combatAttributes.get(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK)
+        );
     }
 
     resetToSpawn(): void {
@@ -402,11 +407,12 @@ export class NpcState extends Actor {
         this.rot = 0;
         this.orientation = this.rot;
         this.deadUntilTick = 0;
-        this.combatTargetPlayerId = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
+        this.combatAttributes.set(CombatAttributes.ATTACK_DELAY, -1);
+        this.combatAttributes.set(CombatAttributes.IS_DEAD, false);
         this.lastHitTick = 0;
         this.stuckTicks = 0;
         this.lastMoveTick = 0;
-        this.nextAttackTick = 0;
         // nextRoamTick is set by the caller (processNpcRespawns) to prevent
         // same-tick roaming which causes a visible teleport on the client.
         this.nextAggressionCheckTick = 0;
@@ -418,8 +424,8 @@ export class NpcState extends Actor {
         this.venomEffect = undefined;
         this.diseaseEffect = undefined;
         this.regenEffect = undefined;
-        this.freezeExpiryTick = 0;
-        this.freezeImmunityUntilTick = 0;
+        this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
+        this.combatAttributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, 0);
         this.returningToSpawn = false;
     }
 
@@ -467,36 +473,6 @@ export class NpcState extends Actor {
     }
 
     /**
-     * Check if this NPC can perform an attack on the current tick.
-     * Used for both retaliation and aggression-initiated attacks.
-     */
-    canAttack(currentTick: number): boolean {
-        return currentTick >= this.nextAttackTick;
-    }
-
-    /**
-     * Record that this NPC performed an attack, setting the cooldown.
-     */
-    recordAttack(currentTick: number): void {
-        this.nextAttackTick = currentTick + this.attackSpeed;
-    }
-
-    /**
-     * Get the tick when this NPC can next attack.
-     */
-    getNextAttackTick(): number {
-        return this.nextAttackTick;
-    }
-
-    /**
-     * Set the tick when this NPC can next attack.
-     * Used for retaliation delay which uses a different formula than normal attacks.
-     */
-    setNextAttackTick(tick: number): void {
-        this.nextAttackTick = tick;
-    }
-
-    /**
      * Get the NPC's combat level for aggression checks.
      * Returns 0 if not a combat NPC.
      */
@@ -509,7 +485,8 @@ export class NpcState extends Actor {
         const until = Math.max(0, despawnTick);
         this.deadUntilTick = until;
         this.hitpoints = 0;
-        this.combatTargetPlayerId = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
+        this.combatAttributes.set(CombatAttributes.IS_DEAD, true);
         this.clearPath();
         this.clearInteractionTarget();
         this.clearPendingSeqs();
@@ -517,8 +494,8 @@ export class NpcState extends Actor {
         this.venomEffect = undefined;
         this.diseaseEffect = undefined;
         this.regenEffect = undefined;
-        this.freezeExpiryTick = 0;
-        this.freezeImmunityUntilTick = 0;
+        this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
+        this.combatAttributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, 0);
         this.lockMovementUntil(until);
         // Ensure we don't get random roam paths while dying.
         this.forceSyncUpdate = true;
@@ -553,9 +530,14 @@ export class NpcState extends Actor {
         ) {
             return;
         }
-        const normalized = playerId;
-        const changedTarget = this.combatTargetPlayerId !== normalized;
-        this.combatTargetPlayerId = normalized;
+        const normalized = Math.trunc(playerId);
+        const currentTarget = this.combatAttributes.get(CombatAttributes.COMBAT_TARGET);
+        const changedTarget =
+            currentTarget?.type !== CombatEntityType.Player || currentTarget.id !== normalized;
+        this.combatAttributes.set(
+            CombatAttributes.COMBAT_TARGET,
+            playerCombatEntityRef(normalized),
+        );
         // Face the combat target immediately (RSMod/OSRS behavior while chasing/attacking).
         this.setInteraction(EntityType.Player, normalized);
         // Only clear roaming path when first entering combat or switching targets.
@@ -568,65 +550,14 @@ export class NpcState extends Actor {
         }
     }
 
-    tickCombat(
-        currentTick: number,
-        playerLookup?: (
-            playerId: number,
-        ) => { tileX: number; tileY: number; level: number } | undefined,
-    ): void {
-        if (this.isDead(currentTick) || this.hitpoints <= 0) return;
-        if (this.combatTargetPlayerId === undefined) {
-            return;
-        }
-
-        // Combat has no inactivity decay: an engaged NPC keeps its target until
-        // the target dies, leaves the plane, or moves beyond the chase limit.
-        // If playerLookup is provided, verify player is still in range and visible
-        if (playerLookup) {
-            const player = this.resolveCombatTargetPlayer(playerLookup);
-            if (!player) {
-                // Player vanished, moved planes, or ran beyond the hard chase limit.
-                this.disengageCombat();
-                return;
-            }
-        }
-    }
-
     isInCombat(currentTick: number): boolean {
         if (this.isDead(currentTick) || this.hitpoints <= 0) return false;
-        return this.combatTargetPlayerId !== undefined;
+        return this.getCombatTargetPlayerId() !== undefined;
     }
 
     getCombatTargetPlayerId(): number | undefined {
-        return this.combatTargetPlayerId;
-    }
-
-    resolveCombatTargetPlayer(
-        playerLookup?: (
-            playerId: number,
-        ) => { tileX: number; tileY: number; level: number } | undefined,
-    ): { tileX: number; tileY: number; level: number } | undefined {
-        if (this.combatTargetPlayerId === undefined || !playerLookup) {
-            return undefined;
-        }
-        const player = playerLookup(this.combatTargetPlayerId);
-        if (!player) {
-            return undefined;
-        }
-        if (player.level !== this.level) {
-            return undefined;
-        }
-
-        // OSRS retreat interaction range: player >18 tiles from spawn → de-aggro.
-        if (this.isBeyondRetreatInteractionRange(player.tileX, player.tileY)) {
-            return undefined;
-        }
-
-        // Hard cap: never chase more than 32 tiles from the NPC's current tile.
-        const dx = Math.abs(player.tileX - this.tileX);
-        const dy = Math.abs(player.tileY - this.tileY);
-        const distance = Math.max(dx, dy);
-        return distance <= 32 ? player : undefined;
+        const target = this.combatAttributes.get(CombatAttributes.COMBAT_TARGET);
+        return target?.type === CombatEntityType.Player ? target.id : undefined;
     }
 
     /**
@@ -643,7 +574,7 @@ export class NpcState extends Actor {
 
     private disengageCombatInternal(clearInteraction: boolean): void {
         const hadPath = this.hasPath();
-        this.combatTargetPlayerId = undefined;
+        this.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
         if (hadPath) {
             this.forceSyncUpdate = true;
         }

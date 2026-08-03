@@ -1,5 +1,45 @@
 import { vec3 } from "gl-matrix";
 
+import { directionToDelta } from "../common/Direction";
+import { ChatMessageType } from "../common/chat/ChatMessageType";
+import type { ProjectileLaunch } from "../common/projectiles/ProjectileLaunch";
+import { buildSelectedSpellPayload } from "../common/spells/selectedSpellPayload";
+import type { QuestListWidgetGroup } from "../common/ui/questList";
+import {
+    INTERFACE_ACHIEVEMENT_DIARY_ID,
+    INTERFACE_QUEST_LIST_ID,
+    SIDE_JOURNAL_GROUP_ID,
+} from "../common/ui/sideJournal";
+import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../common/ui/widgets";
+import { isMobileMode, isTouchDevice } from "../common/utils/DeviceUtil";
+import { clamp } from "../common/utils/MathUtil";
+import {
+    TRANSMIT_VARPS,
+    VARBIT_COMBATLEVEL_TRANSMIT,
+    VARBIT_LEAGUE_MAGIC_MASTERY,
+    VARBIT_LEAGUE_MELEE_MASTERY,
+    VARBIT_LEAGUE_RANGED_MASTERY,
+    VARBIT_LEAGUE_RELIC_1,
+    VARBIT_LEAGUE_RELIC_2,
+    VARBIT_LEAGUE_RELIC_3,
+    VARBIT_LEAGUE_RELIC_4,
+    VARBIT_LEAGUE_RELIC_5,
+    VARBIT_LEAGUE_RELIC_6,
+    VARBIT_LEAGUE_RELIC_7,
+    VARBIT_LEAGUE_RELIC_8,
+    VARBIT_ROOF_REMOVAL,
+    VARBIT_STAMINA_ACTIVE,
+    VARC_COMBAT_LEVEL,
+    VARP_AREA_SOUNDS_VOLUME,
+    VARP_ATTACK_STYLE,
+    VARP_MAP_FLAGS_CACHED,
+    VARP_MASTER_VOLUME,
+    VARP_MUSIC_VOLUME,
+    VARP_OPTION_ATTACK_PRIORITY_NPC,
+    VARP_OPTION_ATTACK_PRIORITY_PLAYER,
+    VARP_OPTION_RUN,
+    VARP_SOUND_EFFECTS_VOLUME,
+} from "../common/vars";
 import {
     getDefaultServerAddress,
     getDefaultServerName,
@@ -90,6 +130,9 @@ import {
     subscribeProjectiles,
 } from "../network/ServerConnection";
 import { ClientPacketId, createPacket, queuePacket } from "../network/packet";
+import { WebGLMapSquare } from "../render/WebGLMapSquare";
+import type { MinimapIcon } from "../render/loader/SdMapData";
+import type { NpcInstance } from "../render/npc/NpcRenderTemplate";
 import { MenuTargetType, type OsrsMenuEntry } from "../rs/MenuEntry";
 import { SoundEffectLoader } from "../rs/audio/SoundEffectLoader";
 import { CacheSystem } from "../rs/cache/CacheSystem";
@@ -97,7 +140,6 @@ import { ConfigType } from "../rs/cache/ConfigType";
 import { IndexType } from "../rs/cache/IndexType";
 import { CacheLoaderFactory, getCacheLoaderFactory } from "../rs/cache/loader/CacheLoaderFactory";
 import { getPlayerTypeInfo } from "../rs/chat/PlayerType";
-import { ChatMessageType } from "../common/chat/ChatMessageType";
 import { BasTypeLoader } from "../rs/config/bastype/BasTypeLoader";
 import { DbRepository } from "../rs/config/db/DbRepository";
 import { IdkTypeLoader } from "../rs/config/idktype/IdkTypeLoader";
@@ -129,94 +171,27 @@ import {
     getMapSquareId,
 } from "../rs/map/MapFileIndex";
 import { WorldMapState } from "../rs/map/WorldMapArea";
-import { WorldMapController, type WorldMapRenderedIcon } from "./worldMap/WorldMapController";
 import { SeqFrameLoader } from "../rs/model/seq/SeqFrameLoader";
 import type { SkeletalSeqLoader } from "../rs/model/skeletal/SkeletalSeqLoader";
-import { CombatOptionsController } from "./combat/CombatOptionsController";
 import { SkillId } from "../rs/skill/skills";
 import { TextureLoader } from "../rs/texture/TextureLoader";
 import { faceAngleRs } from "../rs/utils/rotation";
-import { directionToDelta } from "../common/Direction";
-import type { ProjectileLaunch } from "../common/projectiles/ProjectileLaunch";
-import { buildSelectedSpellPayload } from "../common/spells/selectedSpellPayload";
-import type { QuestListWidgetGroup } from "../common/ui/questList";
-import {
-    INTERFACE_ACHIEVEMENT_DIARY_ID,
-    INTERFACE_QUEST_LIST_ID,
-    SIDE_JOURNAL_GROUP_ID,
-} from "../common/ui/sideJournal";
-import { ITEM_SPAWNER_MODAL_GROUP_ID } from "../common/ui/widgets";
-import {
-    TRANSMIT_VARPS,
-    VARBIT_COMBATLEVEL_TRANSMIT,
-    VARBIT_LEAGUE_MAGIC_MASTERY,
-    VARBIT_LEAGUE_MELEE_MASTERY,
-    VARBIT_LEAGUE_RANGED_MASTERY,
-    VARBIT_LEAGUE_RELIC_1,
-    VARBIT_LEAGUE_RELIC_2,
-    VARBIT_LEAGUE_RELIC_3,
-    VARBIT_LEAGUE_RELIC_4,
-    VARBIT_LEAGUE_RELIC_5,
-    VARBIT_LEAGUE_RELIC_6,
-    VARBIT_LEAGUE_RELIC_7,
-    VARBIT_LEAGUE_RELIC_8,
-    VARBIT_ROOF_REMOVAL,
-    VARBIT_STAMINA_ACTIVE,
-    VARC_COMBAT_LEVEL,
-    VARP_AREA_SOUNDS_VOLUME,
-    VARP_ATTACK_STYLE,
-    VARP_MAP_FLAGS_CACHED,
-    VARP_MASTER_VOLUME,
-    VARP_MUSIC_VOLUME,
-    VARP_OPTION_ATTACK_PRIORITY_NPC,
-    VARP_OPTION_ATTACK_PRIORITY_PLAYER,
-    VARP_OPTION_RUN,
-    VARP_SOUND_EFFECTS_VOLUME,
-} from "../common/vars";
 import { getOsrsInterfaceScalingPercent, setOsrsInterfaceScalingPercent } from "../ui/UiScale";
-import { cleanupInterfaceClickTargets } from "../widgets/gl/widgets-gl";
 import {
     setNpcExamineIdResolver,
     setSpellSelectionClearHandler,
     setSpellSelectionResolver,
 } from "../ui/menu/MenuAction";
-import {
-    type SimpleMenuEntry,
-} from "../ui/menu/MenuEngine";
+import { type SimpleMenuEntry } from "../ui/menu/MenuEngine";
 import { MenuOpcode, MenuState } from "../ui/menu/MenuState";
-import {
-    isDropTarget,
-    isWidgetUseTarget,
-} from "../widgets/WidgetFlags";
+import { isDropTarget, isWidgetUseTarget } from "../widgets/WidgetFlags";
 import { markWidgetInteractionDirty } from "../widgets/WidgetInteraction";
 import { WidgetManager } from "../widgets/WidgetManager";
 import { WidgetSessionManager } from "../widgets/WidgetSessionManager";
 import { applyQuestListWidgetGroups } from "../widgets/custom/questList";
+import { cleanupInterfaceClickTargets } from "../widgets/gl/widgets-gl";
 import { layoutWidgets } from "../widgets/layout/WidgetLayout";
 import { sanitizeText } from "../widgets/menu/utils";
-import { isMobileMode, isTouchDevice } from "../common/utils/DeviceUtil";
-import { ChatTextMetrics } from "./chat/ChatTextMetrics";
-import { EnterToTypeChat } from "./chat/EnterToTypeChat";
-import { MobileChatKeyboard } from "./chat/MobileChatKeyboard";
-import { ClientScriptLoader } from "./cs2/ClientScriptLoader";
-import { HitsplatFlushController } from "./combat/HitsplatFlushController";
-import { NpcInstanceFlushController } from "./npc/NpcInstanceFlushController";
-import { VarcPersistence } from "./vars/VarcPersistence";
-import { ItemSpawnerUi } from "./widgets/itemSpawner";
-import { PlayerDesignController } from "./widgets/PlayerDesignController";
-import { WidgetInputController } from "./widgets/WidgetInputController";
-import { SpellSelectionController } from "./widgets/SpellSelectionController";
-import { WidgetInteractionController } from "./widgets/WidgetInteractionController";
-import {
-    WidgetActionRouter,
-    type SelectedSpellInfo,
-    type SpellSelectionState,
-} from "./widgets/WidgetActionRouter";
-import { WidgetTransmitProcessor } from "./widgets/WidgetTransmitProcessor";
-import { NotificationDisplay } from "./widgets/NotificationDisplay";
-import { AudioVarpController } from "./audio/AudioVarpController";
-import { resolveWidgetIdentifiers } from "./widgets/widgetActionPayload";
-import { clamp } from "../common/utils/MathUtil";
 import { CacheList, LoadedCache } from "./Caches";
 import { Camera, CameraView, ProjectionType } from "./Camera";
 import {
@@ -243,8 +218,15 @@ import {
     resetTransmitCycles,
     resetTransmitDirtyFlags,
 } from "./TransmitCycles";
+import { AudioVarpController } from "./audio/AudioVarpController";
 import { MusicSystem } from "./audio/MusicSystem";
 import { type SequenceSoundContext, SoundEffectSystem } from "./audio/SoundEffectSystem";
+import { ChatTextMetrics } from "./chat/ChatTextMetrics";
+import { EnterToTypeChat } from "./chat/EnterToTypeChat";
+import { MobileChatKeyboard } from "./chat/MobileChatKeyboard";
+import { CombatOptionsController } from "./combat/CombatOptionsController";
+import { HitsplatFlushController } from "./combat/HitsplatFlushController";
+import { ClientScriptLoader } from "./cs2/ClientScriptLoader";
 import {
     ClientGroundItemStack,
     GroundItemOverlayEntry,
@@ -268,6 +250,7 @@ import {
 } from "./login";
 import { NpcMovementSync } from "./movement/NpcMovementSync";
 import { PlayerMovementSync } from "./movement/PlayerMovementSync";
+import { NpcInstanceFlushController } from "./npc/NpcInstanceFlushController";
 import { createBrowserGroundItemsPluginPersistence } from "./plugins/grounditems/BrowserGroundItemsPluginPersistence";
 import { GroundItemsPlugin } from "./plugins/grounditems/GroundItemsPlugin";
 import { createBrowserInteractHighlightPluginPersistence } from "./plugins/interacthighlight/BrowserInteractHighlightPluginPersistence";
@@ -303,10 +286,22 @@ import { PlayerSyncManager } from "./sync/PlayerSyncManager";
 import type { PlayerSpotAnimationEvent } from "./sync/PlayerSyncTypes";
 import { resolveTradeActionQuantity } from "./trade/TradeActionQuantity";
 import { clampPlane } from "./utils/PlaneUtil";
-import { WebGLMapSquare } from "../render/WebGLMapSquare";
-import type { MinimapIcon } from "../render/loader/SdMapData";
-import type { NpcInstance } from "../render/npc/NpcRenderTemplate";
+import { VarcPersistence } from "./vars/VarcPersistence";
+import { NotificationDisplay } from "./widgets/NotificationDisplay";
+import { PlayerDesignController } from "./widgets/PlayerDesignController";
+import { SpellSelectionController } from "./widgets/SpellSelectionController";
+import {
+    type SelectedSpellInfo,
+    type SpellSelectionState,
+    WidgetActionRouter,
+} from "./widgets/WidgetActionRouter";
+import { WidgetInputController } from "./widgets/WidgetInputController";
+import { WidgetInteractionController } from "./widgets/WidgetInteractionController";
+import { WidgetTransmitProcessor } from "./widgets/WidgetTransmitProcessor";
+import { ItemSpawnerUi } from "./widgets/itemSpawner";
+import { resolveWidgetIdentifiers } from "./widgets/widgetActionPayload";
 import { RenderDataWorkerPool } from "./worker/RenderDataWorkerPool";
+import { WorldMapController, type WorldMapRenderedIcon } from "./worldMap/WorldMapController";
 import { WorldViewManager } from "./worldview/WorldViewManager";
 
 const DEVICE_OPTION_INTERFACE_SCALING = 27;
@@ -777,6 +772,10 @@ export class OsrsClient {
     tradeOtherOfferInventory: Inventory = new Inventory(28);
     private tradeState?: TradeWindowState;
     private inventorySeededFromServer: boolean = false;
+    private readonly pendingInventoryMovePredictions: Array<{
+        before: string;
+        after: string;
+    }> = [];
 
     // Track last layout dimensions to avoid re-running layout every frame
     private _lastLayoutWidth: number = 0;
@@ -1139,7 +1138,6 @@ export class OsrsClient {
         });
     }
 
-
     private initSpellSelectionController(): void {
         this.spellSelectionController = new SpellSelectionController({
             getWidgetManager: () => this.widgetManager,
@@ -1164,6 +1162,7 @@ export class OsrsClient {
             getEnterToTypeChat: () => this.enterToTypeChat,
             getPlayerDesign: () => this.playerDesign,
             getObjTypeLoader: () => this.objTypeLoader,
+            getInventory: () => this.inventory,
             getSettings: () => this.settings,
             getMinimapZoomEnabled: () => this.minimapZoomEnabled,
             getMenuOpen: () => this.menuOpen,
@@ -1177,7 +1176,18 @@ export class OsrsClient {
             handleWidgetAction: (event) => this.handleWidgetAction(event),
             handleTradeWidgetAction: (widget, event, groupId, childId) =>
                 this.handleTradeWidgetAction(widget, event, groupId, childId),
-            handleInventorySlotMove: (from, to) => this.handleInventorySlotMove(from, to),
+            handleInventorySlotMove: (
+                from,
+                to,
+                localPredictionApplied,
+                previousSnapshotSignature,
+            ) =>
+                this.handleInventorySlotMove(
+                    from,
+                    to,
+                    localPredictionApplied,
+                    previousSnapshotSignature,
+                ),
             buildWidgetActionPayload: (event) =>
                 this.widgetActionRouter.buildWidgetActionPayload(event) ?? null,
             resolveTransmitFlagWidget: (eventWidget, payload) =>
@@ -1429,14 +1439,17 @@ export class OsrsClient {
                 if (widget) {
                     // Set clickedWidget to the dragged widget so drag handling works
                     this.widgetInteraction.clickedWidget = widget;
-                    this.widgetInteraction.clickedWidgetParent = this.widgetInteraction.resolveClickedWidgetParent(widget);
+                    this.widgetInteraction.clickedWidgetParent =
+                        this.widgetInteraction.resolveClickedWidgetParent(widget);
                     // Use the pickup offset as the click offset within the widget.
                     // cc_dragpickup provides offsets in logical (widget) coordinates, but
                     // clickedWidgetX/Y are subtracted from pixel-space mouse coordinates,
                     // so scale them to pixel space.
                     const [pickupScaleX, pickupScaleY] = this.widgetInteraction.getUiRenderScale();
-                    this.widgetInteraction.clickedWidgetX = ((widget as any)._dragPickupOffsetX ?? 0) * pickupScaleX;
-                    this.widgetInteraction.clickedWidgetY = ((widget as any)._dragPickupOffsetY ?? 0) * pickupScaleY;
+                    this.widgetInteraction.clickedWidgetX =
+                        ((widget as any)._dragPickupOffsetX ?? 0) * pickupScaleX;
+                    this.widgetInteraction.clickedWidgetY =
+                        ((widget as any)._dragPickupOffsetY ?? 0) * pickupScaleY;
 
                     // Determine the drag render area for coordinate calculations
                     // Priority: explicit dragRenderArea > parent widget > widget itself
@@ -1497,7 +1510,8 @@ export class OsrsClient {
                     }
                 }
                 const font = this.fontCache.get(fontId);
-                const measure = (s: string) => this.chatTextMetrics.measureTextWidthOsrsMarkup(s, font);
+                const measure = (s: string) =>
+                    this.chatTextMetrics.measureTextWidthOsrsMarkup(s, font);
 
                 // Handle <br> tags and newlines first
                 const normalized = text.replace(/<br\s*\/?>/gi, "\n");
@@ -2836,10 +2850,7 @@ export class OsrsClient {
                         msg.playerId | 0,
                     );
                 }
-                const text =
-                    isTradeRequest && msg.from
-                        ? `${msg.from} ${msg.text}`
-                        : msg.text;
+                const text = isTradeRequest && msg.from ? `${msg.from} ${msg.text}` : msg.text;
                 chatHistory.addMessage(
                     msg.chatType ?? msg.messageType,
                     text,
@@ -3066,231 +3077,254 @@ export class OsrsClient {
         try {
             this.playerEcs.setServerAuthoritative?.(true);
             // Align interpolation to server tick length for consistent speed
-            this.trackServerSubscription(subscribeWelcome(({ tickMs }) => {
-                try {
-                    this.playerAnimController.reset();
-                } catch {}
-                try {
-                    this.playerMovementSync.setServerTickMs(tickMs | 0);
-                } catch {}
-            }));
+            this.trackServerSubscription(
+                subscribeWelcome(({ tickMs }) => {
+                    try {
+                        this.playerAnimController.reset();
+                    } catch {}
+                    try {
+                        this.playerMovementSync.setServerTickMs(tickMs | 0);
+                    } catch {}
+                }),
+            );
             // Handle websocket disconnection - show "Connection lost" message while reconnecting
-            this.trackServerSubscription(subscribeDisconnect(({ willReconnect }) => {
-                try {
-                    if (willReconnect) {
-                        // Show "Connection lost - attempting to reestablish" message
-                        this.updateGameState(GameState.CONNECTION_LOST);
-                    } else {
-                        // Intentional disconnect or first disconnect - go to login
-                        this.updateGameState(GameState.LOGIN_SCREEN);
-                    }
-                } catch {}
-            }));
-            // Return to login screen when reconnection attempts are exhausted
-            this.trackServerSubscription(subscribeReconnectFailed(() => {
-                try {
-                    // failed connect shows timeout on login screen.
-                    if (this.gameState === GameState.CONNECTING) {
-                        this.loginState.loginIndex = LoginIndex.TRY_AGAIN;
-                        this.loginState.setResponse(
-                            "",
-                            "Connection timed out.",
-                            "Please try using a different world.",
-                            "",
-                        );
-                        this.updateGameState(GameState.LOGIN_SCREEN);
-                        return;
-                    }
-
-                    // In-game reconnect failure returns to clean login screen.
-                    this.loginState.reset();
-                    this.updateGameState(GameState.LOGIN_SCREEN);
-                } catch {}
-            }));
-            // Promote buffered steps on server tick to keep clients in sync
-            this.trackServerSubscription(subscribeTick((tick) => {
-                try {
-                    this.playerSyncManager.advanceServerTick(tick | 0);
-                } catch (err) {
-                    console.warn("[OsrsClient] player sync tick failed", err);
-                }
-                try {
-                    (this.playerEcs as any).onServerTick?.();
-                } catch {}
-                // Prune walked waypoints from path debug overlay
-                try {
-                    this.pruneWalkedWaypoints();
-                } catch {}
-            }));
-            // Capture server-assigned ID as soon as handshake arrives
-            this.trackServerSubscription(subscribeHandshake(({ id, name, appearance, chatIcons, chatPrefix, isAdmin }) => {
-                try {
-                    // Store the local player name for CS2 scripts (CHAT_PLAYERNAME)
-                    if (name) {
-                        this.localPlayerName = name;
-                        // Set varbit 8119 (has_displayname_transmitter) to 1 so chat scripts know we have a name
-                        this.varManager.setVarbit(8119, 1);
-                    }
-                    this.localChatNameIcons = Array.isArray(chatIcons)
-                        ? chatIcons
-                              .map((icon) => Number(icon))
-                              .filter((icon) => Number.isFinite(icon) && icon >= 0)
-                              .map((icon) => icon | 0)
-                        : [];
-                    this.localChatNamePrefix = typeof chatPrefix === "string" ? chatPrefix : "";
-                    this.localPlayerIsAdmin =
-                        typeof isAdmin === "boolean"
-                            ? isAdmin
-                            : this.localChatNameIcons.includes(1);
-                    if (this.controlledPlayerServerId === -1) {
-                        this.controlledPlayerServerId = id | 0;
-                    } else if (this.controlledPlayerServerId !== (id | 0)) {
-                        try {
-                            this.playerAnimController.release(this.controlledPlayerServerId);
-                        } catch {}
-                        // Rebind existing controlled-player mapping to the assigned id
-                        this.playerEcs.reassignServerId(this.controlledPlayerServerId, id | 0);
-                        this.controlledPlayerServerId = id | 0;
-                    }
-                    // If an ECS slot already exists, apply any handshake-provided name/appearance
-                    let ecsIndex = this.playerEcs.getIndexForServerId(
-                        this.controlledPlayerServerId,
-                    );
-                    // If none exists yet (handshake arrived before first sync), allocate now so
-                    // we can apply appearance immediately; position will snap on first `player_sync`.
-                    if (ecsIndex === undefined) {
-                        ecsIndex = this.playerEcs.allocatePlayer(this.controlledPlayerServerId);
-                    }
-                    if (ecsIndex !== undefined) {
-                        if (name) this.playerEcs.setName(ecsIndex, name);
-                        if (appearance) {
-                            try {
-                                // Sync equipment inventory for local player
-                                const pa = this.buildPlayerAppearanceFromPayload(appearance, true);
-                                if (pa) {
-                                    this.playerEcs.setAppearance(ecsIndex, pa);
-                                    // Prebuild base model in ECS so renderer doesn't construct models
-                                    this.playerEcs.ensureBaseForIndex(ecsIndex, {
-                                        idkTypeLoader: this.idkTypeLoader,
-                                        objTypeLoader: this.objTypeLoader,
-                                        modelLoader: this.modelLoader,
-                                        textureLoader: this.textureLoader,
-                                        npcTypeLoader: this.npcTypeLoader,
-                                        seqTypeLoader: this.seqTypeLoader,
-                                        seqFrameLoader: this.seqFrameLoader,
-                                        skeletalSeqLoader:
-                                            this.loaderFactory?.getSkeletalSeqLoader?.(),
-                                        varManager: this.varManager,
-                                        basTypeLoader: this.basTypeLoader,
-                                    });
-                                }
-                            } catch {}
+            this.trackServerSubscription(
+                subscribeDisconnect(({ willReconnect }) => {
+                    try {
+                        if (willReconnect) {
+                            // Show "Connection lost - attempting to reestablish" message
+                            this.updateGameState(GameState.CONNECTION_LOST);
+                        } else {
+                            // Intentional disconnect or first disconnect - go to login
+                            this.updateGameState(GameState.LOGIN_SCREEN);
                         }
+                    } catch {}
+                }),
+            );
+            // Return to login screen when reconnection attempts are exhausted
+            this.trackServerSubscription(
+                subscribeReconnectFailed(() => {
+                    try {
+                        // failed connect shows timeout on login screen.
+                        if (this.gameState === GameState.CONNECTING) {
+                            this.loginState.loginIndex = LoginIndex.TRY_AGAIN;
+                            this.loginState.setResponse(
+                                "",
+                                "Connection timed out.",
+                                "Please try using a different world.",
+                                "",
+                            );
+                            this.updateGameState(GameState.LOGIN_SCREEN);
+                            return;
+                        }
+
+                        // In-game reconnect failure returns to clean login screen.
+                        this.loginState.reset();
+                        this.updateGameState(GameState.LOGIN_SCREEN);
+                    } catch {}
+                }),
+            );
+            // Promote buffered steps on server tick to keep clients in sync
+            this.trackServerSubscription(
+                subscribeTick((tick) => {
+                    try {
+                        this.playerSyncManager.advanceServerTick(tick | 0);
+                    } catch (err) {
+                        console.warn("[OsrsClient] player sync tick failed", err);
                     }
-
-                    // Mark handshake as complete for the loading tracker
-                    // This allows the LOADING_GAME -> LOGGED_IN transition
-                    this.loadingTracker.markComplete(LoadingRequirement.HANDSHAKE_COMPLETE);
-                } catch {}
-            }));
-
-            this.trackServerSubscription(subscribeRebuildRegion((payload) => {
-                try {
-                    console.log(
-                        `[OsrsClient] REBUILD_REGION received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
-                    );
-                    ClientState.inInstance = true;
-                    ClientState.instanceTemplateChunks = payload.templateChunks;
-                    if (this.renderer && "loadInstanceScene" in this.renderer) {
-                        (this.renderer as any).loadInstanceScene(
-                            payload.templateChunks,
-                            payload.regionX,
-                            payload.regionY,
-                        );
-                    }
-                } catch (err) {
-                    console.warn("[OsrsClient] rebuild_region error", err);
-                }
-            }));
-
-            this.trackServerSubscription(subscribeRebuildNormal((payload) => {
-                try {
-                    console.log(
-                        `[OsrsClient] REBUILD_NORMAL received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
-                    );
-                    ClientState.inInstance = false;
-                    ClientState.instanceTemplateChunks = null;
-                    if (this.renderer && "clearInstance" in this.renderer) {
-                        (this.renderer as any).clearInstance();
-                    }
-                } catch (err) {
-                    console.warn("[OsrsClient] rebuild_normal error", err);
-                }
-            }));
-
-            this.trackServerSubscription(subscribeRebuildWorldEntity((payload) => {
-                try {
-                    console.log(
-                        `[OsrsClient] REBUILD_WORLDENTITY received: entity=${payload.entityIndex} config=${payload.configId} size=${payload.sizeX}x${payload.sizeZ} regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
-                    );
-                    // World entity scene anchor: entityCoord + sizeChunks * 4 (tile precision).
-                    // entityCoord=3050, sizeChunks=8, fineBase=8*64=512fine=4tiles → anchor=3054.
-                    const entityWorldX = 3054;
-                    const entityWorldY = 3193;
-
-                    // Collect extra locs from addedLocs that fall in source region
-                    const extraLocs: Array<{
-                        id: number;
-                        x: number;
-                        y: number;
-                        level: number;
-                        shape: number;
-                        rotation: number;
-                    }> = [];
-
-                    if (this.renderer && "loadWorldEntityScene" in this.renderer) {
-                        const weNpcs = (payload as any).extraNpcs;
-                        const basePlane = (payload as any).basePlane ?? 0;
-                        (this.renderer as any).loadWorldEntityScene(
-                            payload.entityIndex,
-                            payload.templateChunks,
-                            payload.regionX,
-                            payload.regionY,
-                            entityWorldX,
-                            entityWorldY,
-                            payload.sizeX,
-                            payload.sizeZ,
-                            extraLocs,
-                            payload.configId,
-                            weNpcs,
-                            basePlane,
-                        );
-                        // Schedule a single deferred rebuild to pick up LOC_ADD_CHANGE
-                        // packets that arrive after the initial scene build
-                        (this.renderer as any).scheduleWorldEntityLocRebuild(payload.entityIndex);
-                    }
-
-                    // Set local player's worldViewId to this entity
-                    if (this.controlledPlayerServerId >= 0) {
-                        const localEcsIdx = this.playerEcs.getIndexForServerId(
+                    try {
+                        (this.playerEcs as any).onServerTick?.();
+                    } catch {}
+                    // Prune walked waypoints from path debug overlay
+                    try {
+                        this.pruneWalkedWaypoints();
+                    } catch {}
+                }),
+            );
+            // Capture server-assigned ID as soon as handshake arrives
+            this.trackServerSubscription(
+                subscribeHandshake(({ id, name, appearance, chatIcons, chatPrefix, isAdmin }) => {
+                    try {
+                        // Store the local player name for CS2 scripts (CHAT_PLAYERNAME)
+                        if (name) {
+                            this.localPlayerName = name;
+                            // Set varbit 8119 (has_displayname_transmitter) to 1 so chat scripts know we have a name
+                            this.varManager.setVarbit(8119, 1);
+                        }
+                        this.localChatNameIcons = Array.isArray(chatIcons)
+                            ? chatIcons
+                                  .map((icon) => Number(icon))
+                                  .filter((icon) => Number.isFinite(icon) && icon >= 0)
+                                  .map((icon) => icon | 0)
+                            : [];
+                        this.localChatNamePrefix = typeof chatPrefix === "string" ? chatPrefix : "";
+                        this.localPlayerIsAdmin =
+                            typeof isAdmin === "boolean"
+                                ? isAdmin
+                                : this.localChatNameIcons.includes(1);
+                        if (this.controlledPlayerServerId === -1) {
+                            this.controlledPlayerServerId = id | 0;
+                        } else if (this.controlledPlayerServerId !== (id | 0)) {
+                            try {
+                                this.playerAnimController.release(this.controlledPlayerServerId);
+                            } catch {}
+                            // Rebind existing controlled-player mapping to the assigned id
+                            this.playerEcs.reassignServerId(this.controlledPlayerServerId, id | 0);
+                            this.controlledPlayerServerId = id | 0;
+                        }
+                        // If an ECS slot already exists, apply any handshake-provided name/appearance
+                        let ecsIndex = this.playerEcs.getIndexForServerId(
                             this.controlledPlayerServerId,
                         );
-                        if (localEcsIdx !== undefined) {
-                            this.playerEcs.setWorldViewId(localEcsIdx, payload.entityIndex);
-                            this.worldViewManager.addPlayerToWorldView(
-                                payload.entityIndex,
-                                localEcsIdx,
+                        // If none exists yet (handshake arrived before first sync), allocate now so
+                        // we can apply appearance immediately; position will snap on first `player_sync`.
+                        if (ecsIndex === undefined) {
+                            ecsIndex = this.playerEcs.allocatePlayer(this.controlledPlayerServerId);
+                        }
+                        if (ecsIndex !== undefined) {
+                            if (name) this.playerEcs.setName(ecsIndex, name);
+                            if (appearance) {
+                                try {
+                                    // Sync equipment inventory for local player
+                                    const pa = this.buildPlayerAppearanceFromPayload(
+                                        appearance,
+                                        true,
+                                    );
+                                    if (pa) {
+                                        this.playerEcs.setAppearance(ecsIndex, pa);
+                                        // Prebuild base model in ECS so renderer doesn't construct models
+                                        this.playerEcs.ensureBaseForIndex(ecsIndex, {
+                                            idkTypeLoader: this.idkTypeLoader,
+                                            objTypeLoader: this.objTypeLoader,
+                                            modelLoader: this.modelLoader,
+                                            textureLoader: this.textureLoader,
+                                            npcTypeLoader: this.npcTypeLoader,
+                                            seqTypeLoader: this.seqTypeLoader,
+                                            seqFrameLoader: this.seqFrameLoader,
+                                            skeletalSeqLoader:
+                                                this.loaderFactory?.getSkeletalSeqLoader?.(),
+                                            varManager: this.varManager,
+                                            basTypeLoader: this.basTypeLoader,
+                                        });
+                                    }
+                                } catch {}
+                            }
+                        }
+
+                        // Mark handshake as complete for the loading tracker
+                        // This allows the LOADING_GAME -> LOGGED_IN transition
+                        this.loadingTracker.markComplete(LoadingRequirement.HANDSHAKE_COMPLETE);
+                    } catch {}
+                }),
+            );
+
+            this.trackServerSubscription(
+                subscribeRebuildRegion((payload) => {
+                    try {
+                        console.log(
+                            `[OsrsClient] REBUILD_REGION received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
+                        );
+                        ClientState.inInstance = true;
+                        ClientState.instanceTemplateChunks = payload.templateChunks;
+                        if (this.renderer && "loadInstanceScene" in this.renderer) {
+                            (this.renderer as any).loadInstanceScene(
+                                payload.templateChunks,
+                                payload.regionX,
+                                payload.regionY,
                             );
                         }
+                    } catch (err) {
+                        console.warn("[OsrsClient] rebuild_region error", err);
                     }
-                } catch (err) {
-                    console.warn("[OsrsClient] rebuild_worldentity error", err);
-                }
-            }));
+                }),
+            );
 
-            this.trackServerSubscription(subscribeWorldEntityInfo((payload) => {
-                this.handleWorldEntityInfo(payload);
-            }));
+            this.trackServerSubscription(
+                subscribeRebuildNormal((payload) => {
+                    try {
+                        console.log(
+                            `[OsrsClient] REBUILD_NORMAL received: regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
+                        );
+                        ClientState.inInstance = false;
+                        ClientState.instanceTemplateChunks = null;
+                        if (this.renderer && "clearInstance" in this.renderer) {
+                            (this.renderer as any).clearInstance();
+                        }
+                    } catch (err) {
+                        console.warn("[OsrsClient] rebuild_normal error", err);
+                    }
+                }),
+            );
+
+            this.trackServerSubscription(
+                subscribeRebuildWorldEntity((payload) => {
+                    try {
+                        console.log(
+                            `[OsrsClient] REBUILD_WORLDENTITY received: entity=${payload.entityIndex} config=${payload.configId} size=${payload.sizeX}x${payload.sizeZ} regionX=${payload.regionX} regionY=${payload.regionY} regions=${payload.mapRegions.length}`,
+                        );
+                        // World entity scene anchor: entityCoord + sizeChunks * 4 (tile precision).
+                        // entityCoord=3050, sizeChunks=8, fineBase=8*64=512fine=4tiles → anchor=3054.
+                        const entityWorldX = 3054;
+                        const entityWorldY = 3193;
+
+                        // Collect extra locs from addedLocs that fall in source region
+                        const extraLocs: Array<{
+                            id: number;
+                            x: number;
+                            y: number;
+                            level: number;
+                            shape: number;
+                            rotation: number;
+                        }> = [];
+
+                        if (this.renderer && "loadWorldEntityScene" in this.renderer) {
+                            const weNpcs = (payload as any).extraNpcs;
+                            const basePlane = (payload as any).basePlane ?? 0;
+                            (this.renderer as any).loadWorldEntityScene(
+                                payload.entityIndex,
+                                payload.templateChunks,
+                                payload.regionX,
+                                payload.regionY,
+                                entityWorldX,
+                                entityWorldY,
+                                payload.sizeX,
+                                payload.sizeZ,
+                                extraLocs,
+                                payload.configId,
+                                weNpcs,
+                                basePlane,
+                            );
+                            // Schedule a single deferred rebuild to pick up LOC_ADD_CHANGE
+                            // packets that arrive after the initial scene build
+                            (this.renderer as any).scheduleWorldEntityLocRebuild(
+                                payload.entityIndex,
+                            );
+                        }
+
+                        // Set local player's worldViewId to this entity
+                        if (this.controlledPlayerServerId >= 0) {
+                            const localEcsIdx = this.playerEcs.getIndexForServerId(
+                                this.controlledPlayerServerId,
+                            );
+                            if (localEcsIdx !== undefined) {
+                                this.playerEcs.setWorldViewId(localEcsIdx, payload.entityIndex);
+                                this.worldViewManager.addPlayerToWorldView(
+                                    payload.entityIndex,
+                                    localEcsIdx,
+                                );
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("[OsrsClient] rebuild_worldentity error", err);
+                    }
+                }),
+            );
+
+            this.trackServerSubscription(
+                subscribeWorldEntityInfo((payload) => {
+                    this.handleWorldEntityInfo(payload);
+                }),
+            );
 
             this.unsubscribePlayerSync = subscribePlayerSync((frame) => {
                 try {
@@ -3306,56 +3340,68 @@ export class OsrsClient {
             // NOTE: This is now a fallback - animations are primarily sent per-player in the
             // appearance block (). This handler is kept for backward compatibility
             // and for setting initial default animations before player is fully spawned.
-            this.trackServerSubscription(subscribeAnim((anim) => {
-                try {
-                    this.serverPlayerSeqs = { ...anim };
-                    // Apply to local player's ECS entry specifically, not as a global default
-                    const localIndex = this.playerEcs.getIndexForServerId(
-                        this.controlledPlayerServerId,
-                    );
-                    if (localIndex !== undefined) {
-                        this.playerEcs.setAnimSet(localIndex, anim);
-                    } else {
-                        // Fallback: if local player not yet spawned, set as default
-                        this.playerEcs.setDefaultAnimSet(anim);
+            this.trackServerSubscription(
+                subscribeAnim((anim) => {
+                    try {
+                        this.serverPlayerSeqs = { ...anim };
+                        // Apply to local player's ECS entry specifically, not as a global default
+                        const localIndex = this.playerEcs.getIndexForServerId(
+                            this.controlledPlayerServerId,
+                        );
+                        if (localIndex !== undefined) {
+                            this.playerEcs.setAnimSet(localIndex, anim);
+                        } else {
+                            // Fallback: if local player not yet spawned, set as default
+                            this.playerEcs.setDefaultAnimSet(anim);
+                        }
+                    } catch {}
+                }),
+            );
+            this.trackServerSubscription(
+                subscribeInventory((update) => {
+                    try {
+                        this.handleInventoryServerUpdate(update);
+                    } catch (err) {
+                        console.warn("inventory update dispatch failed", err);
                     }
-                } catch {}
-            }));
-            this.trackServerSubscription(subscribeInventory((update) => {
-                try {
-                    this.handleInventoryServerUpdate(update);
-                } catch (err) {
-                    console.warn("inventory update dispatch failed", err);
-                }
-            }));
-            this.trackServerSubscription(subscribeBank((update) => {
-                try {
-                    this.handleBankServerUpdate(update);
-                } catch (err) {
-                    console.warn("bank update dispatch failed", err);
-                }
-            }));
-            this.trackServerSubscription(subscribeCollectionLog((update) => {
-                try {
-                    this.handleCollectionLogServerUpdate(update);
-                } catch (err) {
-                    console.warn("collection log update dispatch failed", err);
-                }
-            }));
-            this.trackServerSubscription(subscribeShop((state) => {
-                try {
-                    this.handleShopServerUpdate(state);
-                } catch (err) {
-                    console.warn("shop update dispatch failed", err);
-                }
-            }));
-            this.trackServerSubscription(subscribeTrade((state) => {
-                try {
-                    this.handleTradeServerUpdate(state);
-                } catch (err) {
-                    console.warn("trade update dispatch failed", err);
-                }
-            }));
+                }),
+            );
+            this.trackServerSubscription(
+                subscribeBank((update) => {
+                    try {
+                        this.handleBankServerUpdate(update);
+                    } catch (err) {
+                        console.warn("bank update dispatch failed", err);
+                    }
+                }),
+            );
+            this.trackServerSubscription(
+                subscribeCollectionLog((update) => {
+                    try {
+                        this.handleCollectionLogServerUpdate(update);
+                    } catch (err) {
+                        console.warn("collection log update dispatch failed", err);
+                    }
+                }),
+            );
+            this.trackServerSubscription(
+                subscribeShop((state) => {
+                    try {
+                        this.handleShopServerUpdate(state);
+                    } catch (err) {
+                        console.warn("shop update dispatch failed", err);
+                    }
+                }),
+            );
+            this.trackServerSubscription(
+                subscribeTrade((state) => {
+                    try {
+                        this.handleTradeServerUpdate(state);
+                    } catch (err) {
+                        console.warn("trade update dispatch failed", err);
+                    }
+                }),
+            );
             this.unsubscribeGroundItems = subscribeGroundItems((payload) => {
                 try {
                     this.groundItems.update(payload);
@@ -3822,7 +3868,6 @@ export class OsrsClient {
         return !widget.hidden;
     }
 
-
     clearSelectedSpell(): void {
         this.spellSelectionController.clearSelectedSpell();
     }
@@ -3888,17 +3933,11 @@ export class OsrsClient {
         this.combatOptions.setCombatStyleSlot(style, opts);
     }
 
-    setActivePrayers(
-        prayers: Iterable<string>,
-        opts: { fromServer?: boolean } = {},
-    ): void {
+    setActivePrayers(prayers: Iterable<string>, opts: { fromServer?: boolean } = {}): void {
         this.combatOptions.setActivePrayers(prayers, opts);
     }
 
-    setQuickPrayers(
-        prayers: Iterable<string>,
-        opts: { fromServer?: boolean } = {},
-    ): void {
+    setQuickPrayers(prayers: Iterable<string>, opts: { fromServer?: boolean } = {}): void {
         this.combatOptions.setQuickPrayers(prayers, opts);
     }
 
@@ -6038,6 +6077,42 @@ export class OsrsClient {
                       quantity: typeof slot.quantity === "number" ? slot.quantity | 0 : 0,
                   }))
                 : [];
+
+            // Inventory dragging is predicted locally. A server snapshot that matches
+            // any queued prediction is an acknowledgement, not a new UI state. Keep
+            // the newest local prediction on screen when several moves are in flight,
+            // and avoid rerunning inv-transmit scripts for an identical echo.
+            if (this.pendingInventoryMovePredictions.length > 0) {
+                const incomingSignature = this.inventory.snapshotSignature(slots);
+                const acknowledgedIndex = this.pendingInventoryMovePredictions.findIndex(
+                    (prediction) => prediction.after === incomingSignature,
+                );
+                if (acknowledgedIndex >= 0) {
+                    this.pendingInventoryMovePredictions.splice(0, acknowledgedIndex + 1);
+                    return;
+                }
+
+                // A snapshot queued before the move packet can arrive after the local
+                // prediction. Recognize that pre-move state and leave the prediction
+                // visible while the server processes the already-sent move.
+                if (
+                    this.pendingInventoryMovePredictions.some(
+                        (prediction) => prediction.before === incomingSignature,
+                    )
+                ) {
+                    return;
+                }
+
+                if (this.inventory.matchesSnapshot(slots)) {
+                    this.pendingInventoryMovePredictions.length = 0;
+                    return;
+                }
+
+                // The server disagrees with every prediction. Drop the prediction
+                // history and apply this authoritative correction normally.
+                this.pendingInventoryMovePredictions.length = 0;
+            }
+
             // Selection is client-only: preserve current selection iff item still exists
             const prevSel = this.inventory.getSelectedSlot();
             const keepSel =
@@ -6052,11 +6127,18 @@ export class OsrsClient {
             const slot = update.slot;
             if (slot) {
                 const idx = Math.max(0, Math.min(Inventory.SLOT_COUNT - 1, slot.slot | 0));
-                this.inventory.setSlot(
-                    idx,
-                    slot.itemId | 0,
-                    typeof slot.quantity === "number" ? slot.quantity | 0 : 0,
-                );
+                const itemId = slot.itemId | 0;
+                const quantity = typeof slot.quantity === "number" ? slot.quantity | 0 : 0;
+                if (
+                    this.pendingInventoryMovePredictions.length > 0 &&
+                    this.inventory.matchesSlot(idx, itemId, quantity)
+                ) {
+                    return;
+                }
+                if (this.pendingInventoryMovePredictions.length > 0) {
+                    this.pendingInventoryMovePredictions.length = 0;
+                }
+                this.inventory.setSlot(idx, itemId, quantity);
             }
         }
 
@@ -6962,39 +7044,83 @@ export class OsrsClient {
         this.npcInstances.notifyRendererReady();
     }
 
-    handleInventorySlotMove(fromSlot: number, toSlot: number): void {
+    handleInventorySlotMove(
+        fromSlot: number,
+        toSlot: number,
+        localPredictionApplied: boolean = false,
+        previousSnapshotSignature?: string,
+    ): void {
         const src = Math.max(0, Math.min(Inventory.SLOT_COUNT - 1, fromSlot | 0));
         const dst = Math.max(0, Math.min(Inventory.SLOT_COUNT - 1, toSlot | 0));
         if (src === dst) return;
-        // Read entries BEFORE swap
-        const sourceEntry = this.inventory.getSlot(src);
-        const destEntry = this.inventory.getSlot(dst);
-        if (!sourceEntry || sourceEntry.itemId <= 0) return;
 
-        // Save values before swap for widget update
-        const srcItemId = sourceEntry.itemId;
-        const srcQuantity = sourceEntry.quantity;
-        const dstItemId = destEntry?.itemId ?? -1;
-        const dstQuantity = destEntry?.quantity ?? 0;
+        let before = previousSnapshotSignature;
+        if (!localPredictionApplied) {
+            const sourceEntry = this.inventory.getSlot(src);
+            if (!sourceEntry || sourceEntry.itemId <= 0) return;
+            before = this.inventory.snapshotSignature();
+            this.inventory.swapSlots(src, dst);
+        }
+
+        const predictedSource = this.inventory.getSlot(src);
+        const predictedDestination = this.inventory.getSlot(dst);
 
         try {
             console.log("[inventory] move slot", {
                 from: src,
                 to: dst,
-                srcItem: srcItemId,
-                dstItem: dstItemId,
+                predictedSourceItem: predictedSource?.itemId ?? -1,
+                predictedDestinationItem: predictedDestination?.itemId ?? -1,
             });
         } catch {}
 
-        // Swap in model and send to server
-        this.inventory.swapSlots(src, dst);
+        // Publish the already-mutated model into the actual WebGL widget state before
+        // onDragComplete or clearDragWidgetVisualState can render another frame.
+        this.publishInventorySlotPrediction(src, dst);
+        const after = this.inventory.snapshotSignature();
+        this.pendingInventoryMovePredictions.push({
+            before: before ?? after,
+            after,
+        });
         sendInventoryMove(src, dst);
 
-        // Mark inv cycle for inventory (93) - handlers fire during processWidgetTransmits()
+        // Dispatch through the inventory UI's CS2 state bridge. This client renders its
+        // inventory through WidgetNode/WebGL rather than a React inventory component.
         markInvTransmit(93);
-        try {
-            this.widgetManager.invalidateAll();
-        } catch {}
+    }
+
+    private publishInventorySlotPrediction(...slotIndexes: number[]): void {
+        const slots = new Set(
+            slotIndexes
+                .map((slot) => slot | 0)
+                .filter((slot) => slot >= 0 && slot < Inventory.SLOT_COUNT),
+        );
+        if (slots.size === 0) return;
+
+        const updatedWidgets = new Set<any>();
+        const updateWidget = (widget: any, slot: number): void => {
+            if (!widget || updatedWidgets.has(widget)) return;
+            if (((widget.groupId ?? -1) | 0) !== 149) return;
+            if (((widget.childIndex ?? -1) | 0) !== slot) return;
+            if (((widget.type ?? -1) | 0) !== 5) return;
+
+            const entry = this.inventory.getSlot(slot);
+            const itemId = entry && entry.itemId > 0 ? entry.itemId | 0 : -1;
+            const quantity = itemId > 0 ? Math.max(0, entry?.quantity ?? 0) | 0 : 0;
+            widget.itemId = itemId;
+            widget.itemQuantity = quantity;
+            widget.itemAmount = quantity;
+            markWidgetInteractionDirty(widget);
+            this.widgetManager.invalidateWidgetRender(widget, "inventory-move-prediction");
+            updatedWidgets.add(widget);
+        };
+
+        for (const parent of this.widgetManager.getWidgetsForGroup(149)) {
+            if (!Array.isArray(parent.children)) continue;
+            for (const slot of slots) {
+                updateWidget(parent.children[slot], slot);
+            }
+        }
     }
 
     handleInventorySlotTap(slotIndex: number): void {
@@ -7273,7 +7399,6 @@ export class OsrsClient {
             }
         }
     }
-
 
     /**
      * Reset all world/game state - used on disconnect/logout to prevent memory leaks.

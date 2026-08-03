@@ -10,14 +10,20 @@ import {
     resolveNpcAttackType as resolveNpcAttackTypeRule,
 } from "../combat/CombatRules";
 import type { DamageType, DropEligibility } from "../combat/DamageTracker";
+import { damageTracker } from "../combat/DamageTracker";
 import { HITMARK_BLOCK, HITMARK_DAMAGE } from "../combat/HitEffects";
-import { isInWilderness } from "../combat/MultiCombatZones";
+import { isInWilderness, multiCombatSystem } from "../combat/MultiCombatZones";
+import { createCombatHitEvaluator } from "../combat/engine/CombatHitEvaluator";
+import type { CombatHitEvaluator } from "../combat/engine/CombatHitEvaluator";
+import type { CombatAttack } from "../combat/model/CombatAttack";
+import { npcCombatEntityRef, playerCombatEntityRef } from "../combat/model/CombatEntityRef";
+import { CombatAttributes } from "../combat/state/CombatAttributes";
 import { DropRollService } from "../drops/DropRollService";
 import { NpcDropRegistry } from "../drops/NpcDropRegistry";
 import type { NpcState } from "../npc";
 import type { PendingNpcDrop } from "../npcManager";
 import type { PlayerState } from "../player";
-import { CombatEngine } from "../systems/combat/CombatEngine";
+import { OverheadType } from "../prayer/OverheadType";
 
 export const PROTECTION_PRAYER_MAP: Record<AttackType, PrayerName> = {
     melee: "protect_from_melee",
@@ -31,8 +37,11 @@ export const PVP_PROTECTION_REDUCTION = 0.4;
 export class CombatEffectService {
     private npcDropRegistry?: NpcDropRegistry;
     private npcDropRollService?: DropRollService;
+    private readonly hitEvaluator: CombatHitEvaluator;
 
-    constructor(private readonly svc: ServerServices) {}
+    constructor(private readonly svc: ServerServices) {
+        this.hitEvaluator = createCombatHitEvaluator(svc);
+    }
 
     // ── Prayer Effects ──────────────────────────────────────────────
 
@@ -45,6 +54,11 @@ export class CombatEffectService {
             targetPlayerIds: [player.id],
         });
         player.prayer.resetDrainAccumulator();
+        player.combatAttributes.set(CombatAttributes.PRAYER_POINTS_CURRENT, 0);
+        player.combatAttributes.set(
+            CombatAttributes.ACTIVE_OVERHEAD_PRAYER,
+            OverheadType.NONE,
+        );
         const hadPrayers = (player.prayer.getActivePrayers()?.size ?? 0) > 0;
         if (hadPrayers) {
             this.svc.soundService.sendSound(player, PRAYER_DEACTIVATE_SOUND_ID);
@@ -213,19 +227,28 @@ export class CombatEffectService {
             let hitLanded = false;
             let damage = 0;
             try {
-                const engine = new CombatEngine();
-                const magicCaster = Object.create(opts.player) as PlayerState;
-                (magicCaster as any).combatSpellId = opts.spell.id;
-                (magicCaster as any).autocastEnabled = false;
-                (magicCaster as any).autocastMode = null;
-                (magicCaster as any).getCurrentAttackType = () => "magic";
-                const res = engine.planPlayerAttack({
-                    player: magicCaster,
-                    npc: extra,
-                    attackSpeed: this.svc.playerCombatService!.pickAttackSpeed(opts.player),
+                const attack: CombatAttack = Object.freeze({
+                    attacker: playerCombatEntityRef(opts.player.id),
+                    target: npcCombatEntityRef(extra.id),
+                    attackClock: opts.currentTick,
+                    traits: Object.freeze({
+                        type: AttackType.Magic,
+                        style: null,
+                        rangeTiles: 10,
+                        speedTicks: Math.max(
+                            1,
+                            this.svc.playerCombatService!.pickAttackSpeed(opts.player),
+                        ),
+                        weaponId:
+                            opts.player.combat.weaponItemId > 0
+                                ? opts.player.combat.weaponItemId
+                                : undefined,
+                        spellId: opts.spell.id,
+                    }),
                 });
-                hitLanded = !!res.hitLanded;
-                damage = Math.max(0, res.damage);
+                const result = this.hitEvaluator.evaluate(attack);
+                hitLanded = result.valid && result.landed;
+                damage = result.valid ? Math.max(0, result.damage) : 0;
             } catch {
                 hitLanded = false;
                 damage = 0;
@@ -293,13 +316,8 @@ export class CombatEffectService {
 
         const result = combatEffectApplicator.applyNpcHitsplat(npc, style, damage, tick, maxHit);
         if (result.amount > 0) {
-            this.svc.playerCombatManager?.recordDamage(
-                player,
-                npc,
-                result.amount,
-                damageType,
-                tick,
-            );
+            damageTracker.recordDamage(player, npc, result.amount, damageType, tick);
+            multiCombatSystem.recordEngagement(player, npc, tick);
         }
         if (result.hpCurrent <= 0) {
             this.handleNpcDeathOutsidePrimaryCombat(player, npc, tick);

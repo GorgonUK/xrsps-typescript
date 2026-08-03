@@ -1,5 +1,6 @@
 import type { PlayerEcs } from "../ecs/PlayerEcs";
 import {
+    PRAYER_HEAD_ICON_IDS,
     PRAYER_NAME_SET,
     PRAYER_NAME_TO_VARBIT,
     PrayerName,
@@ -140,12 +141,19 @@ export class CombatOptionsController {
         if (index === undefined) return;
 
         let icon = -1;
-        if (this.activePrayers.has("protect_from_melee")) icon = 0;
-        else if (this.activePrayers.has("protect_from_missiles")) icon = 1;
-        else if (this.activePrayers.has("protect_from_magic")) icon = 2;
-        else if (this.activePrayers.has("retribution")) icon = 3;
-        else if (this.activePrayers.has("redemption")) icon = 4;
-        else if (this.activePrayers.has("smite")) icon = 5;
+        if (this.activePrayers.has("protect_from_melee")) {
+            icon = PRAYER_HEAD_ICON_IDS.protect_melee;
+        } else if (this.activePrayers.has("protect_from_missiles")) {
+            icon = PRAYER_HEAD_ICON_IDS.protect_missiles;
+        } else if (this.activePrayers.has("protect_from_magic")) {
+            icon = PRAYER_HEAD_ICON_IDS.protect_magic;
+        } else if (this.activePrayers.has("retribution")) {
+            icon = PRAYER_HEAD_ICON_IDS.retribution;
+        } else if (this.activePrayers.has("redemption")) {
+            icon = PRAYER_HEAD_ICON_IDS.redemption;
+        } else if (this.activePrayers.has("smite")) {
+            icon = PRAYER_HEAD_ICON_IDS.smite;
+        }
 
         this.deps.playerEcs.setHeadIconPrayer(index, icon);
     }

@@ -29,6 +29,7 @@ import {
 import { encodeMessage } from "../../network/messages";
 import type { ServerServices } from "../ServerServices";
 import type { PlayerState } from "../player";
+import { CombatEntityType } from "../combat/model/CombatEntityRef";
 
 export class VarpSyncService {
     constructor(private readonly services: ServerServices) {}
@@ -38,8 +39,8 @@ export class VarpSyncService {
     }
 
     getCombatTargetPlayerVarpValue(player: PlayerState): number {
-        const target = player.combat.getCombatTarget();
-        if (!target || !target.isPlayer) {
+        const target = player.getCombatTarget();
+        if (target?.type !== CombatEntityType.Player) {
             return -1;
         }
         return target.id & 0x7ff;

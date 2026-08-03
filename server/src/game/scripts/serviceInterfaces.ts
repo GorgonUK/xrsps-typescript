@@ -15,7 +15,6 @@ import type { DoorStateManager } from "../../world/DoorStateManager";
 import type { ActionRequest } from "../actions";
 import type { Actor } from "../actor";
 import type { AmmoDataProvider } from "../combat/AmmoDataProvider";
-import type { CombatFormulaProvider } from "../combat/CombatFormulaProvider";
 import type { CombatStyleSequenceProvider } from "../combat/CombatStyleSequenceProvider";
 import type { DropEligibility } from "../combat/DamageTracker";
 import type { EquipmentBonusProvider } from "../combat/EquipmentBonusProvider";
@@ -375,7 +374,6 @@ export type { SmithingOptionMessage, SmithingServerPayload } from "../../network
 
 export interface ProviderRegistrationFacade {
     registerWeaponData(provider: WeaponDataProvider): void;
-    registerCombatFormula(provider: CombatFormulaProvider): void;
     registerSpecialAttack(provider: SpecialAttackProvider): void;
     registerCombatStyleSequence(provider: CombatStyleSequenceProvider): void;
     registerEquipmentBonus(provider: EquipmentBonusProvider): void;

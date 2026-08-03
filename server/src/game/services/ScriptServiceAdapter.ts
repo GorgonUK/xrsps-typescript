@@ -194,9 +194,6 @@ function buildProviderRegistrationFacade(): ProviderRegistrationFacade {
         registerWeaponData: (p) => {
             reg.weaponData = p;
         },
-        registerCombatFormula: (p) => {
-            reg.combatFormula = p;
-        },
         registerSpecialAttack: (p) => {
             reg.specialAttack = p;
         },

@@ -5,6 +5,7 @@ import {
 } from "../../../../client/common/vars";
 import type { PlayerState } from "../player";
 import { canWeaponAutocastSpell, getAutocastIndexFromSpellId } from "../spells/SpellDataProvider";
+import { CombatAttributes } from "./state/CombatAttributes";
 
 type AutocastSyncCallbacks = {
     sendVarbit?: (player: PlayerState, varbitId: number, value: number) => void;
@@ -26,6 +27,7 @@ export function clearAutocastState(
     callbacks: AutocastSyncCallbacks = {},
 ): void {
     player.setCombatSpell(null);
+    player.combatAttributes.set(CombatAttributes.AUTOCAST_SPELL_ID, null);
     syncAutocastVarbit(player, VARBIT_AUTOCAST_SET, 0, callbacks);
     syncAutocastVarbit(player, VARBIT_AUTOCAST_SPELL, 0, callbacks);
     syncAutocastVarbit(player, VARBIT_AUTOCAST_DEFMODE, 0, callbacks);
@@ -39,7 +41,9 @@ export function applyAutocastState(
     isDefensive: boolean,
     callbacks: AutocastSyncCallbacks = {},
 ): void {
-    if (!(spellId > 0) || !(autocastIndex > 0)) {
+    const synchronizedAutocastIndex =
+        getAutocastIndexFromSpellId(spellId) ?? Math.trunc(autocastIndex);
+    if (!(spellId > 0) || !(synchronizedAutocastIndex > 0)) {
         clearAutocastState(player, callbacks);
         return;
     }
@@ -47,9 +51,15 @@ export function applyAutocastState(
     player.setCombatSpell(spellId);
     player.combat.autocastEnabled = true;
     player.combat.autocastMode = isDefensive ? "defensive_autocast" : "autocast";
+    player.combatAttributes.set(CombatAttributes.AUTOCAST_SPELL_ID, Math.trunc(spellId));
 
     syncAutocastVarbit(player, VARBIT_AUTOCAST_SET, 1, callbacks);
-    syncAutocastVarbit(player, VARBIT_AUTOCAST_SPELL, autocastIndex, callbacks);
+    syncAutocastVarbit(
+        player,
+        VARBIT_AUTOCAST_SPELL,
+        synchronizedAutocastIndex,
+        callbacks,
+    );
     syncAutocastVarbit(player, VARBIT_AUTOCAST_DEFMODE, isDefensive ? 1 : 0, callbacks);
     callbacks.queueCombatState?.(player);
 }

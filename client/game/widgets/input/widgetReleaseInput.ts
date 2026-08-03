@@ -1,9 +1,49 @@
 import { sendWidgetDrag } from "../../../network/ServerConnection";
 import type { ScriptEvent } from "../../../rs/cs2/Cs2Vm";
+import type { WidgetManager } from "../../../widgets/WidgetManager";
+import type { WidgetInteractionController } from "../WidgetInteractionController";
 import { resolveDynamicWidgetParentId } from "../widgetActionPayload";
 import type { WidgetInputControllerDeps, WidgetInputFrame } from "./widgetInputTypes";
-import type { WidgetInteractionController } from "../WidgetInteractionController";
-import type { WidgetManager } from "../../../widgets/WidgetManager";
+
+function resolveInventoryDropTargetSlot(
+    widgetManager: WidgetManager,
+    dragTarget: any,
+    mouseX: number,
+    mouseY: number,
+): number | undefined {
+    const targetSlotFromWidget = dragTarget?.childIndex;
+    const targetGroupId = dragTarget ? (dragTarget.uid >>> 16) & 0xffff : -1;
+    if (
+        typeof targetSlotFromWidget === "number" &&
+        targetGroupId === 149 &&
+        targetSlotFromWidget >= 0 &&
+        targetSlotFromWidget < 28
+    ) {
+        return targetSlotFromWidget | 0;
+    }
+
+    // Fallback for inventory layouts whose dynamic slot widget was not present
+    // in the drag hit result.
+    const inventoryContainer = widgetManager.getWidgetByUid(9764864); // 149 << 16
+    const firstSlot = inventoryContainer?.children?.[0];
+    if (
+        !inventoryContainer ||
+        !firstSlot ||
+        inventoryContainer._absX === undefined ||
+        inventoryContainer._absY === undefined
+    ) {
+        return undefined;
+    }
+
+    const gridOriginX = inventoryContainer._absX + (firstSlot.x || 0);
+    const gridOriginY = inventoryContainer._absY + (firstSlot.y || 0);
+    const col = Math.floor((mouseX - gridOriginX) / 42); // 36px slot + 6px gap
+    const row = Math.floor((mouseY - gridOriginY) / 36); // 32px slot + 4px gap
+    if (col < 0 || col >= 4 || row < 0 || row >= 7) {
+        return undefined;
+    }
+    return row * 4 + col;
+}
 
 export function processWidgetReleaseInput(
     deps: WidgetInputControllerDeps,
@@ -23,7 +63,8 @@ export function processWidgetReleaseInput(
             const dragTarget = widgetInteraction.draggedOnWidget;
             // Ensure clickedWidgetParent is resolved for final clamp/coords.
             if (!widgetInteraction.clickedWidgetParent) {
-                widgetInteraction.clickedWidgetParent = widgetInteraction.resolveClickedWidgetParent(w);
+                widgetInteraction.clickedWidgetParent =
+                    widgetInteraction.resolveClickedWidgetParent(w);
             }
             const renderArea = widgetInteraction.clickedWidgetParent;
             const hasExplicitDragParent = renderArea !== null;
@@ -72,72 +113,54 @@ export function processWidgetReleaseInput(
                 dragTarget,
             };
 
+            const sourceGroupId = (w.uid >>> 16) & 0xffff;
+            const sourceSlot = (w as any).childIndex ?? -1;
+            const inventoryTargetSlot =
+                sourceGroupId === 149 && sourceSlot >= 0
+                    ? resolveInventoryDropTargetSlot(widgetManager, dragTarget, mx, my)
+                    : undefined;
+
+            // Predict against the canonical client inventory before any drag-complete
+            // listener can invalidate or redraw the widget tree. The action bridge is
+            // told that the model mutation is already complete so it can publish the
+            // new slot contents to the render widgets without swapping the model twice.
+            if (inventoryTargetSlot !== undefined && inventoryTargetSlot !== sourceSlot) {
+                const itemCache = deps.getInventory();
+                const sourceEntry = itemCache.getSlot(sourceSlot);
+                if (sourceEntry && sourceEntry.itemId > 0) {
+                    const previousSnapshotSignature = itemCache.snapshotSignature();
+                    itemCache.swapSlots(sourceSlot, inventoryTargetSlot);
+                    deps.handleInventorySlotMove(
+                        sourceSlot,
+                        inventoryTargetSlot,
+                        true,
+                        previousSnapshotSignature,
+                    );
+                }
+            }
+
             if (w.eventHandlers?.onDragComplete) {
                 deps.getCs2Vm().invokeEventHandler(w, "onDragComplete", dragCompleteCtx);
             } else if (w.onDragComplete) {
                 deps.executeScriptListener(w, w.onDragComplete, dragCompleteCtx);
             }
 
-            // Handle inventory slot drag-drop
-            // Check if source is an inventory slot (group 149)
-            const sourceGroupId = (w.uid >>> 16) & 0xffff;
-            const sourceSlot = (w as any).childIndex ?? -1;
+            // End the visual drag after the optimistic state mutation. This invalidates
+            // the dragged root with the slot model already in its predicted final state.
+            widgetInteraction.clearDragWidgetVisualState(w);
+            widgetInteraction.dragSourceWidget = null;
+            widgetInteraction.isDraggingWidget = false;
+            widgetInteraction.clickedWidget = null;
 
-            if (sourceGroupId === 149 && sourceSlot >= 0) {
-                // Prefer OSRS-style targeting via draggedOnWidget (destination slot widget).
-                const targetSlotFromWidget = (dragTarget as any)?.childIndex;
-                const targetGroupId = dragTarget ? (dragTarget.uid >>> 16) & 0xffff : -1;
-                if (
-                    typeof targetSlotFromWidget === "number" &&
-                    targetGroupId === 149 &&
-                    targetSlotFromWidget >= 0 &&
-                    targetSlotFromWidget < 28
-                ) {
-                    const targetSlot = targetSlotFromWidget | 0;
-                    if (targetSlot !== sourceSlot) {
-                        deps.handleInventorySlotMove(sourceSlot, targetSlot);
-                    }
-                } else {
-                    // Fallback: derive slot from mouse position (legacy behaviour, less accurate).
-                    const invContainer = widgetManager.getWidgetByUid(9764864); // 149 << 16
-                    const firstSlot = invContainer?.children?.[0];
-                    if (
-                        invContainer &&
-                        firstSlot &&
-                        invContainer._absX !== undefined &&
-                        invContainer._absY !== undefined
-                    ) {
-                        const gridOriginX = invContainer._absX + (firstSlot.x || 0);
-                        const gridOriginY = invContainer._absY + (firstSlot.y || 0);
-                        const relX = mx - gridOriginX;
-                        const relY = my - gridOriginY;
-                        const slotWidth = 42; // 36px slot + 6px gap
-                        const slotHeight = 36; // 32px slot + 4px gap
-                        const cols = 4;
-                        const rows = 7;
-
-                        const col = Math.floor(relX / slotWidth);
-                        const row = Math.floor(relY / slotHeight);
-
-                        if (col >= 0 && col < cols && row >= 0 && row < rows) {
-                            const targetSlot = row * cols + col;
-                            if (
-                                targetSlot !== sourceSlot &&
-                                targetSlot >= 0 &&
-                                targetSlot < 28
-                            ) {
-                                deps.handleInventorySlotMove(sourceSlot, targetSlot);
-                            }
-                        }
-                    }
-                }
-            } else if (dragTarget != null) {
+            if (sourceGroupId !== 149 && dragTarget != null) {
                 // Non-inventory drag-drop - send IF_BUTTOND packet
                 // For dynamically created children (fileId === -1),
                 // send the PARENT container's UID, not the child's own UID.
                 // The childIndex is the slot within the container.
                 const resolvedSourceParent =
-                    (w as any).fileId === -1 ? resolveDynamicWidgetParentId(widgetManager, w) : undefined;
+                    (w as any).fileId === -1
+                        ? resolveDynamicWidgetParentId(widgetManager, w)
+                        : undefined;
                 const resolvedTargetParent =
                     (dragTarget as any).fileId === -1
                         ? resolveDynamicWidgetParentId(widgetManager, dragTarget)
@@ -167,27 +190,23 @@ export function processWidgetReleaseInput(
             // Clear deferred action - drag completed so we don't want the "Use" action
             widgetInteraction.deferredWidgetAction = null;
 
-            widgetInteraction.dragSourceWidget = null; // Clear legacy tracker
-            widgetInteraction.isDraggingWidget = false;
             widgetInteraction.draggedOnWidget = null;
             widgetInteraction.clickedWidgetParent = null;
             delete widgetInteraction.dragRenderAreaAbsX;
             delete widgetInteraction.dragRenderAreaAbsY;
-            if ((w as any)._dragPickupOffsetX !== undefined)
-                delete (w as any)._dragPickupOffsetX;
-            if ((w as any)._dragPickupOffsetY !== undefined)
-                delete (w as any)._dragPickupOffsetY;
-            // Clear drag visual state
-            delete (w as any)._dragVisualX;
-            delete (w as any)._dragVisualY;
-            delete (w as any)._dragAbsX;
-            delete (w as any)._dragAbsY;
-            delete (w as any)._isDragActive;
         } else {
             // Mouse button released without dragging - fire onClick (for draggable widgets) and onRelease
             const releaseCtx: Partial<ScriptEvent> = {
-                mouseX: mx - (widgetInteraction.clickedWidget._absX ?? widgetInteraction.clickedWidget.x ?? 0),
-                mouseY: my - (widgetInteraction.clickedWidget._absY ?? widgetInteraction.clickedWidget.y ?? 0),
+                mouseX:
+                    mx -
+                    (widgetInteraction.clickedWidget._absX ??
+                        widgetInteraction.clickedWidget.x ??
+                        0),
+                mouseY:
+                    my -
+                    (widgetInteraction.clickedWidget._absY ??
+                        widgetInteraction.clickedWidget.y ??
+                        0),
                 opIndex: 1,
             };
 
@@ -212,7 +231,11 @@ export function processWidgetReleaseInput(
 
             // Fire onRelease
             if (widgetInteraction.clickedWidget.eventHandlers?.onRelease) {
-                deps.getCs2Vm().invokeEventHandler(widgetInteraction.clickedWidget, "onRelease", releaseCtx);
+                deps.getCs2Vm().invokeEventHandler(
+                    widgetInteraction.clickedWidget,
+                    "onRelease",
+                    releaseCtx,
+                );
             } else if (widgetInteraction.clickedWidget.onRelease) {
                 deps.executeScriptListener(
                     widgetInteraction.clickedWidget,

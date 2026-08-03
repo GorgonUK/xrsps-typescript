@@ -343,7 +343,29 @@ export class PlayerSkillSystem {
     applyHitpointsHeal(amount: number): { current: number; max: number } {
         if (!(amount > 0))
             return { current: this.status.hitpointsCurrent, max: this.getHitpointsMax() };
-        const target = Math.max(0, Math.floor(this.status.hitpointsCurrent + amount));
+        const current = this.status.hitpointsCurrent;
+        const base = Math.max(1, this.getSkill(SkillId.Hitpoints).baseLevel);
+        const target = Math.max(current, Math.min(base, Math.floor(current + amount)));
+        this.setHitpointsCurrent(target);
+        return { current: this.status.hitpointsCurrent, max: this.getHitpointsMax() };
+    }
+
+    /**
+     * Applies healing that is explicitly allowed to exceed base Hitpoints.
+     * The supplied cap prevents repeated consumption from stacking an
+     * overheal beyond the content-defined maximum.
+     */
+    applyHitpointsOverheal(
+        amount: number,
+        maximumHitpoints: number,
+    ): { current: number; max: number } {
+        if (!(amount > 0))
+            return { current: this.status.hitpointsCurrent, max: this.getHitpointsMax() };
+
+        const current = this.status.hitpointsCurrent;
+        const base = Math.max(1, this.getSkill(SkillId.Hitpoints).baseLevel);
+        const cap = Math.max(base, Math.min(MAX_TEMP_HITPOINT_LEVEL, Math.floor(maximumHitpoints)));
+        const target = Math.max(current, Math.min(cap, Math.floor(current + amount)));
         if (target > this.getHitpointsMax()) {
             this.ensureHitpointsTempMax(target);
         }

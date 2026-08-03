@@ -42,6 +42,7 @@ type FoodDef = {
     label?: string;
     option?: string;
     profile?: ConsumableProfile;
+    canOverheal?: boolean;
     nextItemId?: number;
     messages?: string[];
 };
@@ -73,7 +74,13 @@ const FOOD_DEFS: FoodDef[] = [
     { itemId: 385, heal: 20, label: "shark" },
     { itemId: 391, heal: 21, label: "manta ray" },
     { itemId: 11936, heal: 22, label: "dark crab" },
-    { itemId: 13441, heal: 0, healResolver: computeAnglerfishHeal, label: "anglerfish" },
+    {
+        itemId: 13441,
+        heal: 0,
+        healResolver: computeAnglerfishHeal,
+        label: "anglerfish",
+        canOverheal: true,
+    },
     { itemId: 2140, heal: 4, label: "cooked chicken" },
     { itemId: 2142, heal: 4, label: "cooked meat" },
     { itemId: 2309, heal: 5, label: "bread" },
@@ -772,7 +779,18 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
                     onExecute: () => {
                         const healAmount = resolveHeal(def, player);
                         if (healAmount > 0) {
-                            player.skillSystem.applyHitpointsHeal(healAmount);
+                            if (def.canOverheal) {
+                                const baseHitpoints = Math.max(
+                                    1,
+                                    player.skillSystem.getSkill(SkillId.Hitpoints).baseLevel,
+                                );
+                                player.skillSystem.applyHitpointsOverheal(
+                                    healAmount,
+                                    baseHitpoints + healAmount,
+                                );
+                            } else {
+                                player.skillSystem.applyHitpointsHeal(healAmount);
+                            }
                         }
                         if (def.nextItemId !== undefined) {
                             setInventorySlot(player, slot, def.nextItemId, 1);

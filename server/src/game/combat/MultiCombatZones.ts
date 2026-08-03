@@ -350,7 +350,7 @@ export class MultiCombatSystem {
      * Check if actor is in multi-combat zone
      */
     actorInMultiCombat(actor: Actor): boolean {
-        return this.isMultiCombat(actor.x, actor.y, actor.level);
+        return this.isMultiCombat(actor.tileX, actor.tileY, actor.level);
     }
 
     /**
