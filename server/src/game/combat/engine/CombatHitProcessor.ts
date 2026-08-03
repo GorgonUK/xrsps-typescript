@@ -14,6 +14,7 @@ import {
     resolveMagicCastSpotAnimHeight,
 } from "../../spells/SpellDataProvider";
 import { AttackType } from "../AttackType";
+import { type EnchantedBoltEffect, getEnchantedBoltEffect } from "../AmmoSystem";
 import { DamageType, damageTracker } from "../DamageTracker";
 import { multiCombatSystem } from "../MultiCombatZones";
 import { getNpcPoisonConfig, hasVenomImmunityEquipment } from "../PoisonVenomSystem";
@@ -36,6 +37,7 @@ import {
 } from "../plugins/WeaponCombatProfile";
 import {
     clearWeaponSpecialAttackTraitOverrides,
+    setWeaponSpecialAttackAttacker,
     getWeaponSpecialAttackTraitOverrides,
     markWeaponSpecialAttackExecuted,
     wasWeaponSpecialAttackExecuted,
@@ -48,6 +50,7 @@ import {
     takeDueAncientGodswordBloodSacrifices,
 } from "../plugins/special-attacks/AncientGodswordSpec";
 import { CombatAttributes } from "../state/CombatAttributes";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import {
     type CombatHitEvaluation,
     type CombatHitEvaluator,
@@ -162,8 +165,13 @@ export class CombatHitProcessor {
                 processedAttacks++;
                 continue;
             }
-            const rawEvaluations = specialAttack
-                ? this.evaluator.evaluateSpecialAttack(attack, specialAttack)
+            const enchantedBoltEffect = this.rollEnchantedBoltEffect(attacker, attack, specialAttack);
+            const rollSpecial = this.applyEnchantedBoltRollModifiers(
+                specialAttack,
+                enchantedBoltEffect,
+            );
+            const rawEvaluations = rollSpecial
+                ? this.evaluator.evaluateSpecialAttack(attack, rollSpecial)
                 : [this.evaluator.evaluate(attack)];
             if (rawEvaluations.some((evaluation) => !evaluation.valid)) {
                 rejectedAttacks++;
@@ -195,6 +203,7 @@ export class CombatHitProcessor {
                     attackType: specialAttack?.damageType ?? attack.traits.type,
                     revealClock: clock + travelDelayTicks,
                     profileId: profile.id,
+                    enchantedBoltEffect,
                 });
 
                 this.invokePlugin(profile.id, "onHitEvaluated", () =>
@@ -403,6 +412,7 @@ export class CombatHitProcessor {
         const weaponId = context.attack.traits.weaponId;
         const script = weaponId === undefined ? undefined : SpecialAttackContainer.get(weaponId);
         clearWeaponSpecialAttackTraitOverrides(context.attack);
+        setWeaponSpecialAttackAttacker(context.attack, player);
 
         let profileSpecial: WeaponSpecialAttack | null = null;
         if (profile.handleSpecialAttack) {
@@ -498,6 +508,9 @@ export class CombatHitProcessor {
                 overrides?.minimumDamageMultiplier ?? profileSpecial?.minimumDamageMultiplier,
             maximumDamageMultiplier:
                 overrides?.maximumDamageMultiplier ?? profileSpecial?.maximumDamageMultiplier,
+            enchantedBoltEffectChanceMultiplier:
+                overrides?.enchantedBoltEffectChanceMultiplier ??
+                profileSpecial?.enchantedBoltEffectChanceMultiplier,
             skipAttack: overrides?.skipAttack ?? profileSpecial?.skipAttack,
         });
     }
@@ -739,6 +752,7 @@ export class CombatHitProcessor {
 
     private onHitApplied(hit: AppliedCombatHit, frame: TickFrame): void {
         this.playImpactVisuals(hit);
+        this.applyEnchantedBoltEffect(hit);
         this.applyAncientGodswordBloodSacrificeHeal(hit);
         this.applyWeaponSpecialAttackScript(hit);
         this.applyToxicBlowpipeVenom(hit);
@@ -766,20 +780,75 @@ export class CombatHitProcessor {
         target: CombatEntity,
         source: CombatEntity | undefined,
     ): number {
-        void source;
-        if (pending.attackType !== AttackType.Melee || !(target instanceof PlayerState)) {
-            return pending.damage;
-        }
+        let damage = pending.damage;
         if (
-            pending.revealClock >=
-            target.combatAttributes.get(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK)
+            pending.attackType === AttackType.Melee &&
+            target instanceof PlayerState &&
+            pending.revealClock < target.combatAttributes.get(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK)
         ) {
-            return pending.damage;
+            const weaponId = target.appearance.equip[EquipmentSlot.WEAPON] ?? -1;
+            if (POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId)) damage = Math.max(0, Math.floor(damage * 0.5));
         }
-        const weaponId = target.appearance.equip[EquipmentSlot.WEAPON] ?? -1;
-        if (!POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId)) return pending.damage;
 
-        return Math.max(0, Math.floor(pending.damage * 0.5));
+        const effect = pending.enchantedBoltEffect;
+        if (!effect || !pending.landed || !source) return damage;
+        if (effect.effectType === "hp_drain") {
+            const currentHitpoints = target instanceof PlayerState
+                ? target.skillSystem.getHitpointsCurrent()
+                : target.getHitpoints();
+            return Math.min(100, Math.max(0, Math.floor(currentHitpoints * Math.max(0, effect.damageMultiplier ?? 0))));
+        }
+        if (effect.effectType === "lightning" && source instanceof PlayerState) {
+            const ranged = source.skillSystem.getSkill(SkillId.Ranged);
+            const visibleRangedLevel = Math.max(0, ranged.baseLevel + ranged.boost);
+            damage += Math.floor(visibleRangedLevel * 0.1);
+        }
+        return Math.max(0, Math.floor(damage + (effect.flatDamageBonus ?? 0)));
+    }
+
+    /** Rolls once at fire time, so delayed impacts retain the fired ammunition's effect. */
+    private rollEnchantedBoltEffect(attacker: CombatEntity, attack: CombatAttack, specialAttack: WeaponSpecialAttack | undefined): EnchantedBoltEffect | undefined {
+        if (!(attacker instanceof PlayerState) || attack.traits.type !== AttackType.Ranged) return undefined;
+        const ammoId = attacker.appearance.equip[EquipmentSlot.AMMO] ?? -1;
+        const effect = getEnchantedBoltEffect(ammoId);
+        if (!effect) return undefined;
+        const specialMultiplier = Math.max(0, specialAttack?.enchantedBoltEffectChanceMultiplier ?? 1);
+        return Math.random() < Math.min(1, effect.activationChance * specialMultiplier) ? effect : undefined;
+    }
+
+    /** Applies pre-hit bolt rules, including diamond bolts' defence bypass. */
+    private applyEnchantedBoltRollModifiers(specialAttack: WeaponSpecialAttack | undefined, effect: EnchantedBoltEffect | undefined): WeaponSpecialAttack | undefined {
+        if (!effect) return specialAttack;
+        const base: WeaponSpecialAttack = specialAttack ?? { energyCostPercent: 0, hitCount: 1, accuracyMultiplier: 1, damageMultiplier: 1 };
+        return Object.freeze({
+            ...base,
+            guaranteedHit: effect.effectType === "defense_drain" ? true : base.guaranteedHit,
+            damageMultiplier: Math.max(0, base.damageMultiplier * (effect.effectType === "hp_drain" ? 1 : (effect.damageMultiplier ?? 1))),
+        });
+    }
+
+    private applyEnchantedBoltEffect(hit: AppliedCombatHit): void {
+        const effect = hit.pending.enchantedBoltEffect;
+        const attacker = hit.source;
+        if (!effect || !attacker || !hit.pending.landed) return;
+        if (effect.graphicId !== undefined) this.enqueueGraphic(hit.target, { id: effect.graphicId }, hit.appliedClock);
+        if (effect.effectType === "poison" && hit.amount > 0) {
+            if (hit.target instanceof PlayerState) hit.target.skillSystem.inflictPoison(5, hit.appliedClock);
+            else hit.target.inflictPoison(5, hit.appliedClock);
+        }
+        if (effect.effectType === "magic_drain" && hit.target instanceof PlayerState && hit.amount > 0) {
+            const magic = hit.target.skillSystem.getSkill(SkillId.Magic);
+            hit.target.skillSystem.setSkillBoost(SkillId.Magic, Math.max(0, magic.baseLevel + magic.boost - hit.amount));
+        }
+        if (effect.effectType === "life_leech" && attacker instanceof PlayerState && hit.amount > 0) {
+            attacker.skillSystem.applyHitpointsHeal(Math.floor(hit.amount * Math.max(0, effect.leechPercent ?? 0)));
+        }
+        if (effect.effectType === "hp_drain" && attacker instanceof PlayerState && hit.amount > 0) {
+            const selfDamage = Math.floor(
+                attacker.skillSystem.getHitpointsCurrent() * Math.max(0, effect.selfDamagePercent ?? 0),
+            );
+            if (selfDamage > 0) attacker.skillSystem.applyHitpointsDamage(selfDamage);
+        }
     }
 
     private applyWeaponSpecialAttackScript(hit: AppliedCombatHit): void {

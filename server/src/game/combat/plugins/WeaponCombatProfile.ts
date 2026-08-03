@@ -42,6 +42,7 @@ export interface WeaponSpecialAttack extends WeaponSpecialAttackTraitOverrides {
     readonly damageMultiplier: number;
     /** A utility special that consumes energy without producing an attack roll. */
     readonly skipAttack?: boolean;
+    readonly enchantedBoltEffectChanceMultiplier?: number;
     /** Replaces the standard max hit before damageMultiplier is applied. */
     readonly maxHitOverride?: number;
     /** Number of copies of the weapon projectile to render for this attack. */

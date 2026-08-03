@@ -27,6 +27,8 @@ export interface WeaponSpecialAttackTraitOverrides {
     readonly visibleMagicMaximumHit?: number;
     readonly minimumDamageMultiplier?: number;
     readonly maximumDamageMultiplier?: number;
+    /** Multiplies an enchanted bolt's base activation chance for this shot. */
+    readonly enchantedBoltEffectChanceMultiplier?: number;
     /** Prevents the normal attack roll for utility-only special attacks. */
     readonly skipAttack?: boolean;
 }
@@ -66,6 +68,7 @@ export interface WeaponSpecialAttackScript {
 
 const attackTraitOverrides = new WeakMap<CombatAttack, WeaponSpecialAttackTraitOverrides>();
 const executedSpecialAttacks = new WeakSet<CombatAttack>();
+const specialAttackers = new WeakMap<CombatAttack, any>();
 
 /**
  * Records immutable roll overrides for one prepared attack. Repeated calls merge,
@@ -93,6 +96,16 @@ export function getWeaponSpecialAttackTraitOverrides(
 export function clearWeaponSpecialAttackTraitOverrides(attack: CombatAttack): void {
     attackTraitOverrides.delete(attack);
     executedSpecialAttacks.delete(attack);
+    specialAttackers.delete(attack);
+}
+
+/** Provides the live attacker while a script prepares dynamic roll overrides. */
+export function setWeaponSpecialAttackAttacker(attack: CombatAttack, attacker: any): void {
+    specialAttackers.set(attack, attacker);
+}
+
+export function getWeaponSpecialAttackAttacker(attack: CombatAttack): any | undefined {
+    return specialAttackers.get(attack);
 }
 
 export function markWeaponSpecialAttackExecuted(attack: CombatAttack): void {
