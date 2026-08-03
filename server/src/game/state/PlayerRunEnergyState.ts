@@ -26,6 +26,8 @@ export class PlayerRunEnergyState {
     private dirty: boolean = true;
     private staminaEffectExpiryTick: number = 0;
     private staminaDrainMultiplier: number = 1;
+    private drainPenaltyExpiryTick: number = 0;
+    private drainPenaltyMultiplier: number = 1;
     private remainder: number = 0;
     private _drainEnabled: boolean = true;
 
@@ -129,7 +131,28 @@ export class PlayerRunEnergyState {
 
     getRunEnergyDrainMultiplier(currentTick: number): number {
         this.tickStaminaEffect(currentTick);
-        return Math.max(0, Math.min(1, this.staminaDrainMultiplier));
+        this.tickDrainPenalty(currentTick);
+        return Math.max(0, this.staminaDrainMultiplier * this.drainPenaltyMultiplier);
+    }
+
+    applyRunEnergyDrainPenalty(
+        currentTick: number,
+        durationTicks: number,
+        drainMultiplier: number,
+    ): void {
+        const now = Math.max(0, Math.floor(currentTick));
+        const duration = Math.max(1, Math.floor(durationTicks));
+        this.drainPenaltyExpiryTick = Math.max(this.drainPenaltyExpiryTick, now + duration);
+        this.drainPenaltyMultiplier = Math.max(
+            this.drainPenaltyMultiplier,
+            Math.max(1, drainMultiplier),
+        );
+    }
+
+    private tickDrainPenalty(currentTick: number): void {
+        if (this.drainPenaltyExpiryTick === 0 || this.drainPenaltyExpiryTick > currentTick) return;
+        this.drainPenaltyExpiryTick = 0;
+        this.drainPenaltyMultiplier = 1;
     }
 
     // ------------------------------------------------------------------

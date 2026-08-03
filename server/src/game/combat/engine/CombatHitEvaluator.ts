@@ -447,6 +447,12 @@ export class CombatHitEvaluator {
                         : meleeBonusIndex === 2
                           ? profile.defenceCrush
                           : profile.defenceSlash;
+            if (attack.traits.type === AttackType.Magic) {
+                return {
+                    effectiveDefence,
+                    defenceBonus: this.resolveMagicDefenceBonus(target, defenceBonus),
+                };
+            }
             return { effectiveDefence, defenceBonus: this.clampBonus(defenceBonus) };
         }
 
@@ -468,7 +474,10 @@ export class CombatHitEvaluator {
                 effectiveDefence:
                     Math.floor(prayedMagic * 0.7 + (prayedDefence + stance.defence) * 0.3) +
                     PLAYER_EFFECTIVE_LEVEL_BONUS,
-                defenceBonus: this.bonusAt(bonuses, MAGIC_DEFENCE_BONUS_INDEX),
+                defenceBonus: this.resolveMagicDefenceBonus(
+                    target,
+                    this.bonusAt(bonuses, MAGIC_DEFENCE_BONUS_INDEX),
+                ),
             };
         }
 
@@ -484,6 +493,20 @@ export class CombatHitEvaluator {
             ),
             defenceBonus: this.bonusAt(bonuses, defenceBonusIndex),
         };
+    }
+
+    private resolveMagicDefenceBonus(target: CombatEntity, baseBonus: number): number {
+        const base = this.clampBonus(baseBonus);
+        const drain = Math.max(
+            0,
+            Math.floor(target.combatAttributes.get(CombatAttributes.MAGIC_DEFENCE_BONUS_DRAIN)),
+        );
+        const drainableBonus = Math.max(0, base - drain);
+        target.combatAttributes.set(
+            CombatAttributes.MAGIC_DEFENCE_BONUS_CURRENT,
+            drainableBonus,
+        );
+        return drain > 0 ? drainableBonus : base;
     }
 
     private calculatePlayerMagicMaxHit(

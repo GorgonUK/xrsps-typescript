@@ -407,6 +407,7 @@ export class TickPhaseService {
                     );
                 }
             }
+            player.prayer.advancePrayerLocks();
             this.getPrayerDrainProcessor().processPlayer(player);
         }
 

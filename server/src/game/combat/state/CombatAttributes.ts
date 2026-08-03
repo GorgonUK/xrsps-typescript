@@ -23,6 +23,21 @@ export const CombatAttributes = Object.freeze({
         () => OverheadType.NONE,
     ),
     PRAYER_POINTS_CURRENT: combatAttribute<number>("combat.prayer_points_current", () => 0),
+    /** Accumulated Magic-Defence bonus removed by combat effects such as Soul Rend. */
+    MAGIC_DEFENCE_BONUS_DRAIN: combatAttribute<number>(
+        "combat.magic_defence_bonus_drain",
+        () => 0,
+    ),
+    /** Effective Magic-Defence bonus used by the most recent Magic hit roll. */
+    MAGIC_DEFENCE_BONUS_CURRENT: combatAttribute<number>(
+        "combat.magic_defence_bonus_current",
+        () => 0,
+    ),
+    /** Absolute expiry clock for the Staff of the dead Power of Death effect. */
+    POWER_OF_DEATH_UNTIL_CLOCK: combatAttribute<number>(
+        "combat.power_of_death_until_clock",
+        () => 0,
+    ),
     LAST_ATTACK_CLOCK: combatAttribute<number>("combat.last_attack_clock", () => 0),
     LAST_COMBAT_CLOCK: combatAttribute<number>("combat.last_combat_clock", () => 0),
     LAST_PVP_COMBAT_CLOCK: combatAttribute<number>("combat.last_pvp_combat_clock", () => 0),

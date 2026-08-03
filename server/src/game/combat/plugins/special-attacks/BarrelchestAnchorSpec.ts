@@ -7,36 +7,39 @@ import {
     setWeaponSpecialAttackTraitOverrides,
 } from "../WeaponSpecialAttackScript";
 
-const BANDOS_GODSWORD_ITEM_ID = 11804;
-const BANDOS_GODSWORD_ENERGY_COST = 50;
-
+const BARRELCHEST_ANCHOR_ITEM_ID = 10887;
+const SUNDER_ENERGY_COST = 50;
+const SUNDER_ACCURACY_MULTIPLIER = 2;
+const SUNDER_DAMAGE_MULTIPLIER = 1.1;
+const SUNDER_DRAIN_FRACTION = 0.1;
 const PLAYER_DRAIN_ORDER = Object.freeze([
     SkillId.Defence,
-    SkillId.Strength,
-    SkillId.Prayer,
     SkillId.Attack,
-    SkillId.Magic,
     SkillId.Ranged,
+    SkillId.Magic,
 ]);
-
-const NPC_DRAIN_ORDER: ReadonlyArray<NpcCombatStat | undefined> = Object.freeze([
+const NPC_DRAIN_ORDER: readonly NpcCombatStat[] = Object.freeze([
     "defence",
-    "strength",
-    undefined,
     "attack",
-    "magic",
     "ranged",
+    "magic",
 ]);
 
-export class BandosGodswordSpec implements WeaponSpecialAttackScript {
-    readonly itemId = BANDOS_GODSWORD_ITEM_ID;
-    readonly energyCost = BANDOS_GODSWORD_ENERGY_COST;
+/**
+ * Sunder doubles accuracy, increases maximum damage by 10%, then drains 10%
+ * of the rolled damage in the order Defence, Attack, Ranged, Magic. The combat
+ * evaluator currently exposes the special-scaled prospective damage here; a
+ * pre-modifier damage-roll hook is needed for byte-exact OSRS drain rounding.
+ */
+export class BarrelchestAnchorSpec implements WeaponSpecialAttackScript {
+    readonly itemId = BARRELCHEST_ANCHOR_ITEM_ID;
+    readonly energyCost = SUNDER_ENERGY_COST;
 
     modifyAttackTraits(attack: CombatAttack): void {
         setWeaponSpecialAttackTraitOverrides(attack, {
             hitCount: 1,
-            accuracyMultiplier: 2,
-            damageMultiplier: 1.21,
+            accuracyMultiplier: SUNDER_ACCURACY_MULTIPLIER,
+            damageMultiplier: SUNDER_DAMAGE_MULTIPLIER,
         });
     }
 
@@ -48,8 +51,10 @@ export class BandosGodswordSpec implements WeaponSpecialAttackScript {
     ): void {
         void attacker;
         void currentMapClock;
-
-        let remainingDrain = Math.max(0, Math.floor(damageCalculated));
+        let remainingDrain = Math.max(
+            0,
+            Math.floor(Math.floor(damageCalculated) * SUNDER_DRAIN_FRACTION),
+        );
         if (remainingDrain <= 0) return;
 
         if (target instanceof PlayerState) {
@@ -57,11 +62,10 @@ export class BandosGodswordSpec implements WeaponSpecialAttackScript {
                 if (remainingDrain <= 0) break;
                 const skill = target.skillSystem.getSkill(skillId);
                 const currentLevel = Math.max(0, Math.floor(skill.baseLevel + skill.boost));
-                const minimumLevel = skillId === SkillId.Prayer ? 0 : 1;
-                const amount = Math.min(remainingDrain, Math.max(0, currentLevel - minimumLevel));
-                if (amount <= 0) continue;
-                target.skillSystem.setSkillBoost(skillId, currentLevel - amount);
-                remainingDrain -= amount;
+                const drainAmount = Math.min(remainingDrain, Math.max(0, currentLevel - 1));
+                if (drainAmount <= 0) continue;
+                target.skillSystem.setSkillBoost(skillId, currentLevel - drainAmount);
+                remainingDrain -= drainAmount;
             }
             return;
         }
@@ -69,11 +73,10 @@ export class BandosGodswordSpec implements WeaponSpecialAttackScript {
         if (target instanceof NpcState) {
             for (const stat of NPC_DRAIN_ORDER) {
                 if (remainingDrain <= 0) break;
-                if (stat === undefined) continue;
                 remainingDrain -= target.drainCombatStat(stat, remainingDrain);
             }
         }
     }
 }
 
-export const BANDOS_GODSWORD_SPEC = Object.freeze(new BandosGodswordSpec());
+export const BARRELCHEST_ANCHOR_SPEC = Object.freeze(new BarrelchestAnchorSpec());
