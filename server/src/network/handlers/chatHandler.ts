@@ -635,7 +635,7 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                     return;
                 }
 
-                if (root === "devbank") {
+                if (root === "bank" || root === "devbank") {
                     const banking = services.getGamemodeServices().banking as
                         | BankingServices
                         | undefined;
@@ -648,7 +648,7 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                         return;
                     }
                     banking.openBank(sender, { mode: "bank" });
-                    logger.info(`[cmd] ::devbank - Opened bank for player ${sender.id}`);
+                    logger.info(`[cmd] ::${root} - Opened bank for player ${sender.id}`);
                     return;
                 }
 

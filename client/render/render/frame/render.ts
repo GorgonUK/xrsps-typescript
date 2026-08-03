@@ -205,6 +205,10 @@ export function render(host: WebGLOsrsRendererHost, time: number, deltaTime: num
                 const overlayScale = metrics.renderScaleX;
                 if (host.overheadTextOverlay) host.overheadTextOverlay.scale = overlayScale;
                 if (host.hitsplatOverlay) host.hitsplatOverlay.scale = overlayScale;
+                if (host.healthBarOverlay) {
+                    host.healthBarOverlay.scale =
+                        overlayScale * RENDER_CONSTANTS.HEALTH_BAR_VISUAL_SCALE;
+                }
                 if (host.clickCrossOverlay) host.clickCrossOverlay.scale = overlayScale;
                 if (host.groundItemOverlay) host.groundItemOverlay.scale = overlayScale;
                 (host.canvas as any).__uiRenderScale = overlayScale;
@@ -226,6 +230,10 @@ export function render(host: WebGLOsrsRendererHost, time: number, deltaTime: num
                 const overlayScale = metrics.renderScaleX;
                 if (host.overheadTextOverlay) host.overheadTextOverlay.scale = overlayScale;
                 if (host.hitsplatOverlay) host.hitsplatOverlay.scale = overlayScale;
+                if (host.healthBarOverlay) {
+                    host.healthBarOverlay.scale =
+                        overlayScale * RENDER_CONSTANTS.HEALTH_BAR_VISUAL_SCALE;
+                }
                 if (host.clickCrossOverlay) host.clickCrossOverlay.scale = overlayScale;
                 if (host.groundItemOverlay) host.groundItemOverlay.scale = overlayScale;
                 (host.canvas as any).__uiRenderScale = overlayScale;
@@ -869,7 +877,7 @@ export function render(host: WebGLOsrsRendererHost, time: number, deltaTime: num
                         entry.damage = state.hitSplatValues[slot] | 0;
                         entry.count = 1;
                         entry.color = undefined;
-                        entry.scale = 1.0;
+                        entry.scale = RENDER_CONSTANTS.HITSPLAT_PLAYER_SCALE;
                         entry.variant = slot & 3;
                         entry.style = state.hitSplatTypes[slot] | 0;
                         entry.type2 = state.hitSplatTypes2[slot] | 0;
@@ -1061,7 +1069,7 @@ export function render(host: WebGLOsrsRendererHost, time: number, deltaTime: num
                             entry.damage = state.hitSplatValues[slot] | 0;
                             entry.count = 1;
                             entry.color = undefined;
-                            entry.scale = 1.0;
+                            entry.scale = RENDER_CONSTANTS.HITSPLAT_PLAYER_SCALE;
                             entry.variant = slot & 3;
                             entry.style = state.hitSplatTypes[slot] | 0;
                             entry.type2 = state.hitSplatTypes2[slot] | 0;
@@ -1201,7 +1209,7 @@ export function render(host: WebGLOsrsRendererHost, time: number, deltaTime: num
                                 entry.damage = state.hitSplatValues[slot] | 0;
                                 entry.count = 1;
                                 entry.color = undefined;
-                                entry.scale = 1.0;
+                                entry.scale = RENDER_CONSTANTS.HITSPLAT_NPC_SCALE;
                                 entry.variant = slot & 3;
                                 entry.style = state.hitSplatTypes[slot] | 0;
                                 entry.type2 = state.hitSplatTypes2[slot] | 0;

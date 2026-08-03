@@ -962,7 +962,18 @@ export class InputManager {
         // widget onKey receives either an internal key code OR a typed character.
         // For typed characters: keyTyped = -1, keyPressed = charCode.
         // For key presses: keyTyped = osrsKeyCode, keyPressed = 0.
+        //
+        // Space is both a typed character (for chat/input) and OSRS key 83 (used by
+        // chatbox dialog continue scripts, e.g. script 55). Emit the key-press event
+        // first so onKey handlers see keyTyped=83, then the typed character.
         if (charCode >= 32) {
+            if (osrsKeyCode === 83) {
+                this.keyEvents.push({
+                    keyTyped: osrsKeyCode,
+                    keyPressed: 0,
+                    code: event.code,
+                });
+            }
             this.keyEvents.push({
                 keyTyped: -1,
                 keyPressed: charCode,

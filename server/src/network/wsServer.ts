@@ -855,7 +855,8 @@ export class WSServer {
             services: buildScriptServices(this.scriptAdapterDeps),
         });
         logger.info("[scripts] loaded", JSON.stringify({ modules: [] }));
-        bootstrapScripts(this.scriptRuntime, this.gamemode);
+        // bootstrapScripts runs after GatheringSystemManager is wired (see deferred init)
+        // so mining/WC/flax trackers can registerTracker successfully.
         if (opts.pathService) {
             this.players = new PlayerManager(
                 this.gamemode,
@@ -1149,6 +1150,9 @@ export class WSServer {
         this.scriptAdapterDeps.followerCombatManager = this.followerCombatManager;
         this.scriptAdapterDeps.inventoryActionHandler = this.inventoryActionHandler;
         this.scriptAdapterDeps.effectDispatcher = this.effectDispatcher;
+
+        // Register gamemode/extrascripts now that deferred services (gathering, etc.) exist.
+        bootstrapScripts(this.scriptRuntime, this.gamemode);
 
         this.inventoryMessageService = new InventoryMessageService({
             getPlayer: (ws) => this.players?.get(ws),

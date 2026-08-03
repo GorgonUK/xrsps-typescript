@@ -361,6 +361,11 @@ export const RENDER_CONSTANTS = {
     MOBILE_GAMEPLAY_UI_PHONE_EDGE: 390,
     MOBILE_GAMEPLAY_UI_TABLET_EDGE: 768,
     PLAYER_FOOTPRINT_RADIUS: (0.4 * 128) | 0,
+    /** Base hitsplat sprite/text scale before UI/render scale multiply. */
+    HITSPLAT_PLAYER_SCALE: 0.975,
+    HITSPLAT_NPC_SCALE: 1.2025,
+    /** Extra multiplier for health bars (on top of UI/render scale). */
+    HEALTH_BAR_VISUAL_SCALE: 1.2,
     AMBIENT_SOUND_THROTTLE_FRAMES: 3,
     WALK_PHASE_BIAS: 0.0,
     RUN_PHASE_BIAS: 0.0,

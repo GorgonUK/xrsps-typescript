@@ -278,7 +278,7 @@ export interface ProductionServiceFacade {
     isSmithingModalOpen?: (player: PlayerState, groupId: number) => boolean;
     openSmithingBarModal?: (player: PlayerState) => void;
     getBarTypeByItemId?: (itemId: number) => number | undefined;
-    openForgeInterface?: (player: PlayerState) => void;
+    openForgeInterface?: (player: PlayerState, preferredBarItemId?: number) => void;
     openSmeltingInterface?: (player: PlayerState) => void;
     smeltBars?: (player: PlayerState, params: { recipeId: string; count: number }) => void;
     openSmithingInterface?: (player: PlayerState) => void;

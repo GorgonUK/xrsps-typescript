@@ -77,6 +77,9 @@ export class HealthBarOverlay implements Overlay {
     private gameCycle: number = 0;
     private actorStacks?: Map<number, number>;
 
+    /** UI/render scale × visual size multiplier. */
+    scale: number = 1.0;
+
     init(args: OverlayInitArgs): void {
         this.app = args.app;
         this.sceneUniforms = args.sceneUniforms;
@@ -264,6 +267,10 @@ export class HealthBarOverlay implements Overlay {
             this.stackOffsets.clear();
         }
         const gameCycle = this.gameCycle | 0;
+        const visualScale =
+            typeof this.scale === "number" && Number.isFinite(this.scale) && this.scale > 0
+                ? this.scale
+                : 1.0;
 
         for (const entry of entries) {
             const plane = entry.plane | 0;
@@ -339,11 +346,18 @@ export class HealthBarOverlay implements Overlay {
                     fill += pad;
                 }
 
-                var18 += back.h;
-                const y = -var18;
-                const x = -(usable >> 1) - pad;
+                const backW = back.w * visualScale;
+                const backH = back.h * visualScale;
+                const frontW = front.w * visualScale;
+                const padS = pad * visualScale;
+                const usableS = usable * visualScale;
+                const fillS = fill * visualScale;
 
-                this.writeQuad(x, y, back.w, back.h);
+                var18 += backH;
+                const y = -var18;
+                const x = -(usableS * 0.5) - padS;
+
+                this.writeQuad(x, y, backW, backH);
                 this.resetFullUvs();
                 this.tint[0] = this.tint[1] = this.tint[2] = 1.0;
                 this.tint[3] = alpha;
@@ -356,11 +370,11 @@ export class HealthBarOverlay implements Overlay {
                     .texture("u_sprite", back.tex)
                     .draw();
 
-                if (fill > 0) {
+                if (fillS > 0) {
                     // The fill is the front sprite clipped to the back sprite's height.
-                    const clipH = Math.min(front.h, back.h);
-                    this.writeQuad(x, y, fill, clipH);
-                    this.updateFillUvs(fill / front.w, clipH / front.h);
+                    const clipH = Math.min(front.h, back.h) * visualScale;
+                    this.writeQuad(x, y, fillS, clipH);
+                    this.updateFillUvs(fill / front.w, clipH / (front.h * visualScale));
                     this.positions.data(this.quadVerts);
                     this.uvs.data(this.quadUvs);
                     this.drawCall
@@ -371,17 +385,20 @@ export class HealthBarOverlay implements Overlay {
                         .draw();
                 }
                 this.resetFullUvs();
-                var18 += 2;
+                var18 += 2 * visualScale;
             } else {
                 // Sprite-less bars draw an opaque 5px green fill with red remainder.
                 fill = Math.max(0, Math.min(usable, fill));
-                var18 += 5;
+                const barH = 5 * visualScale;
+                const usableS = usable * visualScale;
+                const fillS = fill * visualScale;
+                var18 += barH;
                 const y = -var18;
-                const x = -(usable >> 1);
+                const x = -(usableS * 0.5);
                 const fallback = this.ensureFallbackTexture();
                 this.resetFullUvs();
-                if (fill > 0) {
-                    this.writeQuad(x, y, fill, 5);
+                if (fillS > 0) {
+                    this.writeQuad(x, y, fillS, barH);
                     this.tint[0] = 0;
                     this.tint[1] = 1;
                     this.tint[2] = 0;
@@ -395,8 +412,8 @@ export class HealthBarOverlay implements Overlay {
                         .texture("u_sprite", fallback.tex)
                         .draw();
                 }
-                if (fill < usable) {
-                    this.writeQuad(x + fill, y, usable - fill, 5);
+                if (fillS < usableS) {
+                    this.writeQuad(x + fillS, y, usableS - fillS, barH);
                     this.tint[0] = 1;
                     this.tint[1] = 0;
                     this.tint[2] = 0;
@@ -410,7 +427,7 @@ export class HealthBarOverlay implements Overlay {
                         .texture("u_sprite", fallback.tex)
                         .draw();
                 }
-                var18 += 2;
+                var18 += 2 * visualScale;
             }
 
             if (groupKey !== undefined) {

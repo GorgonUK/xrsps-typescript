@@ -67,8 +67,10 @@ export class ResourceNodeTracker<T = unknown> implements IResourceNodeTracker<T>
 }
 
 function randomInRange(min: number, max: number): number {
-    const clampedMin = Math.max(1, Math.floor(min));
-    const clampedMax = Math.max(clampedMin, Math.floor(max));
+    const safeMin = Number.isFinite(min) ? min : 1;
+    const safeMax = Number.isFinite(max) ? max : safeMin;
+    const clampedMin = Math.max(1, Math.floor(safeMin));
+    const clampedMax = Math.max(clampedMin, Math.floor(safeMax));
     if (clampedMax === clampedMin) return clampedMin;
     const span = clampedMax - clampedMin + 1;
     return clampedMin + Math.floor(Math.random() * span);

@@ -48,13 +48,23 @@ import { registerNpcDialogueHandlers } from "./npcs";
 import { getRegisteredQuests, registerQuestHandlers } from "./quests";
 import { registerVanillaCommandHandlers } from "./scripts/commands";
 import { registerAlKharidBorderHandlers } from "./scripts/content/alKharidBorder";
+import { registerDraynorAreaHandlers } from "./scripts/content/areas/draynor";
+import { registerFaladorAreaHandlers } from "./scripts/content/areas/falador";
+import { registerLumbridgeAreaHandlers } from "./scripts/content/areas/lumbridge";
+import { registerPortSarimAreaHandlers } from "./scripts/content/areas/portSarim";
+import { registerTaverleyAreaHandlers } from "./scripts/content/areas/taverley";
+import { registerVarrockAreaHandlers } from "./scripts/content/areas/varrock";
+import { registerWildernessAreaHandlers } from "./scripts/content/areas/wilderness";
+import { registerWizardTowerAreaHandlers } from "./scripts/content/areas/wizardTower";
 import { registerBobHandlers } from "./scripts/content/bob";
 import { registerClimbingHandlers } from "./scripts/content/climbing";
 import { registerDefaultTalkHandlers } from "./scripts/content/defaultTalk";
 import { registerDemoInteractionHandlers } from "./scripts/content/demoInteractions";
 import { registerDoorHandlers } from "./scripts/content/doors";
+import { registerKeyDoorHandlers } from "./scripts/content/keyDoors";
 import { registerPohPoolHandlers } from "./scripts/content/pohPools";
 import { registerRomeoHandlers } from "./scripts/content/romeo";
+import { registerBoatTravelHandlers } from "./scripts/content/travel/boats";
 import { registerWildernessAccessHandlers } from "./scripts/content/wildernessAccess";
 import { registerFollowerItemHandlers } from "./scripts/items/followers";
 import { registerPacksHandlers } from "./scripts/items/packs";
@@ -229,9 +239,20 @@ export class VanillaGamemode extends BaseGamemode {
 
         // Content
         registerClimbingHandlers(registry, services);
+        // Key doors before generic door open/close so locked locs win.
+        registerKeyDoorHandlers(registry);
         registerDoorHandlers(registry, services);
+        registerBoatTravelHandlers(registry);
         // Specific Talk-to scripts before the global fallback.
         registerNpcDialogueHandlers(registry);
+        registerLumbridgeAreaHandlers(registry);
+        registerWizardTowerAreaHandlers(registry);
+        registerFaladorAreaHandlers(registry);
+        registerVarrockAreaHandlers(registry);
+        registerPortSarimAreaHandlers(registry);
+        registerDraynorAreaHandlers(registry);
+        registerTaverleyAreaHandlers(registry);
+        registerWildernessAreaHandlers(registry);
         registerDefaultTalkHandlers(registry, services);
         registerPohPoolHandlers(registry, services);
         registerWildernessAccessHandlers(registry, services);

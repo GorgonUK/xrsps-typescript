@@ -20,6 +20,9 @@ export function exportPersistentVars(player: PlayerState): PlayerPersistentVars 
     }
     const accountSnapshot = player.account.serialize();
     snapshot.accountStage = accountSnapshot.accountStage;
+    if (accountSnapshot.preferredMode) {
+        snapshot.preferredMode = accountSnapshot.preferredMode;
+    }
     if (player.appearance) {
         snapshot.appearance = {
             gender: player.appearance.gender,
@@ -117,6 +120,7 @@ export function applyPersistentVars(player: PlayerState, state?: PlayerPersisten
         accountStage: state.accountStage,
         accountCreationTimeMs: state.accountCreationTimeMs,
         playTimeSeconds: state.playTimeSeconds,
+        preferredMode: state.preferredMode,
     });
     if (state.appearance) {
         if (state.appearance.gender !== undefined) {

@@ -7,6 +7,7 @@ import {
     type LocInteractionEvent,
     type ScriptServices,
 } from "../../../../src/game/scripts/types";
+import { findTraversalOverride } from "./traversal";
 
 // ---------------------------------------------------------------------------
 // OSRS Loc Traversal System
@@ -17,11 +18,12 @@ import {
 // Resolution layers (checked in order by ScriptRegistry.findLocInteraction):
 //   1. Per-loc overrides   – registerLocInteraction(locId, handler)
 //      Use for quest-gated, skill-gated, or otherwise special-case locs.
-//   2. Intermap link table – loaded from server/data/intermap-links.json
+//   2. Coord exception table – traversal/ (cellars, crypts, special ladders)
+//   3. Intermap link table – loaded from server/data/intermap-links.json
 //      Parsed from CS2 script 1705. Covers all world map traversals
 //      (trapdoors, ladders, stairs, dungeons) via proximity tile lookup.
 //      Destinations are resolved to walkable adjacent tiles on first use.
-//   3. Generic defaults    – registerLocAction("climb-up" | "climb-down" | ...)
+//   4. Generic defaults    – registerLocAction("climb-up" | "climb-down" | ...)
 //      Handles simple stairs/ladders: same tile, plane +/- 1.
 // ---------------------------------------------------------------------------
 
@@ -283,11 +285,25 @@ function resolveDestination(
 ): TraversalDestination | null {
     ensureResolved(event.services);
 
-    // 1. Check intermap link table (CS2 script 1705) by proximity to loc tile
+    // 1. Coord-keyed exceptions (cellars, crypts, special ladders)
+    const exception = findTraversalOverride(
+        event.tile.x,
+        event.tile.y,
+        event.level,
+        defaultLevelOffset,
+    );
+    if (exception) {
+        if (exception.message) {
+            event.services.messaging.sendGameMessage(event.player, exception.message);
+        }
+        return { x: exception.to.x, y: exception.to.y, level: exception.to.level };
+    }
+
+    // 2. Check intermap link table (CS2 script 1705) by proximity to loc tile
     const link = intermapLinks.find(event.tile.x, event.tile.y, event.level);
     if (link) return link;
 
-    // 2. Fall back to plane offset
+    // 3. Fall back to plane offset
     const targetLevel = event.level + defaultLevelOffset;
     if (targetLevel < 0 || targetLevel > 3) return null;
 
@@ -577,6 +593,18 @@ export function registerClimbingHandlers(
 
     // ---- enter: dungeon entrances, cave entries, etc. ----
     registry.registerLocAction("enter", (event) => {
+        const exception = findTraversalOverride(event.tile.x, event.tile.y, event.level, -1);
+        if (exception) {
+            if (exception.message) {
+                event.services.messaging.sendGameMessage(event.player, exception.message);
+            }
+            executeTraversal(
+                event,
+                { x: exception.to.x, y: exception.to.y, level: exception.to.level },
+                "down",
+            );
+            return;
+        }
         ensureResolved(event.services);
         const link = intermapLinks.find(event.tile.x, event.tile.y, event.level);
         if (!link) {

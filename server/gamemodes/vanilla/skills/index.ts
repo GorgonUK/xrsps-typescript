@@ -1,4 +1,5 @@
 import type { IScriptRegistry, ScriptServices } from "../../../src/game/scripts/types";
+import { register as registerAgility } from "./agility/index";
 import { register as registerConsumables } from "./consumables/index";
 import { register as registerCrafting } from "./crafting/index";
 import { register as registerFiremaking } from "./firemaking/index";
@@ -8,12 +9,15 @@ import { register as registerHerblore } from "./herblore/index";
 import { register as registerMining } from "./mining/index";
 import { register as registerPrayer } from "./prayer/index";
 import { register as registerProduction } from "./production/index";
+import { register as registerRunecrafting } from "./runecrafting/index";
 import { register as registerSailing } from "./sailing/index";
 import { register as registerSmithing } from "./smithing/index";
 import { register as registerThieving } from "./thieving/index";
 import { register as registerWoodcutting } from "./woodcutting/index";
 
 export function register(registry: IScriptRegistry, services: ScriptServices): void {
+    registerAgility(registry);
+    registerRunecrafting(registry);
     registerThieving(registry, services);
     registerHerblore(registry, services);
     registerPrayer(registry, services);
