@@ -14,6 +14,7 @@ import {
     resolvePlayerAttackReach,
     resolvePlayerAttackType,
 } from "../combat/CombatRules";
+import { AttackStyle, getAttackStyle } from "../combat/WeaponDataProvider";
 import { NpcState } from "../npc";
 import { PlayerState } from "../player";
 import type { PlayerRepository } from "./PlayerInteractionSystem";
@@ -375,6 +376,10 @@ export class NpcCombatInteractionHandler {
     }
 
     getPlayerAttackReach(player: PlayerState): number {
+        if (player.combat.weaponItemId === 12926) {
+            const style = getAttackStyle(12926, player.combat.styleSlot ?? 0);
+            return style === AttackStyle.LONGRANGE ? 7 : 5;
+        }
         return resolvePlayerAttackReach(player.combat);
     }
 

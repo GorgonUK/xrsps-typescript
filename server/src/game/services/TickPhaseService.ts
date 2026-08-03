@@ -942,7 +942,7 @@ export class TickPhaseService {
 
     private resolveCombatAttackTraits(
         attacker: CombatEntity,
-        _target: CombatEntity,
+        target: CombatEntity,
     ): CombatAttackTraits | null {
         if (attacker instanceof NpcState) {
             const type = attacker.getAttackType() ?? attacker.combat.attackType;
@@ -964,6 +964,15 @@ export class TickPhaseService {
         if (!service) return null;
         const type = service.deriveAttackTypeFromStyle(attacker.combat.styleSlot, attacker);
         const weaponId = attacker.combat.weaponItemId;
+        if (weaponId === 12924) {
+            attacker.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
+            this.svc.messagingService.queueChatMessage({
+                messageType: "game",
+                text: "You need to charge the toxic blowpipe before you can fire it.",
+                targetPlayerIds: [attacker.id],
+            });
+            return null;
+        }
         const spellId = attacker.combat.spellId;
         const style = this.resolvePlayerCombatAttackStyle(attacker);
         const autocastSpellId =
@@ -982,11 +991,16 @@ export class TickPhaseService {
                 autocast: true,
             };
         }
+        const baseSpeedTicks = Math.max(1, Math.trunc(service.pickAttackSpeed(attacker)));
+        const speedTicks =
+            weaponId === 12926 && target instanceof PlayerState
+                ? baseSpeedTicks + 1
+                : baseSpeedTicks;
         return {
             type,
             style,
             rangeTiles: Math.max(1, Math.trunc(service.getPlayerAttackReach(attacker))),
-            speedTicks: Math.max(1, Math.trunc(service.pickAttackSpeed(attacker))),
+            speedTicks,
             weaponId: weaponId > 0 ? weaponId : undefined,
             spellId: type === AttackType.Magic && spellId > 0 ? spellId : undefined,
             specialAttack: attacker.specEnergy.isActivated(),

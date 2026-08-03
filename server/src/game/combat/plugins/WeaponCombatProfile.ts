@@ -2,6 +2,7 @@ import type { CombatHitEvaluation } from "../engine/CombatHitEvaluator";
 import type { CombatEntity } from "../engine/CombatTargetResolver";
 import type { AppliedCombatHit } from "../engine/DeferredHitQueue";
 import type { CombatAttack } from "../model/CombatAttack";
+import type { WeaponSpecialAttackTraitOverrides } from "./WeaponSpecialAttackScript";
 
 export interface WeaponProjectileProfile {
     readonly id: number;
@@ -32,14 +33,21 @@ export const SpecialAttackTiming = Object.freeze({
     Instant: "instant",
 } as const);
 
-export type SpecialAttackTiming =
-    (typeof SpecialAttackTiming)[keyof typeof SpecialAttackTiming];
+export type SpecialAttackTiming = (typeof SpecialAttackTiming)[keyof typeof SpecialAttackTiming];
 
-export interface WeaponSpecialAttack {
+export interface WeaponSpecialAttack extends WeaponSpecialAttackTraitOverrides {
     readonly energyCostPercent: number;
     readonly hitCount: number;
     readonly accuracyMultiplier: number;
     readonly damageMultiplier: number;
+    /** A utility special that consumes energy without producing an attack roll. */
+    readonly skipAttack?: boolean;
+    /** Replaces the standard max hit before damageMultiplier is applied. */
+    readonly maxHitOverride?: number;
+    /** Number of copies of the weapon projectile to render for this attack. */
+    readonly projectileCount?: number;
+    /** Release delay for each projectile copy, measured from the animation start. */
+    readonly projectileReleaseDelaysTicks?: readonly number[];
     readonly attackAnimation?: number;
     readonly castGraphic?: WeaponGraphicProfile;
     readonly attackSoundId?: number;

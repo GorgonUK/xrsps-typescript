@@ -1,10 +1,6 @@
 import { CombatAttackStyle } from "../model/CombatAttack";
-import {
-    SpecialAttackTiming,
-    type WeaponCombatContext,
-    type WeaponCombatProfile,
-    type WeaponSpecialAttack,
-} from "./WeaponCombatProfile";
+import { type WeaponCombatContext, type WeaponCombatProfile } from "./WeaponCombatProfile";
+import { CORE_SPECIAL_ATTACK_PROFILES } from "./special-attacks";
 
 export { ANCIENT_AUTOCAST_STAFF_IDS, MagicStaffValidator } from "./MagicStaffValidator";
 
@@ -43,42 +39,6 @@ const DEFAULT_SHORTBOW_PROFILE: WeaponCombatProfile = Object.freeze({
         steepness: 64,
         lifeModel: "linear5-clamped10",
     }),
-});
-
-const DRAGON_DAGGER_SPECIAL: WeaponSpecialAttack = Object.freeze({
-    energyCostPercent: 25,
-    hitCount: 2,
-    accuracyMultiplier: 1.15,
-    damageMultiplier: 1.15,
-    attackAnimation: 1062,
-    castGraphic: Object.freeze({ id: 252 }),
-    attackSoundId: 2537,
-});
-
-const DEFAULT_DRAGON_DAGGER_PROFILE: WeaponCombatProfile = Object.freeze({
-    id: "core:dragon_dagger",
-    itemIds: Object.freeze([1215, 1231, 5680, 5698, 20407]),
-    specialAttackEnergyCost: DRAGON_DAGGER_SPECIAL.energyCostPercent,
-    specialAttackTiming: SpecialAttackTiming.Standard,
-    handleSpecialAttack: () => DRAGON_DAGGER_SPECIAL,
-});
-
-const GRANITE_MAUL_SPECIAL: WeaponSpecialAttack = Object.freeze({
-    energyCostPercent: 50,
-    hitCount: 1,
-    accuracyMultiplier: 1,
-    damageMultiplier: 1,
-    attackAnimation: 1667,
-    castGraphic: Object.freeze({ id: 340 }),
-    attackSoundId: 2715,
-});
-
-const DEFAULT_GRANITE_MAUL_PROFILE: WeaponCombatProfile = Object.freeze({
-    id: "core:granite_maul",
-    itemIds: Object.freeze([4153, 12848, 24225]),
-    specialAttackEnergyCost: GRANITE_MAUL_SPECIAL.energyCostPercent,
-    specialAttackTiming: SpecialAttackTiming.Instant,
-    handleSpecialAttack: () => GRANITE_MAUL_SPECIAL,
 });
 
 /**
@@ -184,8 +144,9 @@ export class CombatPluginRegistry {
         this.register(DEFAULT_UNARMED_PROFILE);
         this.register(DEFAULT_ABYSSAL_WHIP_PROFILE);
         this.register(DEFAULT_SHORTBOW_PROFILE);
-        this.register(DEFAULT_DRAGON_DAGGER_PROFILE);
-        this.register(DEFAULT_GRANITE_MAUL_PROFILE);
+        for (const profile of CORE_SPECIAL_ATTACK_PROFILES) {
+            this.register(profile);
+        }
     }
 
     private normalizeProfile(profile: WeaponCombatProfile, id: string): WeaponCombatProfile {
