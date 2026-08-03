@@ -2,6 +2,7 @@ import type { TickFrame } from "../../../network/wsServerTypes";
 import { NpcState } from "../../npc";
 import { PlayerState } from "../../player";
 import type { AttackType } from "../AttackType";
+import type { EnchantedBoltEffect } from "../AmmoSystem";
 import { combatEffectApplicator } from "../CombatEffectApplicator";
 import { HITMARK_BLOCK, HITMARK_DAMAGE, HITMARK_POISON } from "../HitEffects";
 import type { CombatAttack } from "../model/CombatAttack";
@@ -29,6 +30,8 @@ export interface PendingCombatHit {
     readonly attackType: AttackType;
     readonly revealClock: number;
     readonly profileId: string;
+    /** Enchanted bolt effect rolled when this projectile was fired. */
+    readonly enchantedBoltEffect?: EnchantedBoltEffect;
 }
 
 export type PendingCombatHitInput = Omit<PendingCombatHit, "id">;

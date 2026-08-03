@@ -8,8 +8,10 @@ import { SARADOMIN_GODSWORD_PROFILE } from "./SaradominGodswordSpec";
 export { ANCIENT_GODSWORD_SPEC, AncientGodswordSpec } from "./AncientGodswordSpec";
 export { ANCIENT_MACE_SPEC, AncientMaceSpec } from "./AncientMaceSpec";
 export { ABYSSAL_WHIP_SPEC, AbyssalWhipSpec } from "./AbyssalWhipSpec";
+export { ABYSSAL_BLUDGEON_SPEC, AbyssalBludgeonSpec } from "./AbyssalBludgeonSpec";
 export { ACCURSED_SCEPTRE_SPEC, AccursedSceptreSpec } from "./AccursedSceptreSpec";
 export { ARCLIGHT_SPEC, ArclightSpec } from "./ArclightSpec";
+export { ARMADYL_CROSSBOW_SPEC, ArmadylCrossbowSpec } from "./ArmadylCrossbowSpec";
 export { BANDOS_GODSWORD_SPEC, BandosGodswordSpec } from "./BandosGodswordSpec";
 export {
     BARRELCHEST_ANCHOR_SPEC,
