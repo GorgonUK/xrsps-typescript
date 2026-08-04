@@ -32,6 +32,7 @@ const YEW_LONGBOW = 855;
 const MAGIC_SHORTBOW = 861;
 const MAGIC_SHORTBOW_I = 12788;
 const MAGIC_LONGBOW = 859;
+const MAGIC_COMP_BOW = 10284;
 const DARK_BOW = 11235;
 const TWISTED_BOW = 20997;
 // Crystal bow variants (4212=new, 4214=full, 4215-4223=degraded 9/10 to 1/10)
@@ -68,7 +69,10 @@ const BOLT_RACKS = 4740;
 
 // Ballistae
 const LIGHT_BALLISTA = 19478;
+const LIGHT_BALLISTA_LMS = 27188;
 const HEAVY_BALLISTA = 19481;
+const HEAVY_BALLISTA_LMS = 23630;
+const HEAVY_BALLISTA_OR = 26712;
 
 // Thrown weapons (don't need ammo)
 const BRONZE_KNIFE = 864;
@@ -156,13 +160,38 @@ const ONYX_DRAGON_BOLTS_E = 21950;
 
 // Javelins
 const BRONZE_JAVELIN = 825;
+const BRONZE_JAVELIN_P = 831;
+const BRONZE_JAVELIN_P_PLUS = 5642;
+const BRONZE_JAVELIN_P_PLUS_PLUS = 5648;
 const IRON_JAVELIN = 826;
+const IRON_JAVELIN_P = 832;
+const IRON_JAVELIN_P_PLUS = 5643;
+const IRON_JAVELIN_P_PLUS_PLUS = 5649;
 const STEEL_JAVELIN = 827;
+const STEEL_JAVELIN_P = 833;
+const STEEL_JAVELIN_P_PLUS = 5644;
+const STEEL_JAVELIN_P_PLUS_PLUS = 5650;
 const MITHRIL_JAVELIN = 828;
+const MITHRIL_JAVELIN_P = 834;
+const MITHRIL_JAVELIN_P_PLUS = 5645;
+const MITHRIL_JAVELIN_P_PLUS_PLUS = 5651;
 const ADAMANT_JAVELIN = 829;
+const ADAMANT_JAVELIN_P = 835;
+const ADAMANT_JAVELIN_P_PLUS = 5646;
+const ADAMANT_JAVELIN_P_PLUS_PLUS = 5652;
 const RUNE_JAVELIN = 830;
+const RUNE_JAVELIN_P = 836;
+const RUNE_JAVELIN_P_PLUS = 5647;
+const RUNE_JAVELIN_P_PLUS_PLUS = 5653;
 const AMETHYST_JAVELIN = 21318;
+const AMETHYST_JAVELIN_P = 21320;
+const AMETHYST_JAVELIN_P_PLUS = 21322;
+const AMETHYST_JAVELIN_P_PLUS_PLUS = 21324;
 const DRAGON_JAVELIN = 19484;
+const DRAGON_JAVELIN_P = 19486;
+const DRAGON_JAVELIN_P_PLUS = 19488;
+const DRAGON_JAVELIN_P_PLUS_PLUS = 19490;
+const DRAGON_JAVELIN_LMS = 23648;
 
 // =============================================================================
 // Types
@@ -250,6 +279,7 @@ const BOW_WEAPONS = new Set([
     MAGIC_SHORTBOW,
     MAGIC_SHORTBOW_I,
     MAGIC_LONGBOW,
+    MAGIC_COMP_BOW,
     DARK_BOW,
     TWISTED_BOW,
     CRAW_BOW,
@@ -269,7 +299,13 @@ const CROSSBOW_WEAPONS = new Set([
     KARIL_CROSSBOW,
 ]);
 
-const BALLISTA_WEAPONS = new Set([LIGHT_BALLISTA, HEAVY_BALLISTA]);
+const BALLISTA_WEAPONS = new Set([
+    LIGHT_BALLISTA,
+    LIGHT_BALLISTA_LMS,
+    HEAVY_BALLISTA,
+    HEAVY_BALLISTA_LMS,
+    HEAVY_BALLISTA_OR,
+]);
 
 const NO_AMMO_WEAPONS = new Set([
     // Crystal bows (all variants)
@@ -390,6 +426,18 @@ const BOW_ARROW_REQUIREMENTS: Map<number, number[]> = new Map([
             AMETHYST_ARROW,
         ],
     ],
+    [
+        MAGIC_COMP_BOW,
+        [
+            BRONZE_ARROW,
+            IRON_ARROW,
+            STEEL_ARROW,
+            MITHRIL_ARROW,
+            ADAMANT_ARROW,
+            RUNE_ARROW,
+            AMETHYST_ARROW,
+        ],
+    ],
     // Dark bow and twisted bow can use all arrows including dragon
     [
         DARK_BOW,
@@ -478,13 +526,38 @@ const CROSSBOW_BOLT_REQUIREMENTS: Map<number, number[]> = new Map([
 // Javelins for ballistae
 const ALL_JAVELINS = [
     BRONZE_JAVELIN,
+    BRONZE_JAVELIN_P,
+    BRONZE_JAVELIN_P_PLUS,
+    BRONZE_JAVELIN_P_PLUS_PLUS,
     IRON_JAVELIN,
+    IRON_JAVELIN_P,
+    IRON_JAVELIN_P_PLUS,
+    IRON_JAVELIN_P_PLUS_PLUS,
     STEEL_JAVELIN,
+    STEEL_JAVELIN_P,
+    STEEL_JAVELIN_P_PLUS,
+    STEEL_JAVELIN_P_PLUS_PLUS,
     MITHRIL_JAVELIN,
+    MITHRIL_JAVELIN_P,
+    MITHRIL_JAVELIN_P_PLUS,
+    MITHRIL_JAVELIN_P_PLUS_PLUS,
     ADAMANT_JAVELIN,
+    ADAMANT_JAVELIN_P,
+    ADAMANT_JAVELIN_P_PLUS,
+    ADAMANT_JAVELIN_P_PLUS_PLUS,
     RUNE_JAVELIN,
+    RUNE_JAVELIN_P,
+    RUNE_JAVELIN_P_PLUS,
+    RUNE_JAVELIN_P_PLUS_PLUS,
     AMETHYST_JAVELIN,
+    AMETHYST_JAVELIN_P,
+    AMETHYST_JAVELIN_P_PLUS,
+    AMETHYST_JAVELIN_P_PLUS_PLUS,
     DRAGON_JAVELIN,
+    DRAGON_JAVELIN_P,
+    DRAGON_JAVELIN_P_PLUS,
+    DRAGON_JAVELIN_P_PLUS_PLUS,
+    DRAGON_JAVELIN_LMS,
 ];
 
 // =============================================================================

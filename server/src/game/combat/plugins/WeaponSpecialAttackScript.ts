@@ -20,6 +20,8 @@ export interface WeaponSpecialAttackTraitOverrides {
     readonly maximumHitSplitCount?: number;
     /** Extra reveal delays for each hit, relative to the normal hit delay. */
     readonly hitDelayTicks?: readonly number[];
+    /** Replaces this swing's next-attack delay after special energy is consumed. */
+    readonly attackSpeedTicks?: number;
     readonly accuracyMultiplier?: number;
     readonly damageMultiplier?: number;
     /** Applies each multiplier in order and floors the max hit after every stage. */
@@ -41,6 +43,9 @@ export interface WeaponSpecialAttackTraitOverrides {
     readonly visibleMagicMaximumHit?: number;
     readonly minimumDamageMultiplier?: number;
     readonly maximumDamageMultiplier?: number;
+    /** Flat damage added after percentage-based minimum/maximum calculations. */
+    readonly minimumDamageBonus?: number;
+    readonly maximumDamageBonus?: number;
     /**
      * Number of independent accuracy rolls used to resolve this one hitsplat.
      * This is distinct from hitCount: a special can make several accuracy rolls
@@ -81,6 +86,7 @@ export interface WeaponSpecialAttackScript {
         attacker: any,
         target: any,
         currentMapClock: number,
+        attack: CombatAttack,
     ): boolean | void;
 
     /** Resolves a dynamic energy cost immediately before the special is consumed. */

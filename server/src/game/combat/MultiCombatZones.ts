@@ -645,6 +645,17 @@ const TOA_MAX_X = 3519;
 const TOA_MIN_Y = 5120;
 const TOA_MAX_Y = 5247;
 
+/** Check whether a position is inside the Tombs of Amascut build area. */
+export function isInTombsOfAmascut(x: number, y: number, plane: number): boolean {
+    return (
+        x >= TOA_MIN_X &&
+        x <= TOA_MAX_X &&
+        y >= TOA_MIN_Y &&
+        y <= TOA_MAX_Y &&
+        plane === 0
+    );
+}
+
 /**
  * Check if a position is in a raid instance (CoX, ToB, ToA).
  */
@@ -658,7 +669,7 @@ export function isInRaid(x: number, y: number, plane: number): boolean {
         return true;
     }
     // Tombs of Amascut
-    if (x >= TOA_MIN_X && x <= TOA_MAX_X && y >= TOA_MIN_Y && y <= TOA_MAX_Y && plane === 0) {
+    if (isInTombsOfAmascut(x, y, plane)) {
         return true;
     }
     return false;

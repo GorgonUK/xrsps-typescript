@@ -38,6 +38,11 @@ export const CombatAttributes = Object.freeze({
         "combat.power_of_death_until_clock",
         () => 0,
     ),
+    /** Absolute expiry clock for Wrath of Amascut's 25% damage vulnerability. */
+    WRATH_OF_AMASCUT_UNTIL_CLOCK: combatAttribute<number>(
+        "combat.wrath_of_amascut_until_clock",
+        () => 0,
+    ),
     LAST_ATTACK_CLOCK: combatAttribute<number>("combat.last_attack_clock", () => 0),
     LAST_COMBAT_CLOCK: combatAttribute<number>("combat.last_combat_clock", () => 0),
     LAST_PVP_COMBAT_CLOCK: combatAttribute<number>("combat.last_pvp_combat_clock", () => 0),

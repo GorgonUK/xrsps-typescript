@@ -2,9 +2,12 @@ import type { WeaponCombatProfile } from "../WeaponCombatProfile";
 import { DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE } from "./DragonDaggerSpecialAttack";
 import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILE } from "./GraniteMaulSpecialAttack";
 import { MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES } from "./MagicShortbowSpecialAttack";
+import { MAGIC_COMP_BOW_PROFILE, MAGIC_LONGBOW_PROFILE } from "./MagicLongbowSpec";
 import { TOXIC_BLOWPIPE_PROFILE } from "./ToxicBlowpipeSpec";
 import { SARADOMIN_GODSWORD_PROFILE } from "./SaradominGodswordSpec";
 import { ARMADYL_GODSWORD_PROFILE } from "./ArmadylGodswordSpec";
+import { HEAVY_BALLISTA_PROFILE } from "./HeavyBallistaSpec";
+import { LIGHT_BALLISTA_PROFILE } from "./LightBallistaSpec";
 
 export { ANCIENT_GODSWORD_SPEC, AncientGodswordSpec } from "./AncientGodswordSpec";
 export { ANCIENT_MACE_SPEC, AncientMaceSpec } from "./AncientMaceSpec";
@@ -57,6 +60,11 @@ export {
     ELDRITCH_NIGHTMARE_STAFF_SPEC,
     EldritchNightmareStaffSpec,
 } from "./EldritchNightmareStaffSpec";
+export {
+    ECLIPSE_ATLATL_SPEC,
+    ECLIPSE_ATLATL_SPECS,
+    EclipseAtlatlSpec,
+} from "./EclipseAtlatlSpec";
 export {
     ELDER_MAUL_ORNAMENTED_SPEC,
     ELDER_MAUL_SPEC,
@@ -114,14 +122,41 @@ export {
     GRANITE_MAUL_SPECIAL_ATTACK_SCRIPTS,
     GraniteMaulSpecialAttackScript,
 } from "./GraniteMaulSpecialAttack";
+export { GRANITE_HAMMER_SPEC, GraniteHammerSpec } from "./GraniteHammerSpec";
+export {
+    HEAVY_BALLISTA_PROFILE,
+    HEAVY_BALLISTA_SPEC,
+    HEAVY_BALLISTA_SPECS,
+    HeavyBallistaSpec,
+} from "./HeavyBallistaSpec";
+export {
+    LIGHT_BALLISTA_PROFILE,
+    LIGHT_BALLISTA_SPEC,
+    LIGHT_BALLISTA_SPECS,
+    LightBallistaSpec,
+} from "./LightBallistaSpec";
 export {
     MAGIC_SHORTBOW_SPECIAL_ATTACK_SCRIPTS,
     MagicShortbowSpecialAttackScript,
 } from "./MagicShortbowSpecialAttack";
 export {
+    MAGIC_COMP_BOW_PROFILE,
+    MAGIC_COMP_BOW_SPEC,
+    MAGIC_LONGBOW_PROFILE,
+    MAGIC_LONGBOW_SPEC,
+    MAGIC_LONGBOW_SPECS,
+    MagicLongbowSpec,
+} from "./MagicLongbowSpec";
+export {
     MORRIGANS_THROWING_AXE_BH_SPEC,
     MorrigansThrowingAxeBhSpec,
 } from "./MorrigansThrowingAxeBhSpec";
+export {
+    MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
+    MORRIGANS_JAVELIN_SPEC,
+    MORRIGANS_JAVELIN_SPECS,
+    MorrigansJavelinSpec,
+} from "./MorrigansJavelinSpec";
 export { VOIDWAKER_SPEC, VoidwakerSpec } from "./VoidwakerSpec";
 export {
     TOXIC_BLOWPIPE_PROFILE,
@@ -159,14 +194,22 @@ export {
     KERIS_PARTISAN_OF_THE_SUN_SPEC,
     KerisPartisanOfTheSunSpec,
 } from "./KerisPartisanOfTheSunSpec";
+export {
+    KERIS_PARTISAN_OF_CORRUPTION_SPEC,
+    KerisPartisanOfCorruptionSpec,
+} from "./KerisPartisanOfCorruptionSpec";
 
 export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Object.freeze([
     DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE,
     GRANITE_MAUL_SPECIAL_ATTACK_PROFILE,
     ...MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES,
+    MAGIC_LONGBOW_PROFILE,
+    MAGIC_COMP_BOW_PROFILE,
     TOXIC_BLOWPIPE_PROFILE,
     SARADOMIN_GODSWORD_PROFILE,
     ARMADYL_GODSWORD_PROFILE,
+    HEAVY_BALLISTA_PROFILE,
+    LIGHT_BALLISTA_PROFILE,
 ]);
 
 export {
