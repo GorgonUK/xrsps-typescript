@@ -482,6 +482,7 @@ export interface CombatActionServices {
         error?: string;
         consumed?: boolean;
         dropped?: boolean;
+        dropQuantity?: number;
         quantityUsed?: number;
         dropTileX?: number;
         dropTileY?: number;

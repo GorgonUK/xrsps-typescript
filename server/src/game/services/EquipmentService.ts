@@ -9,8 +9,8 @@ import { logger } from "../../utils/logger";
 import { DisplayMode, getDefaultInterfaces } from "../../widgets/WidgetManager";
 import type { ServerServices } from "../ServerServices";
 import { clearAutocastState } from "../combat/AutocastState";
-import { MagicStaffValidator } from "../combat/plugins/MagicStaffValidator";
 import { getCategoryForWeaponInterface } from "../combat/WeaponInterfaces";
+import { MagicStaffValidator } from "../combat/plugins/MagicStaffValidator";
 import {
     ensureEquipArrayOn,
     ensureEquipQtyArrayOn,
@@ -26,6 +26,7 @@ const COMBAT_OPTIONS_GROUP_ID = 593;
 const AUTOCAST_SELECTION_GROUP_ID = 201;
 const AUTOCAST_CONTROL_COMPONENT_IDS = [23, 28] as const;
 const TOXIC_BLOWPIPE_ITEM_ID = 12926;
+const WEBWEAVER_BOW_ITEM_ID = 27655;
 const RANGED_ATTACK_BONUS_INDEX = 4;
 const RANGED_STRENGTH_BONUS_INDEX = 11;
 
@@ -173,10 +174,7 @@ export class EquipmentService {
             );
         const combatOptionsWereOpen =
             p.widgets.isOpen(COMBAT_OPTIONS_GROUP_ID) ||
-            this.services.interfaceManager.isWidgetGroupOpenInLedger(
-                p.id,
-                COMBAT_OPTIONS_GROUP_ID,
-            );
+            this.services.interfaceManager.isWidgetGroupOpenInLedger(p.id, COMBAT_OPTIONS_GROUP_ID);
 
         p.combat.pendingAutocastDefensive = undefined;
         p.combat.pendingAutocastWeaponId = undefined;
@@ -194,7 +192,7 @@ export class EquipmentService {
         const combatMount = getDefaultInterfaces(displayMode).find(
             (entry) => entry.groupId === COMBAT_OPTIONS_GROUP_ID,
         );
-        const targetUid = combatMount?.targetUid ?? ((161 << 16) | 76);
+        const targetUid = combatMount?.targetUid ?? (161 << 16) | 76;
 
         p.widgets.closeByTargetUid(targetUid);
         p.widgets.open(COMBAT_OPTIONS_GROUP_ID, {
@@ -245,8 +243,7 @@ export class EquipmentService {
             // Blowpipe damage comes from its internal dart, never from an item
             // left in the ordinary ammunition equipment slot.
             const quiverBonuses = getItemDefinition(equip[EquipmentSlot.AMMO] ?? -1)?.bonuses;
-            const quiverRangedStrength =
-                quiverBonuses?.[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+            const quiverRangedStrength = quiverBonuses?.[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
             if (Number.isFinite(quiverRangedStrength)) {
                 totals[RANGED_STRENGTH_BONUS_INDEX] -= quiverRangedStrength;
             }
@@ -258,6 +255,23 @@ export class EquipmentService {
                 if (Number.isFinite(rangedStrength)) {
                     totals[RANGED_STRENGTH_BONUS_INDEX] += rangedStrength;
                 }
+            }
+        }
+
+        if (equip[EquipmentSlot.WEAPON] === WEBWEAVER_BOW_ITEM_ID) {
+            // This cache revision has no Webweaver definition. Preserve its
+            // live +85 Ranged attack and +65 Ranged strength until regenerated.
+            if (!getItemDefinition(WEBWEAVER_BOW_ITEM_ID)?.bonuses) {
+                totals[RANGED_ATTACK_BONUS_INDEX] += 85;
+                totals[RANGED_STRENGTH_BONUS_INDEX] += 65;
+            }
+
+            // The powered bow generates its own arrows; an equipped quiver
+            // must never add ammunition Ranged Strength to its max hit.
+            const quiverBonuses = getItemDefinition(equip[EquipmentSlot.AMMO] ?? -1)?.bonuses;
+            const quiverRangedStrength = quiverBonuses?.[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+            if (Number.isFinite(quiverRangedStrength)) {
+                totals[RANGED_STRENGTH_BONUS_INDEX] -= quiverRangedStrength;
             }
         }
         return totals;

@@ -8,7 +8,7 @@ import {
     setWeaponSpecialAttackTraitOverrides,
 } from "../WeaponSpecialAttackScript";
 
-const ELDRITCH_NIGHTMARE_STAFF_ITEM_ID = 24424;
+const ELDRITCH_NIGHTMARE_STAFF_ITEM_ID = 24425;
 const ELDRITCH_NIGHTMARE_STAFF_ENERGY_COST = 55;
 const INVOCATE_BASE_MAX_HIT = 44;
 const INVOCATE_PRAYER_RESTORE_FRACTION = 0.5;

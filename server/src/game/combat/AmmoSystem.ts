@@ -34,6 +34,10 @@ const MAGIC_SHORTBOW_I = 12788;
 const MAGIC_LONGBOW = 859;
 const MAGIC_COMP_BOW = 10284;
 const DARK_BOW = 11235;
+const DARK_BOW_GREEN = 12765;
+const DARK_BOW_BLUE = 12766;
+const DARK_BOW_YELLOW = 12767;
+const DARK_BOW_WHITE = 12768;
 const TWISTED_BOW = 20997;
 // Crystal bow variants (4212=new, 4214=full, 4215-4223=degraded 9/10 to 1/10)
 const CRYSTAL_BOW_NEW = 4212;
@@ -52,6 +56,7 @@ const CRYSTAL_BOW_23983 = 23983;
 const CRYSTAL_BOW_24123 = 24123;
 const BOW_OF_FAERDHINEN = 25862;
 const CRAW_BOW = 22550;
+const WEBWEAVER_BOW = 27655;
 
 // Crossbows
 const BRONZE_CROSSBOW = 9174;
@@ -83,6 +88,9 @@ const MITHRIL_KNIFE = 866;
 const ADAMANT_KNIFE = 867;
 const RUNE_KNIFE = 868;
 const DRAGON_KNIFE = 22804;
+const DRAGON_KNIFE_P = 22806;
+const DRAGON_KNIFE_P_PLUS = 22808;
+const DRAGON_KNIFE_P_PLUS_PLUS = 22810;
 
 const BRONZE_DART = 806;
 const IRON_DART = 807;
@@ -105,6 +113,7 @@ const TOKTZ_XIL_UL = 6522; // Obsidian throwing rings
 
 // Blowpipe
 const TOXIC_BLOWPIPE = 12926;
+const ROSEWOOD_BLOWPIPE = 31586;
 
 // Chinchompas
 const GREY_CHINCHOMPA = 10033;
@@ -129,6 +138,9 @@ const ADAMANT_ARROW = 890;
 const RUNE_ARROW = 892;
 const AMETHYST_ARROW = 21326;
 const DRAGON_ARROW = 11212;
+const DRAGON_ARROW_P = 11227;
+const DRAGON_ARROW_P_PLUS = 11228;
+const DRAGON_ARROW_P_PLUS_PLUS = 11229;
 const BROAD_ARROWS = 4160;
 
 // Bolts
@@ -237,6 +249,8 @@ export interface AmmoConsumptionResult {
     ammoId: number;
     quantityUsed: number;
     dropped: boolean;
+    /** Number of consumed projectiles that should appear on the ground. */
+    dropQuantity?: number;
     dropTileX?: number;
     dropTileY?: number;
     broke: boolean;
@@ -281,8 +295,13 @@ const BOW_WEAPONS = new Set([
     MAGIC_LONGBOW,
     MAGIC_COMP_BOW,
     DARK_BOW,
+    DARK_BOW_GREEN,
+    DARK_BOW_BLUE,
+    DARK_BOW_YELLOW,
+    DARK_BOW_WHITE,
     TWISTED_BOW,
     CRAW_BOW,
+    WEBWEAVER_BOW,
 ]);
 
 const CROSSBOW_WEAPONS = new Set([
@@ -323,7 +342,9 @@ const NO_AMMO_WEAPONS = new Set([
     CRYSTAL_BOW_23983,
     CRYSTAL_BOW_24123,
     BOW_OF_FAERDHINEN,
+    WEBWEAVER_BOW, // Generates its own arrows and consumes revenant ether.
     TOXIC_BLOWPIPE, // Uses internal scales + darts
+    ROSEWOOD_BLOWPIPE, // Does not use the ammunition slot
     // Knives
     BRONZE_KNIFE,
     IRON_KNIFE,
@@ -333,6 +354,9 @@ const NO_AMMO_WEAPONS = new Set([
     ADAMANT_KNIFE,
     RUNE_KNIFE,
     DRAGON_KNIFE,
+    DRAGON_KNIFE_P,
+    DRAGON_KNIFE_P_PLUS,
+    DRAGON_KNIFE_P_PLUS_PLUS,
     // Darts
     BRONZE_DART,
     IRON_DART,
@@ -438,20 +462,25 @@ const BOW_ARROW_REQUIREMENTS: Map<number, number[]> = new Map([
             AMETHYST_ARROW,
         ],
     ],
-    // Dark bow and twisted bow can use all arrows including dragon
-    [
-        DARK_BOW,
-        [
-            BRONZE_ARROW,
-            IRON_ARROW,
-            STEEL_ARROW,
-            MITHRIL_ARROW,
-            ADAMANT_ARROW,
-            RUNE_ARROW,
-            AMETHYST_ARROW,
-            DRAGON_ARROW,
+    // Dark bow and twisted bow can use all arrows including dragon.
+    ...[DARK_BOW, DARK_BOW_GREEN, DARK_BOW_BLUE, DARK_BOW_YELLOW, DARK_BOW_WHITE].map(
+        (weaponId): [number, number[]] => [
+            weaponId,
+            [
+                BRONZE_ARROW,
+                IRON_ARROW,
+                STEEL_ARROW,
+                MITHRIL_ARROW,
+                ADAMANT_ARROW,
+                RUNE_ARROW,
+                AMETHYST_ARROW,
+                DRAGON_ARROW,
+                DRAGON_ARROW_P,
+                DRAGON_ARROW_P_PLUS,
+                DRAGON_ARROW_P_PLUS_PLUS,
+            ],
         ],
-    ],
+    ),
     [
         TWISTED_BOW,
         [
@@ -762,7 +791,7 @@ export function createDefaultAmmoDataProvider(): AmmoDataProvider {
         isAmmoCompatible: defaultIsAmmoCompatible,
         getValidAmmo: defaultGetValidAmmo,
         isNoAmmoWeapon: (weaponId) => NO_AMMO_WEAPONS.has(weaponId),
-        isDarkBow: (weaponId) => weaponId === DARK_BOW,
+        isDarkBow: isDarkBowWeaponId,
         getAvasDeviceType: (capeSlotItemId) => {
             if (
                 capeSlotItemId === AVAS_ASSEMBLER ||
@@ -799,6 +828,22 @@ function defaultGetAmmoType(weaponId: number): AmmoType {
 export function getAmmoType(weaponId: number): AmmoType {
     const provider = getProviderRegistry().ammoData;
     return provider ? provider.getAmmoType(weaponId) : defaultGetAmmoType(weaponId);
+}
+
+function isDarkBowWeaponId(weaponId: number): boolean {
+    return (
+        weaponId === DARK_BOW ||
+        weaponId === DARK_BOW_GREEN ||
+        weaponId === DARK_BOW_BLUE ||
+        weaponId === DARK_BOW_YELLOW ||
+        weaponId === DARK_BOW_WHITE
+    );
+}
+
+/** Returns true for the tradeable Dark bow and each paint variant. */
+export function isDarkBowWeapon(weaponId: number): boolean {
+    const provider = getProviderRegistry().ammoData;
+    return provider ? provider.isDarkBow(weaponId) : isDarkBowWeaponId(weaponId);
 }
 
 function defaultIsAmmoCompatible(weaponId: number, ammoId: number): boolean {
@@ -878,7 +923,7 @@ export function calculateAmmoConsumption(
     }
 
     // Dark bow shoots 2 arrows
-    const quantity = weaponId === DARK_BOW ? 2 : 1;
+    const quantity = isDarkBowWeapon(weaponId) ? 2 : 1;
     const actualQuantity = Math.min(quantity, ammoQuantity);
 
     // Bolt racks are consumed when fired and cannot be recovered by Ava's
@@ -893,121 +938,70 @@ export function calculateAmmoConsumption(
         };
     }
 
-    // Check for Ava's device
+    // Each Dark bow arrow receives its own recovery roll, matching two calls
+    // to the ordinary ranged-ammunition pipeline rather than sharing one roll.
+    let quantityUsed = 0;
+    let dropQuantity = 0;
+    let broke = false;
+    for (let index = 0; index < actualQuantity; index++) {
+        const result = rollSingleAmmoConsumption(ammoId, capeSlot, attackerX, attackerY, random);
+        quantityUsed += result.quantityUsed;
+        dropQuantity += result.dropQuantity ?? (result.dropped ? result.quantityUsed : 0);
+        broke ||= result.broke;
+    }
+    return {
+        consumed: quantityUsed > 0,
+        ammoId,
+        quantityUsed,
+        dropped: dropQuantity > 0,
+        dropQuantity,
+        dropTileX: dropQuantity > 0 ? attackerX : undefined,
+        dropTileY: dropQuantity > 0 ? attackerY : undefined,
+        broke,
+    };
+}
+
+function rollSingleAmmoConsumption(
+    ammoId: number,
+    capeSlot: number,
+    attackerX: number,
+    attackerY: number,
+    random: () => number,
+): AmmoConsumptionResult {
     const hasAvas = AVAS_DEVICES.has(capeSlot);
     const hasAssembler =
-        capeSlot === AVAS_ASSEMBLER || capeSlot === MASORI_ASSEMBLER || capeSlot === MAX_CAPE;
+        capeSlot === AVAS_ASSEMBLER ||
+        capeSlot === MASORI_ASSEMBLER ||
+        capeSlot === RANGING_CAPE ||
+        capeSlot === RANGING_CAPE_T ||
+        capeSlot === MAX_CAPE;
     const hasAccumulator = capeSlot === AVAS_ACCUMULATOR;
-
-    // OSRS ammo mechanics:
-    // - Without Ava's: 80% chance to drop on ground, 20% chance to break
-    // - With Accumulator: 72% retrieved, 20% drop, 8% break
-    // - With Assembler: 80% retrieved, 0% drop, 20% break
-    // - Ranging cape acts like assembler
-
     const roll = random();
 
-    if (hasAssembler) {
-        // Assembler: 80% retrieved, 20% break
-        if (roll < 0.8) {
-            // Retrieved - no consumption
-            return {
-                consumed: false,
-                ammoId,
-                quantityUsed: 0,
-                dropped: false,
-                broke: false,
-            };
-        } else {
-            // Broke
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: false,
-                broke: true,
-            };
-        }
-    } else if (hasAccumulator) {
-        // Accumulator: 72% retrieved, 20% drop, 8% break
-        if (roll < 0.72) {
-            return {
-                consumed: false,
-                ammoId,
-                quantityUsed: 0,
-                dropped: false,
-                broke: false,
-            };
-        } else if (roll < 0.92) {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: true,
-                dropTileX: attackerX,
-                dropTileY: attackerY,
-                broke: false,
-            };
-        } else {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: false,
-                broke: true,
-            };
-        }
-    } else if (hasAvas) {
-        // Attractor (worse than accumulator)
-        if (roll < 0.6) {
-            return {
-                consumed: false,
-                ammoId,
-                quantityUsed: 0,
-                dropped: false,
-                broke: false,
-            };
-        } else if (roll < 0.9) {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: true,
-                dropTileX: attackerX,
-                dropTileY: attackerY,
-                broke: false,
-            };
-        } else {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: false,
-                broke: true,
-            };
-        }
-    } else {
-        // No Ava's device
-        if (roll < 0.8) {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: true,
-                dropTileX: attackerX,
-                dropTileY: attackerY,
-                broke: false,
-            };
-        } else {
-            return {
-                consumed: true,
-                ammoId,
-                quantityUsed: actualQuantity,
-                dropped: false,
-                broke: true,
-            };
-        }
+    if (hasAssembler && roll < 0.8) {
+        return { consumed: false, ammoId, quantityUsed: 0, dropped: false, broke: false };
     }
+    if (hasAccumulator && roll < 0.72) {
+        return { consumed: false, ammoId, quantityUsed: 0, dropped: false, broke: false };
+    }
+    if (hasAvas && !hasAccumulator && !hasAssembler && roll < 0.6) {
+        return { consumed: false, ammoId, quantityUsed: 0, dropped: false, broke: false };
+    }
+
+    const dropped =
+        (!hasAvas && roll < 0.8) ||
+        (hasAccumulator && roll >= 0.72 && roll < 0.92) ||
+        (hasAvas && !hasAccumulator && !hasAssembler && roll >= 0.6 && roll < 0.9);
+    return {
+        consumed: true,
+        ammoId,
+        quantityUsed: 1,
+        dropped,
+        dropQuantity: dropped ? 1 : 0,
+        dropTileX: dropped ? attackerX : undefined,
+        dropTileY: dropped ? attackerY : undefined,
+        broke: !dropped,
+    };
 }
 
 /**

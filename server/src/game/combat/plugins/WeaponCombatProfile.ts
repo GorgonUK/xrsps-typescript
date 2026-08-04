@@ -45,6 +45,8 @@ export interface WeaponSpecialAttack extends WeaponSpecialAttackTraitOverrides {
     readonly enchantedBoltEffectChanceMultiplier?: number;
     /** Number of copies of the weapon projectile to render for this attack. */
     readonly projectileCount?: number;
+    /** Explicit projectile tracks for multi-projectile attacks. */
+    readonly projectiles?: readonly WeaponProjectileProfile[];
     /** Release delay for each projectile copy, measured from the animation start. */
     readonly projectileReleaseDelaysTicks?: readonly number[];
     /** Extra reveal delays for each hit, relative to the normal hit delay. */
@@ -52,6 +54,12 @@ export interface WeaponSpecialAttack extends WeaponSpecialAttackTraitOverrides {
     readonly attackAnimation?: number;
     readonly castGraphic?: WeaponGraphicProfile;
     readonly attackSoundId?: number;
+    /** Plays multiple simultaneous launch sounds for layered weapon effects. */
+    readonly attackSoundIds?: readonly number[];
+    /** Limits the profile impact graphic to one hitsplat in a multi-hit attack. */
+    readonly impactGraphicHitIndex?: number;
+    /** Per-hitsplat impact sounds for multi-hit special attacks. */
+    readonly impactSoundIds?: readonly number[];
 }
 
 export type WeaponProfileValue<T> = T | ((context: WeaponCombatContext) => T | undefined);
@@ -71,6 +79,13 @@ export interface WeaponCombatProfile {
     readonly travelDelayTicks?: WeaponProfileValue<number>;
     readonly specialAttackEnergyCost?: number;
     readonly specialAttackTiming?: SpecialAttackTiming;
+
+    /** Builds a custom roll plan for an ordinary attack without consuming energy. */
+    readonly handleNormalAttack?: (
+        attacker: CombatEntity,
+        target: CombatEntity,
+        attack: CombatAttack,
+    ) => WeaponSpecialAttack | null;
 
     /** Builds the weapon's special roll/visual plan for one prepared swing. */
     readonly handleSpecialAttack?: (

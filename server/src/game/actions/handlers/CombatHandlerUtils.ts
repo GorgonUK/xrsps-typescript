@@ -1,5 +1,5 @@
 import { logger } from "../../../utils/logger";
-import { AmmoType, getAmmoType } from "../../combat/AmmoSystem";
+import { AmmoType, getAmmoType, isDarkBowWeapon } from "../../combat/AmmoSystem";
 import { AttackType } from "../../combat/AttackType";
 import { DegradationSystem, getChargesUsed, setChargesUsed } from "../../combat/DegradationSystem";
 import { HITMARK_DAMAGE } from "../../combat/HitEffects";
@@ -99,7 +99,8 @@ export function handleRangedAmmoConsumption(
     const ammoId = equip[EquipmentSlot.AMMO];
     const ammoQty = Math.max(0, equipQty[EquipmentSlot.AMMO]);
 
-    if (!(ammoId > 0) || ammoQty < hitCount) {
+    const requiredAmmo = isDarkBowWeapon(weaponItemId) ? 2 : hitCount;
+    if (!(ammoId > 0) || ammoQty < requiredAmmo) {
         services.queueChatMessage({
             messageType: "game",
             text: "There is no ammo left in your quiver.",
@@ -160,7 +161,7 @@ export function handleRangedAmmoConsumption(
         const inWilderness = services.isInWilderness(dropX, dropY);
         services.spawnGroundItem(
             ammoId,
-            result.quantityUsed,
+            result.dropQuantity ?? result.quantityUsed,
             { x: dropX, y: dropY, level: npc.level },
             tick,
             {
