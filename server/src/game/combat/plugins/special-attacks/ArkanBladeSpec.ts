@@ -55,6 +55,18 @@ export function takeDueArkanBladeBurns(currentMapClock: number): readonly ArkanB
     return Object.freeze(due.reverse());
 }
 
+/** Consumes all remaining Arkan-blade burn damage on one target. */
+export function consumeRemainingArkanBladeBurnDamage(target: PlayerState | NpcState): number {
+    let remainingDamage = 0;
+    for (let index = pendingBurns.length - 1; index >= 0; index--) {
+        const burn = pendingBurns[index];
+        if (burn.target !== target) continue;
+        remainingDamage += Math.max(0, Math.floor(burn.remainingDamage));
+        pendingBurns.splice(index, 1);
+    }
+    return remainingDamage;
+}
+
 export function createArkanBladeBurnAttack(
     attacker: PlayerState,
     target: PlayerState | NpcState,

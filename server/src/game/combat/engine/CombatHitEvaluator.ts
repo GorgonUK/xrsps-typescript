@@ -222,6 +222,14 @@ export class CombatHitEvaluator {
                     "special attack maximum damage",
                 ),
         );
+        minimumDamage += this.nonNegativeInteger(
+            special.minimumDamageBonus ?? 0,
+            "special attack minimum damage bonus",
+        );
+        maximumDamage += this.nonNegativeInteger(
+            special.maximumDamageBonus ?? 0,
+            "special attack maximum damage bonus",
+        );
         if (successfulAccuracyRolls === accuracyRollCount) {
             maximumDamage = Math.max(
                 0,

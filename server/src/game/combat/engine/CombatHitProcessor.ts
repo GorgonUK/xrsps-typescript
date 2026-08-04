@@ -70,6 +70,12 @@ import {
     DeferredHitsplatType,
     type PendingCombatHit,
 } from "./DeferredHitQueue";
+import {
+    createMorrigansJavelinBleedAttack,
+    getMorrigansJavelinBleedDamage,
+    MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
+    takeDueMorrigansJavelinBleeds,
+} from "../plugins/special-attacks/MorrigansJavelinSpec";
 
 interface CombatVisualDefinition {
     readonly attackAnimation?: number;
@@ -238,6 +244,7 @@ export class CombatHitProcessor {
     processDeferredHits(currentMapClock: number, frame: TickFrame): readonly AppliedCombatHit[] {
         this.queueDueAncientGodswordBloodSacrifices(currentMapClock);
         this.queueDueArkanBladeBurns(currentMapClock);
+        this.queueDueMorrigansJavelinBleeds(currentMapClock);
         return this.deferredHits.processTick(currentMapClock, frame);
     }
 
@@ -492,7 +499,14 @@ export class CombatHitProcessor {
             }
 
             try {
-                if (script.onSpecialActivated(player, context.target, context.currentMapClock) === false) {
+                if (
+                    script.onSpecialActivated(
+                        player,
+                        context.target,
+                        context.currentMapClock,
+                        context.attack,
+                    ) === false
+                ) {
                     clearWeaponSpecialAttackTraitOverrides(context.attack);
                     player.specEnergy.setActivated(false);
                     this.syncSpecialAttackUi(player);
@@ -519,7 +533,7 @@ export class CombatHitProcessor {
 
         if (script) markWeaponSpecialAttackExecuted(context.attack);
         this.syncSpecialAttackUi(player);
-        return Object.freeze({
+        const resolvedSpecial = Object.freeze({
             ...profileSpecial,
             energyCostPercent: energyCost,
             hitCount: overrides?.hitCount ?? profileSpecial?.hitCount ?? 1,
@@ -545,9 +559,14 @@ export class CombatHitProcessor {
                 overrides?.minimumDamageMultiplier ?? profileSpecial?.minimumDamageMultiplier,
             maximumDamageMultiplier:
                 overrides?.maximumDamageMultiplier ?? profileSpecial?.maximumDamageMultiplier,
+            minimumDamageBonus:
+                overrides?.minimumDamageBonus ?? profileSpecial?.minimumDamageBonus,
+            maximumDamageBonus:
+                overrides?.maximumDamageBonus ?? profileSpecial?.maximumDamageBonus,
             maximumHitSplitCount:
                 overrides?.maximumHitSplitCount ?? profileSpecial?.maximumHitSplitCount,
             hitDelayTicks: overrides?.hitDelayTicks ?? profileSpecial?.hitDelayTicks,
+            attackSpeedTicks: overrides?.attackSpeedTicks ?? profileSpecial?.attackSpeedTicks,
             accuracyRollCount: overrides?.accuracyRollCount ?? profileSpecial?.accuracyRollCount,
             damageRangeBySuccessfulAccuracyRolls:
                 overrides?.damageRangeBySuccessfulAccuracyRolls ??
@@ -560,6 +579,25 @@ export class CombatHitProcessor {
                 profileSpecial?.enchantedBoltEffectChanceMultiplier,
             skipAttack: overrides?.skipAttack ?? profileSpecial?.skipAttack,
         });
+        this.applySpecialAttackSpeed(player, context.attack, resolvedSpecial);
+        return resolvedSpecial;
+    }
+
+    /** Applies weapon specials that intentionally use a non-standard attack cycle. */
+    private applySpecialAttackSpeed(
+        player: PlayerState,
+        attack: CombatAttack,
+        specialAttack: WeaponSpecialAttack,
+    ): void {
+        const override = specialAttack.attackSpeedTicks;
+        if (override === undefined) return;
+
+        const speedTicks = Math.max(1, Math.trunc(override));
+        player.combatAttributes.set(
+            CombatAttributes.ATTACK_DELAY,
+            attack.attackClock + speedTicks,
+        );
+        player.combat.attackDelay = speedTicks;
     }
 
     private syncSpecialAttackUi(player: PlayerState): void {
@@ -836,6 +874,9 @@ export class CombatHitProcessor {
             const weaponId = target.appearance.equip[EquipmentSlot.WEAPON] ?? -1;
             if (POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId)) damage = Math.max(0, Math.floor(damage * 0.5));
         }
+        if (pending.revealClock < target.combatAttributes.get(CombatAttributes.WRATH_OF_AMASCUT_UNTIL_CLOCK)) {
+            damage = Math.max(0, Math.floor(damage * 1.25));
+        }
 
         const effect = pending.enchantedBoltEffect;
         if (!effect || !pending.landed || !source) return damage;
@@ -1035,6 +1076,29 @@ export class CombatHitProcessor {
                 attackType: AttackType.Magic,
                 revealClock: currentMapClock,
                 profileId: ARKAN_BLADE_BURN_PROFILE_ID,
+            });
+        }
+    }
+
+    private queueDueMorrigansJavelinBleeds(currentMapClock: number): void {
+        for (const bleed of takeDueMorrigansJavelinBleeds(currentMapClock)) {
+            const attack = createMorrigansJavelinBleedAttack(
+                bleed.attacker,
+                bleed.target,
+                currentMapClock,
+            );
+            const damage = getMorrigansJavelinBleedDamage(bleed);
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage,
+                maxHit: damage,
+                landed: true,
+                hitsplatType: DeferredHitsplatType.Normal,
+                attackType: AttackType.Ranged,
+                revealClock: currentMapClock,
+                profileId: MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
             });
         }
     }
