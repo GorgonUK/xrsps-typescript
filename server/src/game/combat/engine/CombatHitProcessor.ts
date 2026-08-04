@@ -210,7 +210,7 @@ export class CombatHitProcessor {
             this.invokePlugin(profile.id, "onAttack", () => profile.onAttack?.(context));
 
             const specialAttack = this.resolveSpecialAttack(profile, context);
-            if (webweaverShot && attack.traits.specialAttack === true && !specialAttack) {
+            if (attack.traits.specialAttack === true && !specialAttack) {
                 rejectedAttacks++;
                 continue;
             }
@@ -495,10 +495,6 @@ export class CombatHitProcessor {
         if (!(context.attacker instanceof PlayerState)) return undefined;
 
         const player = context.attacker;
-        if (!player.combatAttributes.get(CombatAttributes.SPECIAL_ATTACK_ACTIVE)) {
-            return undefined;
-        }
-
         const weaponId = context.attack.traits.weaponId;
         const script = weaponId === undefined ? undefined : SpecialAttackContainer.get(weaponId);
         clearWeaponSpecialAttackTraitOverrides(context.attack);

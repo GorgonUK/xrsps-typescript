@@ -41,7 +41,11 @@ export class PlayerSpecialEnergyState {
         if (normalized && this.getUnits() <= 0) {
             return false;
         }
+        if (this.attributes.get(CombatAttributes.SPECIAL_ATTACK_ACTIVE) === normalized) {
+            return true;
+        }
         this.attributes.set(CombatAttributes.SPECIAL_ATTACK_ACTIVE, normalized);
+        this.combat.specialEnergyDirty = true;
         return true;
     }
 

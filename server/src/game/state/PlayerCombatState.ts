@@ -1,5 +1,6 @@
 import type { AttackType } from "../combat/AttackType";
 import { type ChargeTracker, createChargeTracker } from "../combat/DegradationSystem";
+import type { CombatEntityRef } from "../combat/model/CombatEntityRef";
 import { CombatAttributes } from "../combat/state/CombatAttributes";
 import type { CombatAttributeStore } from "../combat/state/CombatAttributeStore";
 import type { NpcState } from "../npc";
@@ -97,6 +98,112 @@ export class PlayerCombatState {
     lastSpecialRegenUiStartTick: number = -1;
     lastSpecialRegenUiInterval: number = -1;
     specialEnergyDirty: boolean = true;
+
+    /**
+     * Offensive instant specials are packeted separately from the world combat
+     * cycle. Keep each activation until the combat engine can prepare its own
+     * immutable attack, rather than collapsing rapid clicks into one boolean.
+     */
+    private queuedInstantSpecialAttacks: Array<{
+        weaponId: number;
+        target: CombatEntityRef | null;
+        queuedAtTick: number;
+    }> = [];
+    private instantSpecialInputTick: number = Number.MIN_SAFE_INTEGER;
+    private unmatchedInstantSpecialVarpInputs: number = 0;
+    private unmatchedInstantSpecialButtonInputs: number = 0;
+
+    /**
+     * The client changes the special varp and sends an IF_BUTTON for one click.
+     * Pair those two packets while still allowing multiple real clicks in the
+     * same tick to enqueue independently.
+     */
+    claimInstantSpecialActivationInput(
+        source: "varp" | "button",
+        currentTick: number,
+    ): boolean {
+        const tick = Math.trunc(currentTick);
+        if (tick !== this.instantSpecialInputTick) {
+            this.instantSpecialInputTick = tick;
+            this.unmatchedInstantSpecialVarpInputs = 0;
+            this.unmatchedInstantSpecialButtonInputs = 0;
+        }
+
+        if (source === "varp") {
+            if (this.unmatchedInstantSpecialButtonInputs > 0) {
+                this.unmatchedInstantSpecialButtonInputs--;
+                return false;
+            }
+            this.unmatchedInstantSpecialVarpInputs++;
+            return true;
+        }
+
+        if (this.unmatchedInstantSpecialVarpInputs > 0) {
+            this.unmatchedInstantSpecialVarpInputs--;
+            return false;
+        }
+        this.unmatchedInstantSpecialButtonInputs++;
+        return true;
+    }
+
+    queueInstantSpecialAttack(
+        weaponId: number,
+        target: CombatEntityRef | null,
+        currentTick: number,
+    ): void {
+        this.queuedInstantSpecialAttacks.push({
+            weaponId: Math.trunc(weaponId),
+            target,
+            queuedAtTick: Math.trunc(currentTick),
+        });
+    }
+
+    countQueuedInstantSpecialAttacks(weaponId: number): number {
+        const normalizedWeaponId = Math.trunc(weaponId);
+        return this.queuedInstantSpecialAttacks.reduce(
+            (count, queued) => count + (queued.weaponId === normalizedWeaponId ? 1 : 0),
+            0,
+        );
+    }
+
+    hasQueuedInstantSpecialAttacks(): boolean {
+        return this.queuedInstantSpecialAttacks.length > 0;
+    }
+
+    pruneExpiredInstantSpecialAttacks(currentTick: number, lifetimeTicks: number): number {
+        const clock = Math.trunc(currentTick);
+        const lifetime = Math.max(0, Math.trunc(lifetimeTicks));
+        const previousCount = this.queuedInstantSpecialAttacks.length;
+        this.queuedInstantSpecialAttacks = this.queuedInstantSpecialAttacks.filter(
+            (queued) => clock - queued.queuedAtTick <= lifetime,
+        );
+        return previousCount - this.queuedInstantSpecialAttacks.length;
+    }
+
+    takeQueuedInstantSpecialAttacks(
+        weaponId: number,
+        target: CombatEntityRef,
+    ): { count: number; includedUntargetedActivation: boolean } {
+        const normalizedWeaponId = Math.trunc(weaponId);
+        let count = 0;
+        let includedUntargetedActivation = false;
+        this.queuedInstantSpecialAttacks = this.queuedInstantSpecialAttacks.filter((queued) => {
+            const targetMatches =
+                queued.target === null ||
+                (queued.target.type === target.type && queued.target.id === target.id);
+            if (queued.weaponId !== normalizedWeaponId || !targetMatches) return true;
+            count++;
+            if (queued.target === null) includedUntargetedActivation = true;
+            return false;
+        });
+        return { count, includedUntargetedActivation };
+    }
+
+    clearQueuedInstantSpecialAttacks(): number {
+        const count = this.queuedInstantSpecialAttacks.length;
+        this.queuedInstantSpecialAttacks = [];
+        return count;
+    }
 
     // Equipment degradation
     degradationCharges: ChargeTracker = createChargeTracker();

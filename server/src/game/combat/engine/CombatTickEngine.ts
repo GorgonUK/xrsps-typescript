@@ -1,6 +1,7 @@
 import type { PathService } from "../../../pathfinding/PathService";
 import { PlayerState } from "../../player";
 import type { CombatAttack, CombatAttackTraits } from "../model/CombatAttack";
+import type { CombatEntityRef } from "../model/CombatEntityRef";
 import { CombatAttributes } from "../state/CombatAttributes";
 import { CombatPluginRegistry } from "../plugins/CombatPluginRegistry";
 import { SpecialAttackContainer } from "../plugins/SpecialAttackContainer";
@@ -56,6 +57,12 @@ export class CombatTickEngine {
         let activeInteractions = 0;
 
         for (const attacker of this.options.getCombatants()) {
+            if (attacker instanceof PlayerState) {
+                const expired = attacker.combat.pruneExpiredInstantSpecialAttacks(clock, 3);
+                if (expired > 0 && !attacker.combat.hasQueuedInstantSpecialAttacks()) {
+                    attacker.specEnergy.setActivated(false);
+                }
+            }
             if (!attacker.combatAttributes.get(CombatAttributes.COMBAT_TARGET)) {
                 continue;
             }
@@ -71,16 +78,63 @@ export class CombatTickEngine {
                 continue;
             }
 
+            const queuedInstantSpecials = this.takeQueuedInstantSpecialAttacks(
+                attacker,
+                interaction.traits,
+                interaction.target instanceof PlayerState
+                    ? { type: "player", id: interaction.target.id }
+                    : { type: "npc", id: interaction.target.id },
+            );
+            if (queuedInstantSpecials.count > 0) {
+                const initiatedCombatThisTick =
+                    queuedInstantSpecials.includedUntargetedActivation ||
+                    attacker.combatAttributes.get(CombatAttributes.LAST_COMBAT_CLOCK) === clock &&
+                    attacker.combatAttributes.get(CombatAttributes.LAST_ATTACK_CLOCK) !== clock;
+
+                // A normal attack that was already due retains its own hit. This is
+                // what permits the classic normal-hit + two Quick Smash stack.
+                if (!initiatedCombatThisTick && this.attackManager.isAttackReady(attacker, clock)) {
+                    const normal = this.attackManager.prepareAttack(
+                        attacker,
+                        interaction.target,
+                        { ...interaction.traits, specialAttack: false },
+                        clock,
+                    );
+                    if (normal) {
+                        preparedAttacks.push(normal.attack);
+                        this.options.onAttackPrepared?.(normal.attack);
+                    }
+                }
+
+                for (let index = 0; index < queuedInstantSpecials.count; index++) {
+                    const prepared = this.attackManager.prepareAttack(
+                        attacker,
+                        interaction.target,
+                        { ...interaction.traits, specialAttack: true },
+                        clock,
+                        { bypassAttackDelay: true, preserveAttackDelay: true },
+                    );
+                    if (prepared) {
+                        preparedAttacks.push(prepared.attack);
+                        this.options.onAttackPrepared?.(prepared.attack);
+                    }
+                }
+                this.incrementStatus(statuses, "ready");
+                continue;
+            }
+
+            const instantSpecialAttack = this.isInstantSpecialAttack(
+                attacker,
+                interaction.traits,
+            );
             const prepared = this.attackManager.prepareAttack(
                 attacker,
                 interaction.target,
                 interaction.traits,
                 clock,
                 {
-                    bypassAttackDelay: this.isInstantSpecialAttack(
-                        attacker,
-                        interaction.traits,
-                    ),
+                    bypassAttackDelay: instantSpecialAttack,
+                    preserveAttackDelay: instantSpecialAttack,
                 },
             );
             if (!prepared) {
@@ -120,7 +174,25 @@ export class CombatTickEngine {
         if (profile.specialAttackTiming === SpecialAttackTiming.Instant) return true;
 
         const weaponId = traits.weaponId;
-        return weaponId !== undefined && SpecialAttackContainer.get(weaponId)?.bypassAttackDelay === true;
+        return (
+            weaponId !== undefined &&
+            SpecialAttackContainer.get(weaponId)?.bypassAttackDelay === true
+        );
+    }
+
+    private takeQueuedInstantSpecialAttacks(
+        attacker: CombatEntity,
+        traits: CombatAttackTraits,
+        target: CombatEntityRef,
+    ): { count: number; includedUntargetedActivation: boolean } {
+        if (!(attacker instanceof PlayerState)) {
+            return { count: 0, includedUntargetedActivation: false };
+        }
+        const weaponId = traits.weaponId;
+        if (weaponId === undefined) {
+            return { count: 0, includedUntargetedActivation: false };
+        }
+        return attacker.combat.takeQueuedInstantSpecialAttacks(weaponId, target);
     }
 
     private incrementStatus(

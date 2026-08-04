@@ -11,6 +11,9 @@ import { applyAutocastState, clearAutocastState } from "../../../src/game/script
 import { type IScriptRegistry, type ScriptServices } from "../../../src/game/scripts/types";
 import { MagicStaffValidator } from "../../../src/game/combat/plugins/MagicStaffValidator";
 import {
+    queueGraniteMaulSpecialAttackInput,
+} from "../../../src/game/combat/plugins/special-attacks/GraniteMaulSpecialAttack";
+import {
     canWeaponAutocastSpell,
     getAutocastCompatibilityMessage,
 } from "../../../src/game/spells/SpellDataProvider";
@@ -194,6 +197,34 @@ function tryActivateInstantUtilitySpecial(
     return true;
 }
 
+function tryQueueGraniteMaulSpecial(
+    player: PlayerState,
+    weaponObjId: number,
+    currentTick: number,
+    services: ScriptServices,
+): boolean {
+    const result = queueGraniteMaulSpecialAttackInput(
+        player,
+        weaponObjId,
+        currentTick,
+        "button",
+    );
+    if (!result.handled) return false;
+
+    const active = player.combat.countQueuedInstantSpecialAttacks(weaponObjId) > 0;
+    player.specEnergy.setActivated(active);
+    player.varps.setVarpValue(VARP_SPECIAL_ATTACK, active ? 1 : 0);
+    services.variables.sendVarp?.(player, VARP_SPECIAL_ATTACK, active ? 1 : 0);
+    services.combat.queueCombatState(player);
+    if (result.insufficientEnergy) {
+        services.messaging.sendGameMessage(
+            player,
+            "You do not have enough special attack energy.",
+        );
+    }
+    return true;
+}
+
 export function registerCombatWidgetHandlers(
     registry: IScriptRegistry,
     services: ScriptServices,
@@ -246,6 +277,10 @@ export function registerCombatWidgetHandlers(
         const newState = !currentlyActivated;
         const equip = player.appearance?.equip;
         const weaponObjId = Array.isArray(equip) ? equip[EquipmentSlot.WEAPON] : 0;
+
+        if (tryQueueGraniteMaulSpecial(player, weaponObjId, event.tick, services)) {
+            return;
+        }
 
         if (
             newState &&

@@ -99,8 +99,8 @@ assert.equal(gmaulTick.preparedAttacks.length, 1, "Gmaul must bypass an unexpire
 assert.equal(gmaulTick.preparedAttacks[0].traits.specialAttack, true);
 assert.equal(
     gmaulPlayer.combatAttributes.get(CombatAttributes.ATTACK_DELAY),
-    57,
-    "Gmaul must replace the deadline with current clock plus weapon speed",
+    500,
+    "Gmaul must preserve the existing attack deadline",
 );
 
 const ddsPlayer = new PlayerState(103, 3200, 3200, 0, TEST_GAMEMODE);

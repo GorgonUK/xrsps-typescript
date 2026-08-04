@@ -24,6 +24,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     resetquests: "developer",
     rubytest: "developer",
     scroll: "developer",
+    spec: "developer",
     smithing: "developer",
     spawn: "developer",
     standard: "developer",

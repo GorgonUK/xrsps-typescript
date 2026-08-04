@@ -1,4 +1,4 @@
-import { VARBIT_ACTIVE_SPELLBOOK } from "../../../../client/common/vars";
+import { VARBIT_ACTIVE_SPELLBOOK, VARP_SPECIAL_ENERGY } from "../../../../client/common/vars";
 import {
     MAX_REAL_LEVEL,
     SKILL_IDS,
@@ -314,6 +314,20 @@ function createChatHandler(services: MessageHandlerServices): MessageHandler<"ch
                             `${stats.ticksSkipped} tick(s) skipped, ${stats.lateFires} late timer fire(s).`,
                         targetPlayerIds: [sender.id],
                     });
+                    return;
+                }
+
+                if (root === "spec") {
+                    sender.specEnergy.setPercent(100);
+                    sender.varps.setVarpValue(VARP_SPECIAL_ENERGY, 1000);
+                    services.queueVarp(sender.id, VARP_SPECIAL_ENERGY, 1000);
+                    services.queueCombatState(sender);
+                    services.queueChatMessage({
+                        messageType: "game",
+                        text: "Your special attack energy has been restored to 100%.",
+                        targetPlayerIds: [sender.id],
+                    });
+                    logger.info(`[cmd] ::spec - Restored special attack energy for player ${sender.id}`);
                     return;
                 }
 

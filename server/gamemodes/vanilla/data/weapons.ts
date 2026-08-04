@@ -1259,7 +1259,7 @@ const specialAttacks = {
     ABYSSAL_TENTACLE: { anim: 1658, cost: 50 }, // Energy Drain
 
     // Mauls
-    GRANITE_MAUL: { anim: 1667, cost: 50 }, // Quick Smash (60% without ornate handle)
+    GRANITE_MAUL: { anim: 1667, cost: 60 }, // Quick Smash (50% with ornate handle)
     ELDER_MAUL: { anim: 7516, cost: 50 }, // Greater Smash
 
     // Special melee
@@ -3307,6 +3307,8 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 7,
         hitDelay: 1,
         hitSounds: warhammerHitSounds,
+        specialAttackAnim: 1667,
+        specialAttackCost: 60,
     },
     {
         itemId: 12848,
@@ -3318,6 +3320,8 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 7,
         hitDelay: 1,
         hitSounds: warhammerHitSounds,
+        specialAttackAnim: 1667,
+        specialAttackCost: 60,
     },
     {
         itemId: 24225,
@@ -3329,6 +3333,8 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 7,
         hitDelay: 1,
         hitSounds: warhammerHitSounds,
+        specialAttackAnim: 1667,
+        specialAttackCost: 50,
     },
 
     // Elder maul

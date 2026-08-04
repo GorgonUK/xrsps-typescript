@@ -4,7 +4,7 @@ import { DARK_BOW_PROFILE } from "./DarkBowSpec";
 import { DRAGON_CLAWS_PROFILE } from "./DragonClawsSpec";
 import { DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE } from "./DragonDaggerSpecialAttack";
 import { DRAGON_KNIFE_PROFILE } from "./DragonKnifeSpec";
-import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILE } from "./GraniteMaulSpecialAttack";
+import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILES } from "./GraniteMaulSpecialAttack";
 import { HEAVY_BALLISTA_PROFILE } from "./HeavyBallistaSpec";
 import { LIGHT_BALLISTA_PROFILE } from "./LightBallistaSpec";
 import { MAGIC_COMP_BOW_PROFILE, MAGIC_LONGBOW_PROFILE } from "./MagicLongbowSpec";
@@ -123,8 +123,18 @@ export {
     DragonPickaxeSpec,
 } from "./DragonPickaxeSpec";
 export {
+    GRANITE_MAUL_ITEM_IDS,
+    GRANITE_MAUL_ORNATE_ENERGY_COST,
+    GRANITE_MAUL_SPECIAL_ATTACK_PROFILE,
+    GRANITE_MAUL_SPECIAL_ATTACK_PROFILES,
     GRANITE_MAUL_SPECIAL_ATTACK_SCRIPTS,
+    GRANITE_MAUL_STANDARD_ENERGY_COST,
+    ORNATE_GRANITE_MAUL_ITEM_ID,
+    ORNATE_GRANITE_MAUL_SPECIAL_ATTACK_PROFILE,
     GraniteMaulSpecialAttackScript,
+    getGraniteMaulSpecialAttackEnergyCost,
+    isGraniteMaul,
+    queueGraniteMaulSpecialAttackInput,
 } from "./GraniteMaulSpecialAttack";
 export { GRANITE_HAMMER_SPEC, GraniteHammerSpec } from "./GraniteHammerSpec";
 export {
@@ -252,7 +262,7 @@ export {
 
 export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Object.freeze([
     DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE,
-    GRANITE_MAUL_SPECIAL_ATTACK_PROFILE,
+    ...GRANITE_MAUL_SPECIAL_ATTACK_PROFILES,
     ...MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES,
     MAGIC_LONGBOW_PROFILE,
     MAGIC_COMP_BOW_PROFILE,
@@ -276,6 +286,5 @@ export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Obje
 
 export {
     DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE,
-    GRANITE_MAUL_SPECIAL_ATTACK_PROFILE,
     MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES,
 };
