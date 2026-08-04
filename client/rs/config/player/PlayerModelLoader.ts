@@ -36,6 +36,7 @@ export class PlayerModelLoader {
     ) {}
 
     buildStaticModel(appearance: PlayerAppearance, extraObjTypes?: ObjType[]): Model | undefined {
+        const missesBefore = this.modelLoader.missCount ?? 0;
         const modelDatas: ModelData[] = [];
         const colors = Array.isArray(appearance.colors) ? appearance.colors : [];
 
@@ -133,6 +134,11 @@ export class PlayerModelLoader {
         }
 
         if (modelDatas.length === 0) {
+            return undefined;
+        }
+        if ((this.modelLoader.missCount ?? 0) !== missesBefore) {
+            // A body-part model is still streaming in; don't build (and let
+            // callers cache) a partial player model.
             return undefined;
         }
 

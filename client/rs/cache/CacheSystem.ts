@@ -5,7 +5,9 @@ import { CacheFiles } from "./CacheFiles";
 import { CacheIndex, CacheIndexDat, CacheIndexDat2, LegacyCacheIndex } from "./CacheIndex";
 import { CacheType } from "./CacheType";
 import { IndexType } from "./IndexType";
+import { PresenceBitset } from "./js5/PresenceBitset";
 import { MemoryStore } from "./store/MemoryStore";
+import { SparseMemoryStore } from "./store/SparseMemoryStore";
 
 export class CacheSystem<A extends ApiType = ApiType.SYNC> {
     static loadIndicesFromStore(cacheType: "dat" | "dat2", store: MemoryStore) {
@@ -93,13 +95,18 @@ export class CacheSystem<A extends ApiType = ApiType.SYNC> {
         cacheType: CacheType,
         cacheFiles: CacheFiles,
         indicesToLoad: number[] = [],
+        /** When set, builds a SparseMemoryStore over a partially-downloaded dat2. */
+        presence?: PresenceBitset,
     ): CacheSystem {
         switch (cacheType) {
             case "legacy":
                 return CacheSystem.loadLegacy(cacheFiles);
             case "dat":
             case "dat2":
-                const store = MemoryStore.fromFiles(cacheFiles, indicesToLoad);
+                const store =
+                    presence && cacheType === "dat2"
+                        ? SparseMemoryStore.fromSparseFiles(cacheFiles, presence, indicesToLoad)
+                        : MemoryStore.fromFiles(cacheFiles, indicesToLoad);
                 const indices = CacheSystem.loadIndicesFromStore(cacheType, store);
                 return new CacheSystem(indices, store, cacheType);
         }
@@ -136,6 +143,10 @@ export class CacheSystem<A extends ApiType = ApiType.SYNC> {
             return true;
         }
         return false;
+    }
+
+    getStore(): MemoryStore | undefined {
+        return this.store;
     }
 
     indexExists(indexId: number): boolean {

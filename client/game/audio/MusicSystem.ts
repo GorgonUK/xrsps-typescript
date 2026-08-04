@@ -4,6 +4,7 @@ import { MusicBuffer } from "../../rs/audio/music/MusicBuffer";
 import { SoundTrack } from "../../rs/audio/music/SoundTrack";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
+import { retryOnMissingGroup } from "../../rs/cache/js5/retryOnMissingGroup";
 import { copyArrayBufferLike, copyArrayBufferView } from "../../common/utils/ArrayBufferUtil";
 import { decodeOggVorbisToAudioBuffer, isOggVorbis } from "./VorbisWasm";
 import {
@@ -696,7 +697,11 @@ export class MusicSystem {
                 return false;
             }
 
-            const file = index.getFileSmart(trackId);
+            // Track data may still be streaming in (sparse cache); wait for it.
+            const file = await retryOnMissingGroup(() => index.getFileSmart(trackId));
+            if (mySequence !== this.loadSequence) {
+                return false;
+            }
             if (!file) {
                 console.error(`[MusicSystem] Track ${trackId} not found in cache`);
                 this.isPlaying = false;

@@ -13,6 +13,7 @@ import {
 } from "../../rs/audio/vorbis";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { IndexType } from "../../rs/cache/IndexType";
+import { retryOnMissingGroup } from "../../rs/cache/js5/retryOnMissingGroup";
 
 let decoder: OggVorbisDecoder | null = null;
 let initPromise: Promise<OggVorbisDecoder> | null = null;
@@ -157,7 +158,9 @@ export async function loadVorbisSample(
     }
 
     // Initialize OSRS Vorbis setup (shared codebooks, etc.)
-    if (!ensureOsrsSetupInitialized(cache)) {
+    // Setup/sample groups may still be streaming in (sparse cache); wait.
+    const setupOk = await retryOnMissingGroup(() => ensureOsrsSetupInitialized(cache));
+    if (!setupOk) {
         console.warn("[VorbisWasm] Failed to initialize OSRS Vorbis setup data");
         return null;
     }
@@ -166,7 +169,7 @@ export async function loadVorbisSample(
     const index = cache.getIndex(IndexType.DAT2.musicSamples);
     if (!index) return null;
 
-    const file = index.getFile(groupId, fileId);
+    const file = await retryOnMissingGroup(() => index.getFile(groupId, fileId));
     if (!file) return null;
 
     const sampleData = new Uint8Array(file.data.buffer, file.data.byteOffset, file.data.byteLength);

@@ -3,6 +3,7 @@ import { CacheInfo } from "../cache/CacheInfo";
 import { CacheSystem } from "../cache/CacheSystem";
 import { detectCacheType } from "../cache/CacheType";
 import { IndexType } from "../cache/IndexType";
+import { isGroupMissingError } from "../cache/js5/GroupMissingError";
 import { RawSoundData, SoundEffect } from "./legacy/SoundEffect";
 
 export class SoundEffectLoader {
@@ -53,7 +54,11 @@ export class SoundEffectLoader {
         try {
             return this.tryDecode(soundId);
         } catch (err) {
-            console.log("[SoundEffectLoader] failed to load sound", soundId, err);
+            // Missing groups are queued for on-demand fetch; the sound is
+            // skipped now and plays normally once its data has arrived.
+            if (!isGroupMissingError(err)) {
+                console.log("[SoundEffectLoader] failed to load sound", soundId, err);
+            }
             return undefined;
         }
     }

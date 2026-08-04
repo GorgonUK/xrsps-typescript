@@ -4,7 +4,7 @@ import { CacheType } from "./CacheType";
 import { SectorCluster } from "./store/SectorCluster";
 
 // Minimal cache wrapper interface to tolerate environments without CacheStorage (e.g., some iOS contexts)
-type CacheLike = {
+export type CacheLike = {
     match(request: RequestInfo, options?: CacheQueryOptions): Promise<Response | undefined>;
     matchAll?(request: RequestInfo, options?: CacheQueryOptions): Promise<Response[]>;
     put(request: RequestInfo, response: Response): Promise<void>;
@@ -35,7 +35,7 @@ function resolveCacheKey(cacheName: string): string {
     return `${CACHE_STORAGE_PREFIX}${cacheName}`;
 }
 
-async function openCache(cacheName: string): Promise<CacheLike> {
+export async function openCache(cacheName: string): Promise<CacheLike> {
     if (typeof (globalThis as any).caches !== "undefined") {
         return (await (globalThis as any).caches.open(resolveCacheKey(cacheName))) as CacheLike;
     }
