@@ -3,6 +3,7 @@ import { CacheFiles, ProgressListener } from "../rs/cache/CacheFiles";
 import { CacheInfo, getLatestCache } from "../rs/cache/CacheInfo";
 import { CacheType, detectCacheType } from "../rs/cache/CacheType";
 import { IndexType } from "../rs/cache/IndexType";
+import { validatePartialContentResponse } from "../rs/cache/js5/HttpRange";
 import { Js5Persistence } from "../rs/cache/js5/Js5Persistence";
 import { PresenceBitset } from "../rs/cache/js5/PresenceBitset";
 import { Sector } from "../rs/cache/store/Sector";
@@ -329,6 +330,7 @@ async function fetchRangeStreaming(
         } catch {}
         throw new Error(`Range fetch failed (${resp.status}) for ${url}`);
     }
+    validatePartialContentResponse(resp, startByte, endByte, url);
     const target = new Uint8Array(buffer);
     let offset = startByte;
     if (!resp.body) {
@@ -429,16 +431,24 @@ async function loadCacheFilesSparse(
 
     // dat2 size and identity — doubles as the Range-support probe.
     const probe = await fetch(dat2Path, { headers: { Range: "bytes=0-0" }, signal });
-    try {
-        probe.body?.cancel();
-    } catch {}
     if (probe.status !== 206) {
+        try {
+            probe.body?.cancel();
+        } catch {}
         console.warn(
             `[js5] Server does not support Range requests (status ${probe.status}); using full download`,
         );
         return undefined;
     }
-    const totalSize = Number(probe.headers.get("Content-Range")?.split("/")[1] ?? 0);
+    let probeRange;
+    try {
+        probeRange = validatePartialContentResponse(probe, 0, 1, dat2Path);
+    } finally {
+        try {
+            probe.body?.cancel();
+        } catch {}
+    }
+    const totalSize = probeRange.total ?? 0;
     if (!Number.isFinite(totalSize) || totalSize <= 0) {
         return undefined;
     }

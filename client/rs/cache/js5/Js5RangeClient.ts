@@ -1,5 +1,6 @@
 import { Sector } from "../store/Sector";
 import { GroupSpan, SparseMemoryStore } from "../store/SparseMemoryStore";
+import { validatePartialContentResponse } from "./HttpRange";
 
 export type RangeFetchedListener = (byteOffset: number, bytes: Uint8Array) => void;
 
@@ -311,23 +312,45 @@ export class Js5RangeClient {
             try {
                 resp.body?.cancel();
             } catch {}
-            if (!this.rangeUnsupported) {
-                this.rangeUnsupported = true;
-                // Fail queued-but-undispatched groups; nothing will service them.
-                for (const [key, group] of this.pending) {
-                    if (!group.inFlight) {
-                        this.pending.delete(key);
-                        group.reject(new Error("js5 disabled: Range requests unsupported"));
-                    }
-                }
-                this.onRangeUnsupported?.();
-            }
-            throw new Error("Server does not support Range requests");
+            throw this.disableRangeRequests("Server does not support Range requests");
         }
         if (resp.status !== 206) {
             throw new Error(`Failed range fetch ${this.dat2Url} (${start}-${end}): ${resp.status}`);
         }
-        return new Uint8Array(await resp.arrayBuffer());
+        try {
+            validatePartialContentResponse(resp, start, end, this.dat2Url);
+        } catch (error) {
+            try {
+                resp.body?.cancel();
+            } catch {}
+            const message = error instanceof Error ? error.message : String(error);
+            throw this.disableRangeRequests(message);
+        }
+        const bytes = new Uint8Array(await resp.arrayBuffer());
+        if (bytes.byteLength !== end - start) {
+            throw new Error(
+                `Truncated range fetch ${this.dat2Url} (${start}-${end}): ` +
+                    `received ${bytes.byteLength} of ${end - start} bytes`,
+            );
+        }
+        return bytes;
+    }
+
+    private disableRangeRequests(reason: string): Error {
+        const error = new Error(`js5 disabled: ${reason}`);
+        if (this.rangeUnsupported) {
+            return error;
+        }
+        this.rangeUnsupported = true;
+        // Fail queued-but-undispatched groups; nothing will service them.
+        for (const [key, group] of this.pending) {
+            if (!group.inFlight) {
+                this.pending.delete(key);
+                group.reject(error);
+            }
+        }
+        this.onRangeUnsupported?.();
+        return error;
     }
 
     private notifyFetched(byteOffset: number, bytes: Uint8Array): void {
