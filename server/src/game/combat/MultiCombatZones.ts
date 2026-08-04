@@ -350,7 +350,7 @@ export class MultiCombatSystem {
      * Check if actor is in multi-combat zone
      */
     actorInMultiCombat(actor: Actor): boolean {
-        return this.isMultiCombat(actor.x, actor.y, actor.level);
+        return this.isMultiCombat(actor.tileX, actor.tileY, actor.level);
     }
 
     /**
@@ -628,11 +628,33 @@ const TOB_MAX_X = 3391;
 const TOB_MIN_Y = 4288;
 const TOB_MAX_Y = 4479;
 
+/** Check whether a position is inside the Theatre of Blood build area. */
+export function isInTheatreOfBlood(x: number, y: number, plane: number): boolean {
+    return (
+        x >= TOB_MIN_X &&
+        x <= TOB_MAX_X &&
+        y >= TOB_MIN_Y &&
+        y <= TOB_MAX_Y &&
+        plane === 0
+    );
+}
+
 /** Tombs of Amascut (ToA) boundaries - approximate */
 const TOA_MIN_X = 3392;
 const TOA_MAX_X = 3519;
 const TOA_MIN_Y = 5120;
 const TOA_MAX_Y = 5247;
+
+/** Check whether a position is inside the Tombs of Amascut build area. */
+export function isInTombsOfAmascut(x: number, y: number, plane: number): boolean {
+    return (
+        x >= TOA_MIN_X &&
+        x <= TOA_MAX_X &&
+        y >= TOA_MIN_Y &&
+        y <= TOA_MAX_Y &&
+        plane === 0
+    );
+}
 
 /**
  * Check if a position is in a raid instance (CoX, ToB, ToA).
@@ -643,11 +665,11 @@ export function isInRaid(x: number, y: number, plane: number): boolean {
         return true;
     }
     // Theatre of Blood
-    if (x >= TOB_MIN_X && x <= TOB_MAX_X && y >= TOB_MIN_Y && y <= TOB_MAX_Y && plane === 0) {
+    if (isInTheatreOfBlood(x, y, plane)) {
         return true;
     }
     // Tombs of Amascut
-    if (x >= TOA_MIN_X && x <= TOA_MAX_X && y >= TOA_MIN_Y && y <= TOA_MAX_Y && plane === 0) {
+    if (isInTombsOfAmascut(x, y, plane)) {
         return true;
     }
     return false;

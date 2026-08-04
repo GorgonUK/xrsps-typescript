@@ -5,6 +5,7 @@ import type { CacheInfo } from "../../../../client/rs/cache/CacheInfo";
 import { CacheSystem } from "../../../../client/rs/cache/CacheSystem";
 import { CombatCategoryConst as CombatCategory } from "../../../src/game/combat/WeaponDataProvider";
 import { getWeaponData } from "../../../src/game/combat/WeaponDataProvider";
+import { ANCIENT_AUTOCAST_STAFF_IDS } from "../../../src/game/combat/plugins/MagicStaffValidator";
 import { applyProjectileDefaults } from "../../../src/game/data/ProjectileParamsProvider";
 import { VARP_DESERT_TREASURE } from "../../../../client/common/vars";
 import {
@@ -290,10 +291,12 @@ const ENTRIES: SpellDataEntry[] = [
         id: 21876,
         name: "Wind Surge",
         baseMaxHit: 21,
-        castSpotAnim: 457,
-        projectileId: 458,
-        impactSpotAnim: 459,
+        castSpotAnim: 1455,
+        projectileId: 1456,
+        impactSpotAnim: 1457,
         splashSpotAnim: 85,
+        castSoundId: 4011,
+        impactSoundId: 4012,
         levelRequired: 81,
         spellbook: "standard",
         category: "combat",
@@ -306,9 +309,9 @@ const ENTRIES: SpellDataEntry[] = [
         id: 21877,
         name: "Water Surge",
         baseMaxHit: 22,
-        castSpotAnim: 460,
-        projectileId: 461,
-        impactSpotAnim: 462,
+        castSpotAnim: 1458,
+        projectileId: 1459,
+        impactSpotAnim: 1460,
         splashSpotAnim: 85,
         levelRequired: 85,
         spellbook: "standard",
@@ -323,9 +326,9 @@ const ENTRIES: SpellDataEntry[] = [
         id: 21878,
         name: "Earth Surge",
         baseMaxHit: 23,
-        castSpotAnim: 463,
-        projectileId: 464,
-        impactSpotAnim: 465,
+        castSpotAnim: 1461,
+        projectileId: 1462,
+        impactSpotAnim: 1463,
         splashSpotAnim: 85,
         levelRequired: 90,
         spellbook: "standard",
@@ -340,10 +343,12 @@ const ENTRIES: SpellDataEntry[] = [
         id: 21879,
         name: "Fire Surge",
         baseMaxHit: 24,
-        castSpotAnim: 466,
-        projectileId: 467,
-        impactSpotAnim: 468,
+        castSpotAnim: 1464,
+        projectileId: 1465,
+        impactSpotAnim: 1466,
         splashSpotAnim: 85,
+        castSoundId: 4013,
+        impactSoundId: 4014,
         levelRequired: 95,
         spellbook: "standard",
         category: "combat",
@@ -911,10 +916,12 @@ const ENTRIES: SpellDataEntry[] = [
         baseMaxHit: 30,
         impactSpotAnim: 369,
         impactSpotAnimHeight: 0,
+        castSoundId: 171,
+        impactSoundId: 168,
         levelRequired: 94,
         spellbook: "ancient",
         category: "combat",
-        freezeDuration: 33,
+        freezeDuration: 32,
         maxTargets: 9,
         runeCosts: [
             { runeId: 560, quantity: 4 },
@@ -979,10 +986,6 @@ const SPELL_WIDGET_ALIASES: Array<{ spellId: number; groupId: number; childId: n
     { spellId: 3273, groupId: 218, childId: 11 },
 ];
 
-const ANCIENT_AUTOCAST_WEAPONS = new Set<number>([
-    4675, 4710, 6914, 8841, 11791, 12904, 21006, 22296, 24422, 24423, 24424, 24425,
-]);
-
 const IBAN_BLAST_WEAPONS = new Set<number>([1409, 12658]);
 
 const MAGIC_DART_WEAPONS = new Set<number>([4170, 21255, 11791, 12904, 22296]);
@@ -1003,6 +1006,34 @@ const POWERED_STAVES = new Set<number>([
 const ANCIENT_SPELL_IDS = new Set<number>([
     4629, 4630, 4632, 4633, 4635, 4636, 4638, 4639, 4641, 4642, 4644, 4645, 4647, 4648, 4650, 4651,
 ]);
+
+/** Alternate component/script spell IDs used by older and modern cache revisions. */
+const SPELL_ID_ALIASES = new Map<number, number>([
+    [12939, 4629],
+    [12987, 4630],
+    [12901, 4632],
+    [12861, 4633],
+    [12963, 4635],
+    [13011, 4636],
+    [12919, 4638],
+    [12881, 4639],
+    [12951, 4641],
+    [12999, 4642],
+    [12911, 4644],
+    [12871, 4645],
+    [12975, 4647],
+    [13023, 4648],
+    [12929, 4650],
+    [12891, 4651],
+    [22644, 21876],
+    [22658, 21877],
+    [22628, 21878],
+    [22608, 21879],
+]);
+
+function canonicalSpellId(spellId: number): number {
+    return SPELL_ID_ALIASES.get(spellId) ?? spellId;
+}
 
 const GOD_SPELL_IDS = new Set<number>([3310, 3311, 3312]);
 
@@ -1196,7 +1227,7 @@ export function createSpellDataProvider(): SpellDataProvider {
 
     const provider: SpellDataProvider = {
         getSpellData(spellId: number): SpellDataEntry | undefined {
-            return SPELL_DATA_MAP.get(spellId);
+            return SPELL_DATA_MAP.get(canonicalSpellId(spellId));
         },
 
         getSpellDataByWidget(
@@ -1217,7 +1248,7 @@ export function createSpellDataProvider(): SpellDataProvider {
         },
 
         hasSpellData(spellId: number): boolean {
-            return SPELL_DATA_MAP.has(spellId);
+            return SPELL_DATA_MAP.has(canonicalSpellId(spellId));
         },
 
         initSpellWidgetMapping(cacheInfo: CacheInfo, cache: CacheSystem): void {
@@ -1303,11 +1334,11 @@ export function createSpellDataProvider(): SpellDataProvider {
 
         getAutocastIndexFromSpellId(spellId: number): number | undefined {
             if (spellId <= 0) return undefined;
-            return SPELL_ID_TO_AUTOCAST_INDEX.get(spellId);
+            return SPELL_ID_TO_AUTOCAST_INDEX.get(canonicalSpellId(spellId));
         },
 
         isSpellAutocastable(spellId: number): boolean {
-            return SPELL_ID_TO_AUTOCAST_INDEX.has(spellId);
+            return SPELL_ID_TO_AUTOCAST_INDEX.has(canonicalSpellId(spellId));
         },
 
         buildVisibleAutocastIndices(weaponItemId: number): number[] {
@@ -1325,7 +1356,7 @@ export function createSpellDataProvider(): SpellDataProvider {
 
         canWeaponAutocastSpell(weaponItemId: number, spellId: number): AutocastCompatibilityResult {
             const weapon = weaponItemId;
-            const spell = spellId;
+            const spell = canonicalSpellId(spellId);
 
             if (!(weapon > 0)) {
                 return { compatible: false, reason: "no_weapon" };
@@ -1345,7 +1376,7 @@ export function createSpellDataProvider(): SpellDataProvider {
             }
 
             if (ANCIENT_SPELL_IDS.has(spell)) {
-                if (!ANCIENT_AUTOCAST_WEAPONS.has(weapon)) {
+                if (!ANCIENT_AUTOCAST_STAFF_IDS.has(weapon)) {
                     return { compatible: false, reason: "wrong_spellbook" };
                 }
                 return { compatible: true };

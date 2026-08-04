@@ -1,3 +1,4 @@
+import { combatConsumableManager } from "../../../../src/game/combat/engine/CombatConsumableManager";
 import { INVENTORY_SLOT_COUNT, type PlayerState } from "../../../../src/game/player";
 import type { ScriptServices } from "../../../../src/game/scripts/types";
 
@@ -12,26 +13,12 @@ export type ConsumableExecuteContext = {
 
 export type ConsumableProfile = "food" | "potion" | "comboFood";
 
-/**
- * OSRS Attack Delay on Eating:
- * - Standard food: +3 ticks to attack cooldown
- * - Combo food (karambwan, gnome food): +2 ticks to attack cooldown
- * - Potions: +3 ticks to attack cooldown
- * Reference: docs/tick-cycle-order.md
- */
-const PROFILE_ATTACK_DELAY: Record<ConsumableProfile, number> = {
-    food: 3,
-    potion: 3,
-    comboFood: 2,
-};
-
 export interface ConsumableActionOptions {
     player: PlayerState;
     slotIndex: number;
     itemId: number;
     option?: string;
     tick?: number;
-    cooldownTicks?: number;
     delayTicks?: number;
     groups?: string[];
     loggerTag?: string;
@@ -43,8 +30,8 @@ export interface ConsumableActionOptions {
 const clampSlot = (slot: number): number => Math.max(0, Math.min(slot, INVENTORY_SLOT_COUNT - 1));
 
 const PROFILE_CONFIG: Record<ConsumableProfile, { groups: string[]; cooldownTicks: number }> = {
-    food: { groups: ["inventory.consume", "inventory.food"], cooldownTicks: 3 },
-    potion: { groups: ["inventory.consume", "inventory.potion"], cooldownTicks: 3 },
+    food: { groups: ["inventory.food"], cooldownTicks: 0 },
+    potion: { groups: ["inventory.potion"], cooldownTicks: 0 },
     comboFood: { groups: ["inventory.combo_food"], cooldownTicks: 2 },
 };
 
@@ -68,7 +55,6 @@ export function scheduleConsumableAction(options: ConsumableActionOptions): bool
         itemId,
         option,
         tick,
-        cooldownTicks,
         delayTicks = 0,
         groups,
         loggerTag = "consumable",
@@ -88,7 +74,19 @@ export function scheduleConsumableAction(options: ConsumableActionOptions): bool
 
     const profileConfig = profile ? PROFILE_CONFIG[profile] : undefined;
     const effectiveGroups = normalizeGroups(groups ?? profileConfig?.groups);
-    const effectiveCooldown = cooldownTicks ?? profileConfig?.cooldownTicks ?? 3;
+    const consumableType = profile;
+
+    if (consumableType === "food" && !combatConsumableManager.canEatFood(player, resolvedTick)) {
+        log("food consume rejected", { reason: "food_delay" });
+        return false;
+    }
+    if (
+        consumableType === "potion" &&
+        !combatConsumableManager.canDrinkPotion(player, resolvedTick)
+    ) {
+        log("potion consume rejected", { reason: "potion_delay" });
+        return false;
+    }
 
     const runExecute = (snapshot: boolean) => {
         try {
@@ -100,12 +98,6 @@ export function scheduleConsumableAction(options: ConsumableActionOptions): bool
                 tick: resolvedTick,
                 services,
             });
-            // Eating food/drinking potions adds attack delay
-            // Standard food/potions: +3 ticks, combo food: +2 ticks
-            const attackDelay = profile ? PROFILE_ATTACK_DELAY[profile] : 0;
-            if (attackDelay > 0) {
-                player.addAttackDelay(attackDelay, resolvedTick);
-            }
         } catch (err) {
             log("onExecute threw", {
                 itemId: normalizedItemId,
@@ -126,10 +118,11 @@ export function scheduleConsumableAction(options: ConsumableActionOptions): bool
                 slotIndex: normalizedSlot,
                 itemId: normalizedItemId,
                 option,
+                consumableType,
                 apply: () => runExecute(false),
             },
             delayTicks,
-            cooldownTicks: effectiveCooldown,
+            cooldownTicks: profileConfig?.cooldownTicks ?? 0,
             groups: effectiveGroups,
         },
         resolvedTick,

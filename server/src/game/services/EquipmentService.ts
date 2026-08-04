@@ -1,3 +1,4 @@
+import { VARP_AUTOCAST_SPELLPOS } from "../../../../client/common/vars";
 import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import {
     DEFAULT_WEAPON_CATEGORY,
@@ -5,8 +6,10 @@ import {
 } from "../../../../client/rs/config/player/WeaponCategory";
 import { getItemDefinition } from "../../data/items";
 import { logger } from "../../utils/logger";
+import { DisplayMode, getDefaultInterfaces } from "../../widgets/WidgetManager";
 import type { ServerServices } from "../ServerServices";
 import { clearAutocastState } from "../combat/AutocastState";
+import { MagicStaffValidator } from "../combat/plugins/MagicStaffValidator";
 import { getCategoryForWeaponInterface } from "../combat/WeaponInterfaces";
 import {
     ensureEquipArrayOn,
@@ -19,6 +22,12 @@ import type { PlayerAppearance as PlayerAppearanceState, PlayerState } from "../
 
 const EQUIP_SLOT_COUNT = 14;
 const EQUIPMENT_STATS_BONUS_COUNT = 14;
+const COMBAT_OPTIONS_GROUP_ID = 593;
+const AUTOCAST_SELECTION_GROUP_ID = 201;
+const AUTOCAST_CONTROL_COMPONENT_IDS = [23, 28] as const;
+const TOXIC_BLOWPIPE_ITEM_ID = 12926;
+const RANGED_ATTACK_BONUS_INDEX = 4;
+const RANGED_STRENGTH_BONUS_INDEX = 11;
 
 /**
  * Manages equipment operations: equip/unequip, stat bonuses, weapon categories.
@@ -150,6 +159,68 @@ export class EquipmentService {
         logger.info(`[autocast] Reset autocast for player=${p.id} due to weapon change`);
     }
 
+    /**
+     * Clears persistent and transient autocast state after a weapon-slot change.
+     * The standard Combat Options interface is destructively rebound in the same
+     * tick so its cache scripts can rebuild the weapon-specific style panel.
+     */
+    handleWeaponSlotChanged(p: PlayerState): void {
+        const chooserWasOpen =
+            p.widgets.isOpen(AUTOCAST_SELECTION_GROUP_ID) ||
+            this.services.interfaceManager.isWidgetGroupOpenInLedger(
+                p.id,
+                AUTOCAST_SELECTION_GROUP_ID,
+            );
+        const combatOptionsWereOpen =
+            p.widgets.isOpen(COMBAT_OPTIONS_GROUP_ID) ||
+            this.services.interfaceManager.isWidgetGroupOpenInLedger(
+                p.id,
+                COMBAT_OPTIONS_GROUP_ID,
+            );
+
+        p.combat.pendingAutocastDefensive = undefined;
+        p.combat.pendingAutocastWeaponId = undefined;
+        this.resetAutocast(p);
+        p.varps.setVarpValue(VARP_AUTOCAST_SPELLPOS, -1);
+        this.services.variableService.queueVarp(p.id, VARP_AUTOCAST_SPELLPOS, -1);
+
+        if (!chooserWasOpen && !combatOptionsWereOpen) return;
+
+        const rawDisplayMode = Number.isFinite(p.displayMode) ? Math.trunc(p.displayMode) : 1;
+        const displayMode =
+            rawDisplayMode >= DisplayMode.FIXED && rawDisplayMode <= DisplayMode.MOBILE
+                ? (rawDisplayMode as DisplayMode)
+                : DisplayMode.RESIZABLE_NORMAL;
+        const combatMount = getDefaultInterfaces(displayMode).find(
+            (entry) => entry.groupId === COMBAT_OPTIONS_GROUP_ID,
+        );
+        const targetUid = combatMount?.targetUid ?? ((161 << 16) | 76);
+
+        p.widgets.closeByTargetUid(targetUid);
+        p.widgets.open(COMBAT_OPTIONS_GROUP_ID, {
+            targetUid,
+            type: combatMount?.type ?? 1,
+            modal: false,
+        });
+        const weaponId = this.ensureEquipArray(p)[EquipmentSlot.WEAPON] ?? -1;
+        const spellbookCompatible = MagicStaffValidator.isCompatible(
+            weaponId,
+            p.getSpellbookType(),
+        );
+        for (const componentId of AUTOCAST_CONTROL_COMPONENT_IDS) {
+            this.services.queueWidgetEvent(p.id, {
+                action: "set_hidden",
+                uid: (COMBAT_OPTIONS_GROUP_ID << 16) | componentId,
+                hidden: false,
+            });
+        }
+        logger.info(
+            `[autocast] Refreshed combat tab after weapon change for player=${p.id} ` +
+                `weapon=${weaponId} spellbook=${p.getSpellbookType()} ` +
+                `spellbookCompatible=${spellbookCompatible}`,
+        );
+    }
+
     computeEquipmentStatBonuses(player: PlayerState): number[] {
         const totals = new Array<number>(EQUIPMENT_STATS_BONUS_COUNT).fill(0);
         const equip = this.ensureEquipArray(player);
@@ -162,6 +233,31 @@ export class EquipmentService {
                 const bonus = itemBonuses[i] ?? 0;
                 if (!Number.isFinite(bonus)) continue;
                 totals[i] = (totals[i] ?? 0) + bonus;
+            }
+        }
+
+        if (equip[EquipmentSlot.WEAPON] === TOXIC_BLOWPIPE_ITEM_ID) {
+            // The bundled cache predates the 2021 rebalance (+60 accuracy,
+            // no strength). Charged blowpipes now provide +30/+20.
+            totals[RANGED_ATTACK_BONUS_INDEX] -= 30;
+            totals[RANGED_STRENGTH_BONUS_INDEX] += 20;
+
+            // Blowpipe damage comes from its internal dart, never from an item
+            // left in the ordinary ammunition equipment slot.
+            const quiverBonuses = getItemDefinition(equip[EquipmentSlot.AMMO] ?? -1)?.bonuses;
+            const quiverRangedStrength =
+                quiverBonuses?.[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+            if (Number.isFinite(quiverRangedStrength)) {
+                totals[RANGED_STRENGTH_BONUS_INDEX] -= quiverRangedStrength;
+            }
+
+            const loadedDart = player.equipment.getBlowpipeChargeState();
+            const dartBonuses = getItemDefinition(loadedDart.dartId)?.bonuses;
+            if (loadedDart.dartCount > 0 && dartBonuses) {
+                const rangedStrength = dartBonuses[RANGED_STRENGTH_BONUS_INDEX] ?? 0;
+                if (Number.isFinite(rangedStrength)) {
+                    totals[RANGED_STRENGTH_BONUS_INDEX] += rangedStrength;
+                }
             }
         }
         return totals;

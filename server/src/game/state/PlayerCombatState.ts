@@ -1,5 +1,7 @@
 import type { AttackType } from "../combat/AttackType";
 import { type ChargeTracker, createChargeTracker } from "../combat/DegradationSystem";
+import { CombatAttributes } from "../combat/state/CombatAttributes";
+import type { CombatAttributeStore } from "../combat/state/CombatAttributeStore";
 import type { NpcState } from "../npc";
 
 /**
@@ -10,7 +12,29 @@ import type { NpcState } from "../npc";
  * remain on PlayerState as thin delegates.
  */
 export class PlayerCombatState {
-    autoRetaliate: boolean = true;
+    private combatAttributes?: CombatAttributeStore;
+    private autoRetaliateFallback: boolean = true;
+
+    get autoRetaliate(): boolean {
+        return (
+            this.combatAttributes?.get(CombatAttributes.AUTO_RETALIATE_ENABLED) ??
+            this.autoRetaliateFallback
+        );
+    }
+
+    set autoRetaliate(enabled: boolean) {
+        const normalized = !!enabled;
+        this.autoRetaliateFallback = normalized;
+        this.combatAttributes?.set(CombatAttributes.AUTO_RETALIATE_ENABLED, normalized);
+    }
+
+    bindCombatAttributes(attributes: CombatAttributeStore): void {
+        this.combatAttributes = attributes;
+        if (!attributes.has(CombatAttributes.AUTO_RETALIATE_ENABLED)) {
+            attributes.set(CombatAttributes.AUTO_RETALIATE_ENABLED, this.autoRetaliateFallback);
+        }
+    }
+
     weaponCategory: number = 0;
     weaponItemId: number = -1;
     /**
@@ -44,13 +68,6 @@ export class PlayerCombatState {
 
     /** Current attack speed in ticks (e.g., 4 for most melee weapons) */
     attackDelay: number = 4;
-    /**
-     * Absolute tick when the player may attack again. This is the actor-global
-     * attack timer: it persists across target switches and is pushed forward by
-     * eating food, so neither resets the weapon cooldown.
-     */
-    nextAttackAvailableTick: number = 0;
-
     /** Last known wilderness level for change detection. */
     lastWildernessLevel: number = 0;
     /** Last known multi-combat state for change detection. */
@@ -62,8 +79,8 @@ export class PlayerCombatState {
     /** Last known LMS state for change detection. */
     lastInLMS: boolean = false;
 
-    // WeakRef combat/interaction targets (RSMod parity)
-    combatTargetFocus: WeakRef<NpcState | PlayerCombatTargetRef> | null = null;
+    // Non-target interaction and hit history references. The active combat
+    // target itself lives exclusively in PlayerState.combatAttributes.
     interactingNpc: WeakRef<NpcState> | null = null;
     interactingPlayer: WeakRef<PlayerCombatTargetRef> | null = null;
     lastHitBy: WeakRef<NpcState | PlayerCombatTargetRef> | null = null;
@@ -74,16 +91,11 @@ export class PlayerCombatState {
     attackTypes?: AttackType[];
     meleeBonusIndices?: Array<number | undefined>;
 
-    // Freeze/immunity
-    freezeExpiryTick: number = 0;
-    freezeImmunityUntilTick: number = 0;
-
-    // Special attack energy
-    specialEnergy: number = 1000; // SPECIAL_ENERGY_MAX
+    // Special attack regeneration and outbound synchronization metadata. The
+    // current energy and active toggle live in CombatAttributeStore.
     nextSpecialRegenTick: number = 0;
     lastSpecialRegenUiStartTick: number = -1;
     lastSpecialRegenUiInterval: number = -1;
-    specialActivatedFlag: boolean = false;
     specialEnergyDirty: boolean = true;
 
     // Equipment degradation
@@ -93,20 +105,24 @@ export class PlayerCombatState {
     // Freeze query methods
 
     isFrozen(currentTick: number): boolean {
-        if (this.freezeExpiryTick > 0 && currentTick >= this.freezeExpiryTick) {
-            this.freezeImmunityUntilTick = currentTick + 5;
-            this.freezeExpiryTick = 0;
-            return false;
-        }
-        return this.freezeExpiryTick > currentTick;
+        return (
+            this.combatAttributes?.get(CombatAttributes.FREEZE_UNTIL_CLOCK) ?? 0
+        ) > Math.trunc(currentTick);
     }
 
     isFreezeImmune(currentTick: number): boolean {
-        return currentTick < this.freezeImmunityUntilTick;
+        return (
+            Math.trunc(currentTick) <
+            (this.combatAttributes?.get(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK) ?? 0)
+        );
     }
 
     getFreezeRemaining(currentTick: number): number {
-        return Math.max(0, this.freezeExpiryTick - currentTick);
+        return Math.max(
+            0,
+            (this.combatAttributes?.get(CombatAttributes.FREEZE_UNTIL_CLOCK) ?? 0) -
+                Math.trunc(currentTick),
+        );
     }
 
     /**
@@ -115,45 +131,21 @@ export class PlayerCombatState {
      * The caller (PlayerState) must apply Actor-level side effects.
      */
     tryApplyFreeze(durationTicks: number, currentTick: number): number {
-        if (currentTick < this.freezeImmunityUntilTick) {
+        const attributes = this.combatAttributes;
+        if (!attributes) return -1;
+
+        const clock = Math.trunc(currentTick);
+        if (clock < attributes.get(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK)) {
             return -1;
         }
-        const expires = Math.max(this.freezeExpiryTick, currentTick + Math.max(1, durationTicks));
-        this.freezeExpiryTick = expires;
+
+        const expires = Math.max(
+            attributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+            clock + Math.max(1, Math.trunc(durationTicks)),
+        );
+        attributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, expires);
+        attributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, expires + 3);
         return expires;
-    }
-
-    // ========================================================================
-    // Combat target / interaction accessors
-    // ========================================================================
-
-    getCombatTarget(): NpcState | PlayerCombatTargetRef | null {
-        return this.combatTargetFocus?.deref() ?? null;
-    }
-
-    setCombatTarget(target: NpcState | PlayerCombatTargetRef | null): void {
-        this.combatTargetFocus = target ? new WeakRef(target) : null;
-    }
-
-    removeCombatTarget(): void {
-        this.combatTargetFocus = null;
-    }
-
-    resetCombat(): void {
-        this.combatTargetFocus = null;
-    }
-
-    isAttacking(): boolean {
-        return this.combatTargetFocus?.deref() != null;
-    }
-
-    isAttackReady(currentTick: number): boolean {
-        return currentTick >= this.nextAttackAvailableTick;
-    }
-
-    /** Push the global attack timer forward; never pulls it back. */
-    delayNextAttack(untilTick: number): void {
-        this.nextAttackAvailableTick = Math.max(this.nextAttackAvailableTick, untilTick);
     }
 
     getInteractingNpc(): NpcState | null {

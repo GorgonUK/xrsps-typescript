@@ -52,7 +52,6 @@ export function registerNpcHandlers(router: MessageRouter, services: MessageHand
                     }
                 } else if (ctx.player) {
                     ctx.player.setInteraction("npc", npc.id);
-                    services.startCombat(ctx.player, npc, tick, attackSpeed);
                 }
                 return;
             }

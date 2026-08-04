@@ -5,9 +5,8 @@ import {
     getPrayerDefinition,
 } from "../../../../client/rs/prayer/prayers";
 import { SkillId } from "../../../../client/rs/skill/skills";
-import { getItemDefinition } from "../../data/items";
 import { PlayerState } from "../player";
-import type { PrayerSystemProvider, PrayerTickResult } from "./PrayerSystemProvider";
+import { CombatAttributes } from "../combat/state/CombatAttributes";
 
 export type PrayerSelectionError = { prayer: PrayerName; message: string };
 
@@ -19,14 +18,19 @@ export type PrayerSelectionResult = {
     errors: PrayerSelectionError[];
 };
 
-export { PrayerTickResult };
+const PROTECTION_PRAYER_NAMES = new Set<PrayerName>([
+    "protect_from_magic",
+    "protect_from_missiles",
+    "protect_from_melee",
+]);
 
-export class PrayerSystem implements PrayerSystemProvider {
+export class PrayerSystem {
     applySelection(player: PlayerState, requested: Iterable<string>): PrayerSelectionResult {
         const normalized = this.normalizeRequest(requested);
         const errors: PrayerSelectionError[] = [];
         const skill = player.skillSystem.getSkill(SkillId.Prayer);
         const currentLevel = Math.max(0, skill.baseLevel + skill.boost);
+        player.combatAttributes.set(CombatAttributes.PRAYER_POINTS_CURRENT, currentLevel);
         if (currentLevel <= 0 && normalized.length > 0) {
             errors.push({
                 prayer: normalized[0],
@@ -42,6 +46,16 @@ export class PrayerSystem implements PrayerSystemProvider {
         }
         const next: PrayerName[] = [];
         for (const prayer of normalized) {
+            if (
+                PROTECTION_PRAYER_NAMES.has(prayer) &&
+                player.prayer.areProtectionPrayersLocked()
+            ) {
+                errors.push({
+                    prayer,
+                    message: "Your protection prayers have been disabled.",
+                });
+                continue;
+            }
             const def = getPrayerDefinition(prayer);
             if (!this.meetsLevel(skill.baseLevel, def)) {
                 errors.push({
@@ -81,47 +95,6 @@ export class PrayerSystem implements PrayerSystemProvider {
             deactivated,
             errors,
         };
-    }
-
-    processPlayer(player: PlayerState): PrayerTickResult | undefined {
-        const active = player.prayer.getActivePrayers();
-        if (active.size === 0) {
-            player.prayer.resetDrainAccumulator();
-            player.prayer.consumeActivationTick();
-            return undefined;
-        }
-        const skill = player.skillSystem.getSkill(SkillId.Prayer);
-        let current = Math.max(0, skill.baseLevel + skill.boost);
-        if (current <= 0) {
-            player.prayer.resetDrainAccumulator();
-            return { prayerDepleted: active.size > 0 };
-        }
-        // Official behaviour does not drain prayer on the tick a prayer is
-        // activated. This also preserves OSRS one-tick prayer flicking.
-        if (player.prayer.consumeActivationTick()) return undefined;
-        const drainRate = this.computeDrainRate(active);
-        if (!(drainRate > 0)) {
-            player.prayer.resetDrainAccumulator();
-            return undefined;
-        }
-        const resistance = Math.max(1, 60 + this.computePrayerBonus(player) * 2);
-        let accumulator = player.prayer.getDrainAccumulator();
-        accumulator += drainRate;
-        let drained = 0;
-        while (accumulator >= resistance && current > 0) {
-            accumulator -= resistance;
-            drained++;
-            current--;
-        }
-        player.prayer.setDrainAccumulator(accumulator);
-        if (drained <= 0) return undefined;
-        player.skillSystem.adjustSkillBoost(SkillId.Prayer, -drained);
-        const remaining = player.prayer.getPrayerLevel();
-        if (remaining <= 0) {
-            player.prayer.resetDrainAccumulator();
-            return { prayerDepleted: active.size > 0 };
-        }
-        return undefined;
     }
 
     private normalizeRequest(requested: Iterable<string>): PrayerName[] {
@@ -184,26 +157,4 @@ export class PrayerSystem implements PrayerSystemProvider {
         return { ok: true };
     }
 
-    private computeDrainRate(active: ReadonlySet<PrayerName>): number {
-        let rate = 0;
-        for (const prayer of active) {
-            rate += getPrayerDefinition(prayer).drainRate;
-        }
-        return rate;
-    }
-
-    private computePrayerBonus(player: PlayerState): number {
-        const equip = player.appearance?.equip;
-        if (!equip) return 0;
-        let total = 0;
-        for (const itemId of equip) {
-            if (!(itemId > 0)) continue;
-            const def = getItemDefinition(itemId);
-            const bonuses = def?.bonuses;
-            if (!bonuses) continue;
-            const prayerBonus = bonuses[13] ?? 0;
-            total += prayerBonus;
-        }
-        return total;
-    }
 }

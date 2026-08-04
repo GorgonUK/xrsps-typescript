@@ -424,6 +424,19 @@ function mergeStates(
         result.specialEnergy = Math.max(0, Math.min(MAX_SPECIAL_ENERGY, Math.floor(specialEnergy)));
     }
 
+    const equipmentChargesSource = pick("equipmentCharges");
+    if (Array.isArray(equipmentChargesSource)) {
+        const equipmentCharges: Array<{ itemId: number; charges: number }> = [];
+        for (const entry of equipmentChargesSource) {
+            if (!entry) continue;
+            const itemId = Math.floor(entry.itemId);
+            const charges = Math.floor(entry.charges);
+            if (itemId <= 0 || charges <= 0 || !Number.isSafeInteger(charges)) continue;
+            equipmentCharges.push({ itemId, charges });
+        }
+        if (equipmentCharges.length > 0) result.equipmentCharges = equipmentCharges;
+    }
+
     const specialActivated = pick("specialActivated");
     if (specialActivated !== undefined) {
         result.specialActivated = specialActivated;

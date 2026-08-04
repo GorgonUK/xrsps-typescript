@@ -495,6 +495,31 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
         });
 
         this.register({
+            name: "Phantom Strike",
+            weaponIds: [22636, 23619, 27916],
+            energyCost: 50,
+            accuracyMultiplier: 1.5,
+            damageMultiplier: 1,
+            hitCount: 1,
+            attackType: "ranged",
+            animationId: 929,
+        });
+
+        this.register({
+            name: "Powershot",
+            weaponIds: [859, 10284],
+            energyCost: 35,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+            hitCount: 1,
+            attackType: "ranged",
+            effects: {
+                guaranteedFirstHit: true,
+            },
+            animationId: 426,
+        });
+
+        this.register({
             name: "Armadyl Eye",
             weaponIds: [11785],
             energyCost: 40,
@@ -524,7 +549,7 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
             name: "Toxic Siphon",
             weaponIds: [12926],
             energyCost: 50,
-            accuracyMultiplier: 1.0,
+            accuracyMultiplier: 2.0,
             damageMultiplier: 1.5,
             hitCount: 1,
             attackType: "ranged",
@@ -538,13 +563,13 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
 
         this.register({
             name: "Concentrated Shot",
-            weaponIds: [19478, 19481],
+            weaponIds: [19478, 19481, 23630, 26712, 27188],
             energyCost: 65,
             accuracyMultiplier: 1.25,
             damageMultiplier: 1.25,
             hitCount: 1,
             attackType: "ranged",
-            animationId: 7222,
+            animationId: 7556,
             soundId: 3739,
         });
 

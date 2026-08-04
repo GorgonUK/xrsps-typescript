@@ -1,11 +1,11 @@
 import type { WebSocket } from "ws";
 
-import type { LocTypeLoader } from "../../../../client/rs/config/loctype/LocTypeLoader";
-import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import {
     MODIFIER_FLAG_CTRL,
     MODIFIER_FLAG_CTRL_SHIFT,
 } from "../../../../client/common/input/modifierFlags";
+import type { LocTypeLoader } from "../../../../client/rs/config/loctype/LocTypeLoader";
+import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import { hasDirectReachToArea } from "../../pathfinding/DirectReach";
 import { PathService } from "../../pathfinding/PathService";
 import {
@@ -104,10 +104,6 @@ export class PlayerInteractionSystem {
      */
     private onInterruptSkillActions?: (playerId: number) => void;
     /**
-     * Callback to stop auto-attack in PlayerCombatManager when player walks.
-     */
-    private onStopAutoAttack?: (playerId: number) => void;
-    /**
      * Callback to validate whether player can initiate NPC combat this tick.
      */
     private canStartNpcCombat?: (
@@ -125,7 +121,6 @@ export class PlayerInteractionSystem {
     ) {
         this.followingHandler = new FollowingHandler(players, pathService, this.interactions, {
             onTradeHandshake: (...args) => this.onTradeHandshake?.(...args),
-            onStopAutoAttack: (id) => this.onStopAutoAttack?.(id),
             onInterruptSkillActions: (id) => this.onInterruptSkillActions?.(id),
         });
 
@@ -159,7 +154,6 @@ export class PlayerInteractionSystem {
             players,
             pathService,
             this.interactions,
-            (id) => this.onStopAutoAttack?.(id),
             (id) => this.onInterruptSkillActions?.(id),
             (attacker, npc, tick) =>
                 this.canStartNpcCombat?.(attacker, npc, tick) ?? { allowed: true },
@@ -237,14 +231,6 @@ export class PlayerInteractionSystem {
     }
 
     /**
-     * Set callback to stop auto-attack in PlayerCombatManager when player walks.
-     * This is called when clearAllInteractions() is invoked during an active npcCombat.
-     */
-    setStopAutoAttackCallback(callback: (playerId: number) => void): void {
-        this.onStopAutoAttack = callback;
-    }
-
-    /**
      * Set callback to validate NPC combat start eligibility (single/multi combat rules).
      */
     setNpcCombatPermissionCallback(
@@ -317,14 +303,11 @@ export class PlayerInteractionSystem {
             // Clear RSMod-style attributes on the player
             const me = this.players.get(ws);
             if (me) {
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingNpc(null);
                 me.combat.setInteractingPlayer(null);
             }
 
-            if (st.kind === "npcCombat" && me) {
-                this.onStopAutoAttack?.(me.id);
-            }
         }
         this.interactions.delete(ws);
         this.pendingLocInteractions.delete(ws);
@@ -364,7 +347,7 @@ export class PlayerInteractionSystem {
             const player = this.players.get(ws);
             if (player) {
                 player.clearInteractionTarget();
-                player.combat.removeCombatTarget();
+                player.removeCombatTarget();
                 player.combat.setInteractingNpc(null);
             }
             this.interactions.delete(ws);
@@ -566,16 +549,17 @@ export class PlayerInteractionSystem {
                 pos: me ? { x: me.tileX, y: me.tileY, level: me.level } : undefined,
             }),
         );
-        if (interaction && interaction.kind === "npcCombat") {
-            if (me) {
-                this.onStopAutoAttack?.(me.id);
-            }
-        } else if (interaction) {
+        if (interaction) {
             this.interactions.delete(ws);
         }
+
+        // A player-issued walk is a replacement click intent. Clear both the
+        // legacy weak references and the typed Phase 3 combat target before the
+        // combat phase can replace the newly selected walking route.
+        me?.resetInteractions();
+
         if (!preservePendingLoc) {
             this.pendingLocInteractions.delete(ws);
-            me?.clearInteraction();
         } else if (pendingLoc && me) {
             this.locHandler.applyLocInteractionRoute(me, pendingLoc);
         }
@@ -603,7 +587,7 @@ export class PlayerInteractionSystem {
     }
 
     /**
-     * Fully ends preserved NPC combat focus after PlayerCombatManager drops the engagement.
+     * Fully ends a preserved NPC combat interaction by player id.
      * This is distinct from `stopNpcAttack()`, which intentionally preserves the interaction
      * while the NPC is still allowed to chase/retaliate during the aggro hold window.
      */
@@ -637,7 +621,7 @@ export class PlayerInteractionSystem {
             // Passive NPC interactions (e.g., banking) should not mark the NPC as
             // "interacting with" the player. Setting the NPC's interaction index causes
             // clients to render combat-like targeting arrows. We only set NPC->player
-            // interaction during actual combat (see PlayerCombatManager). For passive
+            // interaction during actual combat. For passive
             // interactions, keep the NPC's interaction index clear.
             npc.clearInteraction();
 
@@ -790,7 +774,7 @@ export class PlayerInteractionSystem {
             logger.warn("[interaction] failed to set player interaction", err);
         }
         const target = this.players.getById(targetPlayerId);
-        me.combat.setCombatTarget(target ?? null);
+        me.setCombatTarget(target ?? null);
         me.combat.setInteractingPlayer(target ?? null);
     }
 
@@ -801,7 +785,7 @@ export class PlayerInteractionSystem {
         const me = this.players.get(ws);
         if (me) {
             me.clearInteraction();
-            me.combat.removeCombatTarget();
+            me.removeCombatTarget();
             me.combat.setInteractingPlayer(null);
             me.stopAnimation();
         }

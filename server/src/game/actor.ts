@@ -1,10 +1,5 @@
 import { faceAngleRs } from "../../../client/rs/utils/rotation";
-import {
-    MovementDirection,
-    deltaToDirection,
-    deltaToRunDirection,
-    directionToDelta,
-} from "../../../client/common/Direction";
+import type { MovementDirection } from "../../../client/common/Direction";
 import { logger } from "../utils/logger";
 import {
     type InteractionIndex,
@@ -14,21 +9,13 @@ import {
     decodeInteractionTarget,
     encodeInteractionIndex,
 } from "./interactionIndex";
+import { MovementQueue, type MovementPathfinder } from "./movement/MovementQueue";
 
 export type Tile = { x: number; y: number };
-export type PathStepValidationContext = {
-    x: number;
-    y: number;
-    level: number;
-    size: number;
-};
-export type PathStepValidator = (from: PathStepValidationContext, to: Tile) => boolean;
 
 // Debug logging: Player IDs are automatically added/removed on connect/disconnect
 // This enables path logging for all connected human players (not bots)
 export const DEBUG_PLAYER_IDS = new Set<number>();
-
-const PATH_BUFFER_CAPACITY = 128;
 
 /** Signed angular delta in the range [-1024, 1024]. */
 function signedAngleDelta(target: number, current: number): number {
@@ -60,11 +47,6 @@ function orientTo(
     return fallback & 2047;
 }
 
-/** Encode a tile delta as a 3-bit direction code (MovementDirection). */
-function encodeStepDirection(dx: number, dy: number): number | undefined {
-    return deltaToDirection(dx > 0 ? 1 : dx < 0 ? -1 : 0, dy > 0 ? 1 : dy < 0 ? -1 : 0);
-}
-
 /**
  * Traversal type flags.
  *
@@ -80,7 +62,7 @@ export enum TraversalType {
     RUN = 2,
 }
 
-type StepPosition = {
+export type MovementStepRecord = {
     x: number;
     y: number;
     level: number;
@@ -105,7 +87,9 @@ export abstract class Actor {
     level: number;
     x: number;
     y: number;
-    running: boolean = false;
+    readonly movementQueue = new MovementQueue();
+    walkDirection: MovementDirection | null = null;
+    runDirection: number | null = null;
     rot: number = 0; // current rotation (0..2047)
     orientation: number = 0; // desired orientation (0..2047)
     forcedOrientation: number = -1; // -1 = none
@@ -120,18 +104,6 @@ export abstract class Actor {
     followX: number;
     followZ: number;
 
-    // Path queue sized to hold full routes returned by the server pathfinder.
-    // Reference: player-movement.md
-    // The buffer stores steps in reverse order:
-    // - Index 0: Most recently added step (newest)
-    // - Index pathLength-1: Next step to consume (oldest)
-    protected pathX: number[] = new Array(PATH_BUFFER_CAPACITY).fill(0);
-    protected pathY: number[] = new Array(PATH_BUFFER_CAPACITY).fill(0);
-    protected pathTraversed: TraversalType[] = new Array(PATH_BUFFER_CAPACITY).fill(
-        TraversalType.WALK,
-    );
-    protected pathLength: number = 0; // Number of valid steps currently buffered
-
     private lastSentX?: number;
     private lastSentY?: number;
     private lastSentLevel?: number;
@@ -140,11 +112,9 @@ export abstract class Actor {
     private movedLastTick: boolean = false;
     private turnedLastTick: boolean = false;
 
-    private stepPositions: StepPosition[] = [];
+    private stepPositions: MovementStepRecord[] = [];
 
-    private teleportedFlag: boolean = false;
     private positionCorrectionFlag: boolean = false;
-    private pathStepValidator?: PathStepValidator;
 
     /**
      * Deferred movement flag.
@@ -193,14 +163,6 @@ export abstract class Actor {
     };
 
     private pendingSeqs: Array<{ seqId: number; delay: number; interruptible?: boolean }> = [];
-    private singleStepRoutePending: number = 0; // 1 when a user-initiated route has exactly one step
-
-    // Allow subclasses (e.g., PlayerState) to explicitly mark a fresh, single-step route
-    // so that the next step is treated as WALK, matching OSRS behavior.
-    protected markSingleStepRoutePending(pending: boolean): void {
-        this.singleStepRoutePending = pending ? 1 : 0;
-    }
-
     private movementLockUntilTick: number = 0;
     private movementTickContext: number = 0;
 
@@ -239,6 +201,14 @@ export abstract class Actor {
         this.resetPathInternal(this.tileX, this.tileY);
     }
 
+    get running(): boolean {
+        return this.movementQueue.isRunning;
+    }
+
+    set running(running: boolean) {
+        this.movementQueue.isRunning = !!running;
+    }
+
     /**
      * Checks if world coordinates are within valid scene bounds.
      * Reference: player-movement.md (readPlayerUpdate:186-196)
@@ -267,12 +237,10 @@ export abstract class Actor {
      * @param tileY Target tile Y coordinate
      */
     protected resetPathInternal(tileX: number, tileY: number): void {
-        this.pathLength = 0;
-        this.pathX[0] = tileX;
-        this.pathY[0] = tileY;
+        this.movementQueue.clear();
         // World coordinates = tile * 128 + transformedSize() * 64
-        this.x = this.pathX[0] * 128 + this.size * 64;
-        this.y = this.pathY[0] * 128 + this.size * 64;
+        this.x = tileX * 128 + this.size * 64;
+        this.y = tileY * 128 + this.size * 64;
     }
 
     setMovementTick(currentTick: number): void {
@@ -302,30 +270,6 @@ export abstract class Actor {
 
     releaseMovementHold(): void {
         this.clearMovementLock();
-    }
-
-    /**
-     * Adds a step to the path queue by shifting existing steps and inserting at index 0.
-     * @param tileX Step tile X coordinate
-     * @param tileY Step tile Y coordinate
-     * @param traversalType Walk/Run/ForcedRun flag
-     */
-    protected addStepToPath(tileX: number, tileY: number, traversalType: TraversalType): void {
-        // Maintain a bounded path buffer so extremely long routes do not grow unbounded.
-        const capacity = PATH_BUFFER_CAPACITY;
-        const newLength = Math.min(capacity, this.pathLength + 1);
-        // Shift existing steps right, dropping the farthest future step if capacity is full
-        for (let i = newLength - 1; i > 0; i--) {
-            this.pathX[i] = this.pathX[i - 1];
-            this.pathY[i] = this.pathY[i - 1];
-            this.pathTraversed[i] = this.pathTraversed[i - 1];
-        }
-        this.pathLength = newLength;
-
-        // Insert new step at index 0
-        this.pathX[0] = tileX;
-        this.pathY[0] = tileY;
-        this.pathTraversed[0] = traversalType;
     }
 
     getOrientation(): number {
@@ -493,47 +437,27 @@ export abstract class Actor {
     setPath(steps: Tile[], run: boolean): void {
         this.running = !!run;
         this.clearForcedOrientation();
+        this.movementQueue.replace(steps, run);
+    }
 
-        // OSRS behaviour for server-authoritative routing:
-        // a new destination replaces the existing walk queue (no queue blending/extension).
-        this.pathLength = 0;
-        // If this is a fresh route and it's exactly one tile, mark it so we walk it.
-        this.markSingleStepRoutePending(steps.length === 1);
+    setMovementPathfinder(pathfinder: MovementPathfinder | undefined): void {
+        this.movementQueue.setPathfinder(pathfinder);
+    }
 
-        // Add steps to the bounded path buffer (oldest steps execute first)
-        const maxStepsToAdd = Math.min(steps.length, PATH_BUFFER_CAPACITY - this.pathLength);
-
-        for (let i = 0; i < maxStepsToAdd; i++) {
-            const step = steps[i];
-            // For single-step routes, force WALK traversal
-            const tr =
-                this.singleStepRoutePending > 0
-                    ? TraversalType.WALK
-                    : run
-                      ? TraversalType.RUN
-                      : TraversalType.WALK;
-            this.addStepToPath(step.x, step.y, tr);
-        }
+    pathTo(targetX: number, targetY: number): boolean {
+        return this.movementQueue.pathTo(targetX, targetY);
     }
 
     peekNextStep(): Tile | undefined {
-        if (this.pathLength > 0) {
-            // Next step to consume is at the tail (oldest step)
-            const nextIndex = this.pathLength - 1;
-            return { x: this.pathX[nextIndex], y: this.pathY[nextIndex] };
-        }
-        return undefined;
+        return this.movementQueue.previewSteps(this.tileX, this.tileY, 1)[0];
     }
 
     clearPath(): void {
-        this.pathLength = 0;
-        this.pathX[0] = this.tileX;
-        this.pathY[0] = this.tileY;
-        this.singleStepRoutePending = 0;
+        this.movementQueue.clear();
     }
 
     hasPath(): boolean {
-        return this.pathLength > 0;
+        return !this.movementQueue.isEmpty;
     }
 
     /**
@@ -541,13 +465,7 @@ export abstract class Actor {
      * Used for testing and debugging. Returns steps in order they will be executed (oldest to newest).
      */
     getPathQueue(): Tile[] {
-        const queue: Tile[] = [];
-        // Path buffer stores steps in reverse order (index 0 is newest, pathLength-1 is oldest/next)
-        // Return them in execution order (oldest first)
-        for (let i = this.pathLength - 1; i >= 0; i--) {
-            queue.push({ x: this.pathX[i], y: this.pathY[i] });
-        }
-        return queue;
+        return this.movementQueue.toArray();
     }
 
     /**
@@ -570,174 +488,115 @@ export abstract class Actor {
         return this.runEnergy > 0;
     }
 
-    setPathStepValidator(validator: PathStepValidator | undefined): void {
-        this.pathStepValidator = validator;
-    }
-
-    private canConsumePathStep(nextX: number, nextY: number): boolean {
-        const dx = nextX - this.tileX;
-        const dy = nextY - this.tileY;
-        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-            return false;
-        }
-        if (!this.pathStepValidator) {
-            return true;
-        }
-        return this.pathStepValidator(
-            { x: this.tileX, y: this.tileY, level: this.level, size: this.size },
-            { x: nextX, y: nextY },
-        );
-    }
-
-    tickStep(): boolean {
+    /** Prepares update-block state before MovementProcessor validates frame steps. */
+    prepareMovementFrame(currentTick: number = this.movementTickContext): boolean {
         this.stepPositions.length = 0;
         this.turnedLastTick = false;
+        this.walkDirection = null;
+        this.runDirection = null;
+        this.movementQueue.lastStepDirection = null;
+        this.movementQueue.consumeReached(this.tileX, this.tileY);
 
-        // Pre-turn: face next queued tile while idle so the actor visually
-        // anticipates the movement direction.
-        if (this.pathLength > 0) {
-            const idx = this.pathLength - 1;
-            const preOr = orientTo(
+        const next = this.peekNextStep();
+        if (next) {
+            const preOrientation = orientTo(
                 this.tileX,
                 this.tileY,
-                this.pathX[idx],
-                this.pathY[idx],
+                next.x,
+                next.y,
                 this.orientation,
             );
-            if (!this.movedLastTick) {
-                if (Math.abs(signedAngleDelta(preOr, this.rot & 2047)) > 256 + this.turnSpeed) {
-                    this.orientation = preOr;
-                }
+            if (
+                !this.movedLastTick &&
+                Math.abs(signedAngleDelta(preOrientation, this.rot & 2047)) >
+                    256 + this.turnSpeed
+            ) {
+                this.orientation = preOrientation;
             }
         } else if (this.forcedOrientation >= 0) {
             this.orientation = this.forcedOrientation & 2047;
         }
 
-        // Movement lock
-        const currentTick = this.movementTickContext;
         if (currentTick > 0 && this.movementLockUntilTick > currentTick) {
-            if (this.pathLength > 0) {
+            if (this.hasPath()) {
                 this.clearPath();
                 this.markPositionCorrection();
             }
             this.movedLastTick = false;
-            this.turnedLastTick = false;
             return false;
-        } else if (this.movementLockUntilTick !== 0 && currentTick >= this.movementLockUntilTick) {
+        }
+        if (this.movementLockUntilTick !== 0 && currentTick >= this.movementLockUntilTick) {
             this.movementLockUntilTick = 0;
         }
 
         this.processDeferredMovement();
+        return true;
+    }
 
-        // Consume reservations (multi-actor collision avoidance)
+    takeMovementReservations(): ReadonlyArray<Tile | null | undefined> {
         const reservations = [this.nextStepReservation1, this.nextStepReservation2];
         this.nextStepReservation1 = undefined;
         this.nextStepReservation2 = undefined;
+        return reservations;
+    }
 
-        // Step consumption — walk takes 1 step, run takes up to 2.
-        let moved = false;
-        let stepsTaken = 0;
-        const wantsRun = !!this.running && this.hasAvailableRunEnergy();
+    commitMovementStep(
+        nextX: number,
+        nextY: number,
+        direction: MovementDirection,
+        traversal: TraversalType,
+    ): void {
+        const oldX = this.tileX;
+        const oldY = this.tileY;
+        this.lastTileX = oldX;
+        this.lastTileY = oldY;
+        this.tileX = Math.trunc(nextX);
+        this.tileY = Math.trunc(nextY);
+        this.x = this.tileX * 128 + this.size * 64;
+        this.y = this.tileY * 128 + this.size * 64;
 
-        const consumeStep = (): boolean => {
-            if (this.pathLength <= 0) return false;
-            const nextIndex = this.pathLength - 1;
-            const nextX = this.pathX[nextIndex];
-            const nextY = this.pathY[nextIndex];
+        const stepOrientation = orientTo(oldX, oldY, this.tileX, this.tileY, this.orientation);
+        this.orientation =
+            this.forcedOrientation >= 0 ? this.forcedOrientation & 2047 : stepOrientation;
+        this.movementQueue.consumeReached(this.tileX, this.tileY);
+        this.movementQueue.lastStepDirection = direction;
 
-            // Check reservation for this step slot
-            const resv = reservations[stepsTaken];
-            if (resv !== undefined) {
-                if (resv === null) return false;
-                if (nextX !== resv.x || nextY !== resv.y) return false;
-            }
+        this.stepPositions.push({
+            x: this.x,
+            y: this.y,
+            level: this.level,
+            rot: 0,
+            running: traversal === TraversalType.RUN,
+            traversal,
+            orientation: this.orientation & 2047,
+            direction,
+        });
+    }
 
-            if (!this.canConsumePathStep(nextX, nextY)) {
-                this.clearPath();
-                this.markPositionCorrection();
-                return false;
-            }
+    setMovementDirections(walkDirection: MovementDirection, runDirection: number | null): void {
+        this.walkDirection = walkDirection;
+        this.runDirection = runDirection;
+    }
 
-            this.pathLength--;
-            const ox = this.tileX;
-            const oy = this.tileY;
-            this.lastTileX = ox;
-            this.lastTileY = oy;
-            this.tileX = nextX;
-            this.tileY = nextY;
-            this.x = this.tileX * 128 + this.size * 64;
-            this.y = this.tileY * 128 + this.size * 64;
-
-            const stepOr = orientTo(ox, oy, this.tileX, this.tileY, this.orientation);
-            this.orientation = this.forcedOrientation >= 0 ? this.forcedOrientation & 2047 : stepOr;
-
-            // Resolve traversal type for this step
-            let willRun = wantsRun && this.singleStepRoutePending <= 0;
-            // Last tile of a route from idle → walk, not run
-            if (willRun && this.pathLength === 0 && stepsTaken === 0) willRun = false;
-
-            const queuedTraversal = this.pathTraversed[nextIndex] ?? TraversalType.WALK;
-            const traversal: TraversalType =
-                queuedTraversal === TraversalType.SLOW
-                    ? TraversalType.SLOW
-                    : willRun
-                      ? TraversalType.RUN
-                      : TraversalType.WALK;
-
-            this.stepPositions.push({
-                x: this.x,
-                y: this.y,
-                level: this.level,
-                rot: 0, // filled after rotation step
-                running: traversal === TraversalType.RUN,
-                traversal,
-                orientation: this.orientation & 2047,
-                direction: encodeStepDirection(this.tileX - ox, this.tileY - oy),
-            });
-
-            if (this.singleStepRoutePending > 0) this.singleStepRoutePending = 0;
-            stepsTaken++;
-            return true;
-        };
-
-        if (wantsRun) {
-            // First step
-            moved = consumeStep();
-
-            // Second step — validate run encoding before committing
-            if (moved && this.pathLength > 0) {
-                const first = this.stepPositions[this.stepPositions.length - 1];
-                if (first?.direction !== undefined && this.canTakeRunSecondStep(first.direction)) {
-                    moved = consumeStep() || moved;
-                }
-            }
-        } else {
-            moved = consumeStep();
-        }
-
+    finishMovementFrame(moved: boolean): boolean {
         if (moved) {
             this.idleTurnTicks = 0;
-        } else if (this.pathLength === 0 && this.forcedOrientation >= 0) {
+        } else if (!this.hasPath() && this.forcedOrientation >= 0) {
             this.orientation = this.forcedOrientation & 2047;
         }
 
-        // Rotate toward target orientation
         const { rotated } = this.stepRotationTowardsOrientation();
-
-        // Stamp final rot onto all movement records
-        const finalRot = this.rot & 2047;
-        for (let i = 0; i < this.stepPositions.length; i++) {
-            this.stepPositions[i].rot = finalRot;
+        const finalRotation = this.rot & 2047;
+        for (const step of this.stepPositions) {
+            step.rot = finalRotation;
         }
 
-        // Pure rotation update (no movement, but facing changed). Turns from
-        // faceTile() (which clears forcedOrientation) must broadcast too.
         if (!moved && rotated) {
             this.stepPositions.push({
                 x: this.x,
                 y: this.y,
                 level: this.level,
-                rot: finalRot,
+                rot: finalRotation,
                 running: false,
                 traversal: TraversalType.WALK,
                 orientation: this.orientation & 2047,
@@ -746,31 +605,15 @@ export abstract class Actor {
         }
 
         if (!moved) {
-            if (rotated) this.idleTurnTicks = Math.min(this.idleTurnTicks + 1, 25);
-            else if (signedAngleDelta(this.orientation, this.rot) === 0) this.idleTurnTicks = 0;
+            if (rotated) {
+                this.idleTurnTicks = Math.min(this.idleTurnTicks + 1, 25);
+            } else if (signedAngleDelta(this.orientation, this.rot) === 0) {
+                this.idleTurnTicks = 0;
+            }
         }
 
         this.movedLastTick = moved;
         return moved;
-    }
-
-    /**
-     * Check whether the second step of a run tick can be encoded.
-     * Perpendicular cardinal pairs (E+S, N+W, etc.) produce deltas with no
-     * valid 4-bit run direction code and must be deferred to the next tick.
-     */
-    private canTakeRunSecondStep(firstDir: number): boolean {
-        const nextIndex = this.pathLength - 1;
-        const dx = this.pathX[nextIndex] - this.tileX;
-        const dy = this.pathY[nextIndex] - this.tileY;
-        const secondDir = deltaToDirection(
-            dx > 0 ? 1 : dx < 0 ? -1 : 0,
-            dy > 0 ? 1 : dy < 0 ? -1 : 0,
-        );
-        if (secondDir === undefined) return true;
-        const d1 = directionToDelta(firstDir as MovementDirection);
-        const d2 = directionToDelta(secondDir as MovementDirection);
-        return deltaToRunDirection(d1.dx + d2.dx, d1.dy + d2.dy) >= 0;
     }
 
     private stepRotationTowardsOrientation(): { rotated: boolean; direction: TurnDirection } {
@@ -813,7 +656,7 @@ export abstract class Actor {
         // Note: We do NOT set this.rot here, allowing the client to interpolate.
     }
 
-    drainStepPositions(): StepPosition[] {
+    drainStepPositions(): MovementStepRecord[] {
         const out = this.stepPositions.slice();
         this.stepPositions.length = 0;
         return out;
@@ -865,18 +708,18 @@ export abstract class Actor {
         this.orientation = this.rot & 2047;
         this.clearForcedOrientation();
         this.idleTurnTicks = 0;
-        this.teleportedFlag = true;
+        this.movementQueue.teleported = true;
         this.positionCorrectionFlag = false;
         this.resetPathInternal(this.tileX, this.tileY);
         logger.info(`[Actor] Teleported to tile (${tileX}, ${tileY}, ${this.level})`);
     }
 
     wasTeleported(): boolean {
-        return this.teleportedFlag;
+        return this.movementQueue.teleported;
     }
 
     clearTeleportFlag(): void {
-        this.teleportedFlag = false;
+        this.movementQueue.teleported = false;
     }
 
     protected markPositionCorrection(): void {
@@ -909,9 +752,7 @@ export abstract class Actor {
     processDeferredMovement(): void {
         if (this.deferredMovement) {
             this.deferredMovement = false;
-            // Apply the deferred movement as a step
-            const traversalType = this.running ? TraversalType.RUN : TraversalType.WALK;
-            this.addStepToPath(this.deferredTileX, this.deferredTileY, traversalType);
+            this.movementQueue.addStep(this.deferredTileX, this.deferredTileY);
         }
     }
 

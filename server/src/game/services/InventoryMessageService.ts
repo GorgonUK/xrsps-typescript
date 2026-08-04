@@ -3,8 +3,10 @@ import type { WebSocket } from "ws";
 import { getItemDefinition } from "../../data/items";
 import type { GroundItemActionPayload } from "../../network/managers/GroundItemHandler";
 import { logger } from "../../utils/logger";
+import type { InventoryConsumableType } from "../actions/actionPayloads";
 import type { ActionEnqueueResult, ActionRequest } from "../actions/types";
 import { isInWilderness } from "../combat/MultiCombatZones";
+import { combatConsumableManager } from "../combat/engine/CombatConsumableManager";
 import { INVENTORY_SLOT_COUNT, type InventoryEntry, PlayerState } from "../player";
 import type { ScriptDialogOptionRequest, ScriptDialogRequest } from "../scripts/types";
 import type { ChatMessageSnapshot } from "../systems/BroadcastScheduler";
@@ -21,6 +23,18 @@ const CONSUME_VERBS = [
     "activate",
 ];
 const ITEM_DROP_SOUND = 2739;
+const POTION_CONSUME_VERBS = new Set(["drink", "quaff", "sip", "imbibe", "swig"]);
+
+const resolveConsumableType = (
+    optionLower: string,
+    obj: { inventoryActions?: Array<string | null | undefined> } | undefined,
+): InventoryConsumableType => {
+    const definitionOption = obj?.inventoryActions
+        ?.find((action) => action && CONSUME_VERBS.includes(action.toLowerCase()))
+        ?.toLowerCase();
+    const consumeOption = optionLower || definitionOption || "";
+    return POTION_CONSUME_VERBS.has(consumeOption) ? "potion" : "food";
+};
 
 interface ObjTypeView {
     inventoryActions?: Array<string | null | undefined>;
@@ -158,11 +172,7 @@ export class InventoryMessageService {
             const doDrop = () => {
                 const currentInv = this.deps.getInventory(p);
                 const currentSlot = currentInv[slotIndex];
-                if (
-                    !currentSlot ||
-                    currentSlot.quantity <= 0 ||
-                    currentSlot.itemId !== itemId
-                ) {
+                if (!currentSlot || currentSlot.quantity <= 0 || currentSlot.itemId !== itemId) {
                     return;
                 }
                 const destroyedQty = currentSlot.quantity;
@@ -201,11 +211,7 @@ export class InventoryMessageService {
             // Special case: Coins (995) have value=0 in item definitions, but each coin is worth 1 GP
             const COINS_ITEM_ID = 995;
             const perItemValue =
-                itemId === COINS_ITEM_ID
-                    ? 1
-                    : itemDef
-                      ? itemDef.dropValue || itemDef.value
-                      : 0;
+                itemId === COINS_ITEM_ID ? 1 : itemDef ? itemDef.dropValue || itemDef.value : 0;
             const totalValue = perItemValue * slotEntry.quantity;
             if (totalValue >= 30000) {
                 // Show sprite dialog with item first, then options dialog
@@ -271,14 +277,20 @@ export class InventoryMessageService {
             }
         } else if (this.isConsumable(obj, optionLower)) {
             if (!hasItemInInventory) return;
+            const consumableType = resolveConsumableType(optionLower, obj);
+            const canConsume =
+                consumableType === "potion"
+                    ? combatConsumableManager.canDrinkPotion(p, nowTick)
+                    : combatConsumableManager.canEatFood(p, nowTick);
+            if (!canConsume) return;
             const res = this.deps.requestAction(
                 p.id,
                 {
                     kind: "inventory.consume",
-                    data: { slotIndex, itemId, option: payload.option },
+                    data: { slotIndex, itemId, option: payload.option, consumableType },
                     delayTicks: 0, // Consume happens immediately
-                    groups: ["inventory"],
-                    cooldownTicks: 3, // 3-tick cooldown between eating/drinking (OSRS standard)
+                    groups: [`inventory.${consumableType}`],
+                    cooldownTicks: 0,
                 },
                 nowTick,
             );
@@ -306,26 +318,18 @@ export class InventoryMessageService {
         const src = inv[from];
         if (!src || src.itemId <= 0 || src.quantity <= 0) return;
 
-        const nowTick = this.deps.getCurrentTick();
+        const dst = inv[to];
+        const sourceItemId = src.itemId;
+        const sourceQuantity = src.quantity;
+        const destinationItemId = dst?.itemId ?? -1;
+        const destinationQuantity = dst?.quantity ?? 0;
 
-        // Queue move action to be processed during tick cycle
-        // Ensures consistency with other inventory operations (equip/unequip)
-        const res = this.deps.requestAction(
-            p.id,
-            {
-                kind: "inventory.move",
-                data: { from, to },
-                delayTicks: 0,
-                groups: ["inventory"],
-                cooldownTicks: 0, // No cooldown on moving items
-            },
-            nowTick,
-        );
-        if (!res.ok) {
-            logger.info(
-                `[action] inventory move rejected player=${p.id} reason=${res.reason ?? "unknown"}`,
-            );
-        }
+        // Slot reordering carries no game-cycle penalty. Applying it during
+        // packet drain prevents the client from displaying a stale source-slot
+        // ghost while waiting for the next 600 ms action phase.
+        this.deps.setInventorySlot(p, from, destinationItemId, destinationQuantity);
+        this.deps.setInventorySlot(p, to, sourceItemId, sourceQuantity);
+        this.deps.checkAndSendSnapshots(p);
     }
 
     handleGroundItemAction(ws: WebSocket, payload: GroundItemActionPayload | undefined): void {

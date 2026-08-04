@@ -8,6 +8,7 @@ import {
 export interface PlayerPrayerDeps {
     getPrayerSkillLevel: () => number;
     setHeadIconIndex: (index: number) => void;
+    setActiveOverheadPrayer: (icon: PrayerHeadIcon | null) => void;
 }
 
 export class PlayerPrayerState {
@@ -17,6 +18,8 @@ export class PlayerPrayerState {
     drainAccumulator: number = 0;
     /** True when a prayer was enabled this tick; OSRS skips that tick's drain. */
     private activatedThisTick: boolean = false;
+    /** Remaining game ticks during which protection prayers cannot be activated. */
+    private protectionPrayerLockTicks: number = 0;
     headIcon: PrayerHeadIcon | null = null;
 
     private deps?: PlayerPrayerDeps;
@@ -94,6 +97,23 @@ export class PlayerPrayerState {
         return this.activePrayers.has(prayer);
     }
 
+    lockProtectionPrayers(ticks: number): void {
+        this.protectionPrayerLockTicks = Math.max(
+            this.protectionPrayerLockTicks,
+            Math.max(0, Math.floor(ticks)),
+        );
+    }
+
+    areProtectionPrayersLocked(): boolean {
+        return this.protectionPrayerLockTicks > 0;
+    }
+
+    advancePrayerLocks(): void {
+        if (this.protectionPrayerLockTicks > 0) {
+            this.protectionPrayerLockTicks--;
+        }
+    }
+
     getPrayerLevel(): number {
         return this.deps?.getPrayerSkillLevel() ?? 1;
     }
@@ -138,6 +158,7 @@ export class PlayerPrayerState {
     private setHeadIcon(icon: PrayerHeadIcon | null): void {
         if (this.headIcon === icon) return;
         this.headIcon = icon;
+        this.deps?.setActiveOverheadPrayer(icon);
         const index = icon != null ? (PRAYER_HEAD_ICON_IDS[icon] ?? -1) : -1;
         this.deps?.setHeadIconIndex(index);
     }

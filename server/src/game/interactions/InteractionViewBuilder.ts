@@ -12,7 +12,7 @@ export function deriveInteractionIndex(params: {
     npcLookup: (id: number) => NpcState | undefined;
 }): number {
     const { player, interaction, playerLookup, npcLookup } = params;
-    if (!interaction) return NO_INTERACTION;
+    if (!interaction) return player.getInteractionIndex();
 
     switch (interaction.kind) {
         case FollowInteractionKind.Follow:

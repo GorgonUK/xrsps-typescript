@@ -14,6 +14,7 @@ import {
     resolvePlayerAttackReach,
     resolvePlayerAttackType,
 } from "../combat/CombatRules";
+import { AttackStyle, getAttackStyle } from "../combat/WeaponDataProvider";
 import { NpcState } from "../npc";
 import { PlayerState } from "../player";
 import type { PlayerRepository } from "./PlayerInteractionSystem";
@@ -30,7 +31,6 @@ export class NpcCombatInteractionHandler {
         private readonly players: PlayerRepository,
         private readonly pathService: PathService,
         private readonly interactions: Map<WebSocket, PlayerInteractionState>,
-        private readonly onStopAutoAttack: ((playerId: number) => void) | undefined,
         private readonly onInterruptSkillActions: ((playerId: number) => void) | undefined,
         private readonly canStartNpcCombat:
             | ((
@@ -135,7 +135,7 @@ export class NpcCombatInteractionHandler {
         // merely pathing. Retaliation begins when a valid player swing starts.
 
         // RSMod parity: Set combat target on player (COMBAT_TARGET_FOCUS_ATTR)
-        me.combat.setCombatTarget(npc);
+        me.setCombatTarget(npc);
 
         this.interactions.set(ws, state);
 
@@ -194,20 +194,14 @@ export class NpcCombatInteractionHandler {
         if (!st || st.kind !== "npcCombat") return;
         const me = this.players.get(ws);
         if (me) {
-            this.onStopAutoAttack?.(me.id);
-            // RSMod parity: Clear combat target (COMBAT_TARGET_FOCUS_ATTR)
-            me.combat.removeCombatTarget();
+            me.removeCombatTarget();
             me.clearPath();
             me.clearInteraction();
             me.stopAnimation();
         }
     }
 
-    /**
-     * Fully ends preserved NPC combat focus after PlayerCombatManager drops the engagement.
-     * This is distinct from `stopNpcAttack()`, which intentionally preserves the interaction
-     * while the NPC is still allowed to chase/retaliate during the aggro hold window.
-     */
+    /** Fully ends the matching NPC combat interaction and typed combat target. */
     finishNpcCombatByPlayerId(playerId: number, npcId?: number): void {
         const player = this.players.getById(playerId);
         if (!player) return;
@@ -232,9 +226,9 @@ export class NpcCombatInteractionHandler {
                 player.clearInteractionTarget();
             }
 
-            const combatTarget = player.combat.getCombatTarget();
-            if (combatTarget && !combatTarget.isPlayer && combatTarget.id === state.npcId) {
-                player.combat.removeCombatTarget();
+            const combatTarget = player.getCombatTarget();
+            if (combatTarget?.type === "npc" && combatTarget.id === state.npcId) {
+                player.removeCombatTarget();
             }
 
             if (player.combat.getInteractingNpc()?.id === state.npcId) {
@@ -265,7 +259,7 @@ export class NpcCombatInteractionHandler {
             const target = this.players.getById(interaction.playerId);
             if (!target) {
                 me.clearInteraction();
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingPlayer(null);
                 me.stopAnimation();
                 this.interactions.delete(ws);
@@ -273,7 +267,7 @@ export class NpcCombatInteractionHandler {
             }
             if (target.level !== me.level) {
                 me.clearInteraction();
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingPlayer(null);
                 me.stopAnimation();
                 this.interactions.delete(ws);
@@ -281,7 +275,7 @@ export class NpcCombatInteractionHandler {
             }
             if (target.skillSystem.getHitpointsCurrent() <= 0) {
                 me.clearInteraction();
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingPlayer(null);
                 me.stopAnimation();
                 this.interactions.delete(ws);
@@ -294,7 +288,7 @@ export class NpcCombatInteractionHandler {
             );
             if (chebyshevDistance > PLAYER_CHASE_DISTANCE_TILES) {
                 me.clearInteraction();
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingPlayer(null);
                 me.stopAnimation();
                 this.interactions.delete(ws);
@@ -382,6 +376,10 @@ export class NpcCombatInteractionHandler {
     }
 
     getPlayerAttackReach(player: PlayerState): number {
+        if (player.combat.weaponItemId === 12926) {
+            const style = getAttackStyle(12926, player.combat.styleSlot ?? 0);
+            return style === AttackStyle.LONGRANGE ? 7 : 5;
+        }
         return resolvePlayerAttackReach(player.combat);
     }
 

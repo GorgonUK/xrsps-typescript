@@ -35,9 +35,7 @@ import {
 import { loadCollectionLogItems } from "../game/collectionlog";
 import {
     HITMARK_DAMAGE,
-    PlayerCombatManager,
     combatEffectApplicator,
-    createPlayerCombatManager,
     damageTracker,
     multiCombatSystem,
 } from "../game/combat";
@@ -208,7 +206,6 @@ export class WSServer {
     private movementSystem?: MovementSystem;
     private followerManager?: FollowerManager;
     private followerCombatManager?: FollowerCombatManager;
-    private playerCombatManager?: PlayerCombatManager;
     private tradeManager?: TradeManager;
     private interfaceService?: InterfaceService;
     private sailingInstanceManager?: SailingInstanceManager;
@@ -421,7 +418,6 @@ export class WSServer {
             ["musicCatalogService", () => self.musicCatalogService],
             ["musicRegionService", () => self.musicRegionService],
             ["musicUnlockService", () => self.musicUnlockService],
-            ["playerCombatManager", () => self.playerCombatManager],
             ["playerCombatService", () => self.playerCombatService],
             ["spellCastingService", () => self.spellCastingService],
             ["movementSystem", () => self.movementSystem],
@@ -928,15 +924,7 @@ export class WSServer {
             }
             this.movementSystem = new MovementSystem(
                 this.players,
-                this.options.pathService,
                 this.npcManager,
-                (player) => {
-                    this.messagingService.queueChatMessage({
-                        messageType: "game",
-                        text: "I can't reach that.",
-                        targetPlayerIds: [player.id],
-                    });
-                },
             );
             // Set up loc change callback to broadcast to all clients
             this.players.setLocChangeCallback((oldId, newId, tile, level, opts) => {
@@ -983,15 +971,6 @@ export class WSServer {
             }
         }
         if (this.players) {
-            this.playerCombatManager = createPlayerCombatManager({
-                scheduler: this.actionScheduler,
-                players: this.players,
-            });
-            this.movementSystem?.setPlayerCombatManager(this.playerCombatManager);
-            // Wire up callback to stop player auto-attack when player walks
-            this.players.setStopAutoAttackCallback((playerId) => {
-                this.playerCombatManager?.stopAutoAttack(playerId);
-            });
             // Validate single/multi-combat rules before starting NPC attack interactions.
             this.players.setNpcCombatPermissionCallback((attacker, npc, currentTick) =>
                 multiCombatSystem.canAttack(attacker, npc, currentTick),

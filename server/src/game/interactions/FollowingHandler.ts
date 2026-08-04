@@ -20,7 +20,6 @@ import { FollowInteractionKind, FollowInteractionState, PlayerInteractionState }
 
 export interface FollowingCallbacks {
     onTradeHandshake?: (initiator: PlayerState, target: PlayerState, tick: number) => void;
-    onStopAutoAttack?: (playerId: number) => void;
     onInterruptSkillActions?: (playerId: number) => void;
 }
 
@@ -68,17 +67,11 @@ export class FollowingHandler {
         if (st) {
             const me = this.players.get(ws);
             if (me) {
-                me.combat.removeCombatTarget();
+                me.removeCombatTarget();
                 me.combat.setInteractingNpc(null);
                 me.combat.setInteractingPlayer(null);
             }
 
-            if (st.kind === "npcCombat") {
-                if (me) {
-                    this.callbacks.onStopAutoAttack?.(me.id);
-                }
-                return;
-            }
         }
         this.interactions.delete(ws);
     }

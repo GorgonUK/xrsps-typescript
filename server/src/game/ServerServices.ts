@@ -74,7 +74,6 @@ import type { InventoryActionHandler } from "./actions/handlers/InventoryActionH
 import type { SpellActionHandler } from "./actions/handlers/SpellActionHandler";
 import type { WidgetDialogHandler } from "./actions/handlers/WidgetDialogHandler";
 // ── Game – combat ───────────────────────────────────────────────────────────
-import type { PlayerCombatManager } from "./combat";
 import type { CombatCategoryData } from "./combat/CombatCategoryData";
 // ── Game – death ────────────────────────────────────────────────────────────
 import type { PlayerDeathService } from "./death/PlayerDeathService";
@@ -197,7 +196,6 @@ export interface ServerServices {
 
     // ── Combat data ──────────────────────────────────────────────────────
     combatCategoryData?: CombatCategoryData;
-    playerCombatManager?: PlayerCombatManager;
 
     // ── Audio ────────────────────────────────────────────────────────────
     npcSoundLookup?: NpcSoundLookup;

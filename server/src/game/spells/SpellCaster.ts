@@ -147,7 +147,7 @@ export class SpellCaster {
         }
 
         // For now, return success with basic outcome
-        // Combat damage will be calculated by CombatEngine
+        // Combat damage is calculated by the canonical combat hit evaluator.
         return {
             success: true,
             spellData,

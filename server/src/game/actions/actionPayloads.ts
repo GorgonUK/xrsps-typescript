@@ -32,12 +32,16 @@ export interface InventoryConsumeActionData {
     slotIndex: number;
     itemId: number;
     option?: string;
+    consumableType?: InventoryConsumableType;
 }
+
+export type InventoryConsumableType = "food" | "potion" | "comboFood";
 
 export interface InventoryConsumeScriptActionData {
     slotIndex: number;
     itemId: number;
     option?: string;
+    consumableType?: InventoryConsumableType;
     apply?: () => void;
 }
 
@@ -178,21 +182,6 @@ export type CombatPlayerHitActionData =
     | (CombatPlayerHitBase & { npcId: number; targetId?: number })
     | (CombatPlayerHitBase & { targetId: number; npcId?: number });
 
-export interface CombatNpcRetaliateActionData {
-    npcId: number;
-    phase: "swing" | "hit";
-    damage?: number;
-    maxHit?: number;
-    style?: number;
-    type2?: number;
-    damage2?: number;
-    attackType?: AttackType | string;
-    hitDelay?: number;
-    isAggression?: boolean;
-    /** Spell id when the NPC cast a magic spell this swing. */
-    spellId?: number;
-}
-
 export interface CombatCompanionHitActionData {
     companionNpcId: number;
     targetNpcId: number;
@@ -247,7 +236,6 @@ export type CoreActionPayloadByKind = {
     "combat.special": CombatSpecialActionData;
     "combat.attack": CombatAttackActionData;
     "combat.playerHit": CombatPlayerHitActionData;
-    "combat.npcRetaliate": CombatNpcRetaliateActionData;
     "combat.companionHit": CombatCompanionHitActionData;
     "movement.teleport": MovementTeleportActionData;
     "emote.play": EmotePlayActionData;

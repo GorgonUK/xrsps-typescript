@@ -1272,6 +1272,7 @@ const specialAttacks = {
     // Bows
     MAGIC_SHORTBOW: { anim: 1074, cost: 55 }, // Snapshot (50% with imbue)
     MAGIC_LONGBOW: { anim: 426, cost: 35 }, // Powershot
+    MAGIC_COMP_BOW: { anim: 426, cost: 35 }, // Powershot
     DARK_BOW: { anim: 426, cost: 55 }, // Descent of Darkness
     TWISTED_BOW: { anim: 426, cost: 0 }, // No special attack
 
@@ -1281,13 +1282,14 @@ const specialAttacks = {
     ZARYTE_CROSSBOW: { anim: 9168, cost: 75 }, // Zaryte Bolts
 
     // Ballistas
-    LIGHT_BALLISTA: { anim: 7555, cost: 65 }, // Concentrated Shot
-    HEAVY_BALLISTA: { anim: 7555, cost: 65 }, // Concentrated Shot
+    LIGHT_BALLISTA: { anim: 7556, cost: 65 }, // Concentrated Shot
+    HEAVY_BALLISTA: { anim: 7556, cost: 65 }, // Concentrated Shot
 
     // Thrown
     TOXIC_BLOWPIPE: { anim: 5061, cost: 50 }, // Toxic Siphon
     DRAGON_THROWNAXE: { anim: 929, cost: 25 }, // Ricochet
     DRAGON_KNIFE: { anim: 929, cost: 25 }, // Vicious Strike
+    MORRIGANS_JAVELIN: { anim: 929, cost: 50 }, // Phantom Strike
 
     // Barrows
     DHAROKS_GREATAXE: { anim: 2067, cost: 0 }, // Wretched Strength (passive)
@@ -3696,6 +3698,8 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 6,
         hitDelay: 2,
         hitSounds: longbowHitSounds,
+        specialAttackAnim: 426,
+        specialAttackCost: 35,
     },
     {
         itemId: 845,
@@ -3757,6 +3761,19 @@ export const weaponDataEntries: WeaponDataEntry[] = [
     // COMPOSITE BOWS (Combat Category 3)
     // Attack Speed: 5 ticks (4 on rapid)
     // ==================================================================================
+    {
+        itemId: 10284,
+        name: "Magic comp bow",
+        equipmentType: "comp_bow",
+        combatCategory: CombatCategory.BOW,
+        animOverrides: bowAnimOverrides,
+        attackSequence: 426,
+        attackSpeed: 5,
+        hitDelay: 2,
+        hitSounds: shortbowHitSounds,
+        specialAttackAnim: 426,
+        specialAttackCost: 35,
+    },
     {
         itemId: 4827,
         name: "Ogre bow",
@@ -4144,8 +4161,7 @@ export const weaponDataEntries: WeaponDataEntry[] = [
 
     // ==================================================================================
     // BALLISTAS (Combat Category - uses BOW interface)
-    // Light ballista: Attack Speed 7 ticks (6 on rapid)
-    // Heavy ballista: Attack Speed 8 ticks (NO rapid - only Accurate/Longrange)
+    // Light and heavy ballista: Attack Speed 7 ticks (6 on rapid)
     // ==================================================================================
     {
         itemId: 19478,
@@ -4153,10 +4169,25 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         equipmentType: "ballista",
         combatCategory: CombatCategory.BOW,
         animOverrides: ballistaAnimOverrides,
-        attackSequence: 7218,
+        attackSequence: 7555,
         attackSpeed: 7,
         hitDelay: 3,
         hitSounds: ballistaHitSounds,
+        specialAttackAnim: 7556,
+        specialAttackCost: 65,
+    },
+    {
+        itemId: 27188,
+        name: "Light ballista (Last Man Standing)",
+        equipmentType: "ballista",
+        combatCategory: CombatCategory.BOW,
+        animOverrides: ballistaAnimOverrides,
+        attackSequence: 7555,
+        attackSpeed: 7,
+        hitDelay: 3,
+        hitSounds: ballistaHitSounds,
+        specialAttackAnim: 7556,
+        specialAttackCost: 65,
     },
     {
         itemId: 19481,
@@ -4164,10 +4195,38 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         equipmentType: "ballista",
         combatCategory: CombatCategory.BOW,
         animOverrides: ballistaAnimOverrides,
-        attackSequence: 7218,
-        attackSpeed: 8,
+        attackSequence: 7555,
+        attackSpeed: 7,
         hitDelay: 3,
         hitSounds: ballistaHitSounds,
+        specialAttackAnim: 7556,
+        specialAttackCost: 65,
+    },
+    {
+        itemId: 23630,
+        name: "Heavy ballista (Last Man Standing)",
+        equipmentType: "ballista",
+        combatCategory: CombatCategory.BOW,
+        animOverrides: ballistaAnimOverrides,
+        attackSequence: 7555,
+        attackSpeed: 7,
+        hitDelay: 3,
+        hitSounds: ballistaHitSounds,
+        specialAttackAnim: 7556,
+        specialAttackCost: 65,
+    },
+    {
+        itemId: 26712,
+        name: "Heavy ballista (or)",
+        equipmentType: "ballista",
+        combatCategory: CombatCategory.BOW,
+        animOverrides: ballistaAnimOverrides,
+        attackSequence: 7555,
+        attackSpeed: 7,
+        hitDelay: 3,
+        hitSounds: ballistaHitSounds,
+        specialAttackAnim: 7556,
+        specialAttackCost: 65,
     },
 
     // ==================================================================================
@@ -4520,6 +4579,45 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 6,
         hitDelay: 2,
         hitSounds: javelinHitSounds,
+    },
+    {
+        itemId: 22636,
+        name: "Morrigan's javelin",
+        equipmentType: "javelin",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 6,
+        hitDelay: 2,
+        hitSounds: javelinHitSounds,
+        specialAttackAnim: 929,
+        specialAttackCost: 50,
+    },
+    {
+        itemId: 23619,
+        name: "Morrigan's javelin (Last Man Standing)",
+        equipmentType: "javelin",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 6,
+        hitDelay: 2,
+        hitSounds: javelinHitSounds,
+        specialAttackAnim: 929,
+        specialAttackCost: 50,
+    },
+    {
+        itemId: 27916,
+        name: "Morrigan's javelin (bh)",
+        equipmentType: "javelin",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 6,
+        hitDelay: 2,
+        hitSounds: javelinHitSounds,
+        specialAttackAnim: 929,
+        specialAttackCost: 50,
     },
     {
         itemId: 25855,

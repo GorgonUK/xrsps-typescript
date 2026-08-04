@@ -21,7 +21,6 @@ import { VanillaUiController } from "./VanillaUiController";
 import { BankingManager, registerBankInterfaceHooks, registerBankingHandlers } from "./banking";
 import type { BankingProviderServices } from "./banking/BankingProvider";
 import "./combat/BossCombatScript";
-import { createCombatFormulaProvider } from "./combat/CombatFormulas";
 import { createCombatStyleSequenceProvider } from "./combat/CombatStyleSequences";
 import { createEquipmentBonusProvider } from "./combat/EquipmentBonuses";
 import { createInstantUtilitySpecialProvider } from "./combat/RockKnockerSpecial";
@@ -58,6 +57,7 @@ import { registerRomeoHandlers } from "./scripts/content/romeo";
 import { registerWildernessAccessHandlers } from "./scripts/content/wildernessAccess";
 import { registerFollowerItemHandlers } from "./scripts/items/followers";
 import { registerPacksHandlers } from "./scripts/items/packs";
+import { registerToxicBlowpipeHandlers } from "./scripts/items/toxicBlowpipe";
 import { handleDismiss, handleResumePauseButton, registerLevelUpHandlers } from "./scripts/levelup";
 import { registerShopInterfaceHooks } from "./shops";
 import { ShopService } from "./shops/ShopService";
@@ -137,7 +137,6 @@ export class VanillaGamemode extends BaseGamemode {
         registry.instantUtilitySpecial = createInstantUtilitySpecialProvider();
         registry.weaponData = createWeaponDataProvider();
         registry.specialAttack = createSpecialAttackProvider();
-        registry.combatFormula = createCombatFormulaProvider();
         registry.combatStyleSequence = createCombatStyleSequenceProvider();
         registry.skillConfiguration = createSkillConfiguration();
         registry.equipmentBonus = createEquipmentBonusProvider();
@@ -243,6 +242,7 @@ export class VanillaGamemode extends BaseGamemode {
         // Items
         registerFollowerItemHandlers(registry, services);
         registerPacksHandlers(registry, services);
+        registerToxicBlowpipeHandlers(registry, services);
 
         // Widgets
         registerCombatWidgetHandlers(registry, services);

@@ -22,7 +22,6 @@ import {
 import type { PoweredStaffSpellData } from "../../spells/SpellDataProvider";
 import type {
     CombatAttackActionData,
-    CombatNpcRetaliateActionData,
     CombatPlayerHitActionData,
 } from "../actionPayloads";
 import type { ActionEffect, ActionExecutionResult } from "../types";
@@ -134,7 +133,7 @@ export class NpcHitHandler {
         const hitsplatTick = expectedHitTick > 0 ? expectedHitTick : tick;
 
         // A spell "lands" when the accuracy roll passes, regardless of damage.
-        // The landed flag should be set by CombatEngine based on accuracy, not damage.
+        // Accuracy determines the landed flag independently of the rolled damage.
         // Accept truthy values (not just strict boolean) to handle serialization edge cases.
         const hitLanded = this.resolveHitLanded(landed, style, damage);
         const magicImpactEffectsScheduled =
@@ -316,13 +315,11 @@ export class NpcHitHandler {
             this.services.cancelActions(affectedPlayerId, (action) => {
                 const actionNpcId =
                     action.kind === "combat.attack" ||
-                    action.kind === "combat.playerHit" ||
-                    action.kind === "combat.npcRetaliate"
+                    action.kind === "combat.playerHit"
                         ? (
                               action.data as
                                   | CombatAttackActionData
                                   | CombatPlayerHitActionData
-                                  | CombatNpcRetaliateActionData
                           ).npcId
                         : undefined;
                 // combat.retaliate is deliberately NOT cancelled: pending entries are

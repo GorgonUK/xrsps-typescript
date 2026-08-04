@@ -1,5 +1,6 @@
 import { PathService } from "../../pathfinding/PathService";
 import { AttackType } from "../combat/AttackType";
+import { CombatEntityType } from "../combat/model/CombatEntityRef";
 import {
     hasDirectMeleeReach,
     isWithinAttackRange,
@@ -116,8 +117,8 @@ export class FollowerCombatManager {
         follower: ActiveFollowerSnapshot,
         currentTick: number,
     ): NpcState | undefined {
-        const target = player.combat.getCombatTarget();
-        if (!(target instanceof NpcState)) {
+        const target = player.getCombatTarget();
+        if (target?.type !== CombatEntityType.Npc) {
             return undefined;
         }
         if (target.id === follower.npcId) {

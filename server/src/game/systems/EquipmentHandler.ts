@@ -83,9 +83,9 @@ export class EquipmentHandler {
             this.svc.equipmentService.refreshCombatWeaponCategory(player);
         this.svc.appearanceService.refreshAppearanceKits(player);
 
-        // Reset autocast when weapon changes
-        if (weaponItemChanged && player.combat.autocastEnabled) {
-            this.svc.equipmentService.resetAutocast(player);
+        // A weapon change invalidates active autocast and an open spell chooser.
+        if (weaponItemChanged) {
+            this.svc.equipmentService.handleWeaponSlotChanged(player);
         }
 
         this.svc.eventBus.emit("equipment:equip", {
@@ -118,12 +118,13 @@ export class EquipmentHandler {
         if (result.ok) {
             player.markInventoryDirty();
             player.markEquipmentDirty();
-            this.svc.equipmentService.refreshCombatWeaponCategory(player);
+            const { weaponItemChanged } =
+                this.svc.equipmentService.refreshCombatWeaponCategory(player);
             this.svc.appearanceService.refreshAppearanceKits(player);
 
-            // Unequipping the weapon clears autocast state
-            if (equipSlot === EquipmentSlot.WEAPON && player.combat.autocastEnabled) {
-                this.svc.equipmentService.resetAutocast(player);
+            // Close the chooser even when a spell had not been selected yet.
+            if (equipSlot === EquipmentSlot.WEAPON && weaponItemChanged) {
+                this.svc.equipmentService.handleWeaponSlotChanged(player);
             }
 
             this.svc.eventBus.emit("equipment:unequip", {

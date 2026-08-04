@@ -23,45 +23,12 @@ export {
     type PlayerAttackReachOptions,
 } from "./CombatRules";
 
-// Combat state types
-export {
-    CombatPhase,
-    type PlayerCombatConfig,
-    type CombatTimingState,
-    type NpcEngagementState,
-    type PlayerVsNpcCombatState,
-    type NpcCombatState,
-    type CombatStateTransition,
-    type CombatStateMachineContext,
-    type SpecialAttackConfig,
-    type SpecialAttackEffects,
-    type HitsplatResult,
-    extractPlayerCombatConfig,
-    createInitialTimingState,
-    createInitialEngagementState,
-    createPlayerVsNpcCombatState,
-    DEFAULT_AGGRO_HOLD_TICKS,
-} from "./CombatState";
-
-// State machine
-export { CombatStateMachine, createCombatStateMachine } from "./CombatStateMachine";
-export { CombatEngagementRegistry, type CombatEngagementEntry } from "./CombatEngagementRegistry";
-
 // Effect applicator
 export {
     CombatEffectApplicator,
     combatEffectApplicator,
     type SkillSyncCallback,
 } from "./CombatEffectApplicator";
-
-// Player combat manager
-export {
-    PlayerCombatManager,
-    createPlayerCombatManager,
-    type PlayerCombatManagerContext,
-    type CombatTickResult,
-    type CombatEngagementInfo,
-} from "./PlayerCombatManager";
 
 // Hit effects
 export {
@@ -125,31 +92,6 @@ export {
     type SpecialAttackProvider,
 } from "./SpecialAttackProvider";
 
-// Combat formulas
-export {
-    attackRoll,
-    defenceRoll,
-    hitChance,
-    maxHit,
-    rollDamage,
-    effectiveLevel,
-    effectiveMagicDefence,
-    npcEffectiveAttack,
-    npcEffectiveStrength,
-    npcEffectiveDefence,
-    getNpcAttackBonus,
-    getNpcDefenceBonus,
-    npcMaxHit,
-    calculateNpcVsPlayer,
-    registerCombatFormulaProvider,
-    getCombatFormulaProvider,
-    NPC_EFFECTIVE_LEVEL_BONUS,
-    type AttackerStats,
-    type DefenderStats,
-    type MaxHitParams,
-    type CombatFormulaProvider,
-} from "./CombatFormulaProvider";
-
 // Combat style sequences
 export {
     getMeleeAttackSequenceForCategory,
@@ -208,14 +150,3 @@ export {
     calculateXpShare,
 } from "./DamageTracker";
 
-// NPC Combat AI
-export { NpcCombatAI, npcCombatAI, type AggroTarget } from "./NpcCombatAI";
-
-// Unified combat manager
-export {
-    CombatManager,
-    combatManager,
-    calculateFullAttack,
-    type AttackResult,
-    type AttackEffect,
-} from "./CombatIntegration";

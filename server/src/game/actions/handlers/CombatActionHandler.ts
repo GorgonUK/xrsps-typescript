@@ -6,7 +6,6 @@
  * - executeCombatAutocastAction (autocast spell attack)
  * - executePlayerVsPlayerHit (PvP hit resolution)
  * - executeCombatPlayerHitAction (hit resolution, damage application)
- * - executeCombatNpcRetaliateAction (NPC retaliation)
  * - executeCombatCompanionHitAction (owned follower damage on NPCs)
  */
 import { WebSocket } from "ws";
@@ -25,9 +24,14 @@ import {
 } from "../../combat/CombatAction";
 import { combatEffectApplicator } from "../../combat/CombatEffectApplicator";
 import { resolvePlayerAttackType } from "../../combat/CombatRules";
-import type { DropEligibility } from "../../combat/DamageTracker";
+import {
+    DamageType,
+    damageTracker,
+    type DropEligibility,
+} from "../../combat/DamageTracker";
 import { HITMARK_BLOCK, HITMARK_DAMAGE } from "../../combat/HitEffects";
-import { isInWilderness } from "../../combat/MultiCombatZones";
+import { isInWilderness, multiCombatSystem } from "../../combat/MultiCombatZones";
+import { CombatAttributes } from "../../combat/state/CombatAttributes";
 import { getSpecialAttack } from "../../combat/SpecialAttackProvider";
 import { pickSpecialAttackVisualOverride } from "../../combat/SpecialAttackVisualProvider";
 import { getSpellBaseXp } from "../../combat/SpellXpProvider";
@@ -53,14 +57,12 @@ import type {
     CombatAutocastActionData,
     CombatCompanionHitActionData,
     CombatHitPayloadData,
-    CombatNpcRetaliateActionData,
     CombatPlayerHitActionData,
 } from "../actionPayloads";
 import type { ActionEffect, ActionExecutionResult, ActionRequest, ScheduledAction } from "../types";
 import { handleAutocastRuneConsumption, handleRangedAmmoConsumption } from "./CombatHandlerUtils";
 import { CompanionHitHandler } from "./CompanionHitHandler";
 import { NpcHitHandler } from "./NpcHitHandler";
-import { NpcRetaliationHandler } from "./NpcRetaliationHandler";
 import { PvpCombatHandler } from "./PvpCombatHandler";
 import type { SpellResultPayload } from "./SpellActionHandler";
 
@@ -172,7 +174,6 @@ export interface ChatMessageRequest {
 /** Action scheduler request. */
 export type CombatScheduledActionKind =
     | "combat.playerHit"
-    | "combat.npcRetaliate"
     | "combat.companionHit";
 
 export type ActionScheduleRequest<K extends CombatScheduledActionKind = CombatScheduledActionKind> =
@@ -361,10 +362,6 @@ export interface CombatActionServices {
     // --- Combat System ---
     /** Start NPC combat tracking. */
     startNpcCombat(player: PlayerState, npc: NpcState, tick: number, attackSpeed: number): void;
-    /** Resume auto-attack after player was hit (for auto-retaliate). */
-    resumeAutoAttack(playerId: number): void;
-    /** Ensure player combat focus stays alive after NPC retaliation. */
-    extendAggroHold(playerId: number, minimumTicks?: number): void;
     /** Confirm hit landed for retaliation. */
     confirmHitLanded(
         playerId: number,
@@ -374,8 +371,6 @@ export interface CombatActionServices {
         attackType: AttackType | undefined,
         player: PlayerState,
     ): void;
-    /** Roll retaliate damage using NPC's actual stats. */
-    rollRetaliateDamage(npc: NpcState, player: PlayerState): number;
     /** Get drop eligibility for NPC. */
     getDropEligibility(npc: NpcState): DropEligibility | undefined;
     /** Roll server-authoritative NPC drops for the current death. */
@@ -613,7 +608,6 @@ function collectCombatHitPayloads(data: CombatAttackActionData): HitPayload[] {
 export class CombatActionHandler {
     private readonly pvpHandler: PvpCombatHandler;
     private readonly npcHitHandler: NpcHitHandler;
-    private readonly retaliationHandler: NpcRetaliationHandler;
     private readonly companionHandler: CompanionHitHandler;
     private readonly subServices: CombatActionServices;
 
@@ -624,7 +618,6 @@ export class CombatActionHandler {
         this.npcHitHandler = new NpcHitHandler(subServices, (player, data, tick) =>
             this.pvpHandler.executePlayerVsPlayerHit(player, data, tick),
         );
-        this.retaliationHandler = new NpcRetaliationHandler(subServices);
         this.companionHandler = new CompanionHitHandler(
             subServices,
             (player, npc, tick, effects) => {
@@ -675,11 +668,7 @@ export class CombatActionHandler {
             },
             deriveAttackTypeFromStyle: (style, player) =>
                 svc.playerCombatService!.deriveAttackTypeFromStyle(style, player),
-            pickBlockSequence: (player) =>
-                svc.playerCombatManager?.pickBlockSequence(
-                    player,
-                    svc.appearanceService.getWeaponAnimOverrides(),
-                ) ?? -1,
+            pickBlockSequence: (player) => svc.playerCombatService?.pickBlockSequence(player) ?? -1,
 
             getNpcCombatSequences: (typeId) => svc.combatDataService.getNpcCombatSequences(typeId),
             getNpcHitSoundId: (typeId) =>
@@ -802,26 +791,26 @@ export class CombatActionHandler {
                 }
             },
 
-            startNpcCombat: (player, npc, tick, attackSpeed) =>
-                svc.playerCombatManager?.startCombat(player, npc, tick, attackSpeed),
-            resumeAutoAttack: (playerId) => svc.playerCombatManager?.resumeAutoAttack(playerId),
-            confirmHitLanded: (playerId, tick, npc, damage, attackType, player) =>
-                svc.playerCombatManager?.confirmHitLanded(
-                    playerId,
-                    npc,
-                    tick,
-                    damage,
-                    attackType,
-                    player,
-                ),
-            extendAggroHold: (playerId, minimumTicks) =>
-                svc.playerCombatManager?.extendAggroHold(playerId, minimumTicks),
-            rollRetaliateDamage: (npc, player) =>
-                svc.playerCombatManager?.rollRetaliateDamage(npc, player) ?? 0,
-            getDropEligibility: (npc) => svc.playerCombatManager?.getDropEligibility?.(npc),
+            startNpcCombat: (player, npc, tick) => {
+                player.setCombatTarget(npc);
+                player.combatAttributes.set(CombatAttributes.LAST_COMBAT_CLOCK, tick);
+                npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
+            },
+            confirmHitLanded: (_playerId, tick, npc, damage, attackType, player) => {
+                if (damage > 0) {
+                    const damageType: DamageType = attackType ?? DamageType.Melee;
+                    damageTracker.recordDamage(player, npc, damage, damageType, tick);
+                }
+                multiCombatSystem.recordEngagement(player, npc, tick);
+                player.combatAttributes.set(CombatAttributes.LAST_COMBAT_CLOCK, tick);
+                npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
+            },
+            getDropEligibility: (npc) => damageTracker.getDropEligibility(npc),
             rollNpcDrops: (npc, eligibility) =>
                 svc.combatEffectService.rollNpcDrops(npc, eligibility),
-            cleanupNpc: (npc) => svc.playerCombatManager?.cleanupNpc?.(npc),
+            cleanupNpc: (npc) => {
+                svc.npcManager?.cleanupCombatState(npc);
+            },
 
             spawnGroundItem: (itemId, quantity, location, tick, options) =>
                 svc.groundItems.spawn(itemId, quantity, location, tick, options),
@@ -1025,7 +1014,10 @@ export class CombatActionHandler {
         if (isNewRetaliationTarget) {
             npc.engageCombat(player.id, tick, { tileX: player.tileX, tileY: player.tileY });
             const initialRetaliationDelay = Math.floor(Math.max(1, npc.attackSpeed) / 2) + 1;
-            npc.setNextAttackTick(tick + initialRetaliationDelay);
+            npc.combatAttributes.set(
+                CombatAttributes.ATTACK_DELAY,
+                tick + initialRetaliationDelay,
+            );
         }
 
         // Face the target
@@ -1069,7 +1061,7 @@ export class CombatActionHandler {
             if (!result.ok) {
                 // Out of (or incompatible) ammo: halt the auto-attack loop so the player stops
                 // re-firing and the quiver message is shown once instead of every attack tick.
-                this.svc.playerCombatManager?.stopAutoAttack(player.id);
+                player.removeCombatTarget();
                 return result;
             }
         }
@@ -1279,8 +1271,7 @@ export class CombatActionHandler {
                 expectedHitTick !== undefined
                     ? Math.max(minimumExpectedHitTick, expectedHitTick)
                     : minimumExpectedHitTick;
-            // NPC retaliation damage is rolled at swing time in NpcRetaliationHandler,
-            // so it reflects the player's prayers and gear when the NPC attacks.
+            // Preserve the payload's total delay for compatibility with deferred hits.
             const totalRetaliationDelay = Math.max(1, hitPayload.retaliationDelay ?? attackDelay);
 
             const hitData = {
@@ -1483,17 +1474,6 @@ export class CombatActionHandler {
         const npc = this.svc.npcManager?.getById(npcId);
         if (!npc || npc.isDead(tick) || npc.getHitpoints() > 0) return;
         this.npcHitHandler.handleNpcDeath(killerPlayerId, npc, tick, []);
-    }
-
-    /**
-     * Execute NPC retaliation action.
-     */
-    executeCombatNpcRetaliateAction(
-        player: PlayerState,
-        data: CombatNpcRetaliateActionData,
-        tick: number,
-    ): ActionExecutionResult {
-        return this.retaliationHandler.executeCombatNpcRetaliateAction(player, data, tick);
     }
 
     // ========================================================================

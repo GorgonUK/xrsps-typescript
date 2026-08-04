@@ -16,7 +16,6 @@ export type BuiltInActionKind =
     | "combat.special"
     | "combat.attack"
     | "combat.playerHit"
-    | "combat.npcRetaliate"
     | "combat.companionHit"
     | "movement.teleport"
     | "emote.play";

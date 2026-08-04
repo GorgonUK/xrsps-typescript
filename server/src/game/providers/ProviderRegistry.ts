@@ -7,7 +7,6 @@
  * gamemode switches.
  */
 import type { AmmoDataProvider } from "../combat/AmmoDataProvider";
-import type { CombatFormulaProvider } from "../combat/CombatFormulaProvider";
 import type { CombatStyleSequenceProvider } from "../combat/CombatStyleSequenceProvider";
 import type { EquipmentBonusProvider } from "../combat/EquipmentBonusProvider";
 import type { InstantUtilitySpecialProvider } from "../combat/InstantUtilitySpecialProvider";
@@ -22,7 +21,6 @@ import type { SpellDataProvider } from "../spells/SpellDataProvider";
 
 export interface ProviderRegistryState {
     weaponData?: WeaponDataProvider;
-    combatFormula?: CombatFormulaProvider;
     specialAttack?: SpecialAttackProvider;
     combatStyleSequence?: CombatStyleSequenceProvider;
     equipmentBonus?: EquipmentBonusProvider;
@@ -44,7 +42,6 @@ export function getProviderRegistry(): ProviderRegistryState {
 
 export function resetProviderRegistry(): void {
     _registry.weaponData = undefined;
-    _registry.combatFormula = undefined;
     _registry.specialAttack = undefined;
     _registry.combatStyleSequence = undefined;
     _registry.equipmentBonus = undefined;

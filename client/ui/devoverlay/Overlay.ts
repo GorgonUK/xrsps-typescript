@@ -106,7 +106,7 @@ export interface OverheadPrayerEntry {
     /** Group key used to stack 2D elements for the same actor. */
     groupKey?: number;
     heightOffsetTiles: number;
-    /** Prayer head icon index (0 = Protect from Melee, 1 = Protect from Missiles, 2 = Protect from Magic, etc.) */
+    /** Prayer head icon index (0 = Protect from Melee, 1 = Missiles, 2 = Magic, etc.) */
     headIconPrayer: number;
 }
 

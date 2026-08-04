@@ -5,6 +5,7 @@ import { PathService } from "../pathfinding/PathService";
 import { logger } from "../utils/logger";
 import { DoorStateManager } from "../world/DoorStateManager";
 import { DEBUG_PLAYER_IDS, Tile } from "./actor";
+import { interceptFrozenCombatMovement } from "./combat/engine/CombatMovementInterceptor";
 import type { GamemodeDefinition } from "./gamemodes/GamemodeDefinition";
 import { PlayerInteractionSystem, PlayerRepository } from "./interactions/PlayerInteractionSystem";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./interactions/types";
 import { NpcState } from "./npc";
 import { PlayerState } from "./player";
+import type { MovementProcessor } from "./movement/engine/MovementProcessor";
 import type { ScriptRuntime } from "./scripts/ScriptRuntime";
 import { normalizePlayerAccountName } from "./state/PlayerSessionKeys";
 
@@ -124,13 +126,6 @@ export class PlayerManager implements PlayerRepository {
     }
 
     /**
-     * Set callback to stop auto-attack in PlayerCombatManager when player walks.
-     */
-    setStopAutoAttackCallback(callback: (playerId: number) => void): void {
-        this.interactionSystem.setStopAutoAttackCallback(callback);
-    }
-
-    /**
      * Set callback to validate whether NPC combat can start for single/multi rules.
      */
     setNpcCombatPermissionCallback(
@@ -165,14 +160,19 @@ export class PlayerManager implements PlayerRepository {
         return this.usedIds.has(id);
     }
 
-    private attachPathStepValidator(player: PlayerState): void {
-        player.setPathStepValidator((from, to) =>
-            this.pathService.canActorStep(
-                { x: from.x, y: from.y, plane: from.level },
-                to,
-                from.size,
-            ),
-        );
+    private attachMovementPathfinder(player: PlayerState): void {
+        player.setMovementPathfinder((targetX, targetY) => {
+            const route = this.pathService.findPathSteps(
+                {
+                    from: { x: player.tileX, y: player.tileY, plane: player.level },
+                    to: { x: targetX, y: targetY },
+                    size: player.size,
+                    worldViewId: player.worldViewId,
+                },
+                { maxSteps: 128 },
+            );
+            return route.ok ? route.steps : undefined;
+        });
     }
 
     add(ws: WebSocket, spawnX: number, spawnY: number, level: number = 0): PlayerState | undefined {
@@ -184,7 +184,7 @@ export class PlayerManager implements PlayerRepository {
             return undefined;
         }
         const p = new PlayerState(id, spawnX, spawnY, level, this.gamemode);
-        this.attachPathStepValidator(p);
+        this.attachMovementPathfinder(p);
         this.players.set(ws, p);
         this.usedIds.add(id);
 
@@ -205,7 +205,7 @@ export class PlayerManager implements PlayerRepository {
             return undefined;
         }
         const p = new PlayerState(id, spawnX, spawnY, level, this.gamemode);
-        this.attachPathStepValidator(p);
+        this.attachMovementPathfinder(p);
         // Assign a default Rune equipment appearance for bots so clients can
         // render a distinct look without guessing.
         // OSRS classic item ids used here; clients can ignore unknown slots.
@@ -251,7 +251,7 @@ export class PlayerManager implements PlayerRepository {
 
     /**
      * Get a player by their unique ID.
-     * Used by PlayerCombatManager for player lookups.
+     * Used by world systems for stable player-id lookups.
      * Also checks orphaned players since they're still in the game world.
      */
     getPlayerById(playerId: number): PlayerState | undefined {
@@ -678,16 +678,14 @@ export class PlayerManager implements PlayerRepository {
         return { ok: true };
     }
 
-    tickBots(currentTick?: number): void {
+    tickBots(currentTick: number, movementProcessor: MovementProcessor): void {
         for (const p of this.bots) {
-            if (currentTick !== undefined) {
-                p.processTimersAndQueue();
-                p.skillSystem.tickHitpoints(currentTick);
-                p.skillSystem.tickSkillRestoration(currentTick);
-                p.specEnergy.tick(currentTick);
-                p.setMovementTick(currentTick);
-            }
-            p.tickStep();
+            p.processTimersAndQueue();
+            p.skillSystem.tickHitpoints(currentTick);
+            p.skillSystem.tickSkillRestoration(currentTick);
+            p.specEnergy.tick(currentTick);
+            interceptFrozenCombatMovement(p, currentTick);
+            movementProcessor.processEntity(p, currentTick);
         }
     }
 

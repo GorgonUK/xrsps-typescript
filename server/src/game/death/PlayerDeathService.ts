@@ -27,6 +27,7 @@ import { logger } from "../../utils/logger";
 import type { ServerServices } from "../ServerServices";
 import { RUN_ENERGY_MAX } from "../actor";
 import { getWildernessLevel, isInWilderness } from "../combat/MultiCombatZones";
+import { CombatAttributes } from "../combat/state/CombatAttributes";
 import { LockState } from "../model/LockState";
 import type { PlayerState } from "../player";
 import { DeathHookRegistry } from "./DeathHookRegistry";
@@ -508,6 +509,7 @@ export class PlayerDeathService {
 
         // Reset special attack energy to 100%
         player.specEnergy.setPercent(1000);
+        player.combatAttributes.set(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK, 0);
 
         // Clear any queued actions
         player.interruptQueues();
