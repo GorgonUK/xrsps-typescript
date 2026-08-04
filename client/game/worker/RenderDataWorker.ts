@@ -6,6 +6,10 @@ import { Transfer, expose } from "threads/worker";
 import { CacheSystem } from "../../rs/cache/CacheSystem";
 import { ConfigType } from "../../rs/cache/ConfigType";
 import { IndexType } from "../../rs/cache/IndexType";
+import { isGroupMissingError } from "../../rs/cache/js5/GroupMissingError";
+import { Js5RangeClient } from "../../rs/cache/js5/Js5RangeClient";
+import { PresenceBitset } from "../../rs/cache/js5/PresenceBitset";
+import { SparseMemoryStore } from "../../rs/cache/store/SparseMemoryStore";
 import {
     CacheLoaderFactory,
     getCacheLoaderFactory,
@@ -46,6 +50,8 @@ export type WorkerState = {
     cache: LoadedCache;
     cacheSystem: CacheSystem;
     cacheLoaderFactory: CacheLoaderFactory;
+    /** Set when the cache is sparse: fetches missing groups on demand. */
+    js5?: Js5RangeClient;
 
     locTypeLoader: LocTypeLoader;
     objTypeLoader: ObjTypeLoader;
@@ -107,7 +113,24 @@ async function initWorker(cache: LoadedCache, npcInstances: NpcInstance[]): Prom
     await compressionPromise;
     await hasherPromise;
 
-    const cacheSystem = CacheSystem.fromFiles(cache.type, cache.files, requiredIndexIds(cache));
+    // Structured cloning strips class prototypes; rebuild the presence bitset
+    // (its bits are SAB-backed when crossOriginIsolated, so fetches by any
+    // context are visible here; otherwise this worker fetches independently).
+    const presence = cache.sparse ? new PresenceBitset(cache.sparse.presenceBits) : undefined;
+    const cacheSystem = CacheSystem.fromFiles(
+        cache.type,
+        cache.files,
+        requiredIndexIds(cache),
+        presence,
+    );
+
+    let js5: Js5RangeClient | undefined;
+    if (cache.sparse) {
+        const store = cacheSystem.getStore();
+        if (store instanceof SparseMemoryStore) {
+            js5 = new Js5RangeClient(cache.sparse.dat2Url, store);
+        }
+    }
 
     const loaderFactory = getCacheLoaderFactory(cache.info, cacheSystem);
     const underlayTypeLoader = loaderFactory.getUnderlayTypeLoader();
@@ -177,6 +200,7 @@ async function initWorker(cache: LoadedCache, npcInstances: NpcInstance[]): Prom
         cache,
         cacheSystem,
         cacheLoaderFactory: loaderFactory,
+        js5,
 
         locTypeLoader,
         objTypeLoader,
@@ -204,6 +228,48 @@ async function initWorker(cache: LoadedCache, npcInstances: NpcInstance[]): Prom
     };
 }
 
+/**
+ * Run a worker task with sparse-cache miss handling. A thrown miss (e.g. a
+ * map group) waits for that fetch and reruns. Non-throwing misses (models,
+ * anim frames render as gaps and only bump the store's miss counter) are
+ * detected by comparing the counter across the run: one pass touches every
+ * needed group, queueing all fetches, so waiting for the queue to settle and
+ * rerunning converges in a few passes.
+ */
+async function runWithSparseRetry<T>(workerState: WorkerState, task: () => Promise<T>): Promise<T> {
+    const js5 = workerState.js5;
+    if (!js5) {
+        return task();
+    }
+    const store = js5.store;
+    const maxAttempts = 8;
+    for (let attempt = 0; attempt < maxAttempts - 1; attempt++) {
+        const missesBefore = store.missCount;
+        try {
+            const result = await task();
+            if (store.missCount === missesBefore) {
+                return result;
+            }
+            // Groups were missing; their fetches are queued. Wait and rerun.
+            await js5.settled();
+        } catch (e) {
+            if (!isGroupMissingError(e)) {
+                throw e;
+            }
+            try {
+                await js5.requestGroup(e.indexId, e.archiveId, true);
+            } catch (fetchError) {
+                // Transient fetch failure; back off and let the next attempt
+                // re-queue it rather than failing the whole task.
+                console.warn("[js5] Group fetch failed, retrying task:", fetchError);
+                await new Promise((resolve) => setTimeout(resolve, 250));
+            }
+        }
+    }
+    // Final attempt: whatever is still missing renders as gaps.
+    return task();
+}
+
 function clearCache(workerState: WorkerState): void {
     workerState.locModelLoader.clearCache();
     workerState.npcModelLoader.clearCache();
@@ -218,7 +284,6 @@ function clearCache(workerState: WorkerState): void {
 
 const worker = {
     initCache(cache: LoadedCache, npcInstances: NpcInstance[]) {
-        console.log("init worker", cache.info);
         workerStatePromise = initWorker(cache, npcInstances);
     },
     initDataLoader<I, D>(dataLoader: RenderDataLoader<I, D>) {
@@ -236,7 +301,9 @@ const worker = {
             throw new Error("Worker not initialized");
         }
 
-        const { data, transferables } = await dataLoader.load(workerState, input);
+        const { data, transferables } = await runWithSparseRetry(workerState, () =>
+            dataLoader.load(workerState, input),
+        );
 
         if (dataLoader.shouldClearWorkerCacheAfterLoad?.(input) ?? true) {
             clearCache(workerState);
@@ -258,12 +325,14 @@ const worker = {
             throw new Error("Worker not initialized");
         }
 
-        const { data, transferables } = await npcGeometryLoader.loadNpcGeometry(workerState, {
-            mapX,
-            mapY,
-            maxLevel,
-            loadedTextureIds: new Set(loadedTextureIds),
-        });
+        const { data, transferables } = await runWithSparseRetry(workerState, () =>
+            npcGeometryLoader.loadNpcGeometry(workerState, {
+                mapX,
+                mapY,
+                maxLevel,
+                loadedTextureIds: new Set(loadedTextureIds),
+            }),
+        );
 
         clearCache(workerState);
 

@@ -28,7 +28,7 @@ import {
     getStorageBudget,
     hasEnoughStorage,
 } from "../common/utils/StorageUtil";
-import { fetchCacheList, loadCacheFiles } from "./Caches";
+import { fetchCacheList, loadCacheFilesAuto } from "./Caches";
 import { GameContainer } from "./GameContainer";
 import { getAvailableRenderers } from "./GameRenderers";
 import { OsrsClient } from "./OsrsClient";
@@ -316,7 +316,8 @@ function OsrsClientApp() {
                 IndexType.DAT2.musicPatches,
             ];
 
-            const cache = await loadCacheFiles(
+            // Sparse (on-demand) loading when supported; legacy full download otherwise.
+            const cache = await loadCacheFilesAuto(
                 cacheInfo,
                 abortController.signal,
                 (progress) => {
@@ -324,7 +325,6 @@ function OsrsClientApp() {
                     client.setDownloadProgress(progress.current, progress.total, progress.label);
                 },
                 extraIndexIds,
-                false, // Load all indices upfront for worker compatibility
             );
 
             // ========== Ensure renderer is ready before loading ==========

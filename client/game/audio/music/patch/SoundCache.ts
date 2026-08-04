@@ -1,6 +1,7 @@
 import { SoundEffect } from "../../../../rs/audio/legacy/SoundEffect";
 import { CacheSystem } from "../../../../rs/cache/CacheSystem";
 import { IndexType } from "../../../../rs/cache/IndexType";
+import { retryOnMissingGroup } from "../../../../rs/cache/js5/retryOnMissingGroup";
 import { ByteBuffer } from "../../../../rs/io/ByteBuffer";
 import { RawSoundData, loadVorbisSample } from "../../VorbisWasm";
 
@@ -28,7 +29,7 @@ export class SoundCache {
     async loadSoundEffect(groupId: number, fileId: number): Promise<RawSoundData | null> {
         const index = this.cache.getIndex(this.soundEffectIndexId);
         if (!index) return null;
-        const file = index.getFile(groupId, fileId);
+        const file = await retryOnMissingGroup(() => index.getFile(groupId, fileId));
         if (!file) return null;
         try {
             const raw = SoundEffect.decode(new ByteBuffer(file.data)).toRawSound();
@@ -66,7 +67,7 @@ export class SoundCache {
             }
 
             // Third try: getFileSmart
-            const file = index.getFileSmart(id);
+            const file = await retryOnMissingGroup(() => index.getFileSmart(id));
             if (file) {
                 return loadVorbisSample(this.cache, id, 0);
             }

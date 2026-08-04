@@ -341,6 +341,7 @@ export class PlayerChatheadFactory {
             return undefined;
         }
 
+        const missesBefore = this.modelLoader.missCount ?? 0;
         for (const mid of modelIds) {
             const md = this.modelLoader.getModel(mid);
             if (md) {
@@ -349,6 +350,10 @@ export class PlayerChatheadFactory {
         }
         if (!parts.length) {
             console.warn("[PlayerChatheadFactory] No valid model parts loaded");
+            return undefined;
+        }
+        if ((this.modelLoader.missCount ?? 0) !== missesBefore) {
+            // A part is still streaming in; don't cache a partial chathead.
             return undefined;
         }
 

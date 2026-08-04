@@ -4,5 +4,14 @@
   "installCommand": "yarn --cwd client install --frozen-lockfile",
   "buildCommand": "CI=false yarn --cwd client build",
   "outputDirectory": "client/build",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+      ]
+    }
+  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

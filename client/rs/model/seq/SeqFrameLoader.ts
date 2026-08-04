@@ -1,6 +1,7 @@
 import { Archive } from "../../cache/Archive";
 import { CacheIndex } from "../../cache/CacheIndex";
 import { CacheInfo } from "../../cache/CacheInfo";
+import { isGroupMissingError } from "../../cache/js5/GroupMissingError";
 import { SeqBaseLoader } from "./SeqBaseLoader";
 import { Dat2SeqFrame, DatSeqFrame, LegacySeqFrame, SeqFrame } from "./SeqFrame";
 import { SeqFrameMap } from "./SeqFrameMap";
@@ -69,7 +70,17 @@ export class Dat2SeqFrameLoader implements SeqFrameLoader {
 
         let frameMap = this.frameMaps.get(frameMapId);
         if (!frameMap) {
-            const archive = this.animIndex.getArchive(frameMapId);
+            let archive: Archive;
+            try {
+                archive = this.animIndex.getArchive(frameMapId);
+            } catch (e) {
+                // Group not downloaded yet (fetch already queued); the
+                // animation renders a static pose until it arrives.
+                if (!isGroupMissingError(e)) {
+                    throw e;
+                }
+                return undefined;
+            }
 
             const frames: SeqFrame[] = new Array(archive.lastFileId);
 

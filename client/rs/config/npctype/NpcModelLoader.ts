@@ -47,12 +47,17 @@ export class NpcModelLoader {
 
         let model = this.modelCache.get(npcType.id);
         if (!model) {
+            const missesBefore = this.modelLoader.missCount ?? 0;
             const models = new Array<ModelData>(npcType.modelIds.length);
             for (let i = 0; i < models.length; i++) {
                 const modelData = this.modelLoader.getModel(npcType.modelIds[i]);
                 if (modelData) {
                     models[i] = modelData;
                 }
+            }
+            if ((this.modelLoader.missCount ?? 0) !== missesBefore) {
+                // A part is still streaming in; don't cache a partial merge.
+                return undefined;
             }
 
             const merged = ModelData.merge(models, models.length);

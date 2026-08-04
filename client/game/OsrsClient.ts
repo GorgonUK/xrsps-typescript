@@ -192,7 +192,10 @@ import { applyQuestListWidgetGroups } from "../widgets/custom/questList";
 import { cleanupInterfaceClickTargets } from "../widgets/gl/widgets-gl";
 import { layoutWidgets } from "../widgets/layout/WidgetLayout";
 import { sanitizeText } from "../widgets/menu/utils";
-import { CacheList, LoadedCache } from "./Caches";
+import { Js5RangeClient } from "../rs/cache/js5/Js5RangeClient";
+import { PresenceBitset } from "../rs/cache/js5/PresenceBitset";
+import { SparseMemoryStore } from "../rs/cache/store/SparseMemoryStore";
+import { CacheList, LoadedCache, getSparsePersistence } from "./Caches";
 import { Camera, CameraView, ProjectionType } from "./Camera";
 import {
     ClientState,
@@ -395,6 +398,9 @@ export class OsrsClient {
     // Cache (optional until initCache is called)
     loadedCache?: LoadedCache;
     cacheSystem!: CacheSystem;
+    /** On-demand cache group fetcher; set when the cache was loaded sparsely. */
+    js5?: Js5RangeClient;
+    private js5SweepTimer?: ReturnType<typeof setInterval>;
     loaderFactory!: CacheLoaderFactory;
     widgetManager!: WidgetManager;
     widgetSessionManager!: WidgetSessionManager;
@@ -5742,9 +5748,37 @@ export class OsrsClient {
         this.loadedCache = cache;
         this.clientScripts.clear();
 
-        // Create CacheSystem - may have no indices yet if using deferred loading
-        // Indices will be added incrementally during runPhasedLoading
-        this.cacheSystem = CacheSystem.fromFiles(cache.type, cache.files);
+        const presence = cache.sparse ? new PresenceBitset(cache.sparse.presenceBits) : undefined;
+        this.cacheSystem = CacheSystem.fromFiles(cache.type, cache.files, [], presence);
+
+        // On-demand group fetching over HTTP Range requests (js5-style):
+        // reads of not-yet-downloaded groups queue a fetch and retry later.
+        this.js5 = undefined;
+        if (this.js5SweepTimer !== undefined) {
+            clearInterval(this.js5SweepTimer);
+            this.js5SweepTimer = undefined;
+        }
+        if (cache.sparse && presence) {
+            const store = this.cacheSystem.getStore();
+            if (store instanceof SparseMemoryStore) {
+                const js5 = new Js5RangeClient(cache.sparse.dat2Url, store);
+                const persistence = getSparsePersistence(cache);
+                if (persistence) {
+                    js5.onFetched((byteOffset, bytes) =>
+                        persistence.queue(byteOffset, bytes.byteLength),
+                    );
+                    // Worker fetches land in the shared buffer without
+                    // notifying us; sweep to persist them too.
+                    this.js5SweepTimer = setInterval(() => persistence.sweep(presence), 5000);
+                }
+                js5.onRangeUnsupported = () => {
+                    console.error(
+                        "[js5] Server stopped honoring Range requests; assets can no longer stream in",
+                    );
+                };
+                this.js5 = js5;
+            }
+        }
 
         // Initialize worker pool early - it needs cache files but not indices
         this.workerPool.initCache(cache, []);
@@ -7578,6 +7612,19 @@ export class OsrsClient {
         }
         this.cancelPendingLoginMusicStart();
         this.varcPersistence.dispose();
+        if (this.js5SweepTimer !== undefined) {
+            clearInterval(this.js5SweepTimer);
+            this.js5SweepTimer = undefined;
+        }
+        // Persist fetches from the last sweep window before tearing down.
+        if (this.js5 && this.loadedCache) {
+            const persistence = getSparsePersistence(this.loadedCache);
+            if (persistence) {
+                persistence.sweep(this.js5.store.presence);
+                persistence.flush();
+            }
+        }
+        this.js5 = undefined;
 
         // Reset world state first (full reset on dispose)
         this.resetWorld(true);

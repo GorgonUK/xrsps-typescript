@@ -4,6 +4,7 @@
  */
 import { CacheSystem } from "../../../../rs/cache/CacheSystem";
 import { IndexType } from "../../../../rs/cache/IndexType";
+import { retryOnMissingGroup } from "../../../../rs/cache/js5/retryOnMissingGroup";
 import { ByteBuffer } from "../../../../rs/io/ByteBuffer";
 import { ensureSharedMusicWorklet, resumeAudioContextIfNeeded } from "../../audioContext";
 import { MusicPatch } from "../patch/MusicPatch";
@@ -1140,7 +1141,8 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
             return false;
         }
 
-        const file = trackIndex.getFileSmart(trackId);
+        // Track data may still be streaming in (sparse cache); wait for it.
+        const file = await retryOnMissingGroup(() => trackIndex.getFileSmart(trackId));
         if (!file) {
             console.error(`[RealtimeMidiSynth] Track ${trackId} not found`);
             return false;

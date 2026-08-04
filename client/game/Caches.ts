@@ -3,6 +3,12 @@ import { CacheFiles, ProgressListener } from "../rs/cache/CacheFiles";
 import { CacheInfo, getLatestCache } from "../rs/cache/CacheInfo";
 import { CacheType, detectCacheType } from "../rs/cache/CacheType";
 import { IndexType } from "../rs/cache/IndexType";
+import { validatePartialContentResponse } from "../rs/cache/js5/HttpRange";
+import { Js5Persistence } from "../rs/cache/js5/Js5Persistence";
+import { PresenceBitset } from "../rs/cache/js5/PresenceBitset";
+import { Sector } from "../rs/cache/store/Sector";
+import { SectorCluster } from "../rs/cache/store/SectorCluster";
+import { SparseMemoryStore, computeIndexRegion } from "../rs/cache/store/SparseMemoryStore";
 
 const CACHE_PATH = getCacheBaseUrl();
 
@@ -67,23 +73,37 @@ export async function fetchCacheList(): Promise<CacheList | undefined> {
     };
 }
 
+/**
+ * Structured-clone friendly state describing a sparsely-downloaded dat2
+ * (survives postMessage to workers; the presence bits are SAB-backed when
+ * crossOriginIsolated so all contexts observe fetches).
+ */
+export type SparseCacheState = {
+    presenceBits: Uint8Array;
+    dat2Url: string;
+};
+
 export type LoadedCache = {
     info: CacheInfo;
     type: CacheType;
     files: CacheFiles;
     xteas: XteaMap;
+    /** Present when the cache was loaded sparsely (on-demand js5-style loading). */
+    sparse?: SparseCacheState;
 };
 
-/**
- * Load cache files.
- * @param deferIndices If true, only loads dat2 + meta file. Idx files must be loaded later via loadIndexFile.
- */
+/** Main-thread-only companions of a sparse LoadedCache (not clonable to workers). */
+const sparsePersistenceByCache = new WeakMap<LoadedCache, Js5Persistence>();
+
+export function getSparsePersistence(cache: LoadedCache): Js5Persistence | undefined {
+    return sparsePersistenceByCache.get(cache);
+}
+
 export async function loadCacheFiles(
     info: CacheInfo,
     signal?: AbortSignal,
     progressListener?: ProgressListener,
     extraIndexIds?: number[],
-    deferIndices: boolean = false,
 ): Promise<LoadedCache> {
     const cachePath = CACHE_PATH + info.name + "/";
 
@@ -103,9 +123,8 @@ export async function loadCacheFiles(
                 "[storage] Safari/WebKit detected: skipping final dat2 cache write to avoid tab crashes; keeping resumable part cache",
             );
         }
-        // If deferring indices, only load dat2 + meta (no idx files yet)
-        const indicesToLoad = deferIndices ? [] : getRequiredIndexIds(info);
-        if (!deferIndices && extraIndexIds && extraIndexIds.length) {
+        const indicesToLoad = getRequiredIndexIds(info);
+        if (extraIndexIds && extraIndexIds.length) {
             for (const id of extraIndexIds) if (!indicesToLoad.includes(id)) indicesToLoad.push(id);
         }
         files = await CacheFiles.fetchDat2(
@@ -115,7 +134,7 @@ export async function loadCacheFiles(
             useSharedArrayBuffer,
             signal,
             progressListener,
-            undefined, // No sequential loading when deferring - we'll load indices later
+            undefined,
             skipDat2MainCacheWrite,
         );
     } else if (cacheType === "dat") {
@@ -146,48 +165,8 @@ export async function loadCacheFiles(
     };
 }
 
-/**
- * Load a single index file into an existing cache.
- * Used for incremental loading during LOADING phase.
- * Returns the loaded data buffer so it can be added to CacheSystem.
- */
-export async function loadIndexFile(
-    cache: LoadedCache,
-    indexId: number,
-    signal?: AbortSignal,
-    progressListener?: ProgressListener,
-): Promise<ArrayBuffer | null> {
-    const cachePath = CACHE_PATH + cache.info.name + "/";
-    const useSharedArrayBuffer =
-        typeof SharedArrayBuffer !== "undefined" && globalThis.crossOriginIsolated === true;
-
-    const indexName = getIndexName(indexId);
-
-    // Wrap progress listener to add label
-    const labeledListener: ProgressListener | undefined = progressListener
-        ? (progress) => {
-              progressListener({ ...progress, label: indexName });
-          }
-        : undefined;
-
-    const indexData = await CacheFiles.fetchSingleIndex(
-        cachePath,
-        cache.info.name,
-        indexId,
-        useSharedArrayBuffer,
-        signal,
-        labeledListener,
-    );
-
-    if (indexData) {
-        cache.files.addFile(`main_file_cache.idx${indexId}`, indexData);
-        return indexData;
-    }
-    return null;
-}
-
 /** Get the list of required index IDs for a cache */
-export function getRequiredIndexIds(info: CacheInfo): number[] {
+function getRequiredIndexIds(info: CacheInfo): number[] {
     const ids: number[] = [];
     // Core indices used by renderer and minimap generation
     ids.push(
@@ -228,6 +207,360 @@ export function getRequiredIndexIds(info: CacheInfo): number[] {
         );
     }
     return ids;
+}
+
+/**
+ * Indices whose group payloads are fetched on demand during gameplay instead
+ * of downloaded upfront. Their reference tables (idx255 meta region) are still
+ * loaded eagerly, so ids/names/CRCs resolve immediately — only payloads
+ * stream in when first used. Together these are ~180MB of the ~204MB cache.
+ */
+function getDeferredIndexIds(info: CacheInfo): number[] {
+    if (info.game !== "oldschool") {
+        return [];
+    }
+    return [
+        IndexType.DAT2.animations,
+        IndexType.DAT2.soundEffects,
+        IndexType.DAT2.maps,
+        IndexType.DAT2.musicTracks,
+        IndexType.DAT2.models,
+        IndexType.DAT2.musicSamples,
+        // idx19 (worldMap structure, 0.6MB) stays eager: WorldMapState.load
+        // reads it synchronously during startup. Geography/ground pixels defer.
+        IndexType.OSRS.worldMapGeography,
+        IndexType.OSRS.worldMapGround,
+        IndexType.OSRS.animKeyFrames,
+    ];
+}
+
+/** `?fullCache=1` forces the legacy full-download path. */
+export function isFullCacheForced(): boolean {
+    try {
+        const loc = (globalThis as { location?: Location }).location;
+        if (!loc) {
+            return false;
+        }
+        return new URLSearchParams(loc.search).get("fullCache") === "1";
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Load the cache sparsely when possible (OSRS dat2 over a Range-supporting
+ * server), falling back to the legacy full download otherwise.
+ */
+export async function loadCacheFilesAuto(
+    info: CacheInfo,
+    signal?: AbortSignal,
+    progressListener?: ProgressListener,
+    extraIndexIds?: number[],
+): Promise<LoadedCache> {
+    const cacheType = detectCacheType(info);
+    if (!isFullCacheForced() && cacheType === "dat2" && info.game === "oldschool") {
+        try {
+            const sparse = await loadCacheFilesSparse(info, signal, progressListener);
+            if (sparse) {
+                return sparse;
+            }
+        } catch (e) {
+            if (signal?.aborted) {
+                throw e;
+            }
+            console.warn("[js5] Sparse cache load failed, falling back to full download:", e);
+        }
+    }
+    return loadCacheFiles(info, signal, progressListener, extraIndexIds);
+}
+
+type SectorRun = { start: number; end: number };
+
+function mergeSectorRuns(runs: SectorRun[], gapTolerance: number = 16): SectorRun[] {
+    if (runs.length === 0) {
+        return [];
+    }
+    const sorted = [...runs].sort((a, b) => a.start - b.start);
+    const merged: SectorRun[] = [{ ...sorted[0] }];
+    for (let i = 1; i < sorted.length; i++) {
+        const last = merged[merged.length - 1];
+        if (sorted[i].start <= last.end + gapTolerance) {
+            last.end = Math.max(last.end, sorted[i].end);
+        } else {
+            merged.push({ ...sorted[i] });
+        }
+    }
+    return merged;
+}
+
+/** Split runs into the subruns whose sectors are not yet present. */
+function subtractPresentSectors(runs: SectorRun[], presence: PresenceBitset): SectorRun[] {
+    const missing: SectorRun[] = [];
+    for (const run of runs) {
+        let subStart = -1;
+        for (let s = run.start; s <= run.end; s++) {
+            const absent = s < run.end && !presence.hasSectors(s, 1);
+            if (absent && subStart < 0) {
+                subStart = s;
+            } else if (!absent && subStart >= 0) {
+                missing.push({ start: subStart, end: s });
+                subStart = -1;
+            }
+        }
+    }
+    return missing;
+}
+
+/** Returns the number of bytes actually delivered (may be short on truncation). */
+async function fetchRangeStreaming(
+    url: string,
+    startByte: number,
+    endByte: number,
+    buffer: ArrayBuffer,
+    signal: AbortSignal | undefined,
+    onChunk: (byteLength: number) => void,
+): Promise<number> {
+    const resp = await fetch(url, {
+        headers: { Range: `bytes=${startByte}-${endByte - 1}` },
+        signal,
+    });
+    if (resp.status !== 206) {
+        try {
+            resp.body?.cancel();
+        } catch {}
+        throw new Error(`Range fetch failed (${resp.status}) for ${url}`);
+    }
+    validatePartialContentResponse(resp, startByte, endByte, url);
+    const target = new Uint8Array(buffer);
+    let offset = startByte;
+    if (!resp.body) {
+        const data = new Uint8Array(await resp.arrayBuffer());
+        const chunk = data.subarray(0, endByte - offset);
+        target.set(chunk, offset);
+        onChunk(chunk.byteLength);
+        return chunk.byteLength;
+    }
+    const reader = resp.body.getReader();
+    for (let res = await reader.read(); !res.done && res.value; res = await reader.read()) {
+        const chunk = res.value.subarray(0, Math.max(0, endByte - offset));
+        target.set(chunk, offset);
+        offset += chunk.byteLength;
+        onChunk(chunk.byteLength);
+    }
+    return offset - startByte;
+}
+
+/**
+ * Sparse startup: download only the idx files, the reference tables and the
+ * eager index regions (~25MB) via Range requests into a full-size sparse dat2
+ * buffer. Deferred groups (models, maps, animations, audio, worldmap) are
+ * fetched on demand by the Js5RangeClient and persisted so they are only ever
+ * downloaded once.
+ */
+async function loadCacheFilesSparse(
+    info: CacheInfo,
+    signal?: AbortSignal,
+    progressListener?: ProgressListener,
+): Promise<LoadedCache | undefined> {
+    const cachePath = CACHE_PATH + info.name + "/";
+    const dat2Path = cachePath + CacheFiles.DAT2_FILE_NAME;
+
+    // A prior session already stored the complete dat2; the regular path
+    // restores it from storage without any network traffic.
+    if (await Js5Persistence.hasFullDat2(info.name, dat2Path)) {
+        return undefined;
+    }
+
+    const xteasPromise = fetchXteas(cachePath + "keys.json", signal);
+    const useSharedArrayBuffer =
+        typeof SharedArrayBuffer !== "undefined" && globalThis.crossOriginIsolated === true;
+
+    const report = (current: number, total: number, label: string) => {
+        progressListener?.({ total, current, part: new Uint8Array(0), label });
+    };
+
+    // Index files (all small): meta first to learn the index count.
+    report(0, 1, "Loading index");
+    const metaData = await CacheFiles.fetchSingleIndex(
+        cachePath,
+        info.name,
+        255,
+        useSharedArrayBuffer,
+        signal,
+    );
+    if (!metaData) {
+        return undefined;
+    }
+    const indexCount = Math.floor(metaData.byteLength / SectorCluster.SIZE);
+    // Only fetch idx files for indices whose reference table exists in the
+    // meta file — requesting a missing file gets the SPA's index.html back
+    // with status 200, which would then be parsed as garbage idx entries.
+    const metaBytes = new Uint8Array(metaData);
+    const indexIds: number[] = [];
+    for (let id = 0; id < indexCount; id++) {
+        const off = id * SectorCluster.SIZE;
+        const size = (metaBytes[off] << 16) | (metaBytes[off + 1] << 8) | metaBytes[off + 2];
+        const sector = (metaBytes[off + 3] << 16) | (metaBytes[off + 4] << 8) | metaBytes[off + 5];
+        if (size > 0 && sector > 0) {
+            indexIds.push(id);
+        }
+    }
+    const idxDatas = new Map<number, ArrayBuffer>();
+    await Promise.all(
+        indexIds.map(async (id) => {
+            const data = await CacheFiles.fetchSingleIndex(
+                cachePath,
+                info.name,
+                id,
+                useSharedArrayBuffer,
+                signal,
+            );
+            if (data) {
+                idxDatas.set(id, data);
+            }
+        }),
+    );
+    if (idxDatas.size !== indexIds.length) {
+        // A missing idx file would silently produce a cache without that
+        // index; fall back to the full download path instead.
+        console.warn(
+            `[js5] Only ${idxDatas.size}/${indexIds.length} idx files loaded; using full download`,
+        );
+        return undefined;
+    }
+
+    // dat2 size and identity — doubles as the Range-support probe.
+    const probe = await fetch(dat2Path, { headers: { Range: "bytes=0-0" }, signal });
+    if (probe.status !== 206) {
+        try {
+            probe.body?.cancel();
+        } catch {}
+        console.warn(
+            `[js5] Server does not support Range requests (status ${probe.status}); using full download`,
+        );
+        return undefined;
+    }
+    let probeRange;
+    try {
+        probeRange = validatePartialContentResponse(probe, 0, 1, dat2Path);
+    } finally {
+        try {
+            probe.body?.cancel();
+        } catch {}
+    }
+    const totalSize = probeRange.total ?? 0;
+    if (!Number.isFinite(totalSize) || totalSize <= 0) {
+        return undefined;
+    }
+    const dat2Version =
+        probe.headers.get("ETag") ?? probe.headers.get("Last-Modified") ?? String(totalSize);
+
+    const buffer = (
+        useSharedArrayBuffer ? new SharedArrayBuffer(totalSize) : new ArrayBuffer(totalSize)
+    ) as ArrayBuffer;
+    const presence = PresenceBitset.forSectorCount(
+        Math.ceil(totalSize / Sector.SIZE),
+        useSharedArrayBuffer,
+    );
+    const totalSectors = Math.ceil(totalSize / Sector.SIZE);
+    const files = new Map<string, ArrayBuffer>();
+    files.set(CacheFiles.DAT2_FILE_NAME, buffer);
+    files.set(CacheFiles.META_FILE_NAME, metaData);
+    for (const [id, data] of idxDatas) {
+        files.set(CacheFiles.INDEX_FILE_PREFIX + id, data);
+    }
+    const cacheFiles = new CacheFiles(files);
+    const store = SparseMemoryStore.fromSparseFiles(cacheFiles, presence);
+    const persistence = new Js5Persistence(info.name, dat2Path, buffer);
+
+    // Persisted ranges only apply to the exact dat2 they were fetched from; a
+    // repacked/updated file relocates groups, so stale ranges must be dropped.
+    const manifest = await Js5Persistence.readManifest(info.name, dat2Path);
+    if (manifest && (manifest.total !== totalSize || manifest.version !== dat2Version)) {
+        console.warn("[js5] Server dat2 changed; clearing persisted ranges");
+        await persistence.clearAllRanges();
+    }
+    await persistence.writeManifest(dat2Version);
+
+    // Restore ranges fetched in previous sessions.
+    const restored = await persistence.restore((offset, bytes) => store.applyRange(offset, bytes));
+
+    // Eager regions: reference tables (idx255 meta region) + every
+    // non-deferred index. Deferred indices only need their reference tables.
+    const deferred = new Set(getDeferredIndexIds(info));
+    const regions: SectorRun[] = [];
+    const metaRegion = computeIndexRegion(metaData);
+    if (metaRegion) {
+        regions.push({ start: metaRegion.startSector, end: metaRegion.endSector });
+    }
+    for (const [id, data] of idxDatas) {
+        if (deferred.has(id)) {
+            continue;
+        }
+        const region = computeIndexRegion(data);
+        if (!region) {
+            continue;
+        }
+        if (region.endSector > totalSectors) {
+            // Corrupt idx data (e.g. an HTML error page); ignore it.
+            console.warn(`[js5] Index ${id} region exceeds dat2 size; skipping eager load`);
+            continue;
+        }
+        regions.push({ start: region.startSector, end: region.endSector });
+    }
+
+    const missing = subtractPresentSectors(mergeSectorRuns(regions), presence);
+    let toFetch = 0;
+    for (const run of missing) {
+        toFetch += Math.min(run.end * Sector.SIZE, totalSize) - run.start * Sector.SIZE;
+    }
+    let fetchedBytes = 0;
+    const onEagerChunk = (byteLength: number) => {
+        fetchedBytes += byteLength;
+        report(fetchedBytes, toFetch, "Loading assets");
+    };
+    report(0, Math.max(toFetch, 1), "Loading assets");
+    for (const run of missing) {
+        const startByte = run.start * Sector.SIZE;
+        const endByte = Math.min(run.end * Sector.SIZE, totalSize);
+        const delivered = await fetchRangeStreaming(
+            dat2Path,
+            startByte,
+            endByte,
+            buffer,
+            signal,
+            onEagerChunk,
+        );
+        // Mark/persist only complete sectors actually delivered — a truncated
+        // response must not poison the presence map or the persisted ranges.
+        const deliveredSectors =
+            startByte + delivered >= totalSize
+                ? Math.ceil(delivered / Sector.SIZE)
+                : Math.floor(delivered / Sector.SIZE);
+        presence.markSectors(run.start, deliveredSectors);
+        persistence.queue(startByte, deliveredSectors * Sector.SIZE);
+        if (delivered < endByte - startByte) {
+            throw new Error(
+                `Truncated range response for ${dat2Path}: got ${delivered} of ${endByte - startByte} bytes`,
+            );
+        }
+    }
+    persistence.flush();
+
+    const loaded: LoadedCache = {
+        info,
+        type: "dat2",
+        files: cacheFiles,
+        xteas: await xteasPromise,
+        sparse: { presenceBits: presence.bits, dat2Url: dat2Path },
+    };
+    sparsePersistenceByCache.set(loaded, persistence);
+    console.log(
+        `[js5] Sparse cache ready: downloaded ${(fetchedBytes / 1048576).toFixed(1)}MB eager, ` +
+            `restored ${(restored / 1048576).toFixed(1)}MB persisted, ` +
+            `deferring ${Array.from(deferred).join(",")} (${(totalSize / 1048576).toFixed(0)}MB total)`,
+    );
+    return loaded;
 }
 
 export type XteaMap = Map<number, number[]>;

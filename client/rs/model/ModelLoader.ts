@@ -1,14 +1,24 @@
 import { Archive } from "../cache/Archive";
 import { CacheIndex } from "../cache/CacheIndex";
+import { isGroupMissingError } from "../cache/js5/GroupMissingError";
 import { ByteBuffer } from "../io/ByteBuffer";
 import { ModelData } from "./ModelData";
 
 export interface ModelLoader {
     getModel(id: number): ModelData | undefined;
+    /**
+     * Total not-yet-downloaded misses observed (sparse cache). Callers that
+     * merge and cache multi-part models compare this across their part loads:
+     * if it changed, a part is still streaming in — don't cache the partial
+     * result, return undefined and retry later.
+     */
+    missCount?: number;
 }
 
 export class IndexModelLoader implements ModelLoader {
     modelIndex: CacheIndex;
+
+    missCount = 0;
 
     constructor(modelIndex: CacheIndex) {
         this.modelIndex = modelIndex;
@@ -19,7 +29,13 @@ export class IndexModelLoader implements ModelLoader {
             const file = this.modelIndex.getFile(id, 0);
             return file && ModelData.decode(file.data);
         } catch (e) {
-            console.error("Failed loading model file", id, e);
+            // Missing groups are already queued for on-demand fetch; the
+            // caller renders nothing this frame and retries later.
+            if (!isGroupMissingError(e)) {
+                console.error("Failed loading model file", id, e);
+            } else {
+                this.missCount++;
+            }
             return undefined;
         }
     }

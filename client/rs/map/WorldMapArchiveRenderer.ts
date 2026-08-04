@@ -1,6 +1,8 @@
 import type { CacheIndex } from "../cache/CacheIndex";
 import type { CacheSystem } from "../cache/CacheSystem";
 import { IndexType } from "../cache/IndexType";
+import { isGroupMissingError } from "../cache/js5/GroupMissingError";
+import { retryOnMissingGroup } from "../cache/js5/retryOnMissingGroup";
 import type { OverlayFloorTypeLoader } from "../config/floortype/FloorTypeLoader";
 import type { LocType } from "../config/loctype/LocType";
 import type { LocTypeLoader } from "../config/loctype/LocTypeLoader";
@@ -648,11 +650,15 @@ export class WorldMapArchiveRenderer {
             }
             return true;
         } catch (error) {
-            console.log("[WorldMapArchiveRenderer] Failed to load geography", {
-                groupId: data.groupId,
-                fileId: data.fileId,
-                error,
-            });
+            // Missing groups are queued for on-demand fetch and this is
+            // retried on the next render, so only log real failures.
+            if (!isGroupMissingError(error)) {
+                console.log("[WorldMapArchiveRenderer] Failed to load geography", {
+                    groupId: data.groupId,
+                    fileId: data.fileId,
+                    error,
+                });
+            }
             return false;
         }
     }
@@ -1165,15 +1171,20 @@ export class WorldMapArchiveRenderer {
 
     private async loadGroundColors(groupId: number): Promise<Int32Array> {
         try {
-            const archive = this.groundIndex.getArchive(groupId);
-            const file = archive.getFile(0) ?? archive.files[0];
-            if (file) return await this.decodeWorldMapSprite(file.data);
+            // Waits for the group to stream in when the cache is sparse.
+            const archive = await retryOnMissingGroup(() => this.groundIndex.getArchive(groupId));
+            if (archive) {
+                const file = archive.getFile(0) ?? archive.files[0];
+                if (file) return await this.decodeWorldMapSprite(file.data);
+            }
         } catch (error) {
             console.log("[WorldMapArchiveRenderer] Failed to load ground sprite", {
                 groupId,
                 error,
             });
         }
+        // Don't keep the blank result cached; a later view retries the load.
+        this.groundSpriteCache.delete(groupId);
         return new Int32Array(TILE_AREA);
     }
 

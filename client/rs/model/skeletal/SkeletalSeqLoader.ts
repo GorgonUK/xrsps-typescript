@@ -1,5 +1,6 @@
 import { Archive } from "../../cache/Archive";
 import { CacheIndex } from "../../cache/CacheIndex";
+import { isGroupMissingError } from "../../cache/js5/GroupMissingError";
 import { SeqBaseLoader } from "../seq/SeqBaseLoader";
 import { SkeletalSeq } from "./SkeletalSeq";
 
@@ -30,7 +31,16 @@ export class IndexSkeletalSeqLoader implements SkeletalSeqLoader {
 
         let archive = this.archiveCache.get(archiveId);
         if (!archive) {
-            archive = this.animIndex.getArchive(archiveId);
+            try {
+                archive = this.animIndex.getArchive(archiveId);
+            } catch (e) {
+                // Group not downloaded yet (fetch already queued); render a
+                // static pose until it arrives.
+                if (!isGroupMissingError(e)) {
+                    throw e;
+                }
+                return undefined;
+            }
             this.archiveCache.set(archiveId, archive);
         }
 
