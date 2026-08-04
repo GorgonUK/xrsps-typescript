@@ -23,6 +23,9 @@ import {
 } from "../../game/combat/InstantUtilitySpecialProvider";
 import type { PlayerState } from "../../game/player";
 import { CombatPluginRegistry } from "../../game/combat/plugins/CombatPluginRegistry";
+import {
+    queueGraniteMaulSpecialAttackInput,
+} from "../../game/combat/plugins/special-attacks/GraniteMaulSpecialAttack";
 import { logger } from "../../utils/logger";
 import type { MessageHandlerServices } from "../MessageHandlers";
 import type { MessageHandler } from "../MessageRouter";
@@ -123,6 +126,28 @@ function handleSpecialAttackVarp(
     const weaponCost =
         weaponProfile.specialAttackEnergyCost ??
         (weaponId > 0 ? services.getWeaponSpecialCostPercent(weaponId) : undefined);
+
+    const graniteMaulActivation = queueGraniteMaulSpecialAttackInput(
+        p,
+        weaponId,
+        services.getCurrentTick(),
+        "varp",
+    );
+    if (graniteMaulActivation.handled) {
+        const active = p.combat.countQueuedInstantSpecialAttacks(weaponId) > 0;
+        p.specEnergy.setActivated(active);
+        p.varps.setVarpValue(VARP_SPECIAL_ATTACK, active ? 1 : 0);
+        sendVarpCorrection(services, ws, VARP_SPECIAL_ATTACK, active ? 1 : 0);
+        services.queueCombatState(p);
+        if (graniteMaulActivation.insufficientEnergy) {
+            services.queueChatMessage({
+                messageType: "game",
+                text: "You do not have enough special attack energy.",
+                targetPlayerIds: [p.id],
+            });
+        }
+        return;
+    }
 
     const utilitySpecial = desired ? getInstantUtilitySpecial(weaponId) : undefined;
 

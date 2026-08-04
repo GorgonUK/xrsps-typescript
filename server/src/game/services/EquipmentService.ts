@@ -1,4 +1,4 @@
-import { VARP_AUTOCAST_SPELLPOS } from "../../../../client/common/vars";
+import { VARP_AUTOCAST_SPELLPOS, VARP_SPECIAL_ATTACK } from "../../../../client/common/vars";
 import { EquipmentSlot } from "../../../../client/rs/config/player/Equipment";
 import {
     DEFAULT_WEAPON_CATEGORY,
@@ -166,6 +166,12 @@ export class EquipmentService {
      * tick so its cache scripts can rebuild the weapon-specific style panel.
      */
     handleWeaponSlotChanged(p: PlayerState): void {
+        if (p.combat.clearQueuedInstantSpecialAttacks() > 0) {
+            p.specEnergy.setActivated(false);
+            p.varps.setVarpValue(VARP_SPECIAL_ATTACK, 0);
+            this.services.variableService.queueVarp(p.id, VARP_SPECIAL_ATTACK, 0);
+            this.queueCombatState(p);
+        }
         const chooserWasOpen =
             p.widgets.isOpen(AUTOCAST_SELECTION_GROUP_ID) ||
             this.services.interfaceManager.isWidgetGroupOpenInLedger(

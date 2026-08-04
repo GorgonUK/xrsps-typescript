@@ -14,6 +14,8 @@ export interface PreparedCombatAttack {
 export interface PrepareCombatAttackOptions {
     /** Used only by instant specials such as Granite maul's Quick Smash. */
     readonly bypassAttackDelay?: boolean;
+    /** Instant specials do not move or replace the existing weapon deadline. */
+    readonly preserveAttackDelay?: boolean;
 }
 
 /** Owns the absolute attack deadline and prepares legal attack cycles. */
@@ -53,8 +55,13 @@ export class CombatAttackManager {
 
         const resolvedTraits = this.resolveAutocastTraits(attacker, traits);
         const speedTicks = this.attackSpeed(resolvedTraits.speedTicks);
-        const nextAttackClock = clock + speedTicks;
-        attacker.combatAttributes.set(CombatAttributes.ATTACK_DELAY, nextAttackClock);
+        const previousAttackClock = attacker.combatAttributes.get(CombatAttributes.ATTACK_DELAY);
+        const nextAttackClock = options.preserveAttackDelay
+            ? previousAttackClock
+            : clock + speedTicks;
+        if (!options.preserveAttackDelay) {
+            attacker.combatAttributes.set(CombatAttributes.ATTACK_DELAY, nextAttackClock);
+        }
         attacker.combatAttributes.set(CombatAttributes.LAST_ATTACK_CLOCK, clock);
         attacker.combatAttributes.set(CombatAttributes.LAST_COMBAT_CLOCK, clock);
         target.combatAttributes.set(CombatAttributes.LAST_COMBAT_CLOCK, clock);

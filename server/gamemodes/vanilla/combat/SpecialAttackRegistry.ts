@@ -158,7 +158,7 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
     }
 
     canGraniteMaulCombo(weaponId: number, lastAttackTick: number, currentTick: number): boolean {
-        const isGmaul = weaponId === 4153 || weaponId === 12848;
+        const isGmaul = weaponId === 4153 || weaponId === 12848 || weaponId === 24225;
         return isGmaul && currentTick === lastAttackTick;
     }
 
@@ -634,6 +634,18 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
         this.register({
             name: "Quick Smash",
             weaponIds: [4153, 12848],
+            energyCost: 60,
+            accuracyMultiplier: 1.0,
+            damageMultiplier: 1.0,
+            hitCount: 1,
+            animationId: 1667,
+            graphicId: 340,
+            soundId: 2715,
+        });
+
+        this.register({
+            name: "Quick Smash",
+            weaponIds: [24225],
             energyCost: 50,
             accuracyMultiplier: 1.0,
             damageMultiplier: 1.0,
