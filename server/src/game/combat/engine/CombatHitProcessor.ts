@@ -76,6 +76,8 @@ import {
     MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
     takeDueMorrigansJavelinBleeds,
 } from "../plugins/special-attacks/MorrigansJavelinSpec";
+import { clearNoxiousHalberdVirulenceOnWeaponChange } from "../plugins/special-attacks/NoxiousHalberdSpec";
+import { consumeSoulflameHornEntice } from "../plugins/special-attacks/SoulflameHornSpec";
 
 interface CombatVisualDefinition {
     readonly attackAnimation?: number;
@@ -138,6 +140,12 @@ export class CombatHitProcessor {
         let rejectedAttacks = 0;
 
         for (const attack of attacks) {
+            if (attack.attacker.type === CombatEntityType.Player) {
+                const player = this.resolveEntity(attack.attacker);
+                if (player instanceof PlayerState) {
+                    clearNoxiousHalberdVirulenceOnWeaponChange(player, attack.traits.weaponId);
+                }
+            }
             const attacker = this.resolveEntity(attack.attacker);
             const target = this.resolveEntity(attack.target);
             if (
@@ -182,8 +190,24 @@ export class CombatHitProcessor {
                 specialAttack,
                 enchantedBoltEffect,
             );
-            const rawEvaluations = rollSpecial
-                ? this.evaluator.evaluateSpecialAttack(attack, rollSpecial)
+            const normalAttack = rollSpecial ? undefined : this.resolveNormalAttack(profile, context);
+            const rollPlan = rollSpecial ?? normalAttack;
+            const enticed =
+                attacker instanceof PlayerState &&
+                consumeSoulflameHornEntice(attacker, attack.traits.type, target, clock);
+            const enticedRollPlan = enticed
+                ? Object.freeze({
+                      ...(rollPlan ?? {
+                          energyCostPercent: 0,
+                          hitCount: 1,
+                          accuracyMultiplier: 1,
+                          damageMultiplier: 1,
+                      }),
+                      guaranteedFirstAccuracyRoll: true,
+                  })
+                : rollPlan;
+            const rawEvaluations = enticedRollPlan
+                ? this.evaluator.evaluateSpecialAttack(attack, enticedRollPlan)
                 : [this.evaluator.evaluate(attack)];
             if (rawEvaluations.some((evaluation) => !evaluation.valid)) {
                 rejectedAttacks++;
@@ -472,6 +496,7 @@ export class CombatHitProcessor {
                     player,
                     context.target,
                     context.currentMapClock,
+                    this.services.players?.getAllPlayersForSync() ?? [],
                 );
             } catch (error) {
                 logger.warn(`[special-attack:${script.itemId}] resolveEnergyCost failed`, error);
@@ -485,7 +510,7 @@ export class CombatHitProcessor {
             0,
             Math.min(100, Math.trunc(requestedEnergyCost)),
         );
-        if (script?.onSpecialActivated) {
+        if (script?.onSpecialActivated || script?.onSpecialActivatedWithPlayers) {
             if (player.specEnergy.getPercent() < energyCost) {
                 clearWeaponSpecialAttackTraitOverrides(context.attack);
                 player.specEnergy.setActivated(false);
@@ -499,14 +524,21 @@ export class CombatHitProcessor {
             }
 
             try {
-                if (
-                    script.onSpecialActivated(
-                        player,
-                        context.target,
-                        context.currentMapClock,
-                        context.attack,
-                    ) === false
-                ) {
+                const activated = script.onSpecialActivatedWithPlayers
+                    ? script.onSpecialActivatedWithPlayers(
+                          player,
+                          context.target,
+                          context.currentMapClock,
+                          this.services.players?.getAllPlayersForSync() ?? [],
+                          context.attack,
+                      )
+                    : script.onSpecialActivated?.(
+                          player,
+                          context.target,
+                          context.currentMapClock,
+                          context.attack,
+                      );
+                if (activated === false) {
                     clearWeaponSpecialAttackTraitOverrides(context.attack);
                     player.specEnergy.setActivated(false);
                     this.syncSpecialAttackUi(player);
@@ -540,10 +572,18 @@ export class CombatHitProcessor {
             accuracyMultiplier:
                 overrides?.accuracyMultiplier ?? profileSpecial?.accuracyMultiplier ?? 1,
             damageMultiplier: overrides?.damageMultiplier ?? profileSpecial?.damageMultiplier ?? 1,
+            attackLevelMultiplier:
+                overrides?.attackLevelMultiplier ?? profileSpecial?.attackLevelMultiplier,
+            strengthLevelMultiplier:
+                overrides?.strengthLevelMultiplier ?? profileSpecial?.strengthLevelMultiplier,
             damageMultiplierStages:
                 overrides?.damageMultiplierStages ?? profileSpecial?.damageMultiplierStages,
             guaranteedHit: overrides?.guaranteedHit ?? profileSpecial?.guaranteedHit,
             rollAttackType: overrides?.rollAttackType ?? profileSpecial?.rollAttackType,
+            defenceRollAttackType:
+                overrides?.defenceRollAttackType ?? profileSpecial?.defenceRollAttackType,
+            defenceRollMultiplier:
+                overrides?.defenceRollMultiplier ?? profileSpecial?.defenceRollMultiplier,
             damageType: overrides?.damageType ?? profileSpecial?.damageType,
             ignoreProtectionPrayer:
                 overrides?.ignoreProtectionPrayer ?? profileSpecial?.ignoreProtectionPrayer,
@@ -568,6 +608,12 @@ export class CombatHitProcessor {
             hitDelayTicks: overrides?.hitDelayTicks ?? profileSpecial?.hitDelayTicks,
             attackSpeedTicks: overrides?.attackSpeedTicks ?? profileSpecial?.attackSpeedTicks,
             accuracyRollCount: overrides?.accuracyRollCount ?? profileSpecial?.accuracyRollCount,
+            guaranteedFirstAccuracyRoll:
+                overrides?.guaranteedFirstAccuracyRoll ??
+                profileSpecial?.guaranteedFirstAccuracyRoll,
+            fixedAccuracyRollMultiplierWhenTargetAtOrBelowMaximumDamage:
+                overrides?.fixedAccuracyRollMultiplierWhenTargetAtOrBelowMaximumDamage ??
+                profileSpecial?.fixedAccuracyRollMultiplierWhenTargetAtOrBelowMaximumDamage,
             damageRangeBySuccessfulAccuracyRolls:
                 overrides?.damageRangeBySuccessfulAccuracyRolls ??
                 profileSpecial?.damageRangeBySuccessfulAccuracyRolls,
@@ -581,6 +627,19 @@ export class CombatHitProcessor {
         });
         this.applySpecialAttackSpeed(player, context.attack, resolvedSpecial);
         return resolvedSpecial;
+    }
+
+    private resolveNormalAttack(
+        profile: WeaponCombatProfile,
+        context: WeaponCombatContext,
+    ): WeaponSpecialAttack | undefined {
+        if (!profile.handleNormalAttack) return undefined;
+        try {
+            return profile.handleNormalAttack(context.attacker, context.target, context.attack) ?? undefined;
+        } catch (error) {
+            logger.warn(`[combat-plugin:${profile.id}] handleNormalAttack failed`, error);
+            return undefined;
+        }
     }
 
     /** Applies weapon specials that intentionally use a non-standard attack cycle. */

@@ -4,6 +4,7 @@ import type { CombatAttack } from "../model/CombatAttack";
 export const SpecialAttackMaximumHitSource = Object.freeze({
     Standard: "standard",
     PhysicalMelee: "physical_melee",
+    Magic: "magic",
     VisibleMagic: "visible_magic",
 } as const);
 
@@ -24,11 +25,19 @@ export interface WeaponSpecialAttackTraitOverrides {
     readonly attackSpeedTicks?: number;
     readonly accuracyMultiplier?: number;
     readonly damageMultiplier?: number;
+    /** Multiplies the visible Attack level before prayers and stance bonuses. */
+    readonly attackLevelMultiplier?: number;
+    /** Multiplies the visible Strength level before prayers and stance bonuses. */
+    readonly strengthLevelMultiplier?: number;
     /** Applies each multiplier in order and floors the max hit after every stage. */
     readonly damageMultiplierStages?: readonly number[];
     readonly guaranteedHit?: boolean;
     /** Overrides the combat style used to build the initial accuracy/max-hit roll. */
     readonly rollAttackType?: AttackType;
+    /** Uses this attack type only when building the target's defence roll. */
+    readonly defenceRollAttackType?: AttackType;
+    /** Multiplies the completed target defence roll for this special attack. */
+    readonly defenceRollMultiplier?: number;
     readonly damageType?: AttackType;
     /** Ignores the target's matching protection prayer for this one hit. */
     readonly ignoreProtectionPrayer?: boolean;
@@ -52,6 +61,14 @@ export interface WeaponSpecialAttackTraitOverrides {
      * while still dealing only one hit.
      */
     readonly accuracyRollCount?: number;
+    /** Guarantees only the first accuracy roll of the first hitsplat. */
+    readonly guaranteedFirstAccuracyRoll?: boolean;
+    /**
+     * When the target's current hitpoints are at or below this hit's maximum
+     * damage, resolves accuracy with one fixed percentage of the maximum
+     * attack roll instead of the ordinary random attack-roll distribution.
+     */
+    readonly fixedAccuracyRollMultiplierWhenTargetAtOrBelowMaximumDamage?: number;
     /** Damage ranges indexed by the number of successful internal accuracy rolls. */
     readonly damageRangeBySuccessfulAccuracyRolls?: readonly {
         readonly minimumDamageMultiplier: number;
@@ -90,7 +107,21 @@ export interface WeaponSpecialAttackScript {
     ): boolean | void;
 
     /** Resolves a dynamic energy cost immediately before the special is consumed. */
-    resolveEnergyCost?(attacker: any, target: any, currentMapClock: number): number;
+    resolveEnergyCost?(
+        attacker: any,
+        target: any,
+        currentMapClock: number,
+        nearbyPlayers?: readonly any[],
+    ): number;
+
+    /** Utility-special hook that may select nearby players before energy is spent. */
+    onSpecialActivatedWithPlayers?(
+        attacker: any,
+        target: any,
+        currentMapClock: number,
+        nearbyPlayers: readonly any[],
+        attack: CombatAttack,
+    ): boolean | void;
 
     /**
      * Executes custom content effects (healing, stat drains, freezes, double-hits)

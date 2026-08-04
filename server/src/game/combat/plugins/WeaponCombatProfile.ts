@@ -72,6 +72,13 @@ export interface WeaponCombatProfile {
     readonly specialAttackEnergyCost?: number;
     readonly specialAttackTiming?: SpecialAttackTiming;
 
+    /** Builds a custom roll plan for an ordinary attack without consuming energy. */
+    readonly handleNormalAttack?: (
+        attacker: CombatEntity,
+        target: CombatEntity,
+        attack: CombatAttack,
+    ) => WeaponSpecialAttack | null;
+
     /** Builds the weapon's special roll/visual plan for one prepared swing. */
     readonly handleSpecialAttack?: (
         attacker: CombatEntity,

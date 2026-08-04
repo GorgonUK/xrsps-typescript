@@ -1233,6 +1233,7 @@ const specialAttacks = {
     // 2H Swords
     DRAGON_2H: { anim: 3157, cost: 60 }, // Powerstab
     SARADOMIN_SWORD: { anim: 1132, cost: 100 }, // Saradomin's Lightning
+    SARADOMINS_BLESSED_SWORD: { anim: 7515, cost: 65 }, // Saradomin's Blessed Lightning
 
     // Godswords
     ARMADYL_GODSWORD: { anim: 7644, cost: 50 }, // The Judgement
@@ -1250,6 +1251,7 @@ const specialAttacks = {
     CRYSTAL_HALBERD: { anim: 1203, cost: 30 }, // Sweep
 
     // Claws
+    RUNE_CLAWS: { anim: 2068, cost: 25 }, // Impale
     DRAGON_CLAWS: { anim: 7514, cost: 50 }, // Slice and Dice
 
     // Whips
@@ -3111,6 +3113,18 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         hitDelay: 1,
         hitSounds: spearHitSounds,
     },
+    {
+        itemId: 29796,
+        name: "Noxious halberd",
+        equipmentType: "halberd",
+        combatCategory: CombatCategory.HALBERD,
+        animOverrides: halberdAnimOverrides,
+        attackSequences: halberdAttackSeqs,
+        attackSpeed: 5,
+        hitDelay: 1,
+        hitSounds: halberdHitSounds,
+        specialAttackCost: 50,
+    },
 
     // ==================================================================================
     // CLAWS (Combat Category 4)
@@ -3193,6 +3207,7 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 4,
         hitDelay: 1,
         hitSounds: clawHitSounds,
+        specialAttackCost: 25,
     },
     {
         itemId: 13652,
@@ -3352,6 +3367,7 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 4,
         hitDelay: 1,
         hitSounds: twoHandedSwordHitSounds,
+        specialAttackCost: 65,
     },
 
     // Ghrazi rapier
@@ -3479,6 +3495,19 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         attackSpeed: 5,
         hitDelay: 1,
         hitSounds: swordHitSounds,
+        specialAttackCost: 25,
+    },
+    {
+        itemId: 27246,
+        name: "Osmumten's fang (or)",
+        equipmentType: "rapier",
+        combatCategory: CombatCategory.DAGGER,
+        animOverrides: fangAnimOverrides,
+        attackSequences: fangAttackSeqs,
+        attackSpeed: 5,
+        hitDelay: 1,
+        hitSounds: swordHitSounds,
+        specialAttackCost: 25,
     },
 
     // Scythe of vitur
@@ -5119,7 +5148,7 @@ export const weaponDataEntries: WeaponDataEntry[] = [
     },
     {
         itemId: 24424,
-        name: "Eldritch nightmare staff",
+        name: "Volatile nightmare staff",
         equipmentType: "staff",
         combatCategory: CombatCategory.MAGIC_STAFF,
         animOverrides: magicStaffAnimOverrides,
@@ -5129,21 +5158,21 @@ export const weaponDataEntries: WeaponDataEntry[] = [
     },
     {
         itemId: 24425,
-        name: "Harmonised nightmare staff",
+        name: "Eldritch nightmare staff",
         equipmentType: "staff",
         combatCategory: CombatCategory.MAGIC_STAFF,
         animOverrides: magicStaffAnimOverrides,
-        attackSpeed: 4,
+        attackSpeed: 5,
         hitDelay: 2,
         hitSounds: staffHitSounds,
     },
     {
         itemId: 24423,
-        name: "Volatile nightmare staff",
+        name: "Harmonised nightmare staff",
         equipmentType: "staff",
         combatCategory: CombatCategory.MAGIC_STAFF,
         animOverrides: magicStaffAnimOverrides,
-        attackSpeed: 5,
+        attackSpeed: 4,
         hitDelay: 2,
         hitSounds: staffHitSounds,
     },

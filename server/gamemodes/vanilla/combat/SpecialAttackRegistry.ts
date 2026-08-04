@@ -658,7 +658,7 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
         });
 
         this.register({
-            name: "Saradomin's Lightning",
+            name: "Saradomin's Blessed Lightning",
             weaponIds: [12809],
             energyCost: 65,
             accuracyMultiplier: 1.0,
@@ -710,8 +710,8 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
         });
 
         this.register({
-            name: "Ruthless Impale",
-            weaponIds: [26219],
+            name: "Eviscerate",
+            weaponIds: [26219, 27246],
             energyCost: 25,
             accuracyMultiplier: 1.5,
             damageMultiplier: 1.0,
@@ -758,6 +758,36 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
             effects: {},
             animationId: 10171,
             graphicId: 2582,
+        });
+
+        this.register({
+            name: "Impale",
+            weaponIds: [3101],
+            energyCost: 25,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+            hitCount: 1,
+            effects: {},
+        });
+
+        this.register({
+            name: "Virulence",
+            weaponIds: [29796],
+            energyCost: 50,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+            hitCount: 1,
+            effects: {},
+        });
+
+        this.register({
+            name: "Entice",
+            weaponIds: [30759],
+            energyCost: 25,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+            hitCount: 1,
+            effects: {},
         });
 
         this.register({

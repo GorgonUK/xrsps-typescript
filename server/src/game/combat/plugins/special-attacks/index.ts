@@ -8,6 +8,10 @@ import { SARADOMIN_GODSWORD_PROFILE } from "./SaradominGodswordSpec";
 import { ARMADYL_GODSWORD_PROFILE } from "./ArmadylGodswordSpec";
 import { HEAVY_BALLISTA_PROFILE } from "./HeavyBallistaSpec";
 import { LIGHT_BALLISTA_PROFILE } from "./LightBallistaSpec";
+import { NOXIOUS_HALBERD_PROFILE } from "./NoxiousHalberdSpec";
+import { OSMUMTENS_FANG_PROFILE } from "./OsmumtensFangSpec";
+import { RUNE_CLAWS_PROFILE } from "./RuneClawsSpec";
+import { SARADOMINS_BLESSED_SWORD_PROFILE } from "./SaradominsBlessedSwordSpec";
 
 export { ANCIENT_GODSWORD_SPEC, AncientGodswordSpec } from "./AncientGodswordSpec";
 export { ANCIENT_MACE_SPEC, AncientMaceSpec } from "./AncientMaceSpec";
@@ -60,6 +64,11 @@ export {
     ELDRITCH_NIGHTMARE_STAFF_SPEC,
     EldritchNightmareStaffSpec,
 } from "./EldritchNightmareStaffSpec";
+export {
+    VOLATILE_NIGHTMARE_STAFF_SPEC,
+    VOLATILE_NIGHTMARE_STAFF_SPECS,
+    VolatileNightmareStaffSpec,
+} from "./VolatileNightmareStaffSpec";
 export {
     ECLIPSE_ATLATL_SPEC,
     ECLIPSE_ATLATL_SPECS,
@@ -157,6 +166,17 @@ export {
     MORRIGANS_JAVELIN_SPECS,
     MorrigansJavelinSpec,
 } from "./MorrigansJavelinSpec";
+export {
+    NOXIOUS_HALBERD_PROFILE,
+    NOXIOUS_HALBERD_SPEC,
+    NoxiousHalberdSpec,
+} from "./NoxiousHalberdSpec";
+export {
+    OSMUMTENS_FANG_PROFILE,
+    OSMUMTENS_FANG_SPEC,
+    OSMUMTENS_FANG_SPECS,
+    OsmumtensFangSpec,
+} from "./OsmumtensFangSpec";
 export { VOIDWAKER_SPEC, VoidwakerSpec } from "./VoidwakerSpec";
 export {
     TOXIC_BLOWPIPE_PROFILE,
@@ -173,10 +193,23 @@ export {
 } from "./TonalzticsOfRalosSpec";
 export { PURGING_STAFF_SPEC, PurgingStaffSpec } from "./PurgingStaffSpec";
 export { RUNE_THROWNAXE_SPEC, RuneThrownaxeSpec } from "./RuneThrownaxeSpec";
+export { RUNE_CLAWS_PROFILE, RUNE_CLAWS_SPEC, RuneClawsSpec } from "./RuneClawsSpec";
+export {
+    SARADOMINS_BLESSED_SWORD_PROFILE,
+    SARADOMINS_BLESSED_SWORD_SPEC,
+    SaradominsBlessedSwordSpec,
+} from "./SaradominsBlessedSwordSpec";
+export { SOULFLAME_HORN_SPEC, SoulflameHornSpec } from "./SoulflameHornSpec";
+export { SUNSPEAR_SPEC, SunspearSpec } from "./SunspearSpec";
 export {
     VESTAS_SPEAR_DEADMAN_SPEC,
     VestasSpearDeadmanSpec,
 } from "./VestasSpearDeadmanSpec";
+export {
+    VESTAS_LONGSWORD_BH_SPEC,
+    VESTAS_LONGSWORD_BH_SPECS,
+    VestasLongswordBhSpec,
+} from "./VestasLongswordBhSpec";
 export {
     SARADOMIN_GODSWORD_PROFILE,
     SARADOMIN_GODSWORD_SPECS,
@@ -210,6 +243,10 @@ export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Obje
     ARMADYL_GODSWORD_PROFILE,
     HEAVY_BALLISTA_PROFILE,
     LIGHT_BALLISTA_PROFILE,
+    NOXIOUS_HALBERD_PROFILE,
+    OSMUMTENS_FANG_PROFILE,
+    RUNE_CLAWS_PROFILE,
+    SARADOMINS_BLESSED_SWORD_PROFILE,
 ]);
 
 export {

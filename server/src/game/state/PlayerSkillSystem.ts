@@ -471,6 +471,14 @@ export class PlayerSkillSystem {
         this.status.venomEffect = undefined;
     }
 
+    /** Returns the damage the currently queued poison or venom hit would deal. */
+    getPendingPoisonOrVenomDamage(): number {
+        const venomDamage = this.status.venomEffect?.stage;
+        if (venomDamage !== undefined) return Math.max(0, Math.floor(venomDamage));
+        const poisonDamage = this.status.poisonEffect?.potency;
+        return poisonDamage === undefined ? 0 : Math.max(0, Math.floor(poisonDamage));
+    }
+
     inflictDisease(
         potency: number,
         currentTick: number,
