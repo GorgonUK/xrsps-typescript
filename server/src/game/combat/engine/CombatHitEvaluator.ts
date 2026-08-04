@@ -30,7 +30,10 @@ import type { CombatAttack, CombatAttackStyle } from "../model/CombatAttack";
 import type { CombatEntityRef } from "../model/CombatEntityRef";
 import { CombatEntityType } from "../model/CombatEntityRef";
 import type { WeaponSpecialAttack } from "../plugins/WeaponCombatProfile";
-import { SpecialAttackMaximumHitSource } from "../plugins/WeaponSpecialAttackScript";
+import {
+    SpecialAttackMaximumHitSource,
+    setWeaponSpecialAttackRuntimeMetadata,
+} from "../plugins/WeaponSpecialAttackScript";
 import { CombatAttributes } from "../state/CombatAttributes";
 import type { CombatEntity } from "./CombatTargetResolver";
 
@@ -65,6 +68,8 @@ export interface CombatHitEvaluation {
     readonly landed: boolean;
     /** Successful internal accuracy rolls that produced this hitsplat. */
     readonly successfulAccuracyRolls?: number;
+    /** Damage before matching protection-prayer reduction is applied. */
+    readonly preProtectionDamage: number;
     readonly damage: number;
     readonly reason?: "attacker_not_found" | "target_not_found";
 }
@@ -125,18 +130,124 @@ export class CombatHitEvaluator {
         attack: CombatAttack,
         special: WeaponSpecialAttack,
     ): readonly CombatHitEvaluation[] {
+        if (special.firstSuccessfulAccuracyDamageRanges) {
+            return this.evaluateFirstSuccessfulAccuracyMultiHit(attack, special);
+        }
         const hitCount = Math.max(1, Math.trunc(special.hitCount));
         const evaluations: CombatHitEvaluation[] = [];
         for (let hitIndex = 0; hitIndex < hitCount; hitIndex++) {
-            evaluations.push(this.evaluateRoll(attack, special, hitIndex));
+            const firstEvaluation = evaluations[0];
+            evaluations.push(
+                this.evaluateRoll(
+                    attack,
+                    special,
+                    hitIndex,
+                    special.sharedAccuracyRollAcrossHits === true && hitIndex > 0
+                        ? (firstEvaluation?.successfulAccuracyRolls ?? 0)
+                        : undefined,
+                ),
+            );
         }
         return Object.freeze(evaluations);
+    }
+
+    private evaluateFirstSuccessfulAccuracyMultiHit(
+        attack: CombatAttack,
+        special: WeaponSpecialAttack,
+    ): readonly CombatHitEvaluation[] {
+        const ranges = special.firstSuccessfulAccuracyDamageRanges ?? [];
+        const hitCount = Math.max(1, Math.trunc(special.hitCount));
+        let lastMiss: CombatHitEvaluation | undefined;
+        for (let attempt = 0; attempt < ranges.length; attempt++) {
+            const range = ranges[attempt];
+            const attemptSpecial: WeaponSpecialAttack = {
+                ...special,
+                hitCount: 1,
+                accuracyRollCount: 1,
+                damageRangeBySuccessfulAccuracyRolls: [range],
+                maximumHitReductionOnFullAccuracyRolls: range.maximumDamageReduction ?? 0,
+            };
+            const total = this.evaluateRoll(attack, attemptSpecial);
+            if (!total.landed) {
+                lastMiss = total;
+                continue;
+            }
+            setWeaponSpecialAttackRuntimeMetadata(attack, {
+                firstSuccessfulAccuracyRoll: attempt + 1,
+            });
+            const distributedDamage = range.distributeDamage?.(total.preProtectionDamage, hitCount);
+            return Object.freeze(
+                Array.from({ length: hitCount }, (_, hitIndex) => {
+                    const preProtectionDamage = Math.max(
+                        0,
+                        Math.floor(
+                            distributedDamage?.[hitIndex] ??
+                                total.preProtectionDamage *
+                                    (range.hitDamageMultipliers[hitIndex] ?? 0),
+                        ) +
+                            (distributedDamage
+                                ? 0
+                                : Math.trunc(range.hitDamageBonuses?.[hitIndex] ?? 0)),
+                    );
+                    return Object.freeze({
+                        ...total,
+                        successfulAccuracyRolls: attempt + 1,
+                        preProtectionDamage,
+                        damage: this.applyProtectionPrayer(
+                            preProtectionDamage,
+                            special.damageType ?? attack.traits.type,
+                            total.attacker!,
+                            total.target!,
+                            special.ignoreProtectionPrayer === true,
+                        ),
+                    });
+                }),
+            );
+        }
+
+        const miss =
+            lastMiss ??
+            this.evaluateRoll(attack, { ...special, hitCount: 1, accuracyRollCount: 1 });
+        const configuredPatterns = special.allMissDamagePatterns;
+        const fallbackRoll = this.nextRandom();
+        const fallbackDamage = fallbackRoll < 0.2 ? 0 : fallbackRoll < 0.6 ? 1 : 2;
+        const pattern =
+            configuredPatterns && configuredPatterns.length > 0
+                ? configuredPatterns[
+                      Math.min(
+                          configuredPatterns.length - 1,
+                          Math.floor(fallbackRoll * configuredPatterns.length),
+                      )
+                  ]
+                : Array.from({ length: hitCount }, (_, hitIndex) =>
+                      hitIndex === hitCount - 1 ? fallbackDamage : 0,
+                  );
+        return Object.freeze(
+            Array.from({ length: hitCount }, (_, hitIndex) => {
+                const preProtectionDamage = Math.max(0, Math.floor(pattern[hitIndex] ?? 0));
+                return Object.freeze({
+                    ...miss,
+                    // A one/two-damage all-miss outcome is still a real damage
+                    // hitsplat; only the zero outcome is a block.
+                    landed: preProtectionDamage > 0,
+                    preProtectionDamage,
+                    damage: this.applyProtectionPrayer(
+                        preProtectionDamage,
+                        special.damageType ?? attack.traits.type,
+                        miss.attacker!,
+                        miss.target!,
+                        special.ignoreProtectionPrayer === true,
+                    ),
+                });
+            }),
+        );
     }
 
     private evaluateRoll(
         attack: CombatAttack,
         special: WeaponSpecialAttack,
         hitIndex = 0,
+        forcedSuccessfulAccuracyRolls?: number,
     ): CombatHitEvaluation {
         const attacker = this.options.resolveEntity(attack.attacker);
         if (!attacker) return this.invalid(attack, "attacker_not_found");
@@ -163,9 +274,24 @@ export class CombatHitEvaluator {
             special.damageMultiplier,
             "special attack damage",
         );
-        const attackRoll = Math.floor(
-            calculateAttackRoll(rolls.effectiveAttack, rolls.attackBonus) * accuracyMultiplier,
-        );
+        const accuracyMultiplierStages = special.accuracyMultiplierStages;
+        const attackRoll =
+            accuracyMultiplierStages && accuracyMultiplierStages.length > 0
+                ? accuracyMultiplierStages.reduce(
+                      (roll, multiplier, stageIndex) =>
+                          Math.floor(
+                              roll *
+                                  this.nonNegativeMultiplier(
+                                      multiplier,
+                                      `special attack accuracy stage ${stageIndex + 1}`,
+                                  ),
+                          ),
+                      calculateAttackRoll(rolls.effectiveAttack, rolls.attackBonus),
+                  )
+                : Math.floor(
+                      calculateAttackRoll(rolls.effectiveAttack, rolls.attackBonus) *
+                          accuracyMultiplier,
+                  );
         const defenceRoll = Math.floor(
             calculateDefenceRoll(rolls.effectiveDefence, rolls.defenceBonus) *
                 this.nonNegativeMultiplier(
@@ -178,44 +304,37 @@ export class CombatHitEvaluator {
                 ? this.buildPhysicalMeleeMaxHit(attack, attacker)
                 : special.maximumHitSource === SpecialAttackMaximumHitSource.Magic
                   ? this.buildMagicMaxHit(attack, attacker)
-                : special.maximumHitSource === SpecialAttackMaximumHitSource.VisibleMagic
-                  ? this.buildVisibleMagicMaxHit(attacker, special.visibleMagicMaximumHit ?? 0)
-                  : rolls.maxHit;
+                  : special.maximumHitSource === SpecialAttackMaximumHitSource.VisibleMagic
+                    ? this.buildVisibleMagicMaxHit(attacker, special.visibleMagicMaximumHit ?? 0)
+                    : rolls.maxHit;
         const baseMaxHit =
             special.maxHitOverride === undefined
                 ? sourcedMaxHit
                 : this.nonNegativeInteger(special.maxHitOverride, "special attack max hit");
         const damageMultiplierStages = special.damageMultiplierStages;
+        const damageMultiplierStageRounding = special.damageMultiplierStageRounding;
         const scaledMaxHit = Math.max(
             0,
             damageMultiplierStages && damageMultiplierStages.length > 0
-                ? damageMultiplierStages.reduce(
-                      (maximumHit, multiplier, stageIndex) =>
-                          Math.floor(
-                              maximumHit *
-                                  this.nonNegativeMultiplier(
-                                      multiplier,
-                                      `special attack damage stage ${stageIndex + 1}`,
-                                  ),
-                          ),
-                      baseMaxHit,
-                  )
+                ? damageMultiplierStages.reduce((maximumHit, multiplier, stageIndex) => {
+                      const scaled =
+                          maximumHit *
+                          this.nonNegativeMultiplier(
+                              multiplier,
+                              `special attack damage stage ${stageIndex + 1}`,
+                          );
+                      return damageMultiplierStageRounding?.[stageIndex] === "ceil"
+                          ? Math.ceil(scaled)
+                          : Math.floor(scaled);
+                  }, baseMaxHit)
                 : Math.floor(baseMaxHit * damageMultiplier),
         );
-        const maximumHitSplitCount = Math.max(
-            1,
-            Math.trunc(special.maximumHitSplitCount ?? 1),
-        );
-        const hitMaximum = this.splitMaximumHit(
-            scaledMaxHit,
-            maximumHitSplitCount,
-            hitIndex,
-        );
+        const maximumHitSplitCount = Math.max(1, Math.trunc(special.maximumHitSplitCount ?? 1));
+        const hitMaximum = this.splitMaximumHit(scaledMaxHit, maximumHitSplitCount, hitIndex);
         const fixedAccuracyMultiplier =
             special.fixedAccuracyRollMultiplierWhenTargetAtOrBelowMaximumDamage;
         const usesFixedAccuracyRoll =
-            fixedAccuracyMultiplier !== undefined &&
-            this.getCurrentHitpoints(target) <= hitMaximum;
+            fixedAccuracyMultiplier !== undefined && this.getCurrentHitpoints(target) <= hitMaximum;
         const resolvedAttackRoll = usesFixedAccuracyRoll
             ? Math.floor(
                   attackRoll *
@@ -237,11 +356,16 @@ export class CombatHitEvaluator {
               ? 1
               : 0;
         const successfulAccuracyRolls =
-            guaranteedAccuracyRolls +
-            this.rollSuccessfulAccuracyRolls(
-                hitChance,
-                Math.max(0, accuracyRollCount - guaranteedAccuracyRolls),
-            );
+            forcedSuccessfulAccuracyRolls === undefined
+                ? guaranteedAccuracyRolls +
+                  this.rollSuccessfulAccuracyRolls(
+                      hitChance,
+                      Math.max(0, accuracyRollCount - guaranteedAccuracyRolls),
+                  )
+                : Math.max(
+                      0,
+                      Math.min(accuracyRollCount, Math.trunc(forcedSuccessfulAccuracyRolls)),
+                  );
         const damageRange =
             successfulAccuracyRolls > 0
                 ? special.damageRangeBySuccessfulAccuracyRolls?.[successfulAccuracyRolls - 1]
@@ -268,6 +392,16 @@ export class CombatHitEvaluator {
             special.maximumDamageBonus ?? 0,
             "special attack maximum damage bonus",
         );
+        if (special.maximumDamageCap !== undefined) {
+            maximumDamage = Math.min(
+                maximumDamage,
+                this.nonNegativeInteger(
+                    special.maximumDamageCap,
+                    "special attack maximum damage cap",
+                ),
+            );
+            minimumDamage = Math.min(minimumDamage, maximumDamage);
+        }
         if (successfulAccuracyRolls === accuracyRollCount) {
             maximumDamage = Math.max(
                 0,
@@ -310,6 +444,7 @@ export class CombatHitEvaluator {
             maxHit,
             landed,
             successfulAccuracyRolls,
+            preProtectionDamage: rolledDamage,
             damage,
         });
     }
@@ -681,10 +816,7 @@ export class CombatHitEvaluator {
             Math.floor(target.combatAttributes.get(CombatAttributes.MAGIC_DEFENCE_BONUS_DRAIN)),
         );
         const drainableBonus = Math.max(0, base - drain);
-        target.combatAttributes.set(
-            CombatAttributes.MAGIC_DEFENCE_BONUS_CURRENT,
-            drainableBonus,
-        );
+        target.combatAttributes.set(CombatAttributes.MAGIC_DEFENCE_BONUS_CURRENT, drainableBonus);
         return drain > 0 ? drainableBonus : base;
     }
 
@@ -866,6 +998,7 @@ export class CombatHitEvaluator {
             hitChance: 0,
             maxHit: 0,
             landed: false,
+            preProtectionDamage: 0,
             damage: 0,
             reason,
         });

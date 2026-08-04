@@ -38,6 +38,11 @@ export const CombatAttributes = Object.freeze({
         "combat.power_of_death_until_clock",
         () => 0,
     ),
+    /** Absolute expiry clock for Vesta's spear (bh) Spear Wall protection. */
+    VESTAS_SPEAR_WALL_UNTIL_CLOCK: combatAttribute<number>(
+        "combat.vestas_spear_wall_until_clock",
+        () => 0,
+    ),
     /** Absolute expiry clock for Wrath of Amascut's 25% damage vulnerability. */
     WRATH_OF_AMASCUT_UNTIL_CLOCK: combatAttribute<number>(
         "combat.wrath_of_amascut_until_clock",

@@ -1,11 +1,13 @@
 import { VARP_SPECIAL_ATTACK, VARP_SPECIAL_ENERGY } from "../../../../../client/common/vars";
 import { EquipmentSlot } from "../../../../../client/rs/config/player/Equipment";
+import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { TickFrame } from "../../../network/wsServerTypes";
 import { logger } from "../../../utils/logger";
 import type { ServerServices } from "../../ServerServices";
 import { getProjectileParams } from "../../data/ProjectileParamsProvider";
 import { NpcState } from "../../npc";
 import { PlayerState } from "../../player";
+import { OverheadType } from "../../prayer/OverheadType";
 import {
     type PoweredStaffSpellData,
     type SpellDataEntry,
@@ -13,8 +15,8 @@ import {
     getSpellData,
     resolveMagicCastSpotAnimHeight,
 } from "../../spells/SpellDataProvider";
-import { AttackType } from "../AttackType";
 import { type EnchantedBoltEffect, getEnchantedBoltEffect } from "../AmmoSystem";
+import { AttackType } from "../AttackType";
 import { DamageType, damageTracker } from "../DamageTracker";
 import { multiCombatSystem } from "../MultiCombatZones";
 import { getNpcPoisonConfig, hasVenomImmunityEquipment } from "../PoisonVenomSystem";
@@ -37,10 +39,10 @@ import {
 } from "../plugins/WeaponCombatProfile";
 import {
     clearWeaponSpecialAttackTraitOverrides,
-    setWeaponSpecialAttackAttacker,
-    setWeaponSpecialAttackTarget,
     getWeaponSpecialAttackTraitOverrides,
     markWeaponSpecialAttackExecuted,
+    setWeaponSpecialAttackAttacker,
+    setWeaponSpecialAttackTarget,
     wasWeaponSpecialAttackExecuted,
 } from "../plugins/WeaponSpecialAttackScript";
 import {
@@ -55,8 +57,33 @@ import {
     createArkanBladeBurnAttack,
     takeDueArkanBladeBurns,
 } from "../plugins/special-attacks/ArkanBladeSpec";
+import { takeDueBurningClawBurns } from "../plugins/special-attacks/BurningClawsSpec";
+import {
+    MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
+    createMorrigansJavelinBleedAttack,
+    getMorrigansJavelinBleedDamage,
+    takeDueMorrigansJavelinBleeds,
+} from "../plugins/special-attacks/MorrigansJavelinSpec";
+import { clearNoxiousHalberdVirulenceOnWeaponChange } from "../plugins/special-attacks/NoxiousHalberdSpec";
+import {
+    SARADOMIN_SWORD_LIGHTNING_PROFILE_ID,
+    createSaradominSwordLightningAttack,
+    rollSaradominSwordLightningDamage,
+    takeDueSaradominSwordLightnings,
+} from "../plugins/special-attacks/SaradominSwordSpec";
+import { consumeSoulflameHornEntice } from "../plugins/special-attacks/SoulflameHornSpec";
+import {
+    VESTAS_SPEAR_BH_SECOND_HIT_PROFILE_ID,
+    createVestasSpearBhSecondHitAttack,
+    rollVestasSpearBhSecondHitDamage,
+    takeDueVestasSpearBhSecondHits,
+} from "../plugins/special-attacks/VestasSpearBhSpec";
+import {
+    WEBWEAVER_BOW_ITEM_ID,
+    consumeWebweaverEtherCharge,
+    getWebweaverEtherCharges,
+} from "../plugins/special-attacks/WebweaverBowSpec";
 import { CombatAttributes } from "../state/CombatAttributes";
-import { SkillId } from "../../../../../client/rs/skill/skills";
 import {
     type CombatHitEvaluation,
     type CombatHitEvaluator,
@@ -70,14 +97,6 @@ import {
     DeferredHitsplatType,
     type PendingCombatHit,
 } from "./DeferredHitQueue";
-import {
-    createMorrigansJavelinBleedAttack,
-    getMorrigansJavelinBleedDamage,
-    MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
-    takeDueMorrigansJavelinBleeds,
-} from "../plugins/special-attacks/MorrigansJavelinSpec";
-import { clearNoxiousHalberdVirulenceOnWeaponChange } from "../plugins/special-attacks/NoxiousHalberdSpec";
-import { consumeSoulflameHornEntice } from "../plugins/special-attacks/SoulflameHornSpec";
 
 interface CombatVisualDefinition {
     readonly attackAnimation?: number;
@@ -135,6 +154,7 @@ export class CombatHitProcessor {
         currentMapClock: number,
     ): CombatHitProcessingResult {
         const clock = this.mapClock(currentMapClock);
+        this.queueDueVestasSpearBhSecondHits(clock);
         let processedAttacks = 0;
         let queuedHits = 0;
         let rejectedAttacks = 0;
@@ -178,19 +198,42 @@ export class CombatHitProcessor {
                 continue;
             }
 
+            const webweaverShot =
+                attacker instanceof PlayerState &&
+                attack.traits.weaponId === WEBWEAVER_BOW_ITEM_ID &&
+                attack.traits.type === AttackType.Ranged;
+            if (webweaverShot && !this.ensureWebweaverEtherAvailable(attacker)) {
+                rejectedAttacks++;
+                continue;
+            }
+
             this.invokePlugin(profile.id, "onAttack", () => profile.onAttack?.(context));
 
             const specialAttack = this.resolveSpecialAttack(profile, context);
+            if (webweaverShot && attack.traits.specialAttack === true && !specialAttack) {
+                rejectedAttacks++;
+                continue;
+            }
             if (specialAttack?.skipAttack) {
                 processedAttacks++;
                 continue;
             }
-            const enchantedBoltEffect = this.rollEnchantedBoltEffect(attacker, attack, specialAttack);
+            if (webweaverShot && !consumeWebweaverEtherCharge(attacker)) {
+                rejectedAttacks++;
+                continue;
+            }
+            const enchantedBoltEffect = this.rollEnchantedBoltEffect(
+                attacker,
+                attack,
+                specialAttack,
+            );
             const rollSpecial = this.applyEnchantedBoltRollModifiers(
                 specialAttack,
                 enchantedBoltEffect,
             );
-            const normalAttack = rollSpecial ? undefined : this.resolveNormalAttack(profile, context);
+            const normalAttack = rollSpecial
+                ? undefined
+                : this.resolveNormalAttack(profile, context);
             const rollPlan = rollSpecial ?? normalAttack;
             const enticed =
                 attacker instanceof PlayerState &&
@@ -243,6 +286,10 @@ export class CombatHitProcessor {
                     attackType: specialAttack?.damageType ?? attack.traits.type,
                     revealClock: clock + travelDelayTicks + hitDelay,
                     profileId: profile.id,
+                    suppressProfileImpactGraphic:
+                        specialAttack?.impactGraphicHitIndex !== undefined &&
+                        hitIndex !== Math.max(0, Math.trunc(specialAttack.impactGraphicHitIndex)),
+                    impactSoundIdOverride: specialAttack?.impactSoundIds?.[hitIndex],
                     enchantedBoltEffect,
                 });
 
@@ -268,6 +315,7 @@ export class CombatHitProcessor {
     processDeferredHits(currentMapClock: number, frame: TickFrame): readonly AppliedCombatHit[] {
         this.queueDueAncientGodswordBloodSacrifices(currentMapClock);
         this.queueDueArkanBladeBurns(currentMapClock);
+        this.queueDueBurningClawBurns(currentMapClock);
         this.queueDueMorrigansJavelinBleeds(currentMapClock);
         return this.deferredHits.processTick(currentMapClock, frame);
     }
@@ -506,10 +554,7 @@ export class CombatHitProcessor {
                 return undefined;
             }
         }
-        const energyCost = Math.max(
-            0,
-            Math.min(100, Math.trunc(requestedEnergyCost)),
-        );
+        const energyCost = Math.max(0, Math.min(100, Math.trunc(requestedEnergyCost)));
         if (script?.onSpecialActivated || script?.onSpecialActivatedWithPlayers) {
             if (player.specEnergy.getPercent() < energyCost) {
                 clearWeaponSpecialAttackTraitOverrides(context.attack);
@@ -571,6 +616,8 @@ export class CombatHitProcessor {
             hitCount: overrides?.hitCount ?? profileSpecial?.hitCount ?? 1,
             accuracyMultiplier:
                 overrides?.accuracyMultiplier ?? profileSpecial?.accuracyMultiplier ?? 1,
+            accuracyMultiplierStages:
+                overrides?.accuracyMultiplierStages ?? profileSpecial?.accuracyMultiplierStages,
             damageMultiplier: overrides?.damageMultiplier ?? profileSpecial?.damageMultiplier ?? 1,
             attackLevelMultiplier:
                 overrides?.attackLevelMultiplier ?? profileSpecial?.attackLevelMultiplier,
@@ -578,6 +625,9 @@ export class CombatHitProcessor {
                 overrides?.strengthLevelMultiplier ?? profileSpecial?.strengthLevelMultiplier,
             damageMultiplierStages:
                 overrides?.damageMultiplierStages ?? profileSpecial?.damageMultiplierStages,
+            damageMultiplierStageRounding:
+                overrides?.damageMultiplierStageRounding ??
+                profileSpecial?.damageMultiplierStageRounding,
             guaranteedHit: overrides?.guaranteedHit ?? profileSpecial?.guaranteedHit,
             rollAttackType: overrides?.rollAttackType ?? profileSpecial?.rollAttackType,
             defenceRollAttackType:
@@ -599,15 +649,17 @@ export class CombatHitProcessor {
                 overrides?.minimumDamageMultiplier ?? profileSpecial?.minimumDamageMultiplier,
             maximumDamageMultiplier:
                 overrides?.maximumDamageMultiplier ?? profileSpecial?.maximumDamageMultiplier,
-            minimumDamageBonus:
-                overrides?.minimumDamageBonus ?? profileSpecial?.minimumDamageBonus,
-            maximumDamageBonus:
-                overrides?.maximumDamageBonus ?? profileSpecial?.maximumDamageBonus,
+            maximumDamageCap: overrides?.maximumDamageCap ?? profileSpecial?.maximumDamageCap,
+            minimumDamageBonus: overrides?.minimumDamageBonus ?? profileSpecial?.minimumDamageBonus,
+            maximumDamageBonus: overrides?.maximumDamageBonus ?? profileSpecial?.maximumDamageBonus,
             maximumHitSplitCount:
                 overrides?.maximumHitSplitCount ?? profileSpecial?.maximumHitSplitCount,
             hitDelayTicks: overrides?.hitDelayTicks ?? profileSpecial?.hitDelayTicks,
             attackSpeedTicks: overrides?.attackSpeedTicks ?? profileSpecial?.attackSpeedTicks,
             accuracyRollCount: overrides?.accuracyRollCount ?? profileSpecial?.accuracyRollCount,
+            sharedAccuracyRollAcrossHits:
+                overrides?.sharedAccuracyRollAcrossHits ??
+                profileSpecial?.sharedAccuracyRollAcrossHits,
             guaranteedFirstAccuracyRoll:
                 overrides?.guaranteedFirstAccuracyRoll ??
                 profileSpecial?.guaranteedFirstAccuracyRoll,
@@ -623,6 +675,9 @@ export class CombatHitProcessor {
             enchantedBoltEffectChanceMultiplier:
                 overrides?.enchantedBoltEffectChanceMultiplier ??
                 profileSpecial?.enchantedBoltEffectChanceMultiplier,
+            guaranteedEnchantedBoltEffect:
+                overrides?.guaranteedEnchantedBoltEffect ??
+                profileSpecial?.guaranteedEnchantedBoltEffect,
             skipAttack: overrides?.skipAttack ?? profileSpecial?.skipAttack,
         });
         this.applySpecialAttackSpeed(player, context.attack, resolvedSpecial);
@@ -635,7 +690,10 @@ export class CombatHitProcessor {
     ): WeaponSpecialAttack | undefined {
         if (!profile.handleNormalAttack) return undefined;
         try {
-            return profile.handleNormalAttack(context.attacker, context.target, context.attack) ?? undefined;
+            return (
+                profile.handleNormalAttack(context.attacker, context.target, context.attack) ??
+                undefined
+            );
         } catch (error) {
             logger.warn(`[combat-plugin:${profile.id}] handleNormalAttack failed`, error);
             return undefined;
@@ -652,10 +710,7 @@ export class CombatHitProcessor {
         if (override === undefined) return;
 
         const speedTicks = Math.max(1, Math.trunc(override));
-        player.combatAttributes.set(
-            CombatAttributes.ATTACK_DELAY,
-            attack.attackClock + speedTicks,
-        );
+        player.combatAttributes.set(CombatAttributes.ATTACK_DELAY, attack.attackClock + speedTicks);
         player.combat.attackDelay = speedTicks;
     }
 
@@ -757,7 +812,24 @@ export class CombatHitProcessor {
         if (visuals.castGraphic) {
             this.enqueueGraphic(context.attacker, visuals.castGraphic, context.currentMapClock);
         }
-        if (visuals.projectile) {
+        const explicitProjectiles = specialAttack?.projectiles;
+        if (explicitProjectiles && explicitProjectiles.length > 0) {
+            for (const [projectileIndex, projectile] of explicitProjectiles.entries()) {
+                const impactDelay = Math.max(
+                    0,
+                    this.nonNegativeNumber(
+                        specialAttack?.hitDelayTicks?.[projectileIndex] ?? 0,
+                        `special attack projectile ${projectileIndex + 1} impact delay`,
+                    ),
+                );
+                this.queueProjectile(
+                    context,
+                    projectile,
+                    visuals.spellData,
+                    travelDelayTicks + impactDelay,
+                );
+            }
+        } else if (visuals.projectile) {
             const projectileCount = Math.max(
                 1,
                 Math.min(
@@ -785,8 +857,13 @@ export class CombatHitProcessor {
         }
 
         const spellCastSound = visuals.spellData?.castSoundId;
-        const attackSound = specialAttack?.attackSoundId ?? spellCastSound;
-        if (attackSound !== undefined && attackSound > 0) {
+        const attackSounds = specialAttack?.attackSoundIds ?? [
+            specialAttack?.attackSoundId ?? spellCastSound,
+        ];
+        let playedAttackSound = false;
+        for (const attackSound of attackSounds) {
+            if (attackSound === undefined || attackSound <= 0) continue;
+            playedAttackSound = true;
             if (spellCastSound === attackSound && context.attacker instanceof PlayerState) {
                 // Direct spell sounds are full-volume for the caster. The sound
                 // packet's omitted volume field uses the client's 255 default.
@@ -796,7 +873,8 @@ export class CombatHitProcessor {
             } else {
                 this.queueSound(attackSound, context.attacker);
             }
-        } else {
+        }
+        if (!playedAttackSound) {
             const profileAttackSound = resolveWeaponProfileValue(profile.attackSoundId, context);
             if (profileAttackSound !== undefined && profileAttackSound > 0) {
                 this.queueSound(profileAttackSound, context.attacker);
@@ -917,6 +995,7 @@ export class CombatHitProcessor {
             distanceTiles: this.distanceBetween(hit.source, hit.target),
         });
         this.invokePlugin(profile.id, "onHitApplied", () => profile.onHitApplied?.(hit, context));
+        this.queueDueSaradominSwordLightnings(hit.appliedClock);
     }
 
     private transformIncomingDamage(
@@ -926,24 +1005,43 @@ export class CombatHitProcessor {
     ): number {
         let damage = pending.damage;
         if (
+            target instanceof PlayerState &&
+            pending.attackType !== AttackType.Magic &&
+            pending.revealClock <
+                target.combatAttributes.get(CombatAttributes.VESTAS_SPEAR_WALL_UNTIL_CLOCK)
+        )
+            damage = 0;
+        if (
             pending.attackType === AttackType.Melee &&
             target instanceof PlayerState &&
-            pending.revealClock < target.combatAttributes.get(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK)
+            pending.revealClock <
+                target.combatAttributes.get(CombatAttributes.POWER_OF_DEATH_UNTIL_CLOCK)
         ) {
             const weaponId = target.appearance.equip[EquipmentSlot.WEAPON] ?? -1;
-            if (POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId)) damage = Math.max(0, Math.floor(damage * 0.5));
+            if (POWER_OF_DEATH_STAFF_ITEM_IDS.has(weaponId))
+                damage = Math.max(0, Math.floor(damage * 0.5));
         }
-        if (pending.revealClock < target.combatAttributes.get(CombatAttributes.WRATH_OF_AMASCUT_UNTIL_CLOCK)) {
+        if (
+            pending.revealClock <
+            target.combatAttributes.get(CombatAttributes.WRATH_OF_AMASCUT_UNTIL_CLOCK)
+        ) {
             damage = Math.max(0, Math.floor(damage * 1.25));
         }
 
         const effect = pending.enchantedBoltEffect;
         if (!effect || !pending.landed || !source) return damage;
         if (effect.effectType === "hp_drain") {
-            const currentHitpoints = target instanceof PlayerState
-                ? target.skillSystem.getHitpointsCurrent()
-                : target.getHitpoints();
-            return Math.min(100, Math.max(0, Math.floor(currentHitpoints * Math.max(0, effect.damageMultiplier ?? 0))));
+            const currentHitpoints =
+                target instanceof PlayerState
+                    ? target.skillSystem.getHitpointsCurrent()
+                    : target.getHitpoints();
+            return Math.min(
+                100,
+                Math.max(
+                    0,
+                    Math.floor(currentHitpoints * Math.max(0, effect.damageMultiplier ?? 0)),
+                ),
+            );
         }
         if (effect.effectType === "lightning" && source instanceof PlayerState) {
             const ranged = source.skillSystem.getSkill(SkillId.Ranged);
@@ -954,19 +1052,38 @@ export class CombatHitProcessor {
     }
 
     /** Rolls once at fire time, so delayed impacts retain the fired ammunition's effect. */
-    private rollEnchantedBoltEffect(attacker: CombatEntity, attack: CombatAttack, specialAttack: WeaponSpecialAttack | undefined): EnchantedBoltEffect | undefined {
-        if (!(attacker instanceof PlayerState) || attack.traits.type !== AttackType.Ranged) return undefined;
+    private rollEnchantedBoltEffect(
+        attacker: CombatEntity,
+        attack: CombatAttack,
+        specialAttack: WeaponSpecialAttack | undefined,
+    ): EnchantedBoltEffect | undefined {
+        if (!(attacker instanceof PlayerState) || attack.traits.type !== AttackType.Ranged)
+            return undefined;
         const ammoId = attacker.appearance.equip[EquipmentSlot.AMMO] ?? -1;
         const effect = getEnchantedBoltEffect(ammoId);
         if (!effect) return undefined;
-        const specialMultiplier = Math.max(0, specialAttack?.enchantedBoltEffectChanceMultiplier ?? 1);
-        return Math.random() < Math.min(1, effect.activationChance * specialMultiplier) ? effect : undefined;
+        if (specialAttack?.guaranteedEnchantedBoltEffect === true) return effect;
+        const specialMultiplier = Math.max(
+            0,
+            specialAttack?.enchantedBoltEffectChanceMultiplier ?? 1,
+        );
+        return Math.random() < Math.min(1, effect.activationChance * specialMultiplier)
+            ? effect
+            : undefined;
     }
 
     /** Applies pre-hit bolt rules, including diamond bolts' defence bypass. */
-    private applyEnchantedBoltRollModifiers(specialAttack: WeaponSpecialAttack | undefined, effect: EnchantedBoltEffect | undefined): WeaponSpecialAttack | undefined {
+    private applyEnchantedBoltRollModifiers(
+        specialAttack: WeaponSpecialAttack | undefined,
+        effect: EnchantedBoltEffect | undefined,
+    ): WeaponSpecialAttack | undefined {
         if (!effect) return specialAttack;
-        const base: WeaponSpecialAttack = specialAttack ?? { energyCostPercent: 0, hitCount: 1, accuracyMultiplier: 1, damageMultiplier: 1 };
+        const base: WeaponSpecialAttack = specialAttack ?? {
+            energyCostPercent: 0,
+            hitCount: 1,
+            accuracyMultiplier: 1,
+            damageMultiplier: 1,
+        };
         const boltDamageMultiplier =
             effect.effectType === "hp_drain" ? 1 : (effect.damageMultiplier ?? 1);
         return Object.freeze({
@@ -984,21 +1101,37 @@ export class CombatHitProcessor {
         const effect = hit.pending.enchantedBoltEffect;
         const attacker = hit.source;
         if (!effect || !attacker || !hit.pending.landed) return;
-        if (effect.graphicId !== undefined) this.enqueueGraphic(hit.target, { id: effect.graphicId }, hit.appliedClock);
+        if (effect.graphicId !== undefined)
+            this.enqueueGraphic(hit.target, { id: effect.graphicId }, hit.appliedClock);
         if (effect.effectType === "poison" && hit.amount > 0) {
-            if (hit.target instanceof PlayerState) hit.target.skillSystem.inflictPoison(5, hit.appliedClock);
+            if (hit.target instanceof PlayerState)
+                hit.target.skillSystem.inflictPoison(5, hit.appliedClock);
             else hit.target.inflictPoison(5, hit.appliedClock);
         }
-        if (effect.effectType === "magic_drain" && hit.target instanceof PlayerState && hit.amount > 0) {
+        if (
+            effect.effectType === "magic_drain" &&
+            hit.target instanceof PlayerState &&
+            hit.amount > 0
+        ) {
             const magic = hit.target.skillSystem.getSkill(SkillId.Magic);
-            hit.target.skillSystem.setSkillBoost(SkillId.Magic, Math.max(0, magic.baseLevel + magic.boost - hit.amount));
+            hit.target.skillSystem.setSkillBoost(
+                SkillId.Magic,
+                Math.max(0, magic.baseLevel + magic.boost - hit.amount),
+            );
         }
-        if (effect.effectType === "life_leech" && attacker instanceof PlayerState && hit.amount > 0) {
-            attacker.skillSystem.applyHitpointsHeal(Math.floor(hit.amount * Math.max(0, effect.leechPercent ?? 0)));
+        if (
+            effect.effectType === "life_leech" &&
+            attacker instanceof PlayerState &&
+            hit.amount > 0
+        ) {
+            attacker.skillSystem.applyHitpointsHeal(
+                Math.floor(hit.amount * Math.max(0, effect.leechPercent ?? 0)),
+            );
         }
         if (effect.effectType === "hp_drain" && attacker instanceof PlayerState && hit.amount > 0) {
             const selfDamage = Math.floor(
-                attacker.skillSystem.getHitpointsCurrent() * Math.max(0, effect.selfDamagePercent ?? 0),
+                attacker.skillSystem.getHitpointsCurrent() *
+                    Math.max(0, effect.selfDamagePercent ?? 0),
             );
             if (selfDamage > 0) attacker.skillSystem.applyHitpointsDamage(selfDamage);
         }
@@ -1014,12 +1147,14 @@ export class CombatHitProcessor {
         if (!script) return;
 
         try {
-            script.onHitApplied(
+            script.onHitAppliedWithAttack?.(
                 hit.source,
                 hit.target,
                 hit.pending.damage,
                 hit.appliedClock,
+                hit.pending.attack,
             );
+            script.onHitApplied(hit.source, hit.target, hit.pending.damage, hit.appliedClock);
         } catch (error) {
             logger.warn(`[special-attack:${script.itemId}] onHitApplied failed`, error);
         }
@@ -1075,6 +1210,17 @@ export class CombatHitProcessor {
             );
         }
         return true;
+    }
+
+    private ensureWebweaverEtherAvailable(player: PlayerState): boolean {
+        if (getWebweaverEtherCharges(player) > 0) return true;
+        player.combatAttributes.set(CombatAttributes.COMBAT_TARGET, null);
+        this.services.messagingService.queueChatMessage({
+            messageType: "game",
+            text: "Your Webweaver bow has run out of revenant ether.",
+            targetPlayerIds: [player.id],
+        });
+        return false;
     }
 
     private applyToxicBlowpipeVenom(hit: AppliedCombatHit): void {
@@ -1139,6 +1285,30 @@ export class CombatHitProcessor {
         }
     }
 
+    private queueDueBurningClawBurns(currentMapClock: number): void {
+        for (const burn of takeDueBurningClawBurns(currentMapClock)) {
+            if (
+                !(burn.attacker instanceof PlayerState) ||
+                (!(burn.target instanceof PlayerState) && !(burn.target instanceof NpcState))
+            ) {
+                continue;
+            }
+            const attack = createArkanBladeBurnAttack(burn.attacker, burn.target, currentMapClock);
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage: 1,
+                maxHit: 1,
+                landed: true,
+                hitsplatType: DeferredHitsplatType.Normal,
+                attackType: AttackType.Magic,
+                revealClock: currentMapClock,
+                profileId: ARKAN_BLADE_BURN_PROFILE_ID,
+            });
+        }
+    }
+
     private queueDueMorrigansJavelinBleeds(currentMapClock: number): void {
         for (const bleed of takeDueMorrigansJavelinBleeds(currentMapClock)) {
             const attack = createMorrigansJavelinBleedAttack(
@@ -1158,6 +1328,56 @@ export class CombatHitProcessor {
                 attackType: AttackType.Ranged,
                 revealClock: currentMapClock,
                 profileId: MORRIGANS_JAVELIN_BLEED_PROFILE_ID,
+            });
+        }
+    }
+
+    private queueDueSaradominSwordLightnings(currentMapClock: number): void {
+        for (const lightning of takeDueSaradominSwordLightnings(currentMapClock)) {
+            const attack = createSaradominSwordLightningAttack(
+                lightning.attacker,
+                lightning.target,
+                currentMapClock,
+            );
+            const protectedByMagic =
+                lightning.target instanceof PlayerState &&
+                lightning.target.combatAttributes.get(CombatAttributes.ACTIVE_OVERHEAD_PRAYER) ===
+                    OverheadType.MAGIC;
+            const damage = protectedByMagic ? 0 : rollSaradominSwordLightningDamage();
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage,
+                maxHit: 16,
+                landed: damage > 0,
+                hitsplatType: DeferredHitsplatType.Normal,
+                attackType: AttackType.Magic,
+                revealClock: currentMapClock,
+                profileId: SARADOMIN_SWORD_LIGHTNING_PROFILE_ID,
+            });
+        }
+    }
+
+    private queueDueVestasSpearBhSecondHits(currentMapClock: number): void {
+        for (const secondHit of takeDueVestasSpearBhSecondHits(currentMapClock)) {
+            const attack = createVestasSpearBhSecondHitAttack(
+                secondHit.attacker,
+                secondHit.target,
+                currentMapClock,
+            );
+            const damage = rollVestasSpearBhSecondHitDamage(secondHit.damage);
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage,
+                maxHit: Math.floor(secondHit.damage * 0.75),
+                landed: damage > 0,
+                hitsplatType: damage > 0 ? DeferredHitsplatType.Normal : DeferredHitsplatType.Block,
+                attackType: AttackType.Melee,
+                revealClock: currentMapClock,
+                profileId: VESTAS_SPEAR_BH_SECOND_HIT_PROFILE_ID,
             });
         }
     }
@@ -1246,15 +1466,21 @@ export class CombatHitProcessor {
             distanceTiles: this.distanceBetween(source, target),
         });
         const visuals = this.resolveVisuals(profile, context);
-        const graphic = hit.pending.landed ? visuals.impactGraphic : visuals.splashGraphic;
+        const graphic = hit.pending.suppressProfileImpactGraphic
+            ? undefined
+            : hit.pending.landed
+              ? visuals.impactGraphic
+              : visuals.splashGraphic;
         if (graphic) this.enqueueGraphic(target, graphic, hit.appliedClock);
 
         // This callback runs from DeferredHitQueue only after revealClock is
         // reached, so positional impact audio stays locked to the hitsplat tick.
         const impactSound = hit.pending.landed
-            ? (visuals.spellData?.impactSoundId ??
+            ? (hit.pending.impactSoundIdOverride ??
+              visuals.spellData?.impactSoundId ??
               resolveWeaponProfileValue(profile.impactSoundId, context))
-            : resolveWeaponProfileValue(profile.impactSoundId, context);
+            : (hit.pending.impactSoundIdOverride ??
+              resolveWeaponProfileValue(profile.impactSoundId, context));
         if (impactSound !== undefined && impactSound > 0) {
             this.queueSound(impactSound, target);
         } else if (source instanceof PlayerState) {

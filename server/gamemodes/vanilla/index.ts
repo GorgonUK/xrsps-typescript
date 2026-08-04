@@ -58,6 +58,7 @@ import { registerWildernessAccessHandlers } from "./scripts/content/wildernessAc
 import { registerFollowerItemHandlers } from "./scripts/items/followers";
 import { registerPacksHandlers } from "./scripts/items/packs";
 import { registerToxicBlowpipeHandlers } from "./scripts/items/toxicBlowpipe";
+import { registerWebweaverBowHandlers } from "./scripts/items/webweaverBow";
 import { handleDismiss, handleResumePauseButton, registerLevelUpHandlers } from "./scripts/levelup";
 import { registerShopInterfaceHooks } from "./shops";
 import { ShopService } from "./shops/ShopService";
@@ -243,6 +244,7 @@ export class VanillaGamemode extends BaseGamemode {
         registerFollowerItemHandlers(registry, services);
         registerPacksHandlers(registry, services);
         registerToxicBlowpipeHandlers(registry, services);
+        registerWebweaverBowHandlers(registry, services);
 
         // Widgets
         registerCombatWidgetHandlers(registry, services);

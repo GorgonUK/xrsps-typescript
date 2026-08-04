@@ -30,6 +30,10 @@ export interface PendingCombatHit {
     readonly attackType: AttackType;
     readonly revealClock: number;
     readonly profileId: string;
+    /** Keeps this hit's impact audio/effects while omitting the profile graphic. */
+    readonly suppressProfileImpactGraphic?: boolean;
+    /** Per-hit sound selected when the attack was queued. */
+    readonly impactSoundIdOverride?: number;
     /** Enchanted bolt effect rolled when this projectile was fired. */
     readonly enchantedBoltEffect?: EnchantedBoltEffect;
 }
@@ -158,7 +162,11 @@ export class DeferredHitQueue {
             });
             this.options.onHitApplied?.(hit, frame);
         }
-        return applied;
+        // Profile effects can schedule a same-cycle companion hitsplat (for
+        // example Saradomin's Lightning after its successful melee strike).
+        // Drain those immediately so both components retain one OSRS hit tick.
+        const chained = this.processTick(clock, frame);
+        return Object.freeze([...applied, ...chained]);
     }
 
     cancelTarget(target: CombatEntityRef): number {

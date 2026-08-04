@@ -3847,6 +3847,19 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         hitDelay: 3,
         hitSounds: darkBowHitSounds,
     },
+    {
+        itemId: 27655,
+        name: "Webweaver bow",
+        equipmentType: "wilderness_bow",
+        combatCategory: CombatCategory.BOW,
+        animOverrides: bowAnimOverrides,
+        attackSequence: 426,
+        specialAttackAnim: 9964,
+        specialAttackCost: 50,
+        attackSpeed: 4,
+        hitDelay: 2,
+        hitSounds: wildernessBowHitSounds,
+    },
 
     // ==================================================================================
     // CRYSTAL BOW (Combat Category 3)
@@ -4451,6 +4464,39 @@ export const weaponDataEntries: WeaponDataEntry[] = [
         hitDelay: 2,
         hitSounds: knifeHitSounds,
     },
+    {
+        itemId: 22806,
+        name: "Dragon knife(p)",
+        equipmentType: "knife",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 3,
+        hitDelay: 2,
+        hitSounds: knifeHitSounds,
+    },
+    {
+        itemId: 22808,
+        name: "Dragon knife(p+)",
+        equipmentType: "knife",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 3,
+        hitDelay: 2,
+        hitSounds: knifeHitSounds,
+    },
+    {
+        itemId: 22810,
+        name: "Dragon knife(p++)",
+        equipmentType: "knife",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 929,
+        attackSpeed: 3,
+        hitDelay: 2,
+        hitSounds: knifeHitSounds,
+    },
 
     // Throwing axes - Attack Speed: 5 ticks (4 on rapid)
     {
@@ -4675,6 +4721,17 @@ export const weaponDataEntries: WeaponDataEntry[] = [
     {
         itemId: 12924,
         name: "Toxic blowpipe (empty)",
+        equipmentType: "blowpipe",
+        combatCategory: CombatCategory.THROWN,
+        animOverrides: thrownAnimOverrides,
+        attackSequence: 5061,
+        attackSpeed: 3,
+        hitDelay: 2,
+        hitSounds: blowpipeHitSounds,
+    },
+    {
+        itemId: 31586,
+        name: "Rosewood blowpipe",
         equipmentType: "blowpipe",
         combatCategory: CombatCategory.THROWN,
         animOverrides: thrownAnimOverrides,
