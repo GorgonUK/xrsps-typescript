@@ -38,6 +38,7 @@ import {
 import {
     clearWeaponSpecialAttackTraitOverrides,
     setWeaponSpecialAttackAttacker,
+    setWeaponSpecialAttackTarget,
     getWeaponSpecialAttackTraitOverrides,
     markWeaponSpecialAttackExecuted,
     wasWeaponSpecialAttackExecuted,
@@ -49,6 +50,11 @@ import {
     getAncientGodswordBloodSacrificeDamage,
     takeDueAncientGodswordBloodSacrifices,
 } from "../plugins/special-attacks/AncientGodswordSpec";
+import {
+    ARKAN_BLADE_BURN_PROFILE_ID,
+    createArkanBladeBurnAttack,
+    takeDueArkanBladeBurns,
+} from "../plugins/special-attacks/ArkanBladeSpec";
 import { CombatAttributes } from "../state/CombatAttributes";
 import { SkillId } from "../../../../../client/rs/skill/skills";
 import {
@@ -189,7 +195,11 @@ export class CombatHitProcessor {
 
             this.playAttackVisuals(context, profile, visuals, travelDelayTicks, specialAttack);
 
-            for (const evaluation of evaluations) {
+            for (const [hitIndex, evaluation] of evaluations.entries()) {
+                const hitDelay = Math.max(
+                    0,
+                    Math.floor(specialAttack?.hitDelayTicks?.[hitIndex] ?? 0),
+                );
                 this.deferredHits.enqueue({
                     attack,
                     source: attack.attacker,
@@ -201,7 +211,7 @@ export class CombatHitProcessor {
                         ? DeferredHitsplatType.Normal
                         : DeferredHitsplatType.Block,
                     attackType: specialAttack?.damageType ?? attack.traits.type,
-                    revealClock: clock + travelDelayTicks,
+                    revealClock: clock + travelDelayTicks + hitDelay,
                     profileId: profile.id,
                     enchantedBoltEffect,
                 });
@@ -227,6 +237,7 @@ export class CombatHitProcessor {
 
     processDeferredHits(currentMapClock: number, frame: TickFrame): readonly AppliedCombatHit[] {
         this.queueDueAncientGodswordBloodSacrifices(currentMapClock);
+        this.queueDueArkanBladeBurns(currentMapClock);
         return this.deferredHits.processTick(currentMapClock, frame);
     }
 
@@ -413,6 +424,7 @@ export class CombatHitProcessor {
         const script = weaponId === undefined ? undefined : SpecialAttackContainer.get(weaponId);
         clearWeaponSpecialAttackTraitOverrides(context.attack);
         setWeaponSpecialAttackAttacker(context.attack, player);
+        setWeaponSpecialAttackTarget(context.attack, context.target);
 
         let profileSpecial: WeaponSpecialAttack | null = null;
         if (profile.handleSpecialAttack) {
@@ -446,9 +458,25 @@ export class CombatHitProcessor {
         }
 
         const overrides = getWeaponSpecialAttackTraitOverrides(context.attack);
+        let requestedEnergyCost = script?.energyCost ?? profileSpecial?.energyCostPercent ?? 0;
+        if (script?.resolveEnergyCost) {
+            try {
+                requestedEnergyCost = script.resolveEnergyCost(
+                    player,
+                    context.target,
+                    context.currentMapClock,
+                );
+            } catch (error) {
+                logger.warn(`[special-attack:${script.itemId}] resolveEnergyCost failed`, error);
+                clearWeaponSpecialAttackTraitOverrides(context.attack);
+                player.specEnergy.setActivated(false);
+                this.syncSpecialAttackUi(player);
+                return undefined;
+            }
+        }
         const energyCost = Math.max(
             0,
-            Math.min(100, Math.trunc(script?.energyCost ?? profileSpecial?.energyCostPercent ?? 0)),
+            Math.min(100, Math.trunc(requestedEnergyCost)),
         );
         if (script?.onSpecialActivated) {
             if (player.specEnergy.getPercent() < energyCost) {
@@ -498,16 +526,35 @@ export class CombatHitProcessor {
             accuracyMultiplier:
                 overrides?.accuracyMultiplier ?? profileSpecial?.accuracyMultiplier ?? 1,
             damageMultiplier: overrides?.damageMultiplier ?? profileSpecial?.damageMultiplier ?? 1,
+            damageMultiplierStages:
+                overrides?.damageMultiplierStages ?? profileSpecial?.damageMultiplierStages,
             guaranteedHit: overrides?.guaranteedHit ?? profileSpecial?.guaranteedHit,
             rollAttackType: overrides?.rollAttackType ?? profileSpecial?.rollAttackType,
             damageType: overrides?.damageType ?? profileSpecial?.damageType,
+            ignoreProtectionPrayer:
+                overrides?.ignoreProtectionPrayer ?? profileSpecial?.ignoreProtectionPrayer,
+            meleeAttackBonusIndex:
+                overrides?.meleeAttackBonusIndex ?? profileSpecial?.meleeAttackBonusIndex,
+            meleeDefenceBonusIndex:
+                overrides?.meleeDefenceBonusIndex ?? profileSpecial?.meleeDefenceBonusIndex,
             maximumHitSource: overrides?.maximumHitSource ?? profileSpecial?.maximumHitSource,
+            maxHitOverride: overrides?.maxHitOverride ?? profileSpecial?.maxHitOverride,
             visibleMagicMaximumHit:
                 overrides?.visibleMagicMaximumHit ?? profileSpecial?.visibleMagicMaximumHit,
             minimumDamageMultiplier:
                 overrides?.minimumDamageMultiplier ?? profileSpecial?.minimumDamageMultiplier,
             maximumDamageMultiplier:
                 overrides?.maximumDamageMultiplier ?? profileSpecial?.maximumDamageMultiplier,
+            maximumHitSplitCount:
+                overrides?.maximumHitSplitCount ?? profileSpecial?.maximumHitSplitCount,
+            hitDelayTicks: overrides?.hitDelayTicks ?? profileSpecial?.hitDelayTicks,
+            accuracyRollCount: overrides?.accuracyRollCount ?? profileSpecial?.accuracyRollCount,
+            damageRangeBySuccessfulAccuracyRolls:
+                overrides?.damageRangeBySuccessfulAccuracyRolls ??
+                profileSpecial?.damageRangeBySuccessfulAccuracyRolls,
+            maximumHitReductionOnFullAccuracyRolls:
+                overrides?.maximumHitReductionOnFullAccuracyRolls ??
+                profileSpecial?.maximumHitReductionOnFullAccuracyRolls,
             enchantedBoltEffectChanceMultiplier:
                 overrides?.enchantedBoltEffectChanceMultiplier ??
                 profileSpecial?.enchantedBoltEffectChanceMultiplier,
@@ -820,10 +867,16 @@ export class CombatHitProcessor {
     private applyEnchantedBoltRollModifiers(specialAttack: WeaponSpecialAttack | undefined, effect: EnchantedBoltEffect | undefined): WeaponSpecialAttack | undefined {
         if (!effect) return specialAttack;
         const base: WeaponSpecialAttack = specialAttack ?? { energyCostPercent: 0, hitCount: 1, accuracyMultiplier: 1, damageMultiplier: 1 };
+        const boltDamageMultiplier =
+            effect.effectType === "hp_drain" ? 1 : (effect.damageMultiplier ?? 1);
         return Object.freeze({
             ...base,
             guaranteedHit: effect.effectType === "defense_drain" ? true : base.guaranteedHit,
-            damageMultiplier: Math.max(0, base.damageMultiplier * (effect.effectType === "hp_drain" ? 1 : (effect.damageMultiplier ?? 1))),
+            damageMultiplier: Math.max(0, base.damageMultiplier * boltDamageMultiplier),
+            damageMultiplierStages:
+                base.damageMultiplierStages && boltDamageMultiplier !== 1
+                    ? Object.freeze([...base.damageMultiplierStages, boltDamageMultiplier])
+                    : base.damageMultiplierStages,
         });
     }
 
@@ -964,6 +1017,24 @@ export class CombatHitProcessor {
                 attackType: AttackType.Magic,
                 revealClock: currentMapClock,
                 profileId: ANCIENT_GODSWORD_BLOOD_SACRIFICE_PROFILE_ID,
+            });
+        }
+    }
+
+    private queueDueArkanBladeBurns(currentMapClock: number): void {
+        for (const burn of takeDueArkanBladeBurns(currentMapClock)) {
+            const attack = createArkanBladeBurnAttack(burn.attacker, burn.target, currentMapClock);
+            this.deferredHits.enqueue({
+                attack,
+                source: attack.attacker,
+                target: attack.target,
+                damage: 1,
+                maxHit: 1,
+                landed: true,
+                hitsplatType: DeferredHitsplatType.Normal,
+                attackType: AttackType.Magic,
+                revealClock: currentMapClock,
+                profileId: ARKAN_BLADE_BURN_PROFILE_ID,
             });
         }
     }

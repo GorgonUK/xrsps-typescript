@@ -3,6 +3,7 @@ import { PlayerState } from "../../player";
 import type { CombatAttack, CombatAttackTraits } from "../model/CombatAttack";
 import { CombatAttributes } from "../state/CombatAttributes";
 import { CombatPluginRegistry } from "../plugins/CombatPluginRegistry";
+import { SpecialAttackContainer } from "../plugins/SpecialAttackContainer";
 import { SpecialAttackTiming } from "../plugins/WeaponCombatProfile";
 import { CombatAttackManager } from "./CombatAttackManager";
 import {
@@ -116,7 +117,10 @@ export class CombatTickEngine {
             weaponId: traits.weaponId,
             categoryId: attacker.combat.weaponCategory,
         });
-        return profile.specialAttackTiming === SpecialAttackTiming.Instant;
+        if (profile.specialAttackTiming === SpecialAttackTiming.Instant) return true;
+
+        const weaponId = traits.weaponId;
+        return weaponId !== undefined && SpecialAttackContainer.get(weaponId)?.bypassAttackDelay === true;
     }
 
     private incrementStatus(

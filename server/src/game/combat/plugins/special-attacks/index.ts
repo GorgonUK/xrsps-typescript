@@ -4,6 +4,7 @@ import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILE } from "./GraniteMaulSpecialAttack"
 import { MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES } from "./MagicShortbowSpecialAttack";
 import { TOXIC_BLOWPIPE_PROFILE } from "./ToxicBlowpipeSpec";
 import { SARADOMIN_GODSWORD_PROFILE } from "./SaradominGodswordSpec";
+import { ARMADYL_GODSWORD_PROFILE } from "./ArmadylGodswordSpec";
 
 export { ANCIENT_GODSWORD_SPEC, AncientGodswordSpec } from "./AncientGodswordSpec";
 export { ANCIENT_MACE_SPEC, AncientMaceSpec } from "./AncientMaceSpec";
@@ -11,8 +12,24 @@ export { ABYSSAL_WHIP_SPEC, AbyssalWhipSpec } from "./AbyssalWhipSpec";
 export { ABYSSAL_BLUDGEON_SPEC, AbyssalBludgeonSpec } from "./AbyssalBludgeonSpec";
 export { ACCURSED_SCEPTRE_SPEC, AccursedSceptreSpec } from "./AccursedSceptreSpec";
 export { ARCLIGHT_SPEC, ArclightSpec } from "./ArclightSpec";
+export {
+    ARKAN_BLADE_BURN_PROFILE_ID,
+    ARKAN_BLADE_SPEC,
+    ArkanBladeSpec,
+} from "./ArkanBladeSpec";
 export { ARMADYL_CROSSBOW_SPEC, ArmadylCrossbowSpec } from "./ArmadylCrossbowSpec";
+export {
+    ARMADYL_GODSWORD_PROFILE,
+    ARMADYL_GODSWORD_SPEC,
+    ARMADYL_GODSWORD_SPECS,
+    ArmadylGodswordSpec,
+} from "./ArmadylGodswordSpec";
 export { BANDOS_GODSWORD_SPEC, BandosGodswordSpec } from "./BandosGodswordSpec";
+export {
+    BLUE_MOON_SPEAR_SPEC,
+    BLUE_MOON_SPEAR_SPECS,
+    BlueMoonSpearSpec,
+} from "./BlueMoonSpearSpec";
 export {
     BARRELCHEST_ANCHOR_SPEC,
     BarrelchestAnchorSpec,
@@ -23,12 +40,19 @@ export {
     BoneDaggerSpec,
 } from "./BoneDaggerSpec";
 export { BRINE_SABRE_SPEC, BrineSabreSpec } from "./BrineSabreSpec";
+export { CRIMSON_KISTEN_SPEC, CrimsonKistenSpec } from "./CrimsonKistenSpec";
 export { DARKLIGHT_SPEC, DarklightSpec } from "./DarklightSpec";
+export { DAWNBRINGER_SPEC, DawnbringerSpec } from "./DawnbringerSpec";
 export {
     DORGESHUUN_CROSSBOW_SPEC,
     DorgeshuunCrossbowSpec,
 } from "./DorgeshuunCrossbowSpec";
 export { DINHS_BULWARK_SPEC, DinhsBulwarkSpec } from "./DinhsBulwarkSpec";
+export {
+    DUAL_MACUAHUITL_SPEC,
+    DUAL_MACUAHUITL_SPECS,
+    DualMacuahuitlSpec,
+} from "./DualMacuahuitlSpec";
 export {
     ELDRITCH_NIGHTMARE_STAFF_SPEC,
     EldritchNightmareStaffSpec,
@@ -57,6 +81,10 @@ export {
     DragonBattleaxeSpec,
 } from "./DragonBattleaxeSpec";
 export { DRAGON_CROSSBOW_SPEC, DragonCrossbowSpec } from "./DragonCrossbowSpec";
+export { DRAGON_LONGSWORD_SPEC, DragonLongswordSpec } from "./DragonLongswordSpec";
+export { DRAGON_MACE_SPEC, DragonMaceSpec } from "./DragonMaceSpec";
+export { DRAGON_SWORD_SPEC, DragonSwordSpec } from "./DragonSwordSpec";
+export { DRAGON_THROWNAXE_SPEC, DragonThrownaxeSpec } from "./DragonThrownaxeSpec";
 export {
     DRAGON_SCIMITAR_SPEC,
     DragonScimitarSpec,
@@ -66,6 +94,11 @@ export {
     DRAGON_HALBERD_SPEC,
     DragonHalberdSpec,
 } from "./DragonHalberdSpec";
+export {
+    DRAGON_HASTA_SPEC,
+    DRAGON_HASTA_SPECS,
+    DragonHastaSpec,
+} from "./DragonHastaSpec";
 export { DRAGON_2H_SWORD_SPEC, Dragon2hSwordSpec } from "./Dragon2hSwordSpec";
 export {
     DRAGON_HARPOON_SPEC,
@@ -133,6 +166,7 @@ export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Obje
     ...MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES,
     TOXIC_BLOWPIPE_PROFILE,
     SARADOMIN_GODSWORD_PROFILE,
+    ARMADYL_GODSWORD_PROFILE,
 ]);
 
 export {
