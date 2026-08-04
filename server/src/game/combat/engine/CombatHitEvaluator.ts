@@ -62,6 +62,8 @@ export interface CombatHitEvaluation {
     readonly hitChance: number;
     readonly maxHit: number;
     readonly landed: boolean;
+    /** Successful internal accuracy rolls that produced this hitsplat. */
+    readonly successfulAccuracyRolls?: number;
     readonly damage: number;
     readonly reason?: "attacker_not_found" | "target_not_found";
 }
@@ -125,12 +127,16 @@ export class CombatHitEvaluator {
         const hitCount = Math.max(1, Math.trunc(special.hitCount));
         const evaluations: CombatHitEvaluation[] = [];
         for (let hitIndex = 0; hitIndex < hitCount; hitIndex++) {
-            evaluations.push(this.evaluateRoll(attack, special));
+            evaluations.push(this.evaluateRoll(attack, special, hitIndex));
         }
         return Object.freeze(evaluations);
     }
 
-    private evaluateRoll(attack: CombatAttack, special: WeaponSpecialAttack): CombatHitEvaluation {
+    private evaluateRoll(
+        attack: CombatAttack,
+        special: WeaponSpecialAttack,
+        hitIndex = 0,
+    ): CombatHitEvaluation {
         const attacker = this.options.resolveEntity(attack.attacker);
         if (!attacker) return this.invalid(attack, "attacker_not_found");
 
@@ -138,7 +144,13 @@ export class CombatHitEvaluator {
         if (!target) return this.invalid(attack, "target_not_found", attacker);
 
         const rollAttack = this.withRollAttackType(attack, special.rollAttackType);
-        const rolls = this.buildRollProfile(rollAttack, attacker, target);
+        const rolls = this.buildRollProfile(
+            rollAttack,
+            attacker,
+            target,
+            special.meleeAttackBonusIndex,
+            special.meleeDefenceBonusIndex,
+        );
         const accuracyMultiplier = this.nonNegativeMultiplier(
             special.accuracyMultiplier,
             "special attack accuracy",
@@ -162,28 +174,74 @@ export class CombatHitEvaluator {
             special.maxHitOverride === undefined
                 ? sourcedMaxHit
                 : this.nonNegativeInteger(special.maxHitOverride, "special attack max hit");
-        const scaledMaxHit = Math.max(0, Math.floor(baseMaxHit * damageMultiplier));
-        const minimumDamage = Math.floor(
-            scaledMaxHit *
+        const damageMultiplierStages = special.damageMultiplierStages;
+        const scaledMaxHit = Math.max(
+            0,
+            damageMultiplierStages && damageMultiplierStages.length > 0
+                ? damageMultiplierStages.reduce(
+                      (maximumHit, multiplier, stageIndex) =>
+                          Math.floor(
+                              maximumHit *
+                                  this.nonNegativeMultiplier(
+                                      multiplier,
+                                      `special attack damage stage ${stageIndex + 1}`,
+                                  ),
+                          ),
+                      baseMaxHit,
+                  )
+                : Math.floor(baseMaxHit * damageMultiplier),
+        );
+        const maximumHitSplitCount = Math.max(
+            1,
+            Math.trunc(special.maximumHitSplitCount ?? 1),
+        );
+        const hitMaximum = this.splitMaximumHit(
+            scaledMaxHit,
+            maximumHitSplitCount,
+            hitIndex,
+        );
+        const accuracyRollCount = Math.max(1, Math.trunc(special.accuracyRollCount ?? 1));
+        const successfulAccuracyRolls = special.guaranteedHit
+            ? accuracyRollCount
+            : this.rollSuccessfulAccuracyRolls(hitChance, accuracyRollCount);
+        const damageRange =
+            successfulAccuracyRolls > 0
+                ? special.damageRangeBySuccessfulAccuracyRolls?.[successfulAccuracyRolls - 1]
+                : undefined;
+        let minimumDamage = Math.floor(
+            hitMaximum *
                 this.nonNegativeMultiplier(
-                    special.minimumDamageMultiplier ?? 0,
+                    damageRange?.minimumDamageMultiplier ?? special.minimumDamageMultiplier ?? 0,
                     "special attack minimum damage",
                 ),
         );
-        const maximumDamage = Math.floor(
-            scaledMaxHit *
+        let maximumDamage = Math.floor(
+            hitMaximum *
                 this.nonNegativeMultiplier(
-                    special.maximumDamageMultiplier ?? 1,
+                    damageRange?.maximumDamageMultiplier ?? special.maximumDamageMultiplier ?? 1,
                     "special attack maximum damage",
                 ),
         );
+        if (successfulAccuracyRolls === accuracyRollCount) {
+            maximumDamage = Math.max(
+                0,
+                maximumDamage -
+                    this.nonNegativeInteger(
+                        special.maximumHitReductionOnFullAccuracyRolls ?? 0,
+                        "special attack full-accuracy max-hit reduction",
+                    ),
+            );
+            // A legitimate flat max-hit reduction can make the upper bound
+            // lower than the percentage-derived lower bound at tiny max hits.
+            minimumDamage = Math.min(minimumDamage, maximumDamage);
+        }
         if (maximumDamage < minimumDamage) {
             throw new RangeError(
                 `Combat special attack maximum damage ${maximumDamage} cannot be below minimum damage ${minimumDamage}`,
             );
         }
         const maxHit = Math.max(0, maximumDamage);
-        const landed = special.guaranteedHit === true || rollAccuracy(hitChance, this.random);
+        const landed = successfulAccuracyRolls > 0;
         const rolledDamage = landed
             ? minimumDamage + Math.floor(this.nextRandom() * (maximumDamage - minimumDamage + 1))
             : 0;
@@ -192,6 +250,7 @@ export class CombatHitEvaluator {
             special.damageType ?? rollAttack.traits.type,
             attacker,
             target,
+            special.ignoreProtectionPrayer === true,
         );
 
         return Object.freeze({
@@ -204,6 +263,7 @@ export class CombatHitEvaluator {
             hitChance,
             maxHit,
             landed,
+            successfulAccuracyRolls,
             damage,
         });
     }
@@ -252,8 +312,10 @@ export class CombatHitEvaluator {
         attackType: AttackType,
         attacker: CombatEntity,
         target: CombatEntity,
+        ignoreProtectionPrayer: boolean,
     ): number {
         if (!(damage > 0)) return 0;
+        if (ignoreProtectionPrayer) return damage;
 
         const requiredOverhead = this.overheadForAttackType(attackType);
         if (requiredOverhead === OverheadType.NONE) return damage;
@@ -299,12 +361,14 @@ export class CombatHitEvaluator {
         attack: CombatAttack,
         attacker: CombatEntity,
         target: CombatEntity,
+        meleeAttackBonusIndex?: 0 | 1 | 2,
+        meleeDefenceBonusIndex?: 0 | 1 | 2,
     ): CombatRollProfile {
-        const attackProfile = this.buildAttackProfile(attack, attacker);
+        const attackProfile = this.buildAttackProfile(attack, attacker, meleeAttackBonusIndex);
         const defenceProfile = this.buildDefenceProfile(
             attack,
             target,
-            attackProfile.meleeBonusIndex,
+            meleeDefenceBonusIndex ?? attackProfile.meleeBonusIndex,
         );
         return {
             effectiveAttack: attackProfile.effectiveAttack,
@@ -315,17 +379,26 @@ export class CombatHitEvaluator {
         };
     }
 
-    private buildAttackProfile(attack: CombatAttack, attacker: CombatEntity): AttackProfile {
+    private buildAttackProfile(
+        attack: CombatAttack,
+        attacker: CombatEntity,
+        meleeAttackBonusIndex?: 0 | 1 | 2,
+    ): AttackProfile {
         if (attacker instanceof NpcState) {
             return this.buildNpcAttackProfile(attack, attacker);
         }
-        return this.buildPlayerAttackProfile(attack, attacker);
+        return this.buildPlayerAttackProfile(attack, attacker, meleeAttackBonusIndex);
     }
 
-    private buildPlayerAttackProfile(attack: CombatAttack, player: PlayerState): AttackProfile {
+    private buildPlayerAttackProfile(
+        attack: CombatAttack,
+        player: PlayerState,
+        forcedMeleeBonusIndex?: 0 | 1 | 2,
+    ): AttackProfile {
         const bonuses = this.options.getEquipmentBonuses(player);
         const stance = this.resolveStanceBonuses(attack.traits.style, attack.traits.type);
-        const meleeBonusIndex = this.resolveMeleeBonusIndex(player, bonuses);
+        const meleeBonusIndex =
+            forcedMeleeBonusIndex ?? this.resolveMeleeBonusIndex(player, bonuses);
 
         switch (attack.traits.type) {
             case AttackType.Ranged: {
@@ -653,6 +726,24 @@ export class CombatHitEvaluator {
             throw new RangeError(`Combat random source must return [0, 1); received ${value}`);
         }
         return value;
+    }
+
+    private rollSuccessfulAccuracyRolls(hitChance: number, count: number): number {
+        let successfulRolls = 0;
+        for (let roll = 0; roll < count; roll++) {
+            if (rollAccuracy(hitChance, this.random)) successfulRolls++;
+        }
+        return successfulRolls;
+    }
+
+    private splitMaximumHit(total: number, splitCount: number, hitIndex: number): number {
+        if (splitCount <= 1) return total;
+        const index = Math.max(0, Math.min(splitCount - 1, Math.trunc(hitIndex)));
+        return Math.max(
+            0,
+            Math.floor((total * (index + 1)) / splitCount) -
+                Math.floor((total * index) / splitCount),
+        );
     }
 
     private invalid(

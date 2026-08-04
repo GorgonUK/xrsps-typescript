@@ -942,6 +942,13 @@ export class PlayerState extends Actor {
         return true;
     }
 
+    /** Removes an active combat freeze while preserving its normal re-freeze immunity. */
+    clearFreeze(): void {
+        this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
+        this.clearMovementLock();
+        this.clearColorOverride();
+    }
+
     exportInventorySnapshot(): InventorySnapshotEntry[] {
         const snapshot: InventorySnapshotEntry[] = [];
         const inventory = this.getInventoryEntries();

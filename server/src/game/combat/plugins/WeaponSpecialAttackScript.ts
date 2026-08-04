@@ -16,17 +16,44 @@ export type SpecialAttackMaximumHitSource =
  */
 export interface WeaponSpecialAttackTraitOverrides {
     readonly hitCount?: number;
+    /** Splits the final maximum hit across this many sequential hits. */
+    readonly maximumHitSplitCount?: number;
+    /** Extra reveal delays for each hit, relative to the normal hit delay. */
+    readonly hitDelayTicks?: readonly number[];
     readonly accuracyMultiplier?: number;
     readonly damageMultiplier?: number;
+    /** Applies each multiplier in order and floors the max hit after every stage. */
+    readonly damageMultiplierStages?: readonly number[];
     readonly guaranteedHit?: boolean;
     /** Overrides the combat style used to build the initial accuracy/max-hit roll. */
     readonly rollAttackType?: AttackType;
     readonly damageType?: AttackType;
+    /** Ignores the target's matching protection prayer for this one hit. */
+    readonly ignoreProtectionPrayer?: boolean;
+    /** 0 = stab, 1 = slash, 2 = crush. Forces the melee attack and defence roll. */
+    readonly meleeAttackBonusIndex?: 0 | 1 | 2;
+    /** 0 = stab, 1 = slash, 2 = crush. Forces only the target defence roll. */
+    readonly meleeDefenceBonusIndex?: 0 | 1 | 2;
     readonly maximumHitSource?: SpecialAttackMaximumHitSource;
+    /** Replaces the standard max hit before special damage modifiers are applied. */
+    readonly maxHitOverride?: number;
     /** Base max hit for a visible-Magic special formula before magic-damage bonuses. */
     readonly visibleMagicMaximumHit?: number;
     readonly minimumDamageMultiplier?: number;
     readonly maximumDamageMultiplier?: number;
+    /**
+     * Number of independent accuracy rolls used to resolve this one hitsplat.
+     * This is distinct from hitCount: a special can make several accuracy rolls
+     * while still dealing only one hit.
+     */
+    readonly accuracyRollCount?: number;
+    /** Damage ranges indexed by the number of successful internal accuracy rolls. */
+    readonly damageRangeBySuccessfulAccuracyRolls?: readonly {
+        readonly minimumDamageMultiplier: number;
+        readonly maximumDamageMultiplier: number;
+    }[];
+    /** Flat max-hit reduction when every internal accuracy roll succeeds. */
+    readonly maximumHitReductionOnFullAccuracyRolls?: number;
     /** Multiplies an enchanted bolt's base activation chance for this shot. */
     readonly enchantedBoltEffectChanceMultiplier?: number;
     /** Prevents the normal attack roll for utility-only special attacks. */
@@ -36,6 +63,8 @@ export interface WeaponSpecialAttackTraitOverrides {
 export interface WeaponSpecialAttackScript {
     readonly itemId: number;
     readonly energyCost: number;
+    /** Lets an offensive special bypass the normal weapon attack-delay check. */
+    readonly bypassAttackDelay?: boolean;
 
     /**
      * Modifies or executes the initial attack roll parameters (Accuracy & Max Hit scaling).
@@ -54,6 +83,9 @@ export interface WeaponSpecialAttackScript {
         currentMapClock: number,
     ): boolean | void;
 
+    /** Resolves a dynamic energy cost immediately before the special is consumed. */
+    resolveEnergyCost?(attacker: any, target: any, currentMapClock: number): number;
+
     /**
      * Executes custom content effects (healing, stat drains, freezes, double-hits)
      * right when the damage hitsplat resolves.
@@ -69,6 +101,7 @@ export interface WeaponSpecialAttackScript {
 const attackTraitOverrides = new WeakMap<CombatAttack, WeaponSpecialAttackTraitOverrides>();
 const executedSpecialAttacks = new WeakSet<CombatAttack>();
 const specialAttackers = new WeakMap<CombatAttack, any>();
+const specialAttackTargets = new WeakMap<CombatAttack, any>();
 
 /**
  * Records immutable roll overrides for one prepared attack. Repeated calls merge,
@@ -97,6 +130,7 @@ export function clearWeaponSpecialAttackTraitOverrides(attack: CombatAttack): vo
     attackTraitOverrides.delete(attack);
     executedSpecialAttacks.delete(attack);
     specialAttackers.delete(attack);
+    specialAttackTargets.delete(attack);
 }
 
 /** Provides the live attacker while a script prepares dynamic roll overrides. */
@@ -106,6 +140,15 @@ export function setWeaponSpecialAttackAttacker(attack: CombatAttack, attacker: a
 
 export function getWeaponSpecialAttackAttacker(attack: CombatAttack): any | undefined {
     return specialAttackers.get(attack);
+}
+
+/** Provides the live target while a script prepares dynamic roll overrides. */
+export function setWeaponSpecialAttackTarget(attack: CombatAttack, target: any): void {
+    specialAttackTargets.set(attack, target);
+}
+
+export function getWeaponSpecialAttackTarget(attack: CombatAttack): any | undefined {
+    return specialAttackTargets.get(attack);
 }
 
 export function markWeaponSpecialAttackExecuted(attack: CombatAttack): void {

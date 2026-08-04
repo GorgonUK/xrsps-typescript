@@ -395,6 +395,13 @@ export class NpcState extends Actor {
         );
     }
 
+    /** Removes an active combat freeze while preserving its normal re-freeze immunity. */
+    clearFreeze(): void {
+        this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
+        this.clearMovementLock();
+        this.clearColorOverride();
+    }
+
     isFreezeImmune(currentTick: number): boolean {
         return (
             Math.trunc(currentTick) <
