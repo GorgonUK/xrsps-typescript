@@ -340,6 +340,10 @@ export function onResize(host: WebGLOsrsRendererHost, width: number, height: num
             const overlayScale = uiMetrics.renderScaleX;
             if (host.overheadTextOverlay) host.overheadTextOverlay.scale = overlayScale;
             if (host.hitsplatOverlay) host.hitsplatOverlay.scale = overlayScale;
+            if (host.healthBarOverlay) {
+                host.healthBarOverlay.scale =
+                    overlayScale * RENDER_CONSTANTS.HEALTH_BAR_VISUAL_SCALE;
+            }
             if (host.clickCrossOverlay) host.clickCrossOverlay.scale = overlayScale;
             if (host.groundItemOverlay) host.groundItemOverlay.scale = overlayScale;
             (host.canvas as any).__uiRenderScale = overlayScale;

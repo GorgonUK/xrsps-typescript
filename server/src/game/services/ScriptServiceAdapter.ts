@@ -244,7 +244,8 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
         // Provider registration facade (available to gamemodes and extrascripts)
         providers: buildProviderRegistrationFacade(),
         // Gamemode-contributed facades (populated by contributeScriptServices)
-        gathering: deps.gatheringSystem,
+        // gathering is deferred — wired after GatheringSystemManager construction.
+        // Use a getter so registerTracker/add see the live instance (not the boot undefined).
         stopGatheringInteraction: (player) => {
             try {
                 player.clearInteraction();
@@ -847,6 +848,14 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
             getDefaultInterfaces: (displayMode) => getDefaultInterfaces(displayMode),
         },
     } as ScriptServices;
+
+    // Deferred: GatheringSystemManager is constructed after buildScriptServices().
+    // A plain `gathering: deps.gatheringSystem` would freeze undefined forever.
+    Object.defineProperty(services, "gathering", {
+        get: () => deps.gatheringSystem,
+        enumerable: true,
+        configurable: true,
+    });
 
     // triggerLocEffect needs a reference to `services` itself for recursive loc effect chains
     services.location.triggerLocEffect = (locId, tile, level) =>

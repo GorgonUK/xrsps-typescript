@@ -1,9 +1,6 @@
 import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { PlayerState } from "../../../../src/game/player";
-import type {
-    SmithingOptionMessage,
-    SmithingServerPayload,
-} from "../../../../src/game/scripts/types";
+import type { SmithingOptionMessage } from "../../../../src/game/scripts/types";
 import type { ScriptServices } from "../../../../src/game/scripts/types";
 import { shouldGuaranteeIronSmelt } from "./smithingBonuses";
 import {
@@ -14,10 +11,17 @@ import {
     calculateIronSmeltChance,
     computeSmeltingBatchCount,
     getSmeltingRecipeById,
+    getSmithingRecipeByBarAndSlot,
     getSmithingRecipeById,
+    type SmithingProductSlot,
 } from "./smithingData";
+import {
+    SCRIPT_COUNT_DIALOG,
+    SMITHING_COMP,
+    SMITHING_GROUP_ID,
+} from "./smithingInterface";
+import { TaskConditions } from "../../../../src/game/model/queue";
 
-const SMITHING_GROUP_ID = 312;
 const SMITHING_BAR_TYPE_VARBIT_ID = 3216;
 const SMITHING_BAR_ENUM_ID = 1253;
 const SMITHING_BAR_TYPE_FALLBACK: ReadonlyArray<readonly [number, number]> = [
@@ -118,45 +122,43 @@ export class SmithingUI {
         });
     }
 
-    sendInterfaceState(
-        player: PlayerState,
-        action: "open" | "update",
-        mode: "smelt" | "forge",
-    ): void {
-        const production = this.services.production;
-        if (action === "open") {
-            try {
-                let openVarbits: Record<number, number> | undefined;
-                if (mode === "forge") {
-                    const openState = this.resolveOpenVarbits(player);
-                    if (!openState.ok) return;
-                    openVarbits = openState.varbits;
-                }
-                production?.openSmithingModal?.(player, SMITHING_GROUP_ID, openVarbits);
-            } catch {}
-        }
-        const options =
-            mode === "smelt" ? this.buildSmeltingOptions(player) : this.buildForgingOptions(player);
-        production?.queueSmithingMessage?.(player.id, {
-            kind: action,
-            mode,
-            title: mode === "smelt" ? "Smelting" : "Smithing",
-            options,
-            quantityMode: player.bank.getSmithingQuantityMode(),
-            customQuantity: player.bank.getSmithingCustomQuantity(),
-        });
-    }
-
     openSmeltingInterface(player: PlayerState): void {
-        this.sendInterfaceState(player, "open", "smelt");
+        // Furnace uses skillmulti; keep this as a no-op compatibility shim.
+        void player;
     }
 
     updateSmeltingInterface(player: PlayerState): void {
-        this.sendInterfaceState(player, "update", "smelt");
+        void player;
     }
 
-    openForgeInterface(player: PlayerState): void {
-        this.sendInterfaceState(player, "open", "forge");
+    openForgeInterface(player: PlayerState, preferredBarItemId?: number): void {
+        const production = this.services.production;
+        let openState: { ok: true; varbits: Record<number, number> } | { ok: false };
+        if (preferredBarItemId !== undefined) {
+            const barType = this.getBarTypeByItemId(preferredBarItemId);
+            if (barType === undefined || !(barType > 0)) {
+                this.services.messaging.sendGameMessage(player, "You need metal bars to smith.");
+                return;
+            }
+            player.varps.setVarbitValue(SMITHING_BAR_TYPE_VARBIT_ID, barType);
+            openState = { ok: true, varbits: { [SMITHING_BAR_TYPE_VARBIT_ID]: barType } };
+        } else {
+            openState = this.resolveOpenVarbits(player);
+        }
+        if (!openState.ok) {
+            this.services.messaging.sendGameMessage(
+                player,
+                "You should select an item from your inventory and use it on the anvil.",
+            );
+            return;
+        }
+        try {
+            production?.openSmithingModal?.(player, SMITHING_GROUP_ID, openState.varbits);
+        } catch {}
+        const custom = player.bank.getSmithingCustomQuantity();
+        if (custom > 0) {
+            this.updateCustomQuantityLabel(player, custom);
+        }
     }
 
     openSmithingInterface(player: PlayerState): void {
@@ -164,7 +166,20 @@ export class SmithingUI {
     }
 
     updateSmithingInterface(player: PlayerState): void {
-        this.sendInterfaceState(player, "update", "forge");
+        void player;
+    }
+
+    resolveRecipeFromComponent(
+        player: PlayerState,
+        componentId: number,
+        slot: SmithingProductSlot,
+    ): ReturnType<typeof getSmithingRecipeByBarAndSlot> {
+        void componentId;
+        this.initializeBarEnumCache();
+        const barType = player.varps.getVarbitValue(SMITHING_BAR_TYPE_VARBIT_ID);
+        const barItemId = this.barTypeToItemId.get(barType);
+        if (!barItemId) return undefined;
+        return getSmithingRecipeByBarAndSlot(barItemId, slot);
     }
 
     closeInterface(player: PlayerState): void {
@@ -265,6 +280,7 @@ export class SmithingUI {
         player.bank.setSmithingQuantityMode(mode);
         if (mode === 3 && customRaw !== undefined && customRaw > 0) {
             player.bank.setSmithingCustomQuantity(customRaw);
+            this.updateCustomQuantityLabel(player, customRaw);
         } else if (mode !== 3 && customRaw !== undefined) {
             player.bank.setSmithingCustomQuantity(customRaw);
         }
@@ -273,6 +289,36 @@ export class SmithingUI {
             quantityMode: player.bank.getSmithingQuantityMode(),
             customQuantity: player.bank.getSmithingCustomQuantity(),
         });
+    }
+
+    /** Opens chatbox "Set quantity:" input and stores the result as Make-X mode. */
+    promptCustomQuantity(player: PlayerState): void {
+        const self = this;
+        player.queueWeak(function* (task) {
+            self.services.dialog.queueClientScript(
+                player.id,
+                SCRIPT_COUNT_DIALOG,
+                "Set quantity:",
+            );
+            yield TaskConditions.waitReturnValue(task);
+            const raw = Number(task.requestReturnValue);
+            const amount = Number.isFinite(raw) ? Math.floor(raw) : 0;
+            if (amount <= 0) return;
+            self.handleModeChange(player, 3, Math.min(2_147_483_647, amount));
+        });
+    }
+
+    private updateCustomQuantityLabel(player: PlayerState, amount: number): void {
+        const label = amount > 0 ? String(amount) : "?";
+        const iface = this.services.dialog.getInterfaceService?.();
+        const uid = (SMITHING_GROUP_ID << 16) | SMITHING_COMP.makeSome;
+        try {
+            iface?.setWidgetText(player, uid, label);
+        } catch {}
+        // Keep the native skillmain quantity display in sync when present.
+        try {
+            this.services.dialog.queueClientScript(player.id, 2930, amount);
+        } catch {}
     }
 
     handleSmeltingSelection(player: PlayerState, recipeId: string, requestedCount?: number): void {
@@ -355,7 +401,6 @@ export class SmithingUI {
         );
         if (available <= 0) {
             this.services.messaging.sendGameMessage(player, "You need more bars to smith that.");
-            this.updateSmithingInterface(player);
             return;
         }
         const currentMode = player.bank.getSmithingQuantityMode();
@@ -365,15 +410,20 @@ export class SmithingUI {
                 ? requestedCount
                 : this.resolveQuantity(currentMode, available, customAmount);
         const desired = Math.max(1, Math.min(available, desiredRaw));
-        const delay = recipe.delayTicks !== undefined ? Math.max(1, recipe.delayTicks) : 4;
+
+        // OSRS closes the anvil interface before smithing. Skill actions stay deferred
+        // while any modal is open, so IF 312 must close first or the action stalls.
+        this.closeInterface(player);
+
         const tick = this.services.system.getCurrentTick() ?? 0;
         const result = this.services.combat.requestAction(
             player,
             {
                 kind: "skill.smith",
                 data: { recipeId: recipe.id, count: desired },
-                delayTicks: delay,
-                cooldownTicks: delay,
+                // First hammer swing starts next tick (OpenRune/OSRS anvil parity).
+                delayTicks: 1,
+                cooldownTicks: Math.max(1, recipe.delayTicks ?? 4),
                 groups: ["skill.smith"],
             },
             tick,
@@ -384,7 +434,6 @@ export class SmithingUI {
                 "You're too busy to do that right now.",
             );
         }
-        this.updateSmithingInterface(player);
     }
 
     rollSmeltingSuccess(

@@ -1,41 +1,24 @@
 import { SkillId } from "../../../../../client/rs/skill/skills";
 import type { ActionEffect, ActionExecutionResult } from "../../../../src/game/actions/types";
 import type { PlayerState } from "../../../../src/game/player";
-import type {
-    IScriptRegistry,
-    ScriptActionHandlerContext,
-    ScriptServices,
+import {
+    ANY_LOC_ID,
+    type IScriptRegistry,
+    type ScriptActionHandlerContext,
+    type ScriptServices,
 } from "../../../../src/game/scripts/types";
 import {
-    type InventoryEntry,
-    MAX_DIALOG_OPTIONS,
-    SKILL_DIALOG_META,
-    type SkillDialogChoice,
     buildMessageEffect,
     buildSkillFailure,
-    clampBatchCount,
-    countItem,
-    enqueueSkillAction,
     getInventory,
     hasItem,
 } from "../production/shared";
-import {
-    HAMMER_ITEM_ID,
-    SMITHING_RECIPES,
-    type SmithingRecipe,
-    getSmithingRecipeById,
-} from "./smithingData";
+import { HAMMER_ITEM_ID, SMITHING_RECIPES, getSmithingRecipeById } from "./smithingData";
 
 interface SkillSmithActionData {
     recipeId: string;
     count: number;
 }
-
-const computeSmithBatchCount = (entries: InventoryEntry[], recipe: SmithingRecipe): number => {
-    const totalBars = countItem(entries, recipe.barItemId);
-    const per = Math.max(1, recipe.barCount);
-    return clampBatchCount(Math.floor(totalBars / per));
-};
 
 function buildSmithingInterfaceFailure(
     player: PlayerState,
@@ -176,128 +159,40 @@ export function executeSmithAction(ctx: ScriptActionHandlerContext): ActionExecu
 }
 
 export function registerSmithingInteractions(registry: IScriptRegistry, services: ScriptServices) {
-    const requestAction = services.combat.requestAction;
-    const openDialogOptions = services.dialog.openDialogOptions;
-    const closeDialog = services.dialog.closeDialog;
-
-    const trySmithRecipe = (
-        player: PlayerState,
-        recipe: SmithingRecipe,
-        tick?: number,
-        opts?: { desiredCount?: number },
-    ) => {
-        const smithLevel = services.skills.getSkill(player, SkillId.Smithing)?.baseLevel ?? 1;
-        if (smithLevel < recipe.level) {
-            services.messaging.sendGameMessage(
-                player,
-                `You need Smithing level ${recipe.level} to smith that.`,
-            );
-            return;
-        }
-        const inventoryNow = getInventory(services, player);
-        if (recipe.requireHammer !== false && !hasItem(inventoryNow, HAMMER_ITEM_ID)) {
+    const openForge = (player: PlayerState, barItemId?: number) => {
+        const inventory = getInventory(services, player);
+        if (!hasItem(inventory, HAMMER_ITEM_ID)) {
             services.messaging.sendGameMessage(player, "You need a hammer to smith.");
             return;
         }
-        const batch = computeSmithBatchCount(inventoryNow, recipe);
-        if (batch <= 0) {
-            services.messaging.sendGameMessage(player, "You need a suitable bar to smith.");
+        const hasBars =
+            barItemId !== undefined
+                ? hasItem(inventory, barItemId)
+                : SMITHING_RECIPES.some((recipe) => hasItem(inventory, recipe.barItemId));
+        if (!hasBars) {
+            services.messaging.sendGameMessage(
+                player,
+                barItemId !== undefined
+                    ? "You need metal bars to smith."
+                    : "You should select an item from your inventory and use it on the anvil.",
+            );
             return;
         }
-        const desired = Math.max(1, Math.min(batch, opts?.desiredCount ?? batch));
-        if (services.production?.smithItems) {
-            services.production.smithItems(player, { recipeId: recipe.id, count: desired });
-            return;
-        }
-        enqueueSkillAction(
-            requestAction,
-            "smith",
-            player,
-            recipe.id,
-            desired,
-            recipe.delayTicks ?? 4,
-            tick,
-            services.messaging.sendGameMessage,
-        );
+        services.production?.openForgeInterface?.(player, barItemId);
     };
 
     registry.registerLocAction("smith", (event) => {
-        if (services.production?.openSmithingInterface) {
-            services.production.openSmithingInterface(event.player);
-            return;
-        }
-        const smithLevel = services.skills.getSkill(event.player, SkillId.Smithing)?.baseLevel ?? 1;
-        const inventory = getInventory(services, event.player);
-        if (!hasItem(inventory, HAMMER_ITEM_ID)) {
-            services.messaging.sendGameMessage(event.player, "You need a hammer to smith.");
-            return;
-        }
-        const candidateRecipes = SMITHING_RECIPES.filter((r) =>
-            hasItem(inventory, r.barItemId),
-        ).sort((a, b) => a.level - b.level);
-        if (!candidateRecipes.length) {
-            services.messaging.sendGameMessage(event.player, "You need metal bars to smith.");
-            return;
-        }
-        const smithChoices: SkillDialogChoice<SmithingRecipe>[] = candidateRecipes.map((recipe) => {
-            const available = computeSmithBatchCount(inventory, recipe);
-            const levelMet = smithLevel >= recipe.level;
-            const craftable = levelMet && available > 0;
-            const label = craftable
-                ? `${recipe.name} (${available}x ready)`
-                : !levelMet
-                  ? `${recipe.name} (Lvl ${recipe.level})`
-                  : `${recipe.name} (${recipe.barCount}x bars needed)`;
-            return { recipe, label, craftable, batch: Math.max(1, available) };
-        });
-        const craftableChoices = smithChoices.filter((c) => c.craftable);
-        const orderedChoices = craftableChoices
-            .concat(smithChoices.filter((c) => !c.craftable))
-            .slice(0, MAX_DIALOG_OPTIONS);
-        const meta = SKILL_DIALOG_META.smith;
-        const openedDialog =
-            openDialogOptions &&
-            orderedChoices.length > 0 &&
-            openDialogOptions(event.player, {
-                id: meta.id,
-                title: meta.title,
-                modal: true,
-                options: orderedChoices.map((c) => c.label),
-                disabledOptions: orderedChoices.map((c) => !c.craftable),
-                onSelect: (idx) => {
-                    const selected = orderedChoices[idx];
-                    if (!selected) {
-                        services.messaging.sendGameMessage(
-                            event.player,
-                            "You decide not to make anything.",
-                        );
-                        return;
-                    }
-                    if (!selected.craftable) {
-                        services.messaging.sendGameMessage(
-                            event.player,
-                            "You can't smith that yet.",
-                        );
-                        return;
-                    }
-                    closeDialog?.(event.player, meta.id);
-                    trySmithRecipe(event.player, selected.recipe, event.tick, {
-                        desiredCount: selected.batch,
-                    });
-                },
-            });
-        if (!openedDialog) {
-            const fallback = craftableChoices[0];
-            if (!fallback) {
-                services.messaging.sendGameMessage(
-                    event.player,
-                    "You need a higher Smithing level or more bars.",
-                );
-                return;
-            }
-            trySmithRecipe(event.player, fallback.recipe, event.tick, {
-                desiredCount: fallback.batch,
-            });
-        }
+        openForge(event.player);
     });
+
+    const barItemIds = new Set(SMITHING_RECIPES.map((r) => r.barItemId));
+    for (const barItemId of barItemIds) {
+        registry.registerItemOnLoc(barItemId, ANY_LOC_ID, (event) => {
+            const locDef = services.data.getLocDefinition(event.target.locId);
+            if (!locDef) return;
+            const actions = locDef.ops ?? [];
+            if (!actions.some((a: string) => a?.toLowerCase() === "smith")) return;
+            openForge(event.player, event.source.itemId);
+        });
+    }
 }

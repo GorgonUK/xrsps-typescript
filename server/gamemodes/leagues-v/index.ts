@@ -63,6 +63,7 @@ import { registerLeagueTutorialWidgetHandlers } from "./scripts/leagueTutorialWi
 import { registerLeagueWidgetHandlers } from "./scripts/leagueWidgets";
 
 const TUTORIAL_SPAWN = { x: 3094, y: 3107, level: 0 };
+const LUMBRIDGE_SPAWN = { x: 3222, y: 3218, level: 0 };
 const VARP_LEAGUE_TASK_COUNT = 2612;
 
 export class LeaguesVGamemode extends VanillaGamemode {
@@ -203,6 +204,10 @@ export class LeaguesVGamemode extends VanillaGamemode {
     // === Login / Handshake ===
 
     override isTutorialActive(player: PlayerState): boolean {
+        if (!player?.account) return true;
+        if (player.account.preferredMode === "vanilla") {
+            return false;
+        }
         const tutorialStep = player.varps.getVarbitValue?.(VARBIT_LEAGUE_TUTORIAL_COMPLETED) ?? 0;
         return tutorialStep < getTutorialCompleteStep(player);
     }
@@ -212,7 +217,14 @@ export class LeaguesVGamemode extends VanillaGamemode {
         return tutorialStep === LEAGUE_TUTORIAL_STEP_WELCOME;
     }
 
-    override getSpawnLocation(_player: PlayerState): { x: number; y: number; level: number } {
+    override getSpawnLocation(player?: PlayerState): { x: number; y: number; level: number } {
+        // Handshake creates the player after this call, so player may be undefined.
+        if (!player?.account) {
+            return TUTORIAL_SPAWN;
+        }
+        if (player.account.preferredMode === "vanilla" || !this.isTutorialActive(player)) {
+            return LUMBRIDGE_SPAWN;
+        }
         return TUTORIAL_SPAWN;
     }
 

@@ -199,7 +199,18 @@ export class HitsplatOverlay implements Overlay {
                 } catch {}
             }
 
-            const resolvedScale = entry.scale ?? this.scale ?? 1.0;
+            // Multiply entry scale by overlay UI/render scale. Using `??` alone
+            // ignored this.scale whenever entry.scale was set (always 1.0), so
+            // hitsplats stayed tiny on scaled viewports.
+            const entryScale =
+                typeof entry.scale === "number" && Number.isFinite(entry.scale) && entry.scale > 0
+                    ? entry.scale
+                    : 1.0;
+            const overlayScale =
+                typeof this.scale === "number" && Number.isFinite(this.scale) && this.scale > 0
+                    ? this.scale
+                    : 1.0;
+            const resolvedScale = entryScale * overlayScale;
             if (!Number.isFinite(resolvedScale) || resolvedScale <= 0) continue;
 
             const count = Math.max(1, Math.min(4, (entry.count ?? this.count ?? 1) | 0));
