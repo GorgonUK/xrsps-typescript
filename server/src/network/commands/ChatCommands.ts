@@ -1,8 +1,8 @@
 import type { PlayerPermission } from "../PlayerPermission";
 
 /**
- * Built-in chat-command access policy. Script-registered commands are not in
- * this table and remain responsible for their own access policy.
+ * Chat-command access policy. This is checked before built-in and
+ * script-registered command handlers are invoked.
  */
 const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = {
     pos: "player",
@@ -15,16 +15,19 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     bank: "developer",
     devbank: "developer",
     item: "developer",
+    itemspawner: "developer",
     kill: "developer",
     levelup: "developer",
     lunar: "developer",
     maxall: "developer",
+    magic: "developer",
     onehealth: "developer",
     quest: "developer",
     randomitem: "developer",
     resetquests: "developer",
     rubytest: "developer",
     scroll: "developer",
+    sail: "developer",
     spec: "developer",
     smithing: "developer",
     spawn: "developer",
