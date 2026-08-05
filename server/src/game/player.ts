@@ -440,6 +440,7 @@ export class PlayerState extends Actor {
      */
     canTeleport(): boolean {
         if (!LockStateChecks.canTeleport(this._lockState)) return false;
+        if (this.timers.has(STUN_TIMER)) return false;
         if (this.timers.has(TELEBLOCK_TIMER)) return false;
         return true;
     }

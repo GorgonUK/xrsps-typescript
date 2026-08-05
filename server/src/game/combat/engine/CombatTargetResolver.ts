@@ -53,6 +53,12 @@ export class CombatTargetResolver {
         if (!this.isAlive(attacker, currentMapClock)) {
             return { valid: false, reason: "dead" };
         }
+        if (
+            currentMapClock <
+            attacker.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK)
+        ) {
+            return { valid: false, reason: "interaction_blocked" };
+        }
         if (attacker instanceof PlayerState && !attacker.canAttack()) {
             return { valid: false, reason: "interaction_blocked" };
         }

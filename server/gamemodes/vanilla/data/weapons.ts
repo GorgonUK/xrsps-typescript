@@ -1245,6 +1245,7 @@ const specialAttacks = {
     // Spears
     DRAGON_SPEAR: { anim: 1064, cost: 25 }, // Shove
     ZAMORAKIAN_SPEAR: { anim: 1064, cost: 25 }, // Shove
+    ZAMORAKIAN_HASTA: { anim: 1064, cost: 25 }, // Shove
 
     // Halberds
     DRAGON_HALBERD: { anim: 1203, cost: 30 }, // Sweep

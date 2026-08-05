@@ -222,6 +222,22 @@ export class CombatHitProcessor {
                 continue;
             }
             if (specialAttack?.skipAttack) {
+                const travelDelayTicks = this.resolveTravelDelay(profile, context);
+                const visuals = this.resolveVisuals(profile, context, specialAttack);
+                this.playAttackVisuals(
+                    context,
+                    profile,
+                    visuals,
+                    travelDelayTicks,
+                    specialAttack,
+                );
+                if (specialAttack.targetGraphic) {
+                    this.enqueueGraphic(
+                        context.target,
+                        specialAttack.targetGraphic,
+                        context.currentMapClock,
+                    );
+                }
                 processedAttacks++;
                 continue;
             }
@@ -846,6 +862,7 @@ export class CombatHitProcessor {
                           context.target,
                           context.currentMapClock,
                           context.attack,
+                          this.services,
                       );
                 if (activated === false) {
                     clearWeaponSpecialAttackTraitOverrides(context.attack);

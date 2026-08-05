@@ -3,7 +3,7 @@ import { PlayerState } from "../../player";
 import type { CombatEntity } from "./CombatTargetResolver";
 
 /**
- * Clears queued walking while a combat freeze deadline is active.
+ * Clears queued walking while a combat freeze or stun deadline is active.
  *
  * Callers should still run the actor's normal tick step afterward. An empty
  * path lets facing, rotation, animations, combat, and non-movement actions
@@ -14,7 +14,11 @@ export function interceptFrozenCombatMovement(
     currentMapClock: number,
 ): boolean {
     const clock = mapClock(currentMapClock);
-    if (clock >= entity.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK)) {
+    const immobilizedUntil = Math.max(
+        entity.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+        entity.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK),
+    );
+    if (clock >= immobilizedUntil) {
         return false;
     }
 
@@ -31,7 +35,10 @@ export function isCombatMovementFrozen(
 ): boolean {
     return (
         mapClock(currentMapClock) <
-        entity.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK)
+        Math.max(
+            entity.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+            entity.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK),
+        )
     );
 }
 

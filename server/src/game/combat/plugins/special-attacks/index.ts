@@ -1,10 +1,12 @@
 import type { WeaponCombatProfile } from "../WeaponCombatProfile";
 import { ARMADYL_GODSWORD_PROFILE } from "./ArmadylGodswordSpec";
+import { ABYSSAL_TENTACLE_PROFILE } from "./AbyssalTentacleSpec";
 import { DARK_BOW_PROFILE } from "./DarkBowSpec";
 import { DRAGON_CLAWS_PROFILE } from "./DragonClawsSpec";
 import { DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE } from "./DragonDaggerSpecialAttack";
 import { DRAGON_HALBERD_PROFILE } from "./DragonHalberdSpec";
 import { DRAGON_KNIFE_PROFILE } from "./DragonKnifeSpec";
+import { DRAGON_SPEAR_PROFILE } from "./DragonSpearSpec";
 import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILES } from "./GraniteMaulSpecialAttack";
 import { HEAVY_BALLISTA_PROFILE } from "./HeavyBallistaSpec";
 import { LIGHT_BALLISTA_PROFILE } from "./LightBallistaSpec";
@@ -24,6 +26,12 @@ import { WEBWEAVER_BOW_PROFILE } from "./WebweaverBowSpec";
 export { ANCIENT_GODSWORD_SPEC, AncientGodswordSpec } from "./AncientGodswordSpec";
 export { ANCIENT_MACE_SPEC, AncientMaceSpec } from "./AncientMaceSpec";
 export { ABYSSAL_WHIP_SPEC, AbyssalWhipSpec } from "./AbyssalWhipSpec";
+export {
+    ABYSSAL_TENTACLE_PROFILE,
+    ABYSSAL_TENTACLE_SPEC,
+    AbyssalTentacleSpec,
+    applyBindingTentacleEffects,
+} from "./AbyssalTentacleSpec";
 export { ABYSSAL_DAGGER_SPEC, ABYSSAL_DAGGER_SPECS, AbyssalDaggerSpec } from "./AbyssalDaggerSpec";
 export { ABYSSAL_BLUDGEON_SPEC, AbyssalBludgeonSpec } from "./AbyssalBludgeonSpec";
 export { ACCURSED_SCEPTRE_SPEC, AccursedSceptreSpec } from "./AccursedSceptreSpec";
@@ -108,6 +116,14 @@ export {
 } from "./DragonKnifeSpec";
 export { DRAGON_MACE_SPEC, DragonMaceSpec } from "./DragonMaceSpec";
 export { DRAGON_SWORD_SPEC, DragonSwordSpec } from "./DragonSwordSpec";
+export {
+    DRAGON_SPEAR_ITEM_IDS,
+    DRAGON_SPEAR_PROFILE,
+    DRAGON_SPEAR_SPEC,
+    DRAGON_SPEAR_SPECS,
+    DragonSpearSpec,
+    applyDragonSpearShove,
+} from "./DragonSpearSpec";
 export { DRAGON_THROWNAXE_SPEC, DragonThrownaxeSpec } from "./DragonThrownaxeSpec";
 export { DRAGON_SCIMITAR_SPEC, DragonScimitarSpec } from "./DragonScimitarSpec";
 export {
@@ -268,6 +284,7 @@ export {
 } from "./KerisPartisanOfCorruptionSpec";
 
 export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Object.freeze([
+    ABYSSAL_TENTACLE_PROFILE,
     DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE,
     ...GRANITE_MAUL_SPECIAL_ATTACK_PROFILES,
     ...MAGIC_SHORTBOW_SPECIAL_ATTACK_PROFILES,
@@ -286,6 +303,7 @@ export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Obje
     DRAGON_CLAWS_PROFILE,
     DRAGON_HALBERD_PROFILE,
     DRAGON_KNIFE_PROFILE,
+    DRAGON_SPEAR_PROFILE,
     ROSEWOOD_BLOWPIPE_PROFILE,
     SARADOMIN_SWORD_PROFILE,
     VESTAS_SPEAR_BH_PROFILE,

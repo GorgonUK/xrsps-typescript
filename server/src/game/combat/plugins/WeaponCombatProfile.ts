@@ -53,6 +53,8 @@ export interface WeaponSpecialAttack extends WeaponSpecialAttackTraitOverrides {
     readonly hitDelayTicks?: readonly number[];
     readonly attackAnimation?: number;
     readonly castGraphic?: WeaponGraphicProfile;
+    /** Graphic displayed on the target when this special is activated. */
+    readonly targetGraphic?: WeaponGraphicProfile;
     readonly attackSoundId?: number;
     /** Plays multiple simultaneous launch sounds for layered weapon effects. */
     readonly attackSoundIds?: readonly number[];

@@ -1,5 +1,6 @@
 import type { AttackType } from "../AttackType";
 import type { CombatAttack } from "../model/CombatAttack";
+import type { ServerServices } from "../../ServerServices";
 
 export const SpecialAttackMaximumHitSource = Object.freeze({
     Standard: "standard",
@@ -158,6 +159,7 @@ export interface WeaponSpecialAttackScript {
         target: any,
         currentMapClock: number,
         attack: CombatAttack,
+        services: ServerServices,
     ): boolean | void;
 
     /** Resolves a dynamic energy cost immediately before the special is consumed. */

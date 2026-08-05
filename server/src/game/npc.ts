@@ -391,7 +391,10 @@ export class NpcState extends Actor {
     isFrozen(currentTick: number): boolean {
         return (
             Math.trunc(currentTick) <
-            this.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK)
+            Math.max(
+                this.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+                this.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK),
+            )
         );
     }
 
@@ -433,6 +436,8 @@ export class NpcState extends Actor {
         this.regenEffect = undefined;
         this.combatAttributes.set(CombatAttributes.FREEZE_UNTIL_CLOCK, 0);
         this.combatAttributes.set(CombatAttributes.FREEZE_IMMUNITY_UNTIL_CLOCK, 0);
+        this.combatAttributes.set(CombatAttributes.STUN_UNTIL_CLOCK, 0);
+        this.combatAttributes.set(CombatAttributes.STUN_IMMUNITY_UNTIL_CLOCK, 0);
         this.combatAttributes.set(CombatAttributes.MAGIC_DEFENCE_BONUS_DRAIN, 0);
         this.combatAttributes.set(CombatAttributes.MAGIC_DEFENCE_BONUS_CURRENT, 0);
         this.returningToSpawn = false;

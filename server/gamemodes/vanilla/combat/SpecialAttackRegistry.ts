@@ -315,7 +315,7 @@ class SpecialAttackRegistryImpl implements SpecialAttackProvider {
 
         this.register({
             name: "Shove",
-            weaponIds: [1249, 1263, 5716, 5730],
+            weaponIds: [1249, 1263, 3176, 5716, 5730, 11824, 11889],
             energyCost: 25,
             accuracyMultiplier: 1.0,
             damageMultiplier: 1.0,

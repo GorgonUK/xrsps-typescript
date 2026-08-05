@@ -58,5 +58,10 @@ export const CombatAttributes = Object.freeze({
         "combat.freeze_immunity_until_clock",
         () => 0,
     ),
+    STUN_UNTIL_CLOCK: combatAttribute<number>("combat.stun_until_clock", () => 0),
+    STUN_IMMUNITY_UNTIL_CLOCK: combatAttribute<number>(
+        "combat.stun_immunity_until_clock",
+        () => 0,
+    ),
     IS_DEAD: combatAttribute<boolean>("combat.is_dead", () => false),
 });

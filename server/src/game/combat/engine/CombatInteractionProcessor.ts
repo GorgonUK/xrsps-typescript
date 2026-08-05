@@ -63,6 +63,18 @@ export class CombatInteractionProcessor {
             return { status: "ended", reason: "missing_target" };
         }
 
+        // A stun prevents actions and movement, not the combat engagement
+        // itself. Keeping the target lets an NPC resume pursuit/attacks when
+        // Shove ends instead of silently de-aggroing.
+        if (
+            currentMapClock <
+            attacker.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK)
+        ) {
+            attacker.clearPath();
+            this.routes.delete(attacker);
+            return { status: "unavailable" };
+        }
+
         const attackerResolution = this.targetResolver.validateAttacker(attacker, currentMapClock);
         if (!attackerResolution.valid) {
             this.endInteraction(attacker);
@@ -105,7 +117,10 @@ export class CombatInteractionProcessor {
 
         if (
             currentMapClock <
-            attacker.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK)
+            Math.max(
+                attacker.combatAttributes.get(CombatAttributes.FREEZE_UNTIL_CLOCK),
+                attacker.combatAttributes.get(CombatAttributes.STUN_UNTIL_CLOCK),
+            )
         ) {
             attacker.clearPath();
             this.routes.delete(attacker);

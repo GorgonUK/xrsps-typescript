@@ -1,5 +1,8 @@
 import { faceAngleRs } from "../../../client/rs/utils/rotation";
-import type { MovementDirection } from "../../../client/common/Direction";
+import {
+    deltaToDirection,
+    type MovementDirection,
+} from "../../../client/common/Direction";
 import { logger } from "../utils/logger";
 import {
     type InteractionIndex,
@@ -571,6 +574,19 @@ export abstract class Actor {
             orientation: this.orientation & 2047,
             direction,
         });
+    }
+
+    /** Applies one server-authored step, used by forced movement such as Shove. */
+    forceStep(tileX: number, tileY: number): boolean {
+        const nextX = Math.trunc(tileX);
+        const nextY = Math.trunc(tileY);
+        const direction = deltaToDirection(nextX - this.tileX, nextY - this.tileY);
+        if (direction === undefined) return false;
+
+        this.clearPath();
+        this.running = false;
+        this.commitMovementStep(nextX, nextY, direction, TraversalType.WALK);
+        return true;
     }
 
     setMovementDirections(walkDirection: MovementDirection, runDirection: number | null): void {

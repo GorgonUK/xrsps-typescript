@@ -75,4 +75,22 @@ assert.equal(
     "registry reuse must not resurrect a cleared combat interaction",
 );
 
+// Stun is an action/movement lock, not a combat disengage. The NPC retains
+// aggro and can immediately attack again once the Shove stun expires.
+const stunnedNpc = createNpc(4);
+stunnedNpc.engageCombat(player.id, 300, player);
+stunnedNpc.combatAttributes.set(CombatAttributes.STUN_UNTIL_CLOCK, 305);
+const stunnedEngine = new CombatTickEngine({
+    pathService: { edgeHasWallBetween: () => false } as PathService,
+    getPlayer: (id) => (id === player.id ? player : undefined),
+    getNpc: (id) => (id === stunnedNpc.id ? stunnedNpc : undefined),
+    getCombatants: () => [stunnedNpc],
+    resolveAttackTraits: () => MELEE_TRAITS,
+});
+const stunnedTick = stunnedEngine.processTick(301);
+assert.equal(stunnedTick.statuses.get("unavailable"), 1);
+assert.deepEqual(stunnedNpc.getCombatTargetPlayerId(), player.id);
+const resumedTick = stunnedEngine.processTick(305);
+assert.equal(resumedTick.preparedAttacks.length, 1);
+
 console.log("combat engagement lifecycle regression test passed");
