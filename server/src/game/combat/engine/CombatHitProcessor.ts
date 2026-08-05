@@ -18,6 +18,12 @@ import {
 import { type EnchantedBoltEffect, getEnchantedBoltEffect } from "../AmmoSystem";
 import { AttackType } from "../AttackType";
 import { DamageType, damageTracker } from "../DamageTracker";
+import {
+    STANDARD_DRAGONFIRE_ATTACK,
+    isStandardChromaticDragon,
+    rollStandardDragonfireDamage,
+    shouldUseStandardDragonfire,
+} from "../Dragonfire";
 import { multiCombatSystem } from "../MultiCombatZones";
 import { getNpcPoisonConfig, hasVenomImmunityEquipment } from "../PoisonVenomSystem";
 import type { CombatAttack } from "../model/CombatAttack";
@@ -231,9 +237,16 @@ export class CombatHitProcessor {
                 specialAttack,
                 enchantedBoltEffect,
             );
+            const dragonfireAttack =
+                attacker instanceof NpcState &&
+                target instanceof PlayerState &&
+                isStandardChromaticDragon(attacker.typeId) &&
+                shouldUseStandardDragonfire()
+                    ? STANDARD_DRAGONFIRE_ATTACK
+                    : undefined;
             const normalAttack = rollSpecial
                 ? undefined
-                : this.resolveNormalAttack(profile, context);
+                : (dragonfireAttack ?? this.resolveNormalAttack(profile, context));
             const rollPlan = rollSpecial ?? normalAttack;
             const enticed =
                 attacker instanceof PlayerState &&
@@ -256,22 +269,37 @@ export class CombatHitProcessor {
                 rejectedAttacks++;
                 continue;
             }
-            const evaluations = rawEvaluations.map((evaluation) =>
-                this.normalizeEvaluation(this.invokeTransform(profile, evaluation, context)),
-            );
+            const evaluations = rawEvaluations.map((evaluation) => {
+                const transformed = this.invokeTransform(profile, evaluation, context);
+                if (!dragonfireAttack || !(target instanceof PlayerState)) {
+                    return this.normalizeEvaluation(transformed);
+                }
+                const { damage, maxHit } = rollStandardDragonfireDamage(
+                    target,
+                    transformed.landed,
+                );
+                return this.normalizeEvaluation({
+                    ...transformed,
+                    maxHit,
+                    landed: damage > 0,
+                    preProtectionDamage: damage,
+                    damage,
+                });
+            });
             if (evaluations.some((evaluation) => !evaluation.valid)) {
                 rejectedAttacks++;
                 continue;
             }
             const travelDelayTicks = this.resolveTravelDelay(profile, context);
-            const visuals = this.resolveVisuals(profile, context, specialAttack);
+            const resolvedAttack = specialAttack ?? dragonfireAttack;
+            const visuals = this.resolveVisuals(profile, context, resolvedAttack);
 
-            this.playAttackVisuals(context, profile, visuals, travelDelayTicks, specialAttack);
+            this.playAttackVisuals(context, profile, visuals, travelDelayTicks, resolvedAttack);
 
             for (const [hitIndex, evaluation] of evaluations.entries()) {
                 const hitDelay = Math.max(
                     0,
-                    Math.floor(specialAttack?.hitDelayTicks?.[hitIndex] ?? 0),
+                    Math.floor(resolvedAttack?.hitDelayTicks?.[hitIndex] ?? 0),
                 );
                 this.deferredHits.enqueue({
                     attack,
@@ -283,13 +311,13 @@ export class CombatHitProcessor {
                     hitsplatType: evaluation.landed
                         ? DeferredHitsplatType.Normal
                         : DeferredHitsplatType.Block,
-                    attackType: specialAttack?.damageType ?? attack.traits.type,
+                    attackType: resolvedAttack?.damageType ?? attack.traits.type,
                     revealClock: clock + travelDelayTicks + hitDelay,
                     profileId: profile.id,
                     suppressProfileImpactGraphic:
-                        specialAttack?.impactGraphicHitIndex !== undefined &&
-                        hitIndex !== Math.max(0, Math.trunc(specialAttack.impactGraphicHitIndex)),
-                    impactSoundIdOverride: specialAttack?.impactSoundIds?.[hitIndex],
+                        resolvedAttack?.impactGraphicHitIndex !== undefined &&
+                        hitIndex !== Math.max(0, Math.trunc(resolvedAttack.impactGraphicHitIndex)),
+                    impactSoundIdOverride: resolvedAttack?.impactSoundIds?.[hitIndex],
                     enchantedBoltEffect,
                 });
 
@@ -791,7 +819,7 @@ export class CombatHitProcessor {
     ): void {
         if (context.attacker instanceof NpcState) {
             const definition = this.services.combatDataService.getNpcDefinition(context.attacker);
-            const attackAnimation = definition.animations.attack;
+            const attackAnimation = specialAttack?.attackAnimation ?? definition.animations.attack;
             if (attackAnimation > 0) {
                 this.services.combatEffectService.broadcastNpcSequence(
                     context.attacker,

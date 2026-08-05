@@ -1,4 +1,8 @@
 import { SKILL_IDS, SkillId } from "../../../../../client/rs/skill/skills";
+import {
+    ANTIFIRE_TIMER,
+    SUPER_ANTIFIRE_TIMER,
+} from "../../../../src/game/model/timer/Timers";
 import type { PlayerState } from "../../../../src/game/player";
 import type { IScriptRegistry, ScriptServices } from "../../../../src/game/scripts/types";
 import { type ConsumableProfile, scheduleConsumableAction } from "../../scripts/utils/consumables";
@@ -409,6 +413,38 @@ const STAMINA_POTIONS: StaminaPotionDef[] = [
     { itemId: 12627, nextItemId: 12629, dosesAfter: 2 },
     { itemId: 12629, nextItemId: 12631, dosesAfter: 1 },
     { itemId: 12631, nextItemId: VIAL_ITEM_ID, dosesAfter: 0 },
+];
+
+// ============================================================================
+// Antifire potion definitions
+// ============================================================================
+
+type AntifirePotionDef = {
+    itemId: number;
+    nextItemId: number;
+    dosesAfter: number;
+    label: string;
+    durationSeconds: number;
+    superAntifire?: boolean;
+};
+
+const ANTIFIRE_POTIONS: AntifirePotionDef[] = [
+    { itemId: 2452, nextItemId: 2454, dosesAfter: 3, label: "antifire potion", durationSeconds: 360 },
+    { itemId: 2454, nextItemId: 2456, dosesAfter: 2, label: "antifire potion", durationSeconds: 360 },
+    { itemId: 2456, nextItemId: 2458, dosesAfter: 1, label: "antifire potion", durationSeconds: 360 },
+    { itemId: 2458, nextItemId: VIAL_ITEM_ID, dosesAfter: 0, label: "antifire potion", durationSeconds: 360 },
+    { itemId: 11951, nextItemId: 11953, dosesAfter: 3, label: "extended antifire", durationSeconds: 720 },
+    { itemId: 11953, nextItemId: 11955, dosesAfter: 2, label: "extended antifire", durationSeconds: 720 },
+    { itemId: 11955, nextItemId: 11957, dosesAfter: 1, label: "extended antifire", durationSeconds: 720 },
+    { itemId: 11957, nextItemId: VIAL_ITEM_ID, dosesAfter: 0, label: "extended antifire", durationSeconds: 720 },
+    { itemId: 21978, nextItemId: 21981, dosesAfter: 3, label: "super antifire potion", durationSeconds: 180, superAntifire: true },
+    { itemId: 21981, nextItemId: 21984, dosesAfter: 2, label: "super antifire potion", durationSeconds: 180, superAntifire: true },
+    { itemId: 21984, nextItemId: 21987, dosesAfter: 1, label: "super antifire potion", durationSeconds: 180, superAntifire: true },
+    { itemId: 21987, nextItemId: VIAL_ITEM_ID, dosesAfter: 0, label: "super antifire potion", durationSeconds: 180, superAntifire: true },
+    { itemId: 22209, nextItemId: 22212, dosesAfter: 3, label: "extended super antifire", durationSeconds: 360, superAntifire: true },
+    { itemId: 22212, nextItemId: 22215, dosesAfter: 2, label: "extended super antifire", durationSeconds: 360, superAntifire: true },
+    { itemId: 22215, nextItemId: 22218, dosesAfter: 1, label: "extended super antifire", durationSeconds: 360, superAntifire: true },
+    { itemId: 22218, nextItemId: VIAL_ITEM_ID, dosesAfter: 0, label: "extended super antifire", durationSeconds: 360, superAntifire: true },
 ];
 
 // ============================================================================
@@ -960,6 +996,51 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
                 });
                 if (!ok) {
                     console.log(`[script:stamina] consume rejected item=${def.itemId}`);
+                }
+            },
+            "drink",
+        );
+    }
+
+    for (const def of ANTIFIRE_POTIONS) {
+        registry.registerItemAction(
+            def.itemId,
+            ({ player, source, tick }) => {
+                const slot = source.slot;
+                const ok = scheduleConsumableAction({
+                    player,
+                    slotIndex: slot,
+                    itemId: def.itemId,
+                    option: "drink",
+                    tick,
+                    services,
+                    profile: "potion",
+                    loggerTag: "antifire",
+                    onExecute: () => {
+                        setInventorySlot(player, slot, def.nextItemId, 1);
+                        player.timers.set(
+                            def.superAntifire ? SUPER_ANTIFIRE_TIMER : ANTIFIRE_TIMER,
+                            secondsToTicks(def.durationSeconds),
+                        );
+                        services.animation.playPlayerSeq(player, DRINK_SEQ);
+                        services.sound.playAreaSound({
+                            soundId: DRINK_SOUND,
+                            tile: { x: player.tileX, y: player.tileY },
+                            level: player.level,
+                            radius: 1,
+                        });
+                        services.messaging.sendGameMessage(
+                            player,
+                            `You drink some of your ${def.label}.`,
+                        );
+                        services.messaging.sendGameMessage(
+                            player,
+                            formatDoseMessage(def.dosesAfter),
+                        );
+                    },
+                });
+                if (!ok) {
+                    console.log(`[script:antifire] consume rejected item=${def.itemId}`);
                 }
             },
             "drink",

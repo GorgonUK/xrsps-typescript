@@ -927,7 +927,7 @@ export class NpcManager {
                 const movementFrozen = interceptFrozenCombatMovement(npc, currentTick);
                 if (!movementFrozen && shouldRecoverToSpawn) {
                     if (combatTargetId !== undefined) {
-                        npc.disengageCombatPreservingInteraction();
+                        npc.disengageCombat();
                         npc.scheduleNextAggressionCheck(currentTick);
                     }
                     this.processRecoveryNpcMovement(npc);
