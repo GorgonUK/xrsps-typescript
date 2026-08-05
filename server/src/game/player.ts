@@ -169,6 +169,8 @@ export interface PlayerPersistentVars {
     /** Server-only onboarding progression (project-specific). */
     accountStage?: number;
     accountCreationTimeMs?: number;
+    /** Soft Vanilla vs Leagues choice after character creation (leagues-v host). */
+    preferredMode?: "vanilla" | "leagues";
     appearance?: {
         gender?: number;
         kits?: number[];

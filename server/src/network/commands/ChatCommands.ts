@@ -12,6 +12,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     bond: "developer",
     clear: "developer",
     completequests: "developer",
+    bank: "developer",
     devbank: "developer",
     item: "developer",
     kill: "developer",

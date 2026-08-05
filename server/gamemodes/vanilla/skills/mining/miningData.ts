@@ -69,7 +69,8 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 1,
         xp: 5,
         oreItemId: 434,
-        respawnTicks: { min: 8, max: 14 },
+        // LostCity mine.dbrow rock_respawnrate
+        respawnTicks: { min: 6, max: 6 },
         swingTicks: 3,
     },
     {
@@ -78,7 +79,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 1,
         xp: 17.5,
         oreItemId: 436,
-        respawnTicks: { min: 10, max: 20 },
+        respawnTicks: { min: 10, max: 10 },
         swingTicks: 3,
     },
     {
@@ -87,7 +88,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 1,
         xp: 17.5,
         oreItemId: 438,
-        respawnTicks: { min: 10, max: 20 },
+        respawnTicks: { min: 10, max: 10 },
         swingTicks: 3,
     },
     {
@@ -96,7 +97,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 15,
         xp: 35,
         oreItemId: 440,
-        respawnTicks: { min: 20, max: 40 },
+        respawnTicks: { min: 20, max: 20 },
         swingTicks: 3,
     },
     {
@@ -105,7 +106,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 20,
         xp: 40,
         oreItemId: 442,
-        respawnTicks: { min: 35, max: 70 },
+        respawnTicks: { min: 200, max: 200 },
         swingTicks: 4,
     },
     {
@@ -114,7 +115,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 30,
         xp: 50,
         oreItemId: 453,
-        respawnTicks: { min: 45, max: 90 },
+        respawnTicks: { min: 100, max: 100 },
         swingTicks: 4,
     },
     {
@@ -123,7 +124,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 40,
         xp: 65,
         oreItemId: 444,
-        respawnTicks: { min: 50, max: 100 },
+        respawnTicks: { min: 200, max: 200 },
         swingTicks: 4,
     },
     {
@@ -132,7 +133,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 55,
         xp: 80,
         oreItemId: 447,
-        respawnTicks: { min: 80, max: 140 },
+        respawnTicks: { min: 400, max: 400 },
         swingTicks: 5,
     },
     {
@@ -141,7 +142,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 70,
         xp: 95,
         oreItemId: 449,
-        respawnTicks: { min: 140, max: 220 },
+        respawnTicks: { min: 800, max: 800 },
         swingTicks: 6,
     },
     {
@@ -150,7 +151,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         level: 85,
         xp: 125,
         oreItemId: 451,
-        respawnTicks: { min: 250, max: 500 },
+        respawnTicks: { min: 2400, max: 2400 },
         swingTicks: 8,
     },
     {
@@ -160,6 +161,7 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         xp: 240,
         oreItemId: 21347,
         depletedLocId: 11389,
+        // Post-LostCity ore — keep soft OSRS-ish range
         respawnTicks: { min: 110, max: 150 },
         swingTicks: 6,
     },
@@ -321,8 +323,17 @@ export function buildMiningLocMap(loader?: LocTypeLoader): MiningLocMap {
 export function selectPickaxeByLevel(
     availableIds: number[],
     level: number,
+    preferredItemId?: number,
 ): PickaxeDefinition | undefined {
     const cache = new Set(availableIds.map((id) => id));
+    // Prefer the wielded pickaxe when it is usable — avoids silently using a
+    // stronger skilling tool left in the inventory (e.g. Echo while wielding rune).
+    if (preferredItemId && preferredItemId > 0 && cache.has(preferredItemId)) {
+        const preferred = PICKAXES.find((pick) => pick.itemId === preferredItemId);
+        if (preferred && (level >= preferred.level || preferred.ignoreLevelRequirement)) {
+            return preferred;
+        }
+    }
     for (const pick of PICKAXES) {
         if (!cache.has(pick.itemId)) continue;
         if (level >= pick.level || pick.ignoreLevelRequirement) return pick;

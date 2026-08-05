@@ -12,7 +12,6 @@ import {
     buildMessageEffect,
     describeItem,
     failGatheringPrecheck,
-    hasAnyCarriedItem,
 } from "../gatheringPrecheck";
 import {
     type PickaxeDefinition,
@@ -23,7 +22,9 @@ import {
 } from "./miningData";
 
 const MINING_ACTIONS = ["mine", "mine rocks"];
-const ECHO_PICKAXE_ITEM_IDS = [25112, 25063, 25369, 25376];
+// Trailblazer / Echo pickaxe only (league tutor tool set). Do NOT include
+// Infernal/Dragon ornament kits — those were incorrectly bank-routing ore.
+const ECHO_PICKAXE_ITEM_IDS = [25112];
 
 interface MiningActionData {
     rockLocId: number;
@@ -81,7 +82,8 @@ function executeMineAction(ctx: ScriptActionHandlerContext): ActionExecutionResu
     }
 
     const carriedIds = services.inventory.collectCarriedItemIds(player) ?? [];
-    const pickaxe = selectPickaxeByLevel(carriedIds, effectiveLevel);
+    const equippedWeaponId = services.equipment.getEquippedItem(player, 3) ?? 0;
+    const pickaxe = selectPickaxeByLevel(carriedIds, effectiveLevel, equippedWeaponId);
     if (!pickaxe) {
         return failMiningPrecheck(
             player,
@@ -89,7 +91,7 @@ function executeMineAction(ctx: ScriptActionHandlerContext): ActionExecutionResu
             "You need a pickaxe that you have the Mining level to use.",
         );
     }
-    const hasEchoPickaxePerk = hasAnyCarriedItem(carriedIds, ECHO_PICKAXE_ITEM_IDS);
+    const hasEchoPickaxePerk = ECHO_PICKAXE_ITEM_IDS.includes(pickaxe.itemId);
 
     if (!hasEchoPickaxePerk && !services.inventory.hasInventorySlot(player)) {
         return failMiningPrecheck(

@@ -328,6 +328,10 @@ function mergeStates(
     if (accountStage !== undefined) {
         result.accountStage = Math.max(0, Math.min(10, Math.floor(accountStage)));
     }
+    const preferredMode = pick("preferredMode");
+    if (preferredMode === "vanilla" || preferredMode === "leagues") {
+        result.preferredMode = preferredMode;
+    }
     const accountCreationTimeMs = pick("accountCreationTimeMs");
     if (accountCreationTimeMs !== undefined) {
         result.accountCreationTimeMs = Math.max(

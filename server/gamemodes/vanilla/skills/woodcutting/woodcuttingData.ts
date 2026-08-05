@@ -70,8 +70,9 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 25,
         logItemId: 1511,
         stumpId: 1342,
-        respawnTicks: { min: 15, max: 25 },
-        depleteRoll: 8,
+        // LostCity: respawnrate=0 → always deplete, 120+random(80)
+        respawnTicks: { min: 120, max: 199 },
+        depleteRoll: 1,
         swingTicks: 4, // OSRS: all trees roll every 4 ticks
     },
     {
@@ -81,7 +82,7 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 37.5,
         logItemId: 1521,
         stumpId: 1356,
-        respawnTicks: { min: 25, max: 45 },
+        respawnTicks: { min: 30, max: 30 },
         depleteRoll: 8,
         swingTicks: 4,
     },
@@ -92,7 +93,7 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 67.5,
         logItemId: 1519,
         stumpId: 8489,
-        respawnTicks: { min: 45, max: 85 },
+        respawnTicks: { min: 30, max: 30 },
         depleteRoll: 8,
         swingTicks: 4,
     },
@@ -103,8 +104,8 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 100,
         logItemId: 1517,
         stumpId: 9713,
-        respawnTicks: { min: 70, max: 130 },
-        depleteRoll: 10,
+        respawnTicks: { min: 120, max: 120 },
+        depleteRoll: 8,
         swingTicks: 4,
     },
     {
@@ -114,8 +115,8 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 175,
         logItemId: 1515,
         stumpId: 9714,
-        respawnTicks: { min: 90, max: 180 },
-        depleteRoll: 12,
+        respawnTicks: { min: 200, max: 200 },
+        depleteRoll: 8,
         swingTicks: 4, // OSRS: all trees roll every 4 ticks
     },
     {
@@ -125,8 +126,8 @@ const TREE_DEFINITIONS: WoodcuttingTreeDefinition[] = [
         xp: 250,
         logItemId: 1513,
         stumpId: 8399,
-        respawnTicks: { min: 120, max: 240 },
-        depleteRoll: 16,
+        respawnTicks: { min: 400, max: 400 },
+        depleteRoll: 8,
         swingTicks: 4, // OSRS: all trees roll every 4 ticks
     },
     {

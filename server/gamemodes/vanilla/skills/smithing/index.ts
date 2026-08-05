@@ -1,12 +1,13 @@
-import {
-    ANY_LOC_ID,
-    type IScriptRegistry,
-    type ScriptServices,
-} from "../../../../src/game/scripts/types";
+import type { IScriptRegistry, ScriptServices } from "../../../../src/game/scripts/types";
 import { openSmithingBarModal } from "../../modals/smithingBarModalHandler";
 import { executeSmeltAction, registerSmeltingInteractions } from "./smelting";
 import { executeSmithAction, registerSmithingInteractions } from "./smithing";
-import { SMITHING_RECIPES } from "./smithingData";
+import {
+    SMITHING_CUSTOM_QUANTITY_COMPONENTS,
+    SMITHING_FIXED_QUANTITY_MODE_BY_COMPONENT,
+    SMITHING_GROUP_ID,
+    SMITHING_SLOT_BY_COMPONENT,
+} from "./smithingInterface";
 import { SmithingUI } from "./smithingUI";
 
 export function register(registry: IScriptRegistry, services: ScriptServices): void {
@@ -18,7 +19,8 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
     const production = services.production;
     if (production) {
         production.openSmeltingInterface = (player) => smithingUI.openSmeltingInterface(player);
-        production.openForgeInterface = (player) => smithingUI.openForgeInterface(player);
+        production.openForgeInterface = (player, preferredBarItemId) =>
+            smithingUI.openForgeInterface(player, preferredBarItemId);
         production.openSmithingInterface = (player) => smithingUI.openSmithingInterface(player);
         production.smeltBars = (player, params) =>
             smithingUI.handleSmeltingSelection(
@@ -38,6 +40,29 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
         production.openSmithingBarModal = (player) => openSmithingBarModal(player, services);
     }
 
+    for (const [componentId, mode] of SMITHING_FIXED_QUANTITY_MODE_BY_COMPONENT) {
+        registry.onButton(SMITHING_GROUP_ID, componentId, (event) => {
+            smithingUI.handleModeChange(event.player, mode);
+        });
+    }
+
+    for (const componentId of SMITHING_CUSTOM_QUANTITY_COMPONENTS) {
+        registry.onButton(SMITHING_GROUP_ID, componentId, (event) => {
+            smithingUI.promptCustomQuantity(event.player);
+        });
+    }
+
+    for (const [componentId, slot] of SMITHING_SLOT_BY_COMPONENT) {
+        registry.onButton(SMITHING_GROUP_ID, componentId, (event) => {
+            const recipe = smithingUI.resolveRecipeFromComponent(event.player, componentId, slot);
+            if (!recipe) {
+                services.messaging.sendGameMessage(event.player, "You can't smith that.");
+                return;
+            }
+            smithingUI.handleSmithingSelection(event.player, recipe.id);
+        });
+    }
+
     registry.registerClientMessageHandler("smithing_make", (event) => {
         const recipeId = (event.payload.recipeId as string) ?? "";
         const mode = event.payload.mode === "forge" ? "forge" : "smelt";
@@ -55,21 +80,4 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
 
     registerSmithingInteractions(registry, services);
     registerSmeltingInteractions(registry, services);
-
-    const barItemIds = new Set(SMITHING_RECIPES.map((r) => r.barItemId));
-    const SMITHING_BAR_TYPE_VARBIT_ID = 3216;
-    for (const barItemId of barItemIds) {
-        registry.registerItemOnLoc(barItemId, ANY_LOC_ID, (event) => {
-            const locId = event.target.locId;
-            const locDef = services.data.getLocDefinition(locId);
-            if (!locDef) return;
-            const actions = locDef.ops ?? [];
-            if (!actions.some((a: string) => a?.toLowerCase() === "smith")) return;
-            const barType = smithingUI.getBarTypeByItemId(event.source.itemId);
-            if (!(barType !== undefined && barType > 0)) return;
-            const player = event.player;
-            player.varps.setVarbitValue(SMITHING_BAR_TYPE_VARBIT_ID, barType);
-            services.production?.openSmithingInterface?.(player);
-        });
-    }
 }

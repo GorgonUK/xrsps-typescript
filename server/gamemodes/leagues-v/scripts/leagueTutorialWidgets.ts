@@ -33,13 +33,35 @@ export function registerLeagueTutorialWidgetHandlers(
     registry: IScriptRegistry,
     services: ScriptServices,
 ): void {
-    // "Exit Leagues" (left) / "Get Started" (right)
+    // Welcome left = Vanilla MP | Welcome right = Leagues
+    // Later steps: left = Exit/End Tutorial (existing)
     registry.onButton(LEAGUE_TUTORIAL_MAIN_GROUP_ID, COMP_TUTORIAL_BUTTON_LEFT, (event) => {
         const player = event.player;
         const tutorial = player.varps.getVarbitValue?.(VARBIT_LEAGUE_TUTORIAL_COMPLETED) ?? 0;
         if (tutorial === LEAGUE_TUTORIAL_STEP_WELCOME) {
-            // Exit Leagues (OSRS: logs out / leaves league world).
-            services.appearance.logoutPlayer(player, "exit_leagues");
+            // Soft Vanilla path on leagues-v host (Phase I gamemode select).
+            player.account.preferredMode = "vanilla";
+            closeLeagueTutorialOverlay(player, services);
+
+            const completeStep = getTutorialCompleteStep(player);
+            player.varps.setVarbitValue(VARBIT_LEAGUE_TUTORIAL_COMPLETED, completeStep);
+            player.varps.setVarbitValue(VARBIT_FLASHSIDE, 0);
+            player.account.accountStage = 2;
+            services.movement.teleportPlayer(player, 3222, 3218, 0, true);
+            const { value: leagueGeneral } = syncLeagueGeneralVarp(player);
+            services.variables.queueVarp?.(player.id, VARP_LEAGUE_GENERAL, leagueGeneral);
+            services.variables.queueVarbit?.(
+                player.id,
+                VARBIT_LEAGUE_TUTORIAL_COMPLETED,
+                completeStep,
+            );
+            services.variables.queueVarbit?.(player.id, VARBIT_FLASHSIDE, 0);
+            services.appearance.savePlayerSnapshot(player);
+            services.dialog.openRemainingTabs(player);
+            services.messaging.sendGameMessage(
+                player,
+                "Welcome to Vanilla multiplayer. League tutorial skipped.",
+            );
             return;
         }
         // End Tutorial - allow at step 9 (after Karamja unlock) or step 11 (finishing)
@@ -89,6 +111,9 @@ export function registerLeagueTutorialWidgetHandlers(
         const player = event.player;
         const tutorial = player.varps.getVarbitValue?.(VARBIT_LEAGUE_TUTORIAL_COMPLETED) ?? 0;
         if (tutorial !== LEAGUE_TUTORIAL_STEP_WELCOME) return;
+
+        player.account.preferredMode = "leagues";
+        services.appearance.savePlayerSnapshot(player);
 
         // Tutorial starts now (step > 0): place the player in the tutorial area.
         try {
