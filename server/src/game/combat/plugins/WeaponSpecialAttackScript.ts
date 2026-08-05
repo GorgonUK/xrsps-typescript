@@ -19,6 +19,27 @@ export const SpecialAttackMultiplierRounding = Object.freeze({
 export type SpecialAttackMultiplierRounding =
     (typeof SpecialAttackMultiplierRounding)[keyof typeof SpecialAttackMultiplierRounding];
 
+export const WeaponSpecialAttackTargetPattern = Object.freeze({
+    ForwardLine: "forward_line",
+} as const);
+
+export type WeaponSpecialAttackTargetPattern =
+    (typeof WeaponSpecialAttackTargetPattern)[keyof typeof WeaponSpecialAttackTargetPattern];
+
+export interface WeaponSpecialAttackTargeting {
+    readonly pattern: WeaponSpecialAttackTargetPattern;
+    /** Odd number of tiles across the line, centred on the primary target. */
+    readonly width: number;
+    /** Total target cap, including the primary target. */
+    readonly maxTargets: number;
+    readonly requiresMultiCombat?: boolean;
+    /** Replaces area targeting when the primary NPC meets the footprint size. */
+    readonly largeTargetExtraHit?: {
+        readonly minimumSize: number;
+        readonly accuracyMultiplier: number;
+    };
+}
+
 /**
  * Attack-roll overrides authored by an individual weapon special-attack script.
  * Every value is optional so a script only needs to describe what it changes.
@@ -111,6 +132,8 @@ export interface WeaponSpecialAttackTraitOverrides {
     readonly guaranteedEnchantedBoltEffect?: boolean;
     /** Prevents the normal attack roll for utility-only special attacks. */
     readonly skipAttack?: boolean;
+    /** Engagement-level target selection for area and footprint-aware specials. */
+    readonly targeting?: WeaponSpecialAttackTargeting;
 }
 
 export interface WeaponSpecialAttackScript {

@@ -3,6 +3,7 @@ import { ARMADYL_GODSWORD_PROFILE } from "./ArmadylGodswordSpec";
 import { DARK_BOW_PROFILE } from "./DarkBowSpec";
 import { DRAGON_CLAWS_PROFILE } from "./DragonClawsSpec";
 import { DRAGON_DAGGER_SPECIAL_ATTACK_PROFILE } from "./DragonDaggerSpecialAttack";
+import { DRAGON_HALBERD_PROFILE } from "./DragonHalberdSpec";
 import { DRAGON_KNIFE_PROFILE } from "./DragonKnifeSpec";
 import { GRANITE_MAUL_SPECIAL_ATTACK_PROFILES } from "./GraniteMaulSpecialAttack";
 import { HEAVY_BALLISTA_PROFILE } from "./HeavyBallistaSpec";
@@ -109,7 +110,13 @@ export { DRAGON_MACE_SPEC, DragonMaceSpec } from "./DragonMaceSpec";
 export { DRAGON_SWORD_SPEC, DragonSwordSpec } from "./DragonSwordSpec";
 export { DRAGON_THROWNAXE_SPEC, DragonThrownaxeSpec } from "./DragonThrownaxeSpec";
 export { DRAGON_SCIMITAR_SPEC, DragonScimitarSpec } from "./DragonScimitarSpec";
-export { CRYSTAL_HALBERD_SPEC, DRAGON_HALBERD_SPEC, DragonHalberdSpec } from "./DragonHalberdSpec";
+export {
+    CRYSTAL_HALBERD_SPEC,
+    DRAGON_HALBERD_PROFILE,
+    DRAGON_HALBERD_SPEC,
+    HALBERD_SWEEP_TARGETING,
+    DragonHalberdSpec,
+} from "./DragonHalberdSpec";
 export { DRAGON_HASTA_SPEC, DRAGON_HASTA_SPECS, DragonHastaSpec } from "./DragonHastaSpec";
 export { DRAGON_2H_SWORD_SPEC, Dragon2hSwordSpec } from "./Dragon2hSwordSpec";
 export {
@@ -277,6 +284,7 @@ export const CORE_SPECIAL_ATTACK_PROFILES: readonly WeaponCombatProfile[] = Obje
     SARADOMINS_BLESSED_SWORD_PROFILE,
     DARK_BOW_PROFILE,
     DRAGON_CLAWS_PROFILE,
+    DRAGON_HALBERD_PROFILE,
     DRAGON_KNIFE_PROFILE,
     ROSEWOOD_BLOWPIPE_PROFILE,
     SARADOMIN_SWORD_PROFILE,

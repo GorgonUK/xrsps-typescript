@@ -44,6 +44,7 @@ import {
     resolveWeaponProfileValue,
 } from "../plugins/WeaponCombatProfile";
 import {
+    WeaponSpecialAttackTargetPattern,
     clearWeaponSpecialAttackTraitOverrides,
     getWeaponSpecialAttackTraitOverrides,
     markWeaponSpecialAttackExecuted,
@@ -327,6 +328,15 @@ export class CombatHitProcessor {
             }
             processedAttacks++;
             queuedHits += evaluations.length;
+            queuedHits += this.queueSpecialTargetingHits(
+                attack,
+                attacker,
+                target,
+                profile,
+                resolvedAttack,
+                clock,
+                travelDelayTicks,
+            );
             queuedHits += this.queueAncientAreaHits(
                 attack,
                 attacker,
@@ -356,6 +366,217 @@ export class CombatHitProcessor {
         return reference.type === CombatEntityType.Player
             ? this.services.players?.getById(reference.id)
             : this.services.npcManager?.getById(reference.id);
+    }
+
+    private queueSpecialTargetingHits(
+        primaryAttack: CombatAttack,
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        profile: WeaponCombatProfile,
+        specialAttack: WeaponSpecialAttack | undefined,
+        currentMapClock: number,
+        travelDelayTicks: number,
+    ): number {
+        const targeting = specialAttack?.targeting;
+        if (
+            !targeting ||
+            targeting.pattern !== WeaponSpecialAttackTargetPattern.ForwardLine ||
+            !(attacker instanceof PlayerState) ||
+            !(primaryTarget instanceof NpcState)
+        ) {
+            return 0;
+        }
+
+        const largeTargetHit = targeting.largeTargetExtraHit;
+        if (
+            largeTargetHit &&
+            Math.max(1, Math.trunc(primaryTarget.size)) >=
+                Math.max(2, Math.trunc(largeTargetHit.minimumSize))
+        ) {
+            const accuracyMultiplier =
+                Math.max(0, specialAttack.accuracyMultiplier) *
+                Math.max(0, largeTargetHit.accuracyMultiplier);
+            return this.queueSpecialSecondaryHit(
+                primaryAttack,
+                attacker,
+                primaryTarget,
+                primaryTarget,
+                profile,
+                specialAttack,
+                accuracyMultiplier,
+                currentMapClock,
+                travelDelayTicks,
+            );
+        }
+
+        if (
+            targeting.requiresMultiCombat === true &&
+            (!multiCombatSystem.isMultiCombat(attacker.tileX, attacker.tileY, attacker.level) ||
+                !multiCombatSystem.isMultiCombat(
+                    primaryTarget.tileX,
+                    primaryTarget.tileY,
+                    primaryTarget.level,
+                ))
+        ) {
+            return 0;
+        }
+
+        const sweepTiles = this.forwardLineTiles(
+            attacker,
+            primaryTarget,
+            Math.max(1, Math.trunc(targeting.width)),
+        );
+        const limit = Math.max(0, Math.trunc(targeting.maxTargets) - 1);
+        let queuedHits = 0;
+        for (const target of this.findNpcTargetsIntersectingTiles(
+            attacker,
+            primaryTarget,
+            sweepTiles,
+            currentMapClock,
+            limit,
+        )) {
+            queuedHits += this.queueSpecialSecondaryHit(
+                primaryAttack,
+                attacker,
+                primaryTarget,
+                target,
+                profile,
+                specialAttack,
+                Math.max(0, specialAttack.accuracyMultiplier),
+                currentMapClock,
+                travelDelayTicks,
+            );
+        }
+        return queuedHits;
+    }
+
+    private queueSpecialSecondaryHit(
+        primaryAttack: CombatAttack,
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        target: CombatEntity,
+        profile: WeaponCombatProfile,
+        specialAttack: WeaponSpecialAttack,
+        accuracyMultiplier: number,
+        currentMapClock: number,
+        travelDelayTicks: number,
+    ): number {
+        const attack: CombatAttack =
+            target === primaryTarget
+                ? primaryAttack
+                : Object.freeze({
+                      ...primaryAttack,
+                      target: this.entityReference(target),
+                      traits: Object.freeze({ ...primaryAttack.traits }),
+                  });
+        if (attack !== primaryAttack) markWeaponSpecialAttackExecuted(attack);
+
+        const context: WeaponCombatContext = Object.freeze({
+            attack,
+            attacker,
+            target,
+            currentMapClock,
+            distanceTiles: this.distanceBetween(attacker, target),
+        });
+        const [rawEvaluation] = this.evaluator.evaluateSpecialAttack(
+            attack,
+            Object.freeze({
+                ...specialAttack,
+                hitCount: 1,
+                accuracyMultiplier,
+                targeting: undefined,
+            }),
+        );
+        if (!rawEvaluation?.valid) return 0;
+
+        const evaluation = this.normalizeEvaluation(
+            this.invokeTransform(profile, rawEvaluation, context),
+        );
+        if (!evaluation.valid) return 0;
+
+        const hitDelay = Math.max(0, Math.floor(specialAttack.hitDelayTicks?.[0] ?? 0));
+        this.deferredHits.enqueue({
+            attack,
+            source: attack.attacker,
+            target: attack.target,
+            damage: evaluation.damage,
+            maxHit: evaluation.maxHit,
+            landed: evaluation.landed,
+            hitsplatType: evaluation.landed
+                ? DeferredHitsplatType.Normal
+                : DeferredHitsplatType.Block,
+            attackType: specialAttack.damageType ?? attack.traits.type,
+            revealClock: currentMapClock + travelDelayTicks + hitDelay,
+            profileId: profile.id,
+            impactSoundIdOverride: specialAttack.impactSoundIds?.[0],
+        });
+        this.invokePlugin(profile.id, "onHitEvaluated", () =>
+            profile.onHitEvaluated?.(evaluation, context),
+        );
+        return 1;
+    }
+
+    private forwardLineTiles(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        width: number,
+    ): readonly { readonly x: number; readonly y: number }[] {
+        const directionX = Math.sign(primaryTarget.tileX - attacker.tileX);
+        const directionY = Math.sign(primaryTarget.tileY - attacker.tileY);
+        if (directionX === 0 && directionY === 0) return [];
+
+        const perpendicularX = -directionY;
+        const perpendicularY = directionX;
+        const halfWidth = Math.floor(width / 2);
+        return Object.freeze(
+            Array.from({ length: halfWidth * 2 + 1 }, (_, index) => {
+                const offset = index - halfWidth;
+                return Object.freeze({
+                    x: primaryTarget.tileX + perpendicularX * offset,
+                    y: primaryTarget.tileY + perpendicularY * offset,
+                });
+            }),
+        );
+    }
+
+    private findNpcTargetsIntersectingTiles(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        tiles: readonly { readonly x: number; readonly y: number }[],
+        currentMapClock: number,
+        limit: number,
+    ): NpcState[] {
+        const candidates: NpcState[] = [];
+        this.services.npcManager?.forEach((npc) => {
+            if (
+                this.isValidSecondaryAreaTarget(
+                    attacker,
+                    primaryTarget,
+                    npc,
+                    currentMapClock,
+                ) &&
+                this.footprintIntersectsTiles(npc, tiles)
+            ) {
+                candidates.push(npc);
+            }
+        });
+        return candidates.sort((first, second) => first.id - second.id).slice(0, limit);
+    }
+
+    private footprintIntersectsTiles(
+        target: CombatEntity,
+        tiles: readonly { readonly x: number; readonly y: number }[],
+    ): boolean {
+        const size = Math.max(1, Math.trunc(target.size));
+        const maxX = target.tileX + size - 1;
+        const maxY = target.tileY + size - 1;
+        return tiles.some(
+            (tile) =>
+                tile.x >= target.tileX &&
+                tile.x <= maxX &&
+                tile.y >= target.tileY &&
+                tile.y <= maxY,
+        );
     }
 
     private queueAncientAreaHits(
@@ -475,12 +696,31 @@ export class CombatHitProcessor {
         candidate: CombatEntity,
         currentMapClock: number,
     ): boolean {
+        if (
+            !this.isValidSecondaryAreaTarget(
+                attacker,
+                primaryTarget,
+                candidate,
+                currentMapClock,
+            )
+        ) {
+            return false;
+        }
+        if (Math.abs(candidate.tileX - primaryTarget.tileX) > 1) return false;
+        if (Math.abs(candidate.tileY - primaryTarget.tileY) > 1) return false;
+        return true;
+    }
+
+    private isValidSecondaryAreaTarget(
+        attacker: CombatEntity,
+        primaryTarget: CombatEntity,
+        candidate: CombatEntity,
+        currentMapClock: number,
+    ): boolean {
         if (candidate === attacker || candidate === primaryTarget) return false;
         if (!this.isAlive(candidate, currentMapClock)) return false;
         if (candidate.level !== primaryTarget.level) return false;
         if (candidate.worldViewId !== primaryTarget.worldViewId) return false;
-        if (Math.abs(candidate.tileX - primaryTarget.tileX) > 1) return false;
-        if (Math.abs(candidate.tileY - primaryTarget.tileY) > 1) return false;
         if (!multiCombatSystem.isMultiCombat(candidate.tileX, candidate.tileY, candidate.level)) {
             return false;
         }
@@ -703,6 +943,7 @@ export class CombatHitProcessor {
                 overrides?.guaranteedEnchantedBoltEffect ??
                 profileSpecial?.guaranteedEnchantedBoltEffect,
             skipAttack: overrides?.skipAttack ?? profileSpecial?.skipAttack,
+            targeting: overrides?.targeting ?? profileSpecial?.targeting,
         });
         this.applySpecialAttackSpeed(player, context.attack, resolvedSpecial);
         return resolvedSpecial;
