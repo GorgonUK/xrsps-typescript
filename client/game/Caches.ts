@@ -1,3 +1,4 @@
+import { isSafari } from "../common/utils/DeviceUtil";
 import { getCacheBaseUrl } from "../config/clientEnv";
 import { CacheFiles, ProgressListener } from "../rs/cache/CacheFiles";
 import { CacheInfo, getLatestCache } from "../rs/cache/CacheInfo";
@@ -13,12 +14,14 @@ import { SparseMemoryStore, computeIndexRegion } from "../rs/cache/store/SparseM
 const CACHE_PATH = getCacheBaseUrl();
 
 function shouldSkipDat2MainCacheWrite(): boolean {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    const vendor = navigator.vendor || "";
-    if (!/Safari/i.test(ua)) return false;
-    if (/Chrome|Chromium|CriOS|Edg|OPR|FxiOS|Firefox/i.test(ua)) return false;
-    return /Apple/i.test(vendor);
+    return isSafari;
+}
+
+function canUseSharedArrayBuffer(): boolean {
+    // Safari/WebKit throws "Unable to convert chunk to Uint8Array" when assembling
+    // large downloads into SharedArrayBuffer-backed views. Use plain ArrayBuffers.
+    if (isSafari) return false;
+    return typeof SharedArrayBuffer !== "undefined" && globalThis.crossOriginIsolated === true;
 }
 
 /** Maps DAT2 index IDs to human-readable names for loading display */
@@ -111,8 +114,7 @@ export async function loadCacheFiles(
 
     const cacheType = detectCacheType(info);
     // Use SharedArrayBuffer only when it's truly available and the context is isolated.
-    const useSharedArrayBuffer =
-        typeof SharedArrayBuffer !== "undefined" && globalThis.crossOriginIsolated === true;
+    const useSharedArrayBuffer = canUseSharedArrayBuffer();
     let files: CacheFiles;
     if (cacheType === "dat2") {
         // Safari/WebKit can crash tab processes when writing huge dat2 blobs to CacheStorage.
@@ -372,8 +374,7 @@ async function loadCacheFilesSparse(
     }
 
     const xteasPromise = fetchXteas(cachePath + "keys.json", signal);
-    const useSharedArrayBuffer =
-        typeof SharedArrayBuffer !== "undefined" && globalThis.crossOriginIsolated === true;
+    const useSharedArrayBuffer = canUseSharedArrayBuffer();
 
     const report = (current: number, total: number, label: string) => {
         progressListener?.({ total, current, part: new Uint8Array(0), label });
