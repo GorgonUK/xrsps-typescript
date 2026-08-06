@@ -3,7 +3,6 @@ import { QueuedTask } from "threads/dist/master/pool";
 import { WorkerDescriptor } from "threads/dist/master/pool-types";
 import { ObservablePromise } from "threads/dist/observable-promise";
 
-import { isSafari } from "../../common/utils/DeviceUtil";
 import { LoadedCache } from "../Caches";
 import { NpcGeometryData } from "../../render/loader/NpcGeometryData";
 import type { NpcInstance } from "../../render/npc/NpcRenderTemplate";
@@ -12,39 +11,11 @@ import type { RenderDataWorker } from "./RenderDataWorker";
 
 type RenderDataWorkerThread = ModuleThread<RenderDataWorker>;
 
-/**
- * Safari under COEP can refuse Worker(scriptUrl) even for same-origin scripts
- * (especially when a service worker has mediated prior loads). Fetching the
- * script and starting it from a blob URL avoids that Worker() path.
- *
- * Webpack sets `i.p="/"` inside the worker; rewrite it to an absolute origin
- * so subsequent importScripts("/static/js/...") keep working from blob:.
- */
-async function createSafariCoepSafeWorker(scriptUrl: URL): Promise<Worker> {
-    const absoluteUrl = new URL(scriptUrl.href, globalThis.location.href).href;
-    const response = await fetch(absoluteUrl, { credentials: "same-origin" });
-    if (!response.ok) {
-        throw new Error(`Failed to fetch worker script (${response.status}): ${absoluteUrl}`);
-    }
-    const source = await response.text();
-    const publicPath = `${globalThis.location.origin}/`;
-    const patched = source.replace(/i\.p\s*=\s*"\/"/, `i.p=${JSON.stringify(publicPath)}`);
-    const blobUrl = URL.createObjectURL(
-        new Blob([patched], { type: "application/javascript" }),
-    );
-    try {
-        return new Worker(blobUrl);
-    } catch (error) {
-        URL.revokeObjectURL(blobUrl);
-        throw error;
-    }
-}
-
-async function spawnWorker(): Promise<RenderDataWorkerThread> {
-    const scriptUrl = new URL("./RenderDataWorker.ts", import.meta.url);
-    const worker = isSafari
-        ? await createSafariCoepSafeWorker(scriptUrl)
-        : new Worker(scriptUrl);
+function spawnWorker(): Promise<RenderDataWorkerThread> {
+    // Use a normal same-origin Worker URL. Safari blob-Worker bootstraps break
+    // webpack ESM/`import` in the worker bundle (e.g. JSZip). COEP safety comes
+    // from CORP headers + the service worker not intercepting /static scripts.
+    const worker = new Worker(new URL("./RenderDataWorker.ts", import.meta.url));
     return spawn<RenderDataWorker>(worker);
 }
 
