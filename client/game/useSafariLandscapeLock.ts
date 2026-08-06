@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { checkMobile, shouldFreezeViewportForVirtualKeyboard } from "../common/utils/DeviceUtil";
+import { subscribeFullscreenChange } from "../common/utils/FullscreenUtil";
+import { lockLandscapeOrientation } from "../common/utils/OrientationLockUtil";
 
 interface MobileLandscapeLockState {
     enabled: boolean;
@@ -30,7 +32,8 @@ function readViewportSize(): { width: number; height: number } {
  * Force a landscape layout on phones (iPhone + Android).
  * When the device is physically portrait, CSS-rotates the app 90° and remaps
  * input (via documentElement dataset flags). Also tries Screen Orientation lock
- * when the browser allows it (often after a user gesture / in installed PWAs).
+ * when the browser allows it (often after a user gesture / in installed PWAs /
+ * while fullscreen).
  *
  * Dataset attribute names keep the historical `iosSafariForceLandscape*` keys
  * so InputManager / DeviceUtil continue to work unchanged.
@@ -81,17 +84,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
         };
 
         const tryLockLandscape = () => {
-            try {
-                const orientation = window.screen?.orientation as
-                    | (ScreenOrientation & {
-                          lock?: (orientation: "landscape") => Promise<void>;
-                      })
-                    | undefined;
-                if (!orientation || typeof orientation.lock !== "function") {
-                    return;
-                }
-                orientation.lock("landscape").catch(() => {});
-            } catch {}
+            void lockLandscapeOrientation();
         };
 
         scheduleApply();
@@ -105,6 +98,11 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
         document.addEventListener("focusout", scheduleApply);
         window.addEventListener("touchstart", tryLockLandscape, { passive: true });
         window.addEventListener("click", tryLockLandscape);
+        // Fullscreen is one of the few contexts where orientation.lock is reliably allowed.
+        const unsubscribeFullscreen = subscribeFullscreenChange(() => {
+            tryLockLandscape();
+            scheduleApply();
+        });
 
         const viewport = window.visualViewport;
         viewport?.addEventListener("resize", scheduleApply);
@@ -118,6 +116,7 @@ export function useSafariLandscapeLock(enabled: boolean = true): MobileLandscape
             document.removeEventListener("focusout", scheduleApply);
             window.removeEventListener("touchstart", tryLockLandscape);
             window.removeEventListener("click", tryLockLandscape);
+            unsubscribeFullscreen();
             viewport?.removeEventListener("resize", scheduleApply);
             viewport?.removeEventListener("scroll", scheduleApply);
             if (rafId !== undefined) {

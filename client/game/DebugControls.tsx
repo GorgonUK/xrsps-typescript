@@ -7,6 +7,12 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { DownloadProgress } from "../rs/cache/CacheFiles";
 import { IndexType } from "../rs/cache/IndexType";
 import { lerp, slerp } from "../common/utils/MathUtil";
+import {
+    isFullscreenActive,
+    subscribeFullscreenChange,
+    toggleAppFullscreen,
+} from "../common/utils/FullscreenUtil";
+import { lockLandscapeOrientation } from "../common/utils/OrientationLockUtil";
 import { loadCacheFiles } from "./Caches";
 import { CameraView, ProjectionType } from "./Camera";
 import { ClientState } from "./ClientState";
@@ -59,6 +65,13 @@ export const DebugControls = memo(
         const [varId, setVarId] = useState(0);
         const [varValue, setVarValue] = useState(0);
         const [levaCollapsed, setLevaCollapsed] = useState(true);
+        const [isFullscreen, setIsFullscreen] = useState(() => isFullscreenActive());
+
+        useEffect(() => {
+            return subscribeFullscreenChange(() => {
+                setIsFullscreen(isFullscreenActive());
+            });
+        }, []);
 
         const ensureResidentBudgetForRadius = (mapRadius: number): void => {
             // Budget enough to keep the full (2r+1)^2 grid resident with some slack for backtracking.
@@ -235,6 +248,25 @@ export const DebugControls = memo(
         useControls(
             {
                 Links: folder({}, { collapsed: true }),
+                Display: folder(
+                    {
+                        [isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"]: button(
+                            async () => {
+                                const nowFullscreen = await toggleAppFullscreen(
+                                    document.documentElement,
+                                );
+                                setIsFullscreen(nowFullscreen);
+                                if (nowFullscreen) {
+                                    await lockLandscapeOrientation();
+                                }
+                            },
+                        ),
+                        "Lock Landscape": button(() => {
+                            void lockLandscapeOrientation();
+                        }),
+                    },
+                    { collapsed: false },
+                ),
                 Camera: folder(
                     {
                         Projection: {
@@ -608,6 +640,7 @@ export const DebugControls = memo(
                 isCameraRunning,
                 isExportingSprites,
                 isExportingTextures,
+                isFullscreen,
             ],
         );
 
