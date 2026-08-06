@@ -10,10 +10,16 @@ out mediump vec2 v_rgbSW;
 out mediump vec2 v_rgbSE;
 out mediump vec2 v_rgbM;
 
-#include "./includes/fxaa/texcoords.glsl";
-
 void main() {
     gl_Position = a_pos;
-    vec2 texCoord = 0.5 * gl_Position.xy + vec2(0.5);
-    texcoords(texCoord * u_resolution, u_resolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
+    // Inline FXAA texcoords (avoid GLSL `out` params). Safari's Metal ANGLE
+    // backend fails to link shaders that pass varyings through out-parameter
+    // helpers (ANGLE_Out<float2> thread-address-space mismatch).
+    vec2 fragCoord = (0.5 * gl_Position.xy + vec2(0.5)) * u_resolution;
+    vec2 inverseVP = 1.0 / u_resolution.xy;
+    v_rgbNW = (fragCoord + vec2(-1.0, -1.0)) * inverseVP;
+    v_rgbNE = (fragCoord + vec2(1.0, -1.0)) * inverseVP;
+    v_rgbSW = (fragCoord + vec2(-1.0, 1.0)) * inverseVP;
+    v_rgbSE = (fragCoord + vec2(1.0, 1.0)) * inverseVP;
+    v_rgbM = fragCoord * inverseVP;
 }

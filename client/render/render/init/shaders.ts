@@ -193,6 +193,8 @@ import { RENDER_CONSTANTS } from "../constants";
 export async function initShaders(host: WebGLOsrsRendererHost, ): Promise<Program[]> {
 
         const supportsMultiDraw = host.drawBackend?.supportsMultiDraw ?? false;
+        // Create FXAA separately so a Metal/ANGLE link failure on iOS Safari
+        // cannot reject the entire program batch (player/NPC/etc.).
         const programs = await host.app.createPrograms(
             createMainProgram(false, supportsMultiDraw),
             createMainProgram(true, supportsMultiDraw),
@@ -203,7 +205,6 @@ export async function initShaders(host: WebGLOsrsRendererHost, ): Promise<Progra
             createPlayerProgram(true, supportsMultiDraw),
             createPlayerProgram(false, supportsMultiDraw),
             FRAME_PROGRAM,
-            FRAME_FXAA_PROGRAM,
             // hover line program (added at end)
             [
                 `#version 300 es\n\nlayout(std140, column_major) uniform;\n\nprecision highp float;\n\n// Inline SceneUniforms (can't use #include in runtime strings)\nuniform SceneUniforms {\n    mat4 u_viewProjMatrix;\n    mat4 u_viewMatrix;\n    mat4 u_projectionMatrix;\n    vec4 u_skyColor;\n    vec4 u_sceneHslOverride;\n    vec2 u_cameraPos;\n    vec2 u_playerPos;\n    float u_renderDistance;\n    float u_fogDepth;\n    float u_currentTime;\n    float u_brightness;\n    float u_colorBanding;\n    float u_isNewTextureAnim;\n};\n\nlayout(location=0) in vec3 a_position;\n\nvoid main(){\n    vec4 pos = u_viewMatrix * vec4(a_position, 1.0);\n    gl_Position = u_projectionMatrix * pos;\n}`,
@@ -231,7 +232,6 @@ export async function initShaders(host: WebGLOsrsRendererHost, ): Promise<Progra
             playerProgram,
             playerProgramOpaque,
             frameProgram,
-            frameFxaaProgram,
             hoverLineProgram,
             hitsplatProgram,
             uiTabsProgram,
@@ -245,12 +245,21 @@ export async function initShaders(host: WebGLOsrsRendererHost, ): Promise<Progra
         host.playerProgram = playerProgram;
         host.playerProgramOpaque = playerProgramOpaque;
         host.frameProgram = frameProgram;
-        host.frameFxaaProgram = frameFxaaProgram;
         host.hoverLineProgram = hoverLineProgram;
         host.hitsplatProgram = hitsplatProgram;
 
         host.frameDrawCall = host.app.createDrawCall(frameProgram, host.quadArray);
-        host.frameFxaaDrawCall = host.app.createDrawCall(frameFxaaProgram, host.quadArray);
+
+        try {
+            const [frameFxaaProgram] = await host.app.createPrograms(FRAME_FXAA_PROGRAM);
+            host.frameFxaaProgram = frameFxaaProgram;
+            host.frameFxaaDrawCall = host.app.createDrawCall(frameFxaaProgram, host.quadArray);
+        } catch (e) {
+            console.warn("[WebGLOsrsRenderer] FXAA unavailable; continuing without it", e);
+            host.frameFxaaProgram = undefined;
+            host.frameFxaaDrawCall = undefined;
+            host.fxaaEnabled = false;
+        }
 
         if (host.hoverLineProgram && host.sceneUniformBuffer) {
             host.overlayManager = new OverlayManager();
@@ -971,6 +980,6 @@ export async function initShaders(host: WebGLOsrsRendererHost, ): Promise<Progra
             console.error("Failed to initialize WidgetsOverlay:", e);
         }
 
-        return programs;
+        return host.frameFxaaProgram ? [...programs, host.frameFxaaProgram] : programs;
     
 }
