@@ -31,6 +31,7 @@ import { flushPackets } from "../../../network/packet";
 import { createTextureArray } from "../../../picogl/PicoTexture";
 import { RS_TO_RADIANS } from "../../../rs/MathConstants";
 import { CollisionFlag } from "../../../common/CollisionFlag";
+import { isSafari } from "../../../common/utils/DeviceUtil";
 import { isInWilderness } from "../../../common/world/Wilderness";
 import {
     getWorldLocChanges,
@@ -230,8 +231,10 @@ export async function init(host: WebGLOsrsRendererHost, ): Promise<void> {
         host.timer = host.app.createTimer();
 
         // Prefer the multi-draw extension when available; fall back to explicit single draws otherwise.
+        // Safari's Metal ANGLE advertises WEBGL_multi_draw but then fails at draw time with
+        // attribute-type mismatches in glMultiDrawArraysInstancedANGLE.
         const state: any = host.app.state;
-        const ext = host.gl.getExtension("WEBGL_multi_draw");
+        const ext = isSafari ? null : host.gl.getExtension("WEBGL_multi_draw");
         PicoGL.WEBGL_INFO.MULTI_DRAW_INSTANCED = ext;
         state.extensions.multiDrawInstanced = ext;
 
@@ -242,8 +245,10 @@ export async function init(host: WebGLOsrsRendererHost, ): Promise<void> {
 
         if (!ext) {
             console.warn(
-                "WEBGL_multi_draw extension not available! Rendering may not work correctly. " +
-                "Falling back to single-draw rendering; this is slower but supported.",
+                isSafari
+                    ? "Disabling WEBGL_multi_draw on Safari/WebKit; using single-draw fallback."
+                    : "WEBGL_multi_draw extension not available! Rendering may not work correctly. " +
+                      "Falling back to single-draw rendering; this is slower but supported.",
             );
         }
 
