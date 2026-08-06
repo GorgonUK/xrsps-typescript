@@ -3,7 +3,6 @@ import { QueuedTask } from "threads/dist/master/pool";
 import { WorkerDescriptor } from "threads/dist/master/pool-types";
 import { ObservablePromise } from "threads/dist/observable-promise";
 
-import { isSafari } from "../../common/utils/DeviceUtil";
 import { LoadedCache } from "../Caches";
 import { NpcGeometryData } from "../../render/loader/NpcGeometryData";
 import type { NpcInstance } from "../../render/npc/NpcRenderTemplate";
@@ -12,55 +11,13 @@ import type { RenderDataWorker } from "./RenderDataWorker";
 
 type RenderDataWorkerThread = ModuleThread<RenderDataWorker>;
 
-/**
- * Create the render-data worker.
- *
- * Webpack only emits a real worker chunk when it sees the literal
- * `new Worker(new URL("./RenderDataWorker.ts", import.meta.url))` pattern.
- *
- * Safari under COEP still refuses that Worker(scriptURL) fetch even with CORP
- * and a non-intercepting service worker (WebKit). Work around by briefly
- * patching Worker so the same expression runs, but the constructor loads the
- * script via importScripts() from a blob URL instead.
- */
-function createRenderDataWorker(): Worker {
-    const createDirectWorker = () =>
-        new Worker(new URL("./RenderDataWorker.ts", import.meta.url));
-
-    if (!isSafari) {
-        return createDirectWorker();
-    }
-
-    const OriginalWorker = globalThis.Worker;
-
-    class SafariCoepWorker extends OriginalWorker {
-        constructor(scriptURL: string | URL, options?: WorkerOptions) {
-            const absolute = new URL(
-                typeof scriptURL === "string" ? scriptURL : scriptURL.href,
-                globalThis.location.href,
-            ).href;
-            // Classic importScripts is allowed under COEP on Safari where
-            // Worker(scriptURL) is not. Keep the worker classic (not module).
-            const blobUrl = URL.createObjectURL(
-                new Blob(
-                    [`importScripts(${JSON.stringify(absolute)});`],
-                    { type: "application/javascript" },
-                ),
-            );
-            super(blobUrl, options);
-        }
-    }
-
-    globalThis.Worker = SafariCoepWorker as typeof Worker;
-    try {
-        return createDirectWorker();
-    } finally {
-        globalThis.Worker = OriginalWorker;
-    }
-}
-
 function spawnWorker(): Promise<RenderDataWorkerThread> {
-    return spawn<RenderDataWorker>(createRenderDataWorker());
+    // Keep this exact `new Worker(new URL(...))` shape so webpack emits a real
+    // worker chunk. Do not wrap Safari in an importScripts/blob bootstrap:
+    // production skips COEP on Safari, and blob workers break webpack's
+    // relative importScripts for lazy chunks ("string did not match pattern").
+    const worker = new Worker(new URL("./RenderDataWorker.ts", import.meta.url));
+    return spawn<RenderDataWorker>(worker);
 }
 
 export class RenderDataWorkerPool {
