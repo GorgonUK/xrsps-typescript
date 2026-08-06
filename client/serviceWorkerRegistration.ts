@@ -8,9 +8,12 @@ export function registerServiceWorker(): void {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
 
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register(SERVICE_WORKER_URL).catch((err) => {
-            console.warn("[sw] registration failed", err);
-        });
+        navigator.serviceWorker
+            .register(SERVICE_WORKER_URL)
+            .then((registration) => registration.update())
+            .catch((err) => {
+                console.warn("[sw] registration failed", err);
+            });
     });
 }
 
