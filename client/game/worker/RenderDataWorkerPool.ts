@@ -21,13 +21,13 @@ type RenderDataWorkerThread = ModuleThread<RenderDataWorker>;
  * so subsequent importScripts("/static/js/...") keep working from blob:.
  */
 async function createSafariCoepSafeWorker(scriptUrl: URL): Promise<Worker> {
-    const absoluteUrl = new URL(scriptUrl.href, self.location.href).href;
+    const absoluteUrl = new URL(scriptUrl.href, globalThis.location.href).href;
     const response = await fetch(absoluteUrl, { credentials: "same-origin" });
     if (!response.ok) {
         throw new Error(`Failed to fetch worker script (${response.status}): ${absoluteUrl}`);
     }
     const source = await response.text();
-    const publicPath = `${self.location.origin}/`;
+    const publicPath = `${globalThis.location.origin}/`;
     const patched = source.replace(/i\.p\s*=\s*"\/"/, `i.p=${JSON.stringify(publicPath)}`);
     const blobUrl = URL.createObjectURL(
         new Blob([patched], { type: "application/javascript" }),
