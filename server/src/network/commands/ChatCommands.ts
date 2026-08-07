@@ -28,6 +28,7 @@ const BUILTIN_COMMAND_PERMISSIONS: Readonly<Record<string, PlayerPermission>> = 
     rubytest: "developer",
     scroll: "developer",
     sail: "developer",
+    unsail: "developer",
     spec: "developer",
     smithing: "developer",
     spawn: "developer",

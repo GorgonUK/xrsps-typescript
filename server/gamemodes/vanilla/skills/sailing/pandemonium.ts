@@ -289,6 +289,12 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
         handleBoardingTick1(event.player, { playerName }, services);
         handleBoardingTick2(event.player, services);
     });
+
+    // Developer escape hatch for `::sail`, which otherwise bypasses the normal
+    // gangplank interaction that exposes disembark.
+    registry.registerCommand("unsail", (event) => {
+        handleDisembarkTick(event.player, services);
+    });
 }
 
 function createNpcDialogFn(
@@ -341,10 +347,7 @@ type DialogFn = (id: string, lines: string[], animId: number, onContinue?: () =>
 type PandemoniumDockedSailingServices = Pick<
     ScriptServices,
     | "sailing"
-    | "disposeSailingInstance"
-    | "buildSailingDockedCollision"
     | "movement"
-    | "sendWorldEntity"
     | "npc"
     | "variables"
     | "messaging"
@@ -828,7 +831,7 @@ function setPlayerVarpAndSend(
  */
 export function resetSailingState(
     player: PlayerState,
-    services: Pick<ScriptServices, "sailing" | "variables" | "dialog" | "disposeSailingInstance">,
+    services: Pick<ScriptServices, "sailing" | "variables" | "dialog">,
 ): void {
     services.sailing?.disposeSailingInstance(player);
 
