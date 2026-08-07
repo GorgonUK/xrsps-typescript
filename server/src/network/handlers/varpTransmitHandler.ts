@@ -127,13 +127,19 @@ function handleSpecialAttackVarp(
         weaponProfile.specialAttackEnergyCost ??
         (weaponId > 0 ? services.getWeaponSpecialCostPercent(weaponId) : undefined);
 
-    const graniteMaulActivation = queueGraniteMaulSpecialAttackInput(
-        p,
-        weaponId,
-        services.getCurrentTick(),
-        "varp",
-    );
-    if (graniteMaulActivation.handled) {
+    // A maul click is immediate only while attacking. When idle, let varp 301
+    // behave as the ordinary armed-special toggle so an armed maul can be
+    // deselected before combat starts.
+    const graniteMaulActivation =
+        p.getCombatTarget() !== null
+            ? queueGraniteMaulSpecialAttackInput(
+                  p,
+                  weaponId,
+                  services.getCurrentTick(),
+                  "varp",
+              )
+            : undefined;
+    if (graniteMaulActivation?.handled) {
         const active = p.combat.countQueuedInstantSpecialAttacks(weaponId) > 0;
         p.specEnergy.setActivated(active);
         p.varps.setVarpValue(VARP_SPECIAL_ATTACK, active ? 1 : 0);
