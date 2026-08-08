@@ -835,6 +835,7 @@ export class OsrsClient {
     private unsubscribeSpellResults?: () => void;
     private unsubscribePathDebug?: () => void;
     private unsubscribeGroundItems?: () => void;
+    private groundItemMeshesPending = false;
     private unsubscribeChatMessages?: () => void;
     private unsubscribeSkills?: () => void;
     private unsubscribeRunEnergy?: () => void;
@@ -843,6 +844,11 @@ export class OsrsClient {
 
     private trackServerSubscription(unsubscribe: () => void): void {
         this.serverSubscriptions.push(unsubscribe);
+    }
+
+    private refreshGroundItemMeshes(): void {
+        this.groundItemMeshesPending =
+            (this.renderer as any)?.updateGroundItemMeshes?.(this.groundItems.getAllStacks()) === true;
     }
     // Skills data from server - maps skill ID to {currentLevel, baseLevel, xp}
     private skillsMap: Map<number, { currentLevel: number; baseLevel: number; xp: number }> =
@@ -3145,6 +3151,9 @@ export class OsrsClient {
                     try {
                         this.pruneWalkedWaypoints();
                     } catch {}
+                    if (this.groundItemMeshesPending || this.groundItems.getAllStacks().length > 0) {
+                        this.refreshGroundItemMeshes();
+                    }
                 }),
             );
             // Capture server-assigned ID as soon as handshake arrives
@@ -3411,9 +3420,7 @@ export class OsrsClient {
             this.unsubscribeGroundItems = subscribeGroundItems((payload) => {
                 try {
                     this.groundItems.update(payload);
-                    (this.renderer as any)?.updateGroundItemMeshes?.(
-                        this.groundItems.getAllStacks(),
-                    );
+                    this.refreshGroundItemMeshes();
                 } catch (err) {
                     console.warn("ground item update failed", err);
                 }
