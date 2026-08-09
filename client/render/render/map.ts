@@ -338,7 +338,9 @@ export function loadMap(host: WebGLOsrsRendererHost,
 
             host.mapManager.addMap(mapX, mapY, existing);
             if (!mapData.doorOnly && !mapData.locOnly) {
-                host.rebuildGroundItemsForMap(existing, host.groundItemStacks.get(mapId));
+                if (host.rebuildGroundItemsForMap(existing, host.groundItemStacks.get(mapId))) {
+                    host.groundItemStackHashes.delete(mapId);
+                }
             }
             host.pendingLocUpdates.delete(mapId);
             host.pendingLocGeometryUpdates.delete(mapId);
@@ -391,7 +393,9 @@ export function loadMap(host: WebGLOsrsRendererHost,
                 Scene.MAP_SQUARE_SIZE;
         }
         host.mapManager.addMap(mapX, mapY, loadedMap);
-        host.rebuildGroundItemsForMap(loadedMap, host.groundItemStacks.get(mapId));
+        if (host.rebuildGroundItemsForMap(loadedMap, host.groundItemStacks.get(mapId))) {
+            host.groundItemStackHashes.delete(mapId);
+        }
 
         host.updateTextureArray(mapData.loadedTextures);
 

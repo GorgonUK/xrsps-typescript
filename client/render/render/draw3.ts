@@ -190,8 +190,9 @@ import { KNOWN_WATER_TEXTURE_IDS } from "../water/WaterTextureIds";
 import type { WebGLOsrsRendererHost } from "./hostInterface";
 import { RENDER_CONSTANTS } from "./constants";
 
-export function updateGroundItemMeshes(host: WebGLOsrsRendererHost, stacks: ClientGroundItemStack[]): void {
+export function updateGroundItemMeshes(host: WebGLOsrsRendererHost, stacks: ClientGroundItemStack[]): boolean {
 
+        let modelsPending = false;
         const grouped = new Map<number, ClientGroundItemStack[]>();
         for (const stack of stacks) {
             const tileX = stack.tile.x | 0;
@@ -239,11 +240,15 @@ export function updateGroundItemMeshes(host: WebGLOsrsRendererHost, stacks: Clie
                 if (mapY & 0x8000) mapY = mapY - 0x10000;
                 const map = host.mapManager.getMap(mapX, mapY) as WebGLMapSquare | undefined;
                 if (map) {
-                    host.rebuildGroundItemsForMap(map, next);
+                    if (host.rebuildGroundItemsForMap(map, next)) {
+                        // Sparse JS5 models arrive later; leave this map dirty so the next server tick retries it.
+                        host.groundItemStackHashes.delete(key);
+                        modelsPending = true;
+                    }
                 }
             }
         }
-    
+        return modelsPending;
 }
 
 export function hashGroundStacks(host: WebGLOsrsRendererHost, stacks: ClientGroundItemStack[]): string {
@@ -270,20 +275,21 @@ export function hashGroundStacks(host: WebGLOsrsRendererHost, stacks: ClientGrou
 export function rebuildGroundItemsForMap(host: WebGLOsrsRendererHost, 
         map: WebGLMapSquare,
         stacks: ClientGroundItemStack[] | undefined,
-    ): void {
+    ): boolean {
 
-        if (!host.mainProgram || !host.mainAlphaProgram) return;
+        if (!host.mainProgram || !host.mainAlphaProgram) return false;
         if (
             !host.textureArray ||
             !host.textureMaterials ||
             !host.waterTextures ||
             !host.sceneUniformBuffer
         )
-            return;
+            return false;
         const objModelLoader = host.osrsClient.objModelLoader;
         const textureLoader = host.osrsClient.textureLoader;
-        if (!objModelLoader || !textureLoader) return;
+        if (!objModelLoader || !textureLoader) return false;
 
+        const missesBefore = objModelLoader.modelLoader?.missCount ?? 0;
         const data = buildGroundItemGeometry(
             map,
             stacks && stacks.length > 0 ? stacks : undefined,
@@ -294,7 +300,7 @@ export function rebuildGroundItemsForMap(host: WebGLOsrsRendererHost,
 
         if (!data) {
             map.clearGroundItemGeometry();
-            return;
+            return (objModelLoader.modelLoader?.missCount ?? 0) > missesBefore;
         }
 
         const textureUpdates = new Map<number, Int32Array>();
@@ -322,5 +328,6 @@ export function rebuildGroundItemsForMap(host: WebGLOsrsRendererHost,
             host.sceneUniformBuffer,
             data,
         );
+        return false;
     
 }
