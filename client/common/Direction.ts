@@ -147,12 +147,11 @@ export function deltaToFlag(dx: number, dy: number): number {
 
 /**
  * OSRS `orientationAnglesByDirection`, indexed by MovementDirection.
- * Reference: `client.orientationAnglesByDirection = {768,1024,1280,512,1536,256,0,1792}`.
  * Angle basis used throughout this project:
- * North=0, NorthWest=256, West=512, SouthWest=768, South=1024, SouthEast=1280, East=1536, NorthEast=1792.
+ * South=0, SouthWest=256, West=512, NorthWest=768, North=1024, NorthEast=1280, East=1536, SouthEast=1792.
  */
 export const DIRECTION_TO_ORIENTATION: ReadonlyArray<number> = [
-    768, 1024, 1280, 512, 1536, 256, 0, 1792,
+    256, 0, 1792, 512, 1536, 768, 1024, 1280,
 ];
 
 /**
