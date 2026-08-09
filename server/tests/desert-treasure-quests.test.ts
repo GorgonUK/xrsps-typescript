@@ -65,6 +65,9 @@ assert.equal(
 );
 assert.equal(getBuiltinChatCommandPermission("completequests"), "developer");
 assert.equal(getBuiltinChatCommandPermission("resetquests"), "developer");
+assert.equal(getBuiltinChatCommandPermission("itemspawner"), "developer");
+assert.equal(getBuiltinChatCommandPermission("magic"), "developer");
+assert.equal(getBuiltinChatCommandPermission("sail"), "developer");
 
 const inventoryEntries = [{ slot: 0, itemId: 995, quantity: 100000 }];
 let inventorySnapshotted = false;

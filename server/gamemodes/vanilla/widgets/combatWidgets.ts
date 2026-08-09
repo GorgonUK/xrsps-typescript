@@ -278,7 +278,13 @@ export function registerCombatWidgetHandlers(
         const equip = player.appearance?.equip;
         const weaponObjId = Array.isArray(equip) ? equip[EquipmentSlot.WEAPON] : 0;
 
-        if (tryQueueGraniteMaulSpecial(player, weaponObjId, event.tick, services)) {
+        // With a target, Granite Maul's bar click is immediate and can be
+        // repeated for a double Quick Smash. Without one it remains the normal
+        // armed special toggle, so the player can turn it back off.
+        if (
+            player.getCombatTarget() !== null &&
+            tryQueueGraniteMaulSpecial(player, weaponObjId, event.tick, services)
+        ) {
             return;
         }
 
