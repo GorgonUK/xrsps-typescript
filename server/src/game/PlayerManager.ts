@@ -811,6 +811,8 @@ export class PlayerManager implements PlayerRepository {
             tileY: number;
             tileLevel: number;
             option: string;
+            opNum?: number;
+            source?: { slot: number; itemId: number };
             modifierFlags?: number;
             pickupFromTable?: boolean;
         },

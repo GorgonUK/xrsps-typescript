@@ -11,7 +11,7 @@
  */
 import type { ServerServices } from "../../game/ServerServices";
 import { NO_INTERACTION } from "../../game/interactionIndex";
-import type { NpcState, NpcUpdateDelta } from "../../game/npc";
+import { isNpcVisibleToPlayer, type NpcState, type NpcUpdateDelta } from "../../game/npc";
 import type { PlayerState } from "../../game/player";
 import { logger } from "../../utils/logger";
 
@@ -168,12 +168,14 @@ export class NpcSyncManager {
         if (!npcManager) return;
 
         const NPC_VIEW_DISTANCE_TILES = 15;
-        const nearby = npcManager.getNearby(
-            player.tileX,
-            player.tileY,
-            player.level,
-            NPC_VIEW_DISTANCE_TILES,
-        );
+        const nearby = npcManager
+            .getNearby(
+                player.tileX,
+                player.tileY,
+                player.level,
+                NPC_VIEW_DISTANCE_TILES,
+            )
+            .filter((npc) => isNpcVisibleToPlayer(npc, player));
         nearby.sort((a, b) => a.id - b.id);
         player.visibleNpcIds.clear();
         for (let i = 0; i < nearby.length && player.visibleNpcIds.size < 255; i++) {
@@ -225,24 +227,28 @@ export class NpcSyncManager {
         const updatedThisCycle = new Set<number>();
 
         // Hysteresis: tighter radius for entering, looser for remaining visible
-        const nearbyEnter = npcManager.getNearby(
-            player.tileX,
-            player.tileY,
-            player.level,
-            NPC_STREAM_ENTER_RADIUS_TILES,
-        );
+        const nearbyEnter = npcManager
+            .getNearby(
+                player.tileX,
+                player.tileY,
+                player.level,
+                NPC_STREAM_ENTER_RADIUS_TILES,
+            )
+            .filter((npc) => isNpcVisibleToPlayer(npc, player));
 
         const nearbyEnterIds = new Set<number>();
         for (const npc of nearbyEnter) {
             nearbyEnterIds.add(npc.id);
         }
 
-        const nearbyExit = npcManager.getNearby(
-            player.tileX,
-            player.tileY,
-            player.level,
-            NPC_STREAM_EXIT_RADIUS_TILES,
-        );
+        const nearbyExit = npcManager
+            .getNearby(
+                player.tileX,
+                player.tileY,
+                player.level,
+                NPC_STREAM_EXIT_RADIUS_TILES,
+            )
+            .filter((npc) => isNpcVisibleToPlayer(npc, player));
         const nearbyExitIds = new Set<number>();
         for (const npc of nearbyExit) {
             nearbyExitIds.add(npc.id);

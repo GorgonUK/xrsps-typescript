@@ -44,6 +44,18 @@ const RECIPE_SEEDS: RecipeSeed[] = [
         successMessage: "You spin the wool into a ball of wool.",
     },
     {
+        id: "spin_golden_fleece",
+        inputItemId: 3693, // Golden fleece
+        productItemId: 3694, // Golden wool
+        inputQuantity: 1,
+        outputQuantity: 1,
+        level: 1,
+        xp: 2.5,
+        name: "golden wool",
+        inputName: "golden fleece",
+        successMessage: "You spin the golden fleece into golden wool.",
+    },
+    {
         id: "spin_flax_bowstring",
         inputItemId: 1779, // Flax
         productItemId: 1777, // Bowstring

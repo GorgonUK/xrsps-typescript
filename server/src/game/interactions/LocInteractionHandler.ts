@@ -186,7 +186,13 @@ export class LocInteractionHandler {
             level,
             pending.action,
         );
-        const rect = this.resolveLocRouteRect(tile, visibleLoc.sizeX, visibleLoc.sizeY, level);
+        const rect = this.resolveLocRouteRect(
+            tile,
+            visibleLoc.sizeX,
+            visibleLoc.sizeY,
+            level,
+            player.worldViewId,
+        );
         const routeSizeX = rect.sizeX;
         const routeSizeY = rect.sizeY;
         const strategy = this.selectLocRouteStrategy(
@@ -196,6 +202,7 @@ export class LocInteractionHandler {
             routeSizeX,
             routeSizeY,
             level,
+            player.worldViewId,
         );
         const hasArrived = strategy.hasArrived(player.tileX, player.tileY, player.level);
         return {
@@ -222,6 +229,7 @@ export class LocInteractionHandler {
                 from: { x: player.tileX, y: player.tileY, plane: player.level },
                 to: { x: resolved.rect.tile.x, y: resolved.rect.tile.y },
                 size: 1,
+                worldViewId: player.worldViewId,
             },
             { maxSteps: 128, routeStrategy: resolved.strategy },
         );
@@ -413,10 +421,11 @@ export class LocInteractionHandler {
         sizeX: number,
         sizeY: number,
         level: number,
+        worldViewId?: number,
     ): RouteStrategy {
         const profile = this.getLocRouteProfile(id);
         const collisionGetter = (x: number, y: number, p: number) =>
-            this.pathService.getCollisionFlagAt(x, y, p);
+            this.pathService.getCollisionFlagAt(x, y, p, worldViewId);
         const isDoorInteraction = this.isDoorAction(action);
         const doorBlockedSides = isDoorInteraction
             ? this.doorManager?.getDoorBlockedDirections(tile.x, tile.y, level, id)
@@ -571,6 +580,7 @@ export class LocInteractionHandler {
             visibleLoc.sizeX,
             visibleLoc.sizeY,
             level,
+            player.worldViewId,
         );
         const routeSizeX = rect.sizeX;
         const routeSizeY = rect.sizeY;
@@ -587,6 +597,7 @@ export class LocInteractionHandler {
             routeSizeX,
             routeSizeY,
             level,
+            player.worldViewId,
         );
         return strategy.hasArrived(destination.x, destination.y, level);
     }
@@ -636,6 +647,7 @@ export class LocInteractionHandler {
         sizeX: number,
         sizeY: number,
         level?: number,
+        worldViewId?: number,
     ): LocCollisionRect {
         const normalized = {
             tile: { x: tile.x, y: tile.y },
@@ -650,6 +662,7 @@ export class LocInteractionHandler {
             normalized.sizeX,
             normalized.sizeY,
             level,
+            worldViewId,
         );
         return rect ?? normalized;
     }
@@ -659,9 +672,10 @@ export class LocInteractionHandler {
         sizeX: number,
         sizeY: number,
         level: number,
+        worldViewId?: number,
     ): LocCollisionRect | undefined {
         return deriveConnectedLocCollisionRect(
-            (x, y, p) => this.pathService.getCollisionFlagAt(x, y, p),
+            (x, y, p) => this.pathService.getCollisionFlagAt(x, y, p, worldViewId),
             tile,
             sizeX,
             sizeY,

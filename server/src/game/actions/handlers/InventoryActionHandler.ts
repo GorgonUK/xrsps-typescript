@@ -196,6 +196,22 @@ export class InventoryActionHandler {
                 return { ok: true, groups: ["inventory"] };
             }
 
+            if (target?.kind === "obj" && target.id !== undefined && target.tile) {
+                const started = this.svc.groundItemHandler?.startItemOnGroundInteraction(player, {
+                    source: { slot, itemId },
+                    targetItemId: target.id,
+                    tile: {
+                        x: target.tile.x,
+                        y: target.tile.y,
+                        level: target.plane ?? player.level,
+                    },
+                    modifierFlags: data.modifierFlags,
+                });
+                if (started) {
+                    return { ok: true, groups: ["inventory", "movement"] };
+                }
+            }
+
             // Resolve target tile and adjacency size
             let targetX = player.tileX;
             let targetY = player.tileY;
@@ -289,6 +305,28 @@ export class InventoryActionHandler {
             );
             if (handledItemOnLoc) {
                 return handledItemOnLoc;
+            }
+
+            const handledItemOnNpc = this.tryHandleScriptedItemOnNpc(
+                player,
+                slot,
+                itemId,
+                target,
+                tick,
+            );
+            if (handledItemOnNpc) {
+                return handledItemOnNpc;
+            }
+
+            const handledItemOnPlayer = this.tryHandleScriptedItemOnPlayer(
+                player,
+                slot,
+                itemId,
+                target,
+                tick,
+            );
+            if (handledItemOnPlayer) {
+                return handledItemOnPlayer;
             }
 
             // Arrived: perform item-on-target effect (placeholder)
@@ -620,6 +658,55 @@ export class InventoryActionHandler {
         }
 
         return { ok: true, groups: ["inventory"] };
+    }
+
+    private tryHandleScriptedItemOnNpc(
+        player: PlayerState,
+        slot: number,
+        itemId: number,
+        target: InventoryUseOnTarget | undefined,
+        tick: number,
+    ): ActionExecutionResult | undefined {
+        if (target?.kind !== "npc" || target.id === undefined) {
+            return undefined;
+        }
+        const npc = this.svc.npcManager?.getById(target.id);
+        if (!npc) {
+            return { ok: false, reason: "npc_not_found" };
+        }
+        const handled = this.svc.scriptRuntime.queueItemOnNpc({
+            tick,
+            player,
+            source: { slot, itemId },
+            target: npc,
+        });
+        return handled ? { ok: true, groups: ["inventory"] } : undefined;
+    }
+
+    private tryHandleScriptedItemOnPlayer(
+        player: PlayerState,
+        slot: number,
+        itemId: number,
+        target: InventoryUseOnTarget | undefined,
+        tick: number,
+    ): ActionExecutionResult | undefined {
+        if (target?.kind !== "player" || target.id === undefined) {
+            return undefined;
+        }
+        const other = this.svc.players?.getById(target.id);
+        if (!other || other.id === player.id) {
+            return { ok: false, reason: "player_not_found" };
+        }
+        if (other.level !== player.level || other.worldViewId !== player.worldViewId) {
+            return { ok: false, reason: "player_not_visible" };
+        }
+        const handled = this.svc.scriptRuntime.queueItemOnPlayer({
+            tick,
+            player,
+            source: { slot, itemId },
+            target: other,
+        });
+        return handled ? { ok: true, groups: ["inventory"] } : undefined;
     }
 
     private tryHandleScriptedItemOnItem(

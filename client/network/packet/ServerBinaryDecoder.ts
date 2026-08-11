@@ -1300,6 +1300,38 @@ export function decodeServerPacket(data: Uint8Array | ArrayBuffer): DecodedServe
             };
         }
 
+        case ServerPacketId.CAMERA_CONTROL: {
+            const mode = reader.readByte();
+            if (mode === 0) {
+                return { type: "camera", payload: { mode: "reset" } };
+            }
+            if (mode === 1 || mode === 2) {
+                return {
+                    type: "camera",
+                    payload: {
+                        mode: mode === 1 ? "move" : "look",
+                        x: reader.readShort(),
+                        y: reader.readShort(),
+                        height: reader.readShort(),
+                        instant: reader.readBoolean(),
+                    },
+                };
+            }
+            if (mode === 3) {
+                return {
+                    type: "camera",
+                    payload: {
+                        mode: "shake",
+                        slot: reader.readByte(),
+                        randomAmplitude: reader.readShort(),
+                        sineAmplitude: reader.readShort(),
+                        sineFrequency: reader.readShort(),
+                    },
+                };
+            }
+            return null;
+        }
+
         // ========================================
         // COMBAT STATE
         // ========================================

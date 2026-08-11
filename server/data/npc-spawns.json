@@ -47606,7 +47606,7 @@
         "name": "Askeladden",
         "x": 2658,
         "y": 3660,
-        "id": 3927
+        "id": 8402
     },
     {
         "level": 0,
@@ -47634,7 +47634,7 @@
         "name": "Brundt the Chieftain",
         "x": 2659,
         "y": 3669,
-        "id": 3926
+        "id": 8048
     },
     {
         "level": 0,
@@ -169884,5 +169884,37 @@
         "id": 14957,
         "direction": 4,
         "wanderRadius": 0
+    },
+    {
+        "level": 0,
+        "name": "Edmond",
+        "x": 2564,
+        "y": 3332,
+        "id": 4256,
+        "wanderRadius": 2
+    },
+    {
+        "level": 0,
+        "name": "Jethick",
+        "x": 2538,
+        "y": 3305,
+        "id": 8974,
+        "wanderRadius": 4
+    },
+    {
+        "level": 0,
+        "name": "Elena",
+        "x": 2538,
+        "y": 9672,
+        "id": 4257,
+        "wanderRadius": 1
+    },
+    {
+        "level": 0,
+        "name": "Councillor Halgrive",
+        "x": 2615,
+        "y": 3298,
+        "id": 8765,
+        "wanderRadius": 2
     }
 ]

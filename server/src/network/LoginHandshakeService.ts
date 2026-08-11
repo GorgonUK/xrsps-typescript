@@ -1096,6 +1096,7 @@ export class LoginHandshakeService {
                     player.widgets.setDispatcher(undefined);
 
                     this.svc.sailingInstanceManager?.disposeInstance(player);
+                    this.svc.instancedAreaManager?.dispose(player);
                     this.svc.worldEntityInfoEncoder.removePlayer(player.id);
 
                     const saveKey = player.__saveKey ?? buildPlayerSaveKey(player.name, player.id);
@@ -1115,6 +1116,8 @@ export class LoginHandshakeService {
                         }
                         this.svc.followerCombatManager?.resetPlayer(player.id);
                         this.svc.followerManager?.despawnFollowerForPlayer(player.id, false);
+                        this.svc.npcManager?.removeNpcsOwnedByPlayer(player.id);
+                        this.svc.locationService.clearTemporaryLocsOwnedByPlayer(player.id);
                         this.svc.eventBus.emit("player:logout", {
                             playerId: player.id,
                             username: player.name ?? "unknown",

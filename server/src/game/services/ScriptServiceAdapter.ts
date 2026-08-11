@@ -1,4 +1,5 @@
 import type { WebSocket } from "ws";
+import type { ProjectileLaunch } from "../../../../client/common/projectiles/ProjectileLaunch";
 
 import {
     PRAYER_DEACTIVATE_SOUND_ID,
@@ -40,6 +41,7 @@ import type { EffectDispatcher } from "../actions/handlers/EffectDispatcher";
 import type { InventoryActionHandler } from "../actions/handlers/InventoryActionHandler";
 import type { WidgetDialogHandler } from "../actions/handlers/WidgetDialogHandler";
 import { applyAutocastState, clearAutocastState } from "../combat/AutocastState";
+import { hasNpcLineOfSightToPlayer } from "../combat/CombatAction";
 import type { CombatEffectApplicator } from "../combat/CombatEffectApplicator";
 import type { DamageTracker } from "../combat/DamageTracker";
 import type { MultiCombatSystem } from "../combat/MultiCombatZones";
@@ -54,9 +56,10 @@ import {
     getFollowerDefinitionByNpcTypeId,
 } from "../followers/followerDefinitions";
 import { STUN_TIMER } from "../model/timer/Timers";
-import type { NpcState } from "../npc";
+import { isNpcVisibleToPlayer, type NpcState } from "../npc";
 import type { NpcManager } from "../npcManager";
 import type { PlayerState } from "../player";
+import type { GroundItemManager, GroundItemStack } from "../items/GroundItemManager";
 import type { PrayerSystem } from "../prayer/PrayerSystem";
 import { getProviderRegistry } from "../providers/ProviderRegistry";
 import type { SailingInstanceManager } from "../sailing/SailingInstanceManager";
@@ -64,6 +67,7 @@ import type {
     ProviderRegistrationFacade,
     ScriptDialogOptionRequest,
     ScriptDialogRequest,
+    ScriptGroundItem,
     ScriptServices,
 } from "../scripts/types";
 import { triggerLocEffect } from "../scripts/utils/locEffects";
@@ -83,6 +87,13 @@ import type { MovementService } from "./MovementService";
 import type { SkillService } from "./SkillService";
 import type { SoundService } from "./SoundService";
 import type { VariableService } from "./VariableService";
+import type { CameraControlPayload } from "../../network/messages";
+import type { ScriptScheduler } from "../systems/ScriptScheduler";
+import { LockState } from "../model/LockState";
+import {
+    buildInstanceTemplate,
+    type InstancedAreaManager,
+} from "../../world/InstancedAreaManager";
 
 /**
  * Dependencies injected from WSServer that are not yet in extracted services.
@@ -101,6 +112,9 @@ export interface ScriptServiceAdapterDeps {
     collectionLogService: CollectionLogService;
     soundService: SoundService;
     actionScheduler: ActionScheduler;
+    groundItems: GroundItemManager;
+    scriptScheduler: ScriptScheduler;
+    instancedAreaManager: InstancedAreaManager;
     // Not-yet-extracted deps (still on WSServer)
     getCurrentTick: () => number;
     getPathService: () => PathService;
@@ -140,6 +154,8 @@ export interface ScriptServiceAdapterDeps {
     ) => void;
     queueClientScript: (playerId: number, scriptId: number, ...args: (number | string)[]) => void;
     queueWidgetEvent: (playerId: number, event: WidgetAction) => void;
+    queueCameraEvent: (playerId: number, payload: CameraControlPayload) => void;
+    queueProjectile: (projectile: ProjectileLaunch) => void;
     queueSmithingInterfaceMessage: (playerId: number, payload: Record<string, unknown>) => void;
     queueExternalNpcTeleportSync: (npc: NpcState) => void;
     teleportToWorldEntity: (
@@ -236,6 +252,14 @@ function buildProviderRegistrationFacade(): ProviderRegistrationFacade {
  * anonymous object from WSServer.
  */
 export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServices {
+    const toScriptGroundItem = (stack: GroundItemStack): ScriptGroundItem => ({
+        stackId: stack.id,
+        itemId: stack.itemId,
+        quantity: stack.quantity,
+        tile: { ...stack.tile },
+        worldViewId: stack.worldViewId,
+        ownerId: stack.ownerId,
+    });
     const snapshotInventoryFn = (player: PlayerState): void => {
         deps.inventoryService.snapshotInventory(player);
     };
@@ -243,6 +267,44 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
     const services: ScriptServices = {
         // Provider registration facade (available to gamemodes and extrascripts)
         providers: buildProviderRegistrationFacade(),
+        groundItems: {
+            spawn: (itemId, quantity, tile, options) => {
+                const { worldViewId = -1, ...spawnOptions } = options ?? {};
+                const stack = deps.groundItems.spawn(
+                    itemId,
+                    quantity,
+                    tile,
+                    deps.getCurrentTick(),
+                    spawnOptions,
+                    worldViewId,
+                );
+                return stack ? toScriptGroundItem(stack) : undefined;
+            },
+            remove: (stackId, quantity, requester) => {
+                const removed = deps.groundItems.removeById(
+                    stackId,
+                    quantity,
+                    deps.getCurrentTick(),
+                    requester?.id,
+                );
+                if (!removed) return undefined;
+                return { removed: removed.removed, remaining: removed.remaining };
+            },
+            query: (tile, options) => {
+                const observer = options?.observer;
+                return deps.groundItems
+                    .queryArea(
+                        tile.x,
+                        tile.y,
+                        tile.level,
+                        options?.radius ?? 0,
+                        deps.getCurrentTick(),
+                        observer?.id,
+                        options?.worldViewId ?? observer?.worldViewId ?? -1,
+                    )
+                    .map(toScriptGroundItem);
+            },
+        },
         // Gamemode-contributed facades (populated by contributeScriptServices)
         // gathering is deferred — wired after GatheringSystemManager construction.
         // Use a getter so registerTracker/add see the live instance (not the boot undefined).
@@ -708,6 +770,80 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
             },
             getPathService: () => deps.getPathService(),
         },
+        camera: {
+            move: (player, tile, height, instant) =>
+                deps.queueCameraEvent(player.id, {
+                    mode: "move",
+                    x: Math.trunc(tile.x),
+                    y: Math.trunc(tile.y),
+                    height: Math.max(0, Math.trunc(height)),
+                    instant,
+                }),
+            lookAt: (player, tile, height, instant) =>
+                deps.queueCameraEvent(player.id, {
+                    mode: "look",
+                    x: Math.trunc(tile.x),
+                    y: Math.trunc(tile.y),
+                    height: Math.max(0, Math.trunc(height)),
+                    instant,
+                }),
+            shake: (player, slot, randomAmplitude, sineAmplitude, sineFrequency) =>
+                deps.queueCameraEvent(player.id, {
+                    mode: "shake",
+                    slot: Math.max(0, Math.min(4, Math.trunc(slot))),
+                    randomAmplitude: Math.max(0, Math.trunc(randomAmplitude)),
+                    sineAmplitude: Math.max(0, Math.trunc(sineAmplitude)),
+                    sineFrequency: Math.max(0, Math.trunc(sineFrequency)),
+                }),
+            reset: (player) => deps.queueCameraEvent(player.id, { mode: "reset" }),
+        },
+        projectiles: {
+            launch: (projectile) => deps.queueProjectile(projectile),
+        },
+        scheduler: {
+            after: (delayTicks, handler, owner) =>
+                deps.scriptScheduler.scheduleIn(
+                    deps.getCurrentTick(),
+                    delayTicks,
+                    handler,
+                    owner,
+                ),
+            repeat: (delayTicks, repeatTicks, handler, owner) =>
+                deps.scriptScheduler.scheduleAt(
+                    deps.getCurrentTick() + Math.max(0, Math.trunc(delayTicks)),
+                    handler,
+                    repeatTicks,
+                    owner,
+                ),
+            cancel: (taskId) => deps.scriptScheduler.cancel(taskId),
+            cancelOwner: (owner) => deps.scriptScheduler.cancelOwner(owner),
+        },
+        sequence: {
+            run: (player, generator, options) => {
+                const previousLock = player.lock;
+                const requestedLock = options?.lock ?? LockState.FULL_WITH_DAMAGE_IMMUNITY;
+                const task = player.taskQueue.queueStrong(function* (queueTask) {
+                    player.lock = requestedLock;
+                    try {
+                        yield* generator(queueTask);
+                    } finally {
+                        player.lock = previousLock;
+                        if (options?.resetCamera) {
+                            deps.queueCameraEvent(player.id, { mode: "reset" });
+                        }
+                        options?.onCleanup?.();
+                    }
+                });
+                return task;
+            },
+        },
+        instances: {
+            buildTemplate: (copies) => buildInstanceTemplate(copies),
+            create: (player, spec) => deps.instancedAreaManager.create(player, spec),
+            get: (playerId) => deps.instancedAreaManager.get(playerId),
+            dispose: (player, destination) =>
+                deps.instancedAreaManager.dispose(player, destination),
+        },
         location: {
             doorManager: deps.doorManager,
             resolveLocTransformId: (player, locDef) => resolveLocTransformId(player, locDef),
@@ -717,6 +853,19 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
                 deps.locationService.sendLocChangeToPlayer(player, oldId, newId, tile, level),
             spawnLocForPlayer: (player, locId, tile, level, shape, rotation) =>
                 deps.locationService.spawnLocForPlayer(player, locId, tile, level, shape, rotation),
+            replaceTemporaryLoc: (scope, oldId, newId, tile, level, options) =>
+                deps.locationService.replaceTemporaryLoc(
+                    scope,
+                    oldId,
+                    newId,
+                    tile,
+                    level,
+                    options,
+                ),
+            removeTemporaryLoc: (scope, oldId, tile, level, options) =>
+                deps.locationService.removeTemporaryLoc(scope, oldId, tile, level, options),
+            clearTemporaryLoc: (scope, oldId, tile, level, oldShape) =>
+                deps.locationService.clearTemporaryLoc(scope, oldId, tile, level, oldShape),
             triggerLocEffect: () => false, // replaced below with self-referencing version
             isAdjacentToLoc: (player, locId, tile, level) =>
                 deps.locationService.isAdjacentToLoc(player, locId, tile, level),
@@ -784,6 +933,25 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
             isPlayerInCombat: (player) => player.isBeingAttacked(),
             applyPlayerHitsplat: (player, style, damage, tick) =>
                 deps.combatEffectApplicator.applyPlayerHitsplat(player, style, damage, tick),
+            applyNpcDamageToPlayer: (npc, player, style, damage, tick) => {
+                const currentTick = tick ?? deps.getCurrentTick();
+                const result = deps.combatEffectApplicator.applyPlayerHitsplat(
+                    player,
+                    style,
+                    damage,
+                    currentTick,
+                );
+                deps.activeFrame()?.hitsplats.push({
+                    targetType: "player",
+                    targetId: player.id,
+                    damage: result.amount,
+                    style: result.style,
+                    sourceType: "npc",
+                    hpCurrent: result.hpCurrent,
+                    hpMax: result.hpMax,
+                });
+                return result;
+            },
             stunPlayer: (player, ticks) => {
                 player.timers.set(STUN_TIMER, ticks);
             },
@@ -808,6 +976,15 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
         npc: {
             spawnNpc: (config) => deps.npcManager?.spawnTransientNpc(config),
             removeNpc: (npcId) => deps.npcManager?.removeNpc(npcId) ?? false,
+            findNearbyNpc: (player, npcTypeId, radius) =>
+                deps.npcManager
+                    ?.getNearby(player.tileX, player.tileY, player.level, radius)
+                    .find(
+                        (npc) =>
+                            npc.typeId === npcTypeId && isNpcVisibleToPlayer(npc, player),
+                    ),
+            hasLineOfSightToPlayer: (npc, player) =>
+                hasNpcLineOfSightToPlayer(npc, player, deps.getPathService()),
             stopNpcMovement: (npc, holdTicks) => {
                 const ticks = Math.max(0, Math.trunc(holdTicks ?? 0));
                 if (ticks > 0) {
@@ -829,6 +1006,57 @@ export function buildScriptServices(deps: ScriptServiceAdapterDeps): ScriptServi
                 // facing hold expires.
                 npc.setInteraction("player", player.id);
                 npc.faceTile(player.tileX, player.tileY);
+            },
+            faceNpcToTile: (npc, tile) => {
+                npc.clearInteractionTarget();
+                npc.faceTile(Math.trunc(tile.x), Math.trunc(tile.y));
+            },
+            moveNpcTo: (npc, tile, run) => {
+                npc.running = run === true;
+                return npc.pathTo(Math.trunc(tile.x), Math.trunc(tile.y));
+            },
+            teleportNpc: (npc, tile) => {
+                npc.teleport(Math.trunc(tile.x), Math.trunc(tile.y), tile.level ?? npc.level);
+                deps.queueExternalNpcTeleportSync(npc);
+            },
+            engageCombat: (npc, player) =>
+                npc.engageCombat(player.id, deps.getCurrentTick(), player),
+            disengageCombat: (npc) => npc.disengageCombat(),
+            queueNpcSpotAnim: (npc, spotId, height, delay) =>
+                deps.enqueueSpotAnimation({
+                    tick: deps.getCurrentTick(),
+                    npcId: npc.id,
+                    spotId,
+                    height,
+                    delay,
+                }),
+            replaceNpc: (npc, newTypeId, lifetimeTicks) => {
+                const hitpoints = npc.getHitpoints();
+                const targetPlayerId = npc.getCombatTargetPlayerId();
+                const replacement = deps.npcManager.spawnTransientNpc({
+                    id: newTypeId,
+                    x: npc.tileX,
+                    y: npc.tileY,
+                    level: npc.level,
+                    wanderRadius: npc.wanderRadius,
+                    direction: 0,
+                    worldViewId: npc.worldViewId,
+                    ownerPlayerId: npc.ownerPlayerId,
+                    lifetimeTicks,
+                });
+                if (replacement) {
+                    const damageToPreserve = Math.max(
+                        0,
+                        replacement.getMaxHitpoints() -
+                            Math.min(hitpoints, replacement.getMaxHitpoints()),
+                    );
+                    replacement.applyDamage(damageToPreserve);
+                    if (targetPlayerId !== undefined) {
+                        replacement.engageCombat(targetPlayerId, deps.getCurrentTick());
+                    }
+                    deps.npcManager.removeNpc(npc.id);
+                }
+                return replacement;
             },
         },
         collectionLog: {

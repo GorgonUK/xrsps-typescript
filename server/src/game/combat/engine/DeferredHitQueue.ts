@@ -58,6 +58,16 @@ export interface DeferredHitQueueOptions {
         target: CombatEntity,
         source: CombatEntity | undefined,
     ): number;
+    /** Return true to keep a lethally-hit NPC alive at one hitpoint. */
+    onNpcLethalHit?(event: {
+        pending: PendingCombatHit;
+        npc: NpcState;
+        source: CombatEntity | undefined;
+        proposedDamage: number;
+        style: number;
+        hitpointsBefore: number;
+        appliedClock: number;
+    }): boolean;
     onHitApplied?(hit: AppliedCombatHit, frame: TickFrame): void;
 }
 
@@ -117,8 +127,26 @@ export class DeferredHitQueue {
                 pending.hitsplatType === DeferredHitsplatType.Block
                     ? 0
                     : (this.options.transformDamage?.(pending, target, source) ?? pending.damage);
-            const damage = this.nonNegativeInteger(requestedDamage, "transformed damage");
+            let damage = this.nonNegativeInteger(requestedDamage, "transformed damage");
             const style = this.resolveStyle(pending.hitsplatType);
+            if (target instanceof NpcState) {
+                const hitpointsBefore = target.getHitpoints();
+                if (
+                    hitpointsBefore > 0 &&
+                    damage >= hitpointsBefore &&
+                    this.options.onNpcLethalHit?.({
+                        pending,
+                        npc: target,
+                        source,
+                        proposedDamage: damage,
+                        style,
+                        hitpointsBefore,
+                        appliedClock: clock,
+                    }) === true
+                ) {
+                    damage = Math.max(0, hitpointsBefore - 1);
+                }
+            }
             const result =
                 target instanceof PlayerState
                     ? combatEffectApplicator.applyPlayerHitsplat(

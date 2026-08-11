@@ -42,6 +42,15 @@ export type NpcStatusEvent = {
     hitsplat: StatusHitsplat;
 };
 
+export type NpcLethalStatusHitInterceptor = (event: {
+    npc: NpcState;
+    killerPlayerId?: number;
+    proposedDamage: number;
+    style: number;
+    hitpointsBefore: number;
+    tick: number;
+}) => boolean;
+
 /** Event emitted when an NPC wants to aggro a player */
 export type NpcAggressionEvent = {
     npcId: number;
@@ -210,6 +219,7 @@ export class NpcManager {
     private readonly regionIndex = new Map<number, Set<number>>();
     private readonly pendingUpdates: NpcUpdateDelta[] = [];
     private statusEffects?: StatusEffectSystem;
+    private lethalStatusHitInterceptor?: NpcLethalStatusHitInterceptor;
     private maxNpcSize = 1;
     private readonly pendingRespawns = new Map<number, { npc: NpcState; respawnTick: number }>();
     private readonly pendingDeaths = new Map<
@@ -224,6 +234,8 @@ export class NpcManager {
     >();
     // Boss scripts for NPCs with complex combat behaviors
     private readonly bossScripts = new Map<number, BossScript>();
+    private readonly lifetimeExpiryTicks = new Map<number, number>();
+    private currentTick = 0;
 
     // NPC indices are 16-bit (0..65534, with 65535 reserved as a sentinel).
     private nextId = 1;
@@ -249,6 +261,12 @@ export class NpcManager {
 
     setStatusEffectSystem(system: StatusEffectSystem): void {
         this.statusEffects = system;
+    }
+
+    setLethalStatusHitInterceptor(
+        interceptor: NpcLethalStatusHitInterceptor | undefined,
+    ): void {
+        this.lethalStatusHitInterceptor = interceptor;
     }
 
     setLifecycleHooks(hooks: {
@@ -351,6 +369,8 @@ export class NpcManager {
                 aggressionRadius,
                 aggressionToleranceTicks,
                 aggressionSearchDelayTicks,
+                worldViewId: spawn.worldViewId,
+                ownerPlayerId: spawn.ownerPlayerId,
             },
         );
         npc.setMovementPathfinder((targetX, targetY) => {
@@ -372,6 +392,10 @@ export class NpcManager {
         npc.orientation = npc.rot & 2047;
         npc.markSent();
 
+        const lifetimeTicks = Math.trunc(spawn.lifetimeTicks ?? 0);
+        if (lifetimeTicks > 0) {
+            this.lifetimeExpiryTicks.set(id, this.currentTick + lifetimeTicks);
+        }
         this.npcs.set(id, npc);
         this.addOccupancyFootprint(npc);
         this.addToRegionIndex(npc);
@@ -533,9 +557,10 @@ export class NpcManager {
         if (normalizedId <= 0) return false;
         this.pendingDeaths.delete(normalizedId);
         this.pendingDeathProcessing.delete(normalizedId);
-        this.pendingRespawns.delete(normalizedId);
+        const hadPendingRespawn = this.pendingRespawns.delete(normalizedId);
+        this.lifetimeExpiryTicks.delete(normalizedId);
         const npc = this.npcs.get(normalizedId);
-        if (!npc) return false;
+        if (!npc) return hadPendingRespawn;
 
         this.lifecycleHooks?.onRemove?.(normalizedId);
         this.npcs.delete(normalizedId);
@@ -549,6 +574,22 @@ export class NpcManager {
             this.bossScripts.delete(normalizedId);
         }
         return true;
+    }
+
+    removeNpcsOwnedByPlayer(playerId: number): number {
+        const ownerId = Math.trunc(playerId);
+        const ids = new Set<number>();
+        for (const npc of this.npcs.values()) {
+            if (npc.ownerPlayerId === ownerId) ids.add(npc.id);
+        }
+        for (const [npcId, entry] of this.pendingRespawns) {
+            if (entry.npc.ownerPlayerId === ownerId) ids.add(npcId);
+        }
+        let removed = 0;
+        for (const npcId of ids) {
+            if (this.removeNpc(npcId)) removed++;
+        }
+        return removed;
     }
 
     canOccupyTile(
@@ -848,7 +889,9 @@ export class NpcManager {
             radius: number,
         ) => NearbyAggressionPlayer[],
     ): { statusEvents: NpcStatusEvent[]; aggressionEvents: NpcAggressionEvent[] } {
+        this.currentTick = Math.max(0, Math.trunc(currentTick));
         this.pendingUpdates.length = 0;
+        this.processNpcLifetimes(this.currentTick);
         this.processNpcDeaths(currentTick);
         this.processNpcRespawns(currentTick);
         const statusEvents: NpcStatusEvent[] = [];
@@ -881,6 +924,7 @@ export class NpcManager {
                 // Reference: docs/game-engine.md lines 19-29, docs/tick-cycle-order.md
 
                 // 1. Process status effects/timers FIRST (before movement)
+                const hitpointsBeforeStatus = npc.getHitpoints();
                 const statusHitsplats =
                     this.statusEffects?.processNpc(npc, currentTick) ??
                     npc.tickStatusEffects(currentTick);
@@ -891,11 +935,31 @@ export class NpcManager {
                     // Status damage (poison/venom) can be fatal: route through the
                     // deferred death pipeline like combat hits.
                     if (npc.getHitpoints() <= 0 && !npc.isDead(currentTick)) {
-                        this.scheduleDeathProcessing(
-                            npc.id,
-                            npc.getCombatTargetPlayerId() ?? 0,
-                            currentTick + 1,
-                        );
+                        const lethalHitsplat = [...statusHitsplats]
+                            .reverse()
+                            .find((hitsplat) => hitsplat.amount > 0);
+                        const killerPlayerId = npc.getCombatTargetPlayerId();
+                        const prevented =
+                            lethalHitsplat !== undefined &&
+                            this.lethalStatusHitInterceptor?.({
+                                npc,
+                                killerPlayerId,
+                                proposedDamage: lethalHitsplat.amount,
+                                style: lethalHitsplat.style,
+                                hitpointsBefore: hitpointsBeforeStatus,
+                                tick: currentTick,
+                            }) === true;
+                        if (prevented) {
+                            npc.heal(1);
+                            lethalHitsplat.amount = Math.max(0, hitpointsBeforeStatus - 1);
+                            lethalHitsplat.hpCurrent = 1;
+                        } else {
+                            this.scheduleDeathProcessing(
+                                npc.id,
+                                killerPlayerId ?? 0,
+                                currentTick + 1,
+                            );
+                        }
                     }
                 }
 
@@ -1035,6 +1099,14 @@ export class NpcManager {
             }
         }
         return { statusEvents, aggressionEvents };
+    }
+
+    private processNpcLifetimes(currentTick: number): void {
+        if (this.lifetimeExpiryTicks.size === 0) return;
+        for (const [npcId, expiryTick] of [...this.lifetimeExpiryTicks]) {
+            if (currentTick < expiryTick) continue;
+            this.removeNpc(npcId);
+        }
     }
 
     private prunePathAgainstCurrentCollision(npc: NpcState): void {

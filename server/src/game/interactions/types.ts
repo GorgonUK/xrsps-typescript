@@ -60,6 +60,8 @@ export interface GroundItemInteractionState {
     tileY: number;
     tileLevel: number;
     option: string;
+    opNum?: number;
+    source?: { slot: number; itemId: number };
     lastRouteTick: number;
     pickupFromTable?: boolean;
 }

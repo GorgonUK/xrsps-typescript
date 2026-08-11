@@ -4,7 +4,6 @@ import type { QuestDefinition } from "../../types";
 import {
     BALL_OF_WOOL_ITEM_ID,
     COINS_ITEM_ID,
-    REWARD_SCROLL_ITEM_ID,
     SHEEP_SHEARER_KEY,
     STAGE_COMPLETE,
     STAGE_STARTED,
@@ -26,7 +25,7 @@ export const sheepShearerQuest: QuestDefinition = {
         xp: [{ skillId: SkillId.Crafting, amount: 150, label: "Crafting" }],
         items: [{ itemId: COINS_ITEM_ID, quantity: 60, label: "60 Coins" }],
     },
-    rewardItemId: REWARD_SCROLL_ITEM_ID,
+    rewardItemId: COINS_ITEM_ID,
     overviewStartText:
         "talking to <col=800000>Fred the Farmer<col=000080> at his farm north-west of <col=800000>Lumbridge<col=000080>.",
     buildJournal: buildSheepShearerJournal,

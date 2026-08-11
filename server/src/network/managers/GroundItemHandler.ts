@@ -10,7 +10,10 @@ import { ObjStackability } from "../../../../client/rs/config/objtype/ObjStackab
 import { getItemDefinition } from "../../data/items";
 import type { ServerServices } from "../../game/ServerServices";
 import { isInWilderness } from "../../game/combat/MultiCombatZones";
+import type { GroundItemInteractionState } from "../../game/interactions/types";
+import type { GroundItemStack } from "../../game/items/GroundItemManager";
 import type { PlayerState } from "../../game/player";
+import type { ScriptGroundItem } from "../../game/scripts/types";
 import { logger } from "../../utils/logger";
 import { encodeMessage } from "../messages";
 
@@ -360,19 +363,170 @@ export class GroundItemHandler {
         }
         if (!(stackId > 0)) return;
 
-        if (option === "take" || option === "pick-up" || option === "pickup") {
-            players.startGroundItemInteraction(ws, {
-                itemId,
-                stackId,
-                tileX: tile.x,
-                tileY: tile.y,
-                tileLevel: tile.level,
+        players.startGroundItemInteraction(ws, {
+            itemId,
+            stackId,
+            tileX: tile.x,
+            tileY: tile.y,
+            tileLevel: tile.level,
+            option,
+            opNum: opNum > 0 ? opNum : undefined,
+            modifierFlags: payload.modifierFlags,
+            pickupFromTable: this.isTablePickupTile(tile),
+        });
+    }
+
+    startItemOnGroundInteraction(
+        player: PlayerState,
+        data: {
+            source: { slot: number; itemId: number };
+            targetItemId: number;
+            tile: { x: number; y: number; level: number };
+            option?: string;
+            modifierFlags?: number;
+        },
+    ): boolean {
+        const option = data.option?.trim().toLowerCase();
+        if (
+            !this.svc.scriptRegistry.findItemOnGround(
+                data.source.itemId,
+                data.targetItemId,
                 option,
-                modifierFlags: payload.modifierFlags,
-                pickupFromTable: this.isTablePickupTile(tile),
-            });
+            )
+        ) {
+            return false;
+        }
+
+        const stack = this.svc.groundItems
+            .queryArea(
+                data.tile.x,
+                data.tile.y,
+                data.tile.level,
+                0,
+                this.svc.ticker.currentTick(),
+                player.id,
+                player.worldViewId,
+            )
+            .find((entry) => entry.itemId === data.targetItemId);
+        if (!stack) return false;
+
+        const players = this.svc.players;
+        if (!players) return false;
+        const ws = players.getSocketByPlayerId(player.id);
+        if (!ws) return false;
+        players.startGroundItemInteraction(ws, {
+            itemId: stack.itemId,
+            stackId: stack.id,
+            tileX: stack.tile.x,
+            tileY: stack.tile.y,
+            tileLevel: stack.tile.level,
+            option: option ?? "",
+            source: data.source,
+            modifierFlags: data.modifierFlags,
+            pickupFromTable: this.isTablePickupTile(stack.tile),
+        });
+        return true;
+    }
+
+    handleArrivedGroundItemInteraction(
+        player: PlayerState,
+        interaction: GroundItemInteractionState,
+    ): void {
+        const target = this.findValidatedInteractionStack(player, interaction);
+        if (!target) {
+            this.sendNothingInteresting(player);
             return;
         }
+
+        const scriptTarget = this.toScriptGroundItem(target);
+        const tick = this.svc.ticker.currentTick();
+        if (interaction.source) {
+            const inventoryEntry = this.svc.inventoryService.getInventory(player)[
+                interaction.source.slot
+            ];
+            if (
+                !inventoryEntry ||
+                inventoryEntry.itemId !== interaction.source.itemId ||
+                inventoryEntry.quantity <= 0
+            ) {
+                return;
+            }
+            const handled = this.svc.scriptRuntime.queueItemOnGround({
+                tick,
+                player,
+                source: interaction.source,
+                target: scriptTarget,
+                option: interaction.option || undefined,
+            });
+            if (!handled) this.sendNothingInteresting(player);
+            return;
+        }
+
+        const handled = this.svc.scriptRuntime.queueGroundItemInteraction({
+            tick,
+            player,
+            target: scriptTarget,
+            option: interaction.option,
+            opNum: interaction.opNum,
+        });
+        if (!handled && this.isTakeOption(interaction.option)) {
+            this.attemptTakeGroundItem(
+                player,
+                target.tile,
+                target.itemId,
+                target.id,
+            );
+        }
+    }
+
+    private findValidatedInteractionStack(
+        player: PlayerState,
+        interaction: GroundItemInteractionState,
+    ): GroundItemStack | undefined {
+        if (player.level !== interaction.tileLevel) return undefined;
+        const distance = Math.max(
+            Math.abs(player.tileX - interaction.tileX),
+            Math.abs(player.tileY - interaction.tileY),
+        );
+        if (interaction.pickupFromTable ? distance > 1 : distance !== 0) return undefined;
+
+        return this.svc.groundItems
+            .queryArea(
+                interaction.tileX,
+                interaction.tileY,
+                interaction.tileLevel,
+                0,
+                this.svc.ticker.currentTick(),
+                player.id,
+                player.worldViewId,
+            )
+            .find(
+                (stack) =>
+                    stack.id === interaction.stackId && stack.itemId === interaction.itemId,
+            );
+    }
+
+    private toScriptGroundItem(stack: GroundItemStack): ScriptGroundItem {
+        return {
+            stackId: stack.id,
+            itemId: stack.itemId,
+            quantity: stack.quantity,
+            tile: { ...stack.tile },
+            worldViewId: stack.worldViewId,
+            ownerId: stack.ownerId,
+        };
+    }
+
+    private isTakeOption(option: string): boolean {
+        return option === "take" || option === "pick-up" || option === "pickup";
+    }
+
+    private sendNothingInteresting(player: PlayerState): void {
+        this.svc.messagingService.queueChatMessage({
+            messageType: "game",
+            text: "There is nothing interesting there.",
+            targetPlayerIds: [player.id],
+        });
     }
 
     /**

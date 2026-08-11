@@ -7,25 +7,31 @@ import {
 } from "../actions";
 import { type NpcSpawnConfig, type NpcState } from "../npc";
 import { type PlayerState } from "../player";
+import type { CombatAttack } from "../combat/model/CombatAttack";
 import type {
     AnimationFacade,
     AppearanceFacade,
     BankingServices,
     CollectionLogFacade,
     CombatFacade,
+    CameraFacade,
     DataLoaderFacade,
     DialogFacade,
     EquipmentFacade,
     FollowerServiceFacade,
     GatheringServices,
     InventoryFacade,
+    InstanceFacade,
     LocationFacade,
     MessagingFacade,
     ModalActionHandler,
     MovementFacade,
     NpcFacade,
     ProductionServiceFacade,
+    ProjectileFacade,
     ProviderRegistrationFacade,
+    SchedulerFacade,
+    SequenceFacade,
     SailingServiceFacade,
     ShoppingServices,
     SkillFacade,
@@ -39,6 +45,7 @@ import type {
 
 export const ANY_ITEM_ID = -1;
 export const ANY_LOC_ID = -1;
+export const ANY_NPC_ID = -1;
 
 export interface ScriptExecutionContext {
     tick: number;
@@ -78,6 +85,64 @@ export interface LocInteractionEvent extends ScriptExecutionContext {
 
 export type NpcInteractionHandler = (event: NpcInteractionEvent) => void | Promise<void>;
 export type LocInteractionHandler = (event: LocInteractionEvent) => void | Promise<void>;
+
+export const NpcPreDeathDecision = Object.freeze({
+    Allow: "allow",
+    Prevent: "prevent",
+} as const);
+
+export type NpcPreDeathDecision =
+    (typeof NpcPreDeathDecision)[keyof typeof NpcPreDeathDecision];
+
+export type NpcPreDeathCause = "combat" | "effect" | "status";
+
+/** Synchronous interception point immediately before lethal NPC damage is applied. */
+export interface NpcPreDeathEvent extends ScriptExecutionContext {
+    npc: NpcState;
+    killer?: PlayerState;
+    killerPlayerId?: number;
+    hit: {
+        proposedDamage: number;
+        style: number;
+        maxHit?: number;
+        hitpointsBefore: number;
+        hitpointsAfter: number;
+        cause: NpcPreDeathCause;
+    };
+}
+
+export type NpcPreDeathHandler = (
+    event: NpcPreDeathEvent,
+) => NpcPreDeathDecision | void;
+
+/** Synchronous notification for a successful player spell hit on an NPC. */
+export interface NpcMagicHitEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    npc: NpcState;
+    spellId: number;
+    damage: number;
+    tick: number;
+}
+
+export type NpcMagicHitHandler = (event: NpcMagicHitEvent) => void;
+
+export const NpcAttackDecision = Object.freeze({
+    Allow: "allow",
+    Prevent: "prevent",
+} as const);
+
+export type NpcAttackDecision =
+    (typeof NpcAttackDecision)[keyof typeof NpcAttackDecision];
+
+/** Synchronous hook fired after an NPC attack is prepared but before visuals or damage. */
+export interface NpcAttackEvent extends ScriptExecutionContext {
+    npc: NpcState;
+    target: PlayerState;
+    attack: CombatAttack;
+}
+
+export type NpcAttackHandler = (event: NpcAttackEvent) => NpcAttackDecision | void;
+
 export interface ItemOnItemEvent extends ScriptExecutionContext {
     player: PlayerState;
     source: { slot: number; itemId: number };
@@ -95,6 +160,79 @@ export interface ItemOnLocEvent extends ScriptExecutionContext {
 }
 
 export type ItemOnLocHandler = (event: ItemOnLocEvent) => void | Promise<void>;
+
+export interface ItemOnNpcEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    source: { slot: number; itemId: number };
+    target: NpcState;
+    option?: string;
+}
+
+export type ItemOnNpcHandler = (event: ItemOnNpcEvent) => void | Promise<void>;
+
+export interface ItemOnPlayerEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    source: { slot: number; itemId: number };
+    target: PlayerState;
+    option?: string;
+}
+
+export type ItemOnPlayerHandler = (event: ItemOnPlayerEvent) => void | Promise<void>;
+
+export interface ScriptGroundItem {
+    stackId: number;
+    itemId: number;
+    quantity: number;
+    tile: { x: number; y: number; level: number };
+    worldViewId: number;
+    ownerId?: number;
+}
+
+export interface GroundItemInteractionEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    target: ScriptGroundItem;
+    option: string;
+    opNum?: number;
+}
+
+export type GroundItemInteractionHandler = (
+    event: GroundItemInteractionEvent,
+) => void | Promise<void>;
+
+export interface ItemOnGroundEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    source: { slot: number; itemId: number };
+    target: ScriptGroundItem;
+    option?: string;
+}
+
+export type ItemOnGroundHandler = (event: ItemOnGroundEvent) => void | Promise<void>;
+
+export interface GroundItemFacade {
+    spawn(
+        itemId: number,
+        quantity: number,
+        tile: { x: number; y: number; level: number },
+        options?: {
+            ownerId?: number;
+            privateTicks?: number;
+            durationTicks?: number;
+            isMonsterDrop?: boolean;
+            isWilderness?: boolean;
+            isConsumable?: boolean;
+            worldViewId?: number;
+        },
+    ): ScriptGroundItem | undefined;
+    remove(
+        stackId: number,
+        quantity: number,
+        requester?: PlayerState,
+    ): { removed: number; remaining?: number } | undefined;
+    query(
+        tile: { x: number; y: number; level: number },
+        options?: { radius?: number; observer?: PlayerState; worldViewId?: number },
+    ): ScriptGroundItem[];
+}
 
 export interface EquipmentActionEvent extends ScriptExecutionContext {
     player: PlayerState;
@@ -125,10 +263,47 @@ export interface WidgetActionEvent extends ScriptExecutionContext {
 
 export type WidgetActionHandler = (event: WidgetActionEvent) => void | Promise<void>;
 
+export interface ZoneTile {
+    x: number;
+    y: number;
+    level: number;
+    worldViewId: number;
+}
+
+export interface ZoneDefinition {
+    id: string;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    levels?: readonly number[];
+    worldViewIds?: readonly number[];
+}
+
+export type ZoneEventType = "enter" | "exit" | "step";
+
+export interface ZoneEvent extends ScriptExecutionContext {
+    player: PlayerState;
+    zone: ZoneDefinition;
+    type: ZoneEventType;
+    previous: ZoneTile;
+    current: ZoneTile;
+}
+
+export type ZoneEventHandler = (event: ZoneEvent) => void | Promise<void>;
+
+export interface ZoneHandlers {
+    enter?: ZoneEventHandler;
+    exit?: ZoneEventHandler;
+    step?: ZoneEventHandler;
+}
+
 export interface RegionEvent extends ScriptExecutionContext {
     player: PlayerState;
     regionId: number;
     type: "enter" | "leave";
+    previous: ZoneTile;
+    current: ZoneTile;
 }
 
 export type RegionEventHandler = (event: RegionEvent) => void | Promise<void>;
@@ -277,6 +452,28 @@ export interface IScriptRegistry {
         handler: ItemOnLocHandler,
         option?: string,
     ): ScriptRegistrationResult;
+    registerItemOnNpc(
+        sourceItemId: number,
+        npcId: number,
+        handler: ItemOnNpcHandler,
+        option?: string,
+    ): ScriptRegistrationResult;
+    registerItemOnPlayer(
+        sourceItemId: number,
+        handler: ItemOnPlayerHandler,
+        option?: string,
+    ): ScriptRegistrationResult;
+    registerGroundItemInteraction(
+        itemId: number,
+        handler: GroundItemInteractionHandler,
+        option?: string,
+    ): ScriptRegistrationResult;
+    registerItemOnGround(
+        sourceItemId: number,
+        targetItemId: number,
+        handler: ItemOnGroundHandler,
+        option?: string,
+    ): ScriptRegistrationResult;
     registerItemAction(
         itemId: number,
         handler: ItemOnItemHandler,
@@ -307,6 +504,14 @@ export interface IScriptRegistry {
         handler: WidgetActionHandler,
     ): ScriptRegistrationResult;
     registerNpcAction(option: string, handler: NpcInteractionHandler): ScriptRegistrationResult;
+    registerNpcPreDeath(npcId: number, handler: NpcPreDeathHandler): ScriptRegistrationResult;
+    registerNpcMagicHit(npcId: number, handler: NpcMagicHitHandler): ScriptRegistrationResult;
+    registerNpcAttack(npcId: number, handler: NpcAttackHandler): ScriptRegistrationResult;
+    registerZone(
+        definition: ZoneDefinition,
+        handlers: ZoneHandlers,
+    ): ScriptRegistrationResult;
+    findZoneHandler(zoneId: string, type: ZoneEventType): ZoneEventHandler | undefined;
     registerRegionHandler(regionId: number, handler: RegionEventHandler): ScriptRegistrationResult;
     registerTickHandler(handler: TickHandler): ScriptRegistrationResult;
     registerCommand(name: string, handler: CommandHandler): ScriptRegistrationResult;
@@ -314,6 +519,9 @@ export interface IScriptRegistry {
     findNpcInteraction(npcId: number, option?: string): NpcInteractionHandler | undefined;
     /** Lookup only npc-specific handlers (instance or type), skipping generic action fallbacks. */
     findNpcInteractionDirect(npcId: number, option?: string): NpcInteractionHandler | undefined;
+    findNpcPreDeath(npcId: number): NpcPreDeathHandler | undefined;
+    findNpcMagicHit(npcId: number): NpcMagicHitHandler | undefined;
+    findNpcAttack(npcId: number): NpcAttackHandler | undefined;
     /** Lookup a generic npc action handler (e.g., talk-to) */
     findNpcAction(option?: string): NpcInteractionHandler | undefined;
     findLocInteraction(locId: number, action?: string): LocInteractionHandler | undefined;
@@ -327,6 +535,24 @@ export interface IScriptRegistry {
         locId: number,
         option?: string,
     ): ItemOnLocHandler | undefined;
+    findItemOnNpc(
+        sourceItemId: number,
+        npcId: number,
+        option?: string,
+    ): ItemOnNpcHandler | undefined;
+    findItemOnPlayer(
+        sourceItemId: number,
+        option?: string,
+    ): ItemOnPlayerHandler | undefined;
+    findGroundItemInteraction(
+        itemId: number,
+        option?: string,
+    ): GroundItemInteractionHandler | undefined;
+    findItemOnGround(
+        sourceItemId: number,
+        targetItemId: number,
+        option?: string,
+    ): ItemOnGroundHandler | undefined;
     findEquipmentAction(itemId: number, option?: string): EquipmentActionHandler | undefined;
     findWidgetAction(
         widgetId: number,
@@ -431,9 +657,15 @@ export interface ScriptServices extends GatheringServices {
     appearance: AppearanceFacade;
     dialog: DialogFacade;
     movement: MovementFacade;
+    camera: CameraFacade;
+    projectiles: ProjectileFacade;
+    scheduler: SchedulerFacade;
+    sequence: SequenceFacade;
+    instances: InstanceFacade;
     location: LocationFacade;
     combat: CombatFacade;
     npc: NpcFacade;
+    groundItems: GroundItemFacade;
     collectionLog: CollectionLogFacade;
     viewport: ViewportFacade;
     // Provider registration (available to gamemodes and extrascripts)

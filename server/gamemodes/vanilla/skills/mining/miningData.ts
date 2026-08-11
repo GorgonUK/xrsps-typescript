@@ -101,6 +101,15 @@ const ROCK_DEFINITIONS: MiningRockDefinition[] = [
         swingTicks: 3,
     },
     {
+        id: "blurite",
+        name: "Blurite rocks",
+        level: 10,
+        xp: 17.5,
+        oreItemId: 668,
+        respawnTicks: { min: 80, max: 80 },
+        swingTicks: 3,
+    },
+    {
         id: "silver",
         name: "Silver rocks",
         level: 20,
@@ -179,6 +188,7 @@ const ROCK_NAME_ALIASES: Record<string, string> = {
     "tin ore rocks": "tin",
     "iron rocks": "iron",
     "iron ore rocks": "iron",
+    "blurite rocks": "blurite",
     "silver rocks": "silver",
     "silver ore rocks": "silver",
     "coal rocks": "coal",

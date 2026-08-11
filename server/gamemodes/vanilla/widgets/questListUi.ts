@@ -23,6 +23,7 @@ import type {
 import type { PlayerState } from "../../../src/game/player";
 import type { WidgetAction } from "../../../src/widgets/WidgetManager";
 import type { QuestDefinition } from "../quests/types";
+import { getQuestStage } from "../quests/QuestService";
 import {
     getQuestDefinitionByKey,
     getQuestDefinitionByName,
@@ -80,7 +81,7 @@ function resolveQuestListQuest(
 function getQuestStatus(player: PlayerState, quest: ResolvedQuestListQuest): QuestListStatus {
     const definition = quest.definition;
     if (definition) {
-        const stage = player.varps.getVarpValue(definition.varpId);
+        const stage = getQuestStage(player, definition);
         if (stage >= definition.completionValue) return QUEST_LIST_STATUS_COMPLETE;
         if (stage >= definition.startedValue) return QUEST_LIST_STATUS_IN_PROGRESS;
         return QUEST_LIST_STATUS_NOT_STARTED;

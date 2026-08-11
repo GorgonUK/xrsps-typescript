@@ -522,6 +522,15 @@ export interface CombatActionServices {
         tick: number,
         maxHit?: number,
     ): { amount: number; style: number; hpCurrent: number; hpMax: number };
+    /** Clamp a script-intercepted lethal hit so the NPC remains at one hitpoint. */
+    interceptNpcLethalHit(
+        player: PlayerState,
+        npc: NpcState,
+        damage: number,
+        style: number,
+        tick: number,
+        maxHit?: number,
+    ): number;
     /** Apply hitsplat to player. */
     applyPlayerHitsplat(
         player: PlayerState,
@@ -898,6 +907,28 @@ export class CombatActionHandler {
 
             applyNpcHitsplat: (npc, style, damage, tick, maxHit) =>
                 combatEffectApplicator.applyNpcHitsplat(npc, style, damage, tick, maxHit),
+            interceptNpcLethalHit: (player, npc, damage, style, tick, maxHit) => {
+                const proposedDamage = Math.max(0, Math.trunc(damage));
+                const hitpointsBefore = npc.getHitpoints();
+                if (hitpointsBefore <= 0 || proposedDamage < hitpointsBefore) {
+                    return proposedDamage;
+                }
+                const prevented = svc.scriptRuntime?.runNpcPreDeath?.({
+                    npc,
+                    killer: player,
+                    killerPlayerId: player.id,
+                    tick,
+                    hit: {
+                        proposedDamage,
+                        style,
+                        maxHit,
+                        hitpointsBefore,
+                        hitpointsAfter: Math.max(0, hitpointsBefore - proposedDamage),
+                        cause: "combat",
+                    },
+                }) ?? false;
+                return prevented ? Math.max(0, hitpointsBefore - 1) : proposedDamage;
+            },
             applyPlayerHitsplat: (player, style, damage, tick, maxHit) =>
                 combatEffectApplicator.applyPlayerHitsplat(player, style, damage, tick, maxHit),
 

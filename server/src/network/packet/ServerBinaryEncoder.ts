@@ -12,6 +12,7 @@ import {
 import type { ProjectileLaunch } from "../../../../client/common/projectiles/ProjectileLaunch";
 import type { QuestListWidgetGroup } from "../../../../client/common/ui/questList";
 import type { WorldEntityBuildArea } from "../../../../client/common/worldentity/WorldEntityTypes";
+import type { CameraControlPayload } from "../messages";
 import { BitWriter } from "../BitWriter";
 
 /**
@@ -216,6 +217,37 @@ export class ServerBinaryEncoder {
         this.buffer.writeShort(worldX);
         this.buffer.writeShort(worldY);
         return this.buffer.toPacket(ServerPacketId.DESTINATION);
+    }
+
+    encodeCameraControl(payload: CameraControlPayload): Uint8Array {
+        this.buffer.reset();
+        switch (payload.mode) {
+            case "reset":
+                this.buffer.writeByte(0);
+                break;
+            case "move":
+                this.buffer.writeByte(1);
+                this.buffer.writeShort(payload.x);
+                this.buffer.writeShort(payload.y);
+                this.buffer.writeShort(payload.height);
+                this.buffer.writeBoolean(payload.instant === true);
+                break;
+            case "look":
+                this.buffer.writeByte(2);
+                this.buffer.writeShort(payload.x);
+                this.buffer.writeShort(payload.y);
+                this.buffer.writeShort(payload.height);
+                this.buffer.writeBoolean(payload.instant === true);
+                break;
+            case "shake":
+                this.buffer.writeByte(3);
+                this.buffer.writeByte(payload.slot);
+                this.buffer.writeShort(payload.randomAmplitude);
+                this.buffer.writeShort(payload.sineAmplitude);
+                this.buffer.writeShort(payload.sineFrequency);
+                break;
+        }
+        return this.buffer.toPacket(ServerPacketId.CAMERA_CONTROL);
     }
 
     encodeHandshake(

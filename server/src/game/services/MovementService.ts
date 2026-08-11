@@ -2,7 +2,7 @@ import { SkillId } from "../../../../client/rs/skill/skills";
 import { getItemDefinition } from "../../data/items";
 import { encodeMessage } from "../../network/messages";
 import { logger } from "../../utils/logger";
-import { buildRebuildRegionPayload } from "../../world/InstanceManager";
+import { buildRebuildNormalPayload, buildRebuildRegionPayload } from "../../world/InstanceManager";
 import type { ServerServices } from "../ServerServices";
 import type { EmotePlayActionData, MovementTeleportActionData } from "../actions/actionPayloads";
 import { RUN_ENERGY_MAX } from "../actor";
@@ -92,7 +92,7 @@ export class MovementService {
         x: number,
         y: number,
         level: number,
-        _forceRebuild: boolean = false,
+        forceRebuild: boolean = false,
     ): void {
         if (
             player.worldViewId === SAILING_WORLD_ENTITY_INDEX &&
@@ -136,6 +136,22 @@ export class MovementService {
             player.clearWalkDestination();
         } catch (err) {
             logger.warn("[movement] failed to clear interaction state", err);
+        }
+
+        if (forceRebuild) {
+            const socket = this.services.players?.getSocketByPlayerId(player.id);
+            if (socket) {
+                const payload = buildRebuildNormalPayload(
+                    Math.trunc(x) >> 3,
+                    Math.trunc(y) >> 3,
+                    this.services.cacheEnv,
+                    true,
+                );
+                const packet = encodeMessage({ type: "rebuild_normal", payload });
+                this.services.networkLayer.withDirectSendBypass("rebuild_normal", () =>
+                    this.services.networkLayer.sendWithGuard(socket, packet, "rebuild_normal"),
+                );
+            }
         }
 
         player.teleport(x, y, level);
@@ -213,6 +229,7 @@ export class MovementService {
                 );
             }
         }
+        this.services.locationService.replayTemporaryLocsForPlayer(player);
     }
 
     requestTeleportAction(

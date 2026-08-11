@@ -158,6 +158,29 @@ export class CombatHitProcessor {
             resolveEntity: (reference) => this.resolveEntity(reference),
             transformDamage: (pending, target, source) =>
                 this.transformIncomingDamage(pending, target, source),
+            onNpcLethalHit: ({
+                pending,
+                npc,
+                source,
+                proposedDamage,
+                style,
+                hitpointsBefore,
+                appliedClock,
+            }) =>
+                this.services.scriptRuntime?.runNpcPreDeath?.({
+                    npc,
+                    killer: source instanceof PlayerState ? source : undefined,
+                    killerPlayerId: source instanceof PlayerState ? source.id : undefined,
+                    tick: appliedClock,
+                    hit: {
+                        proposedDamage,
+                        style,
+                        maxHit: pending.maxHit,
+                        hitpointsBefore,
+                        hitpointsAfter: Math.max(0, hitpointsBefore - proposedDamage),
+                        cause: "combat",
+                    },
+                }) ?? false,
             onHitApplied: (hit, frame) => this.onHitApplied(hit, frame),
         });
     }
@@ -1392,6 +1415,24 @@ export class CombatHitProcessor {
             target.combatAttributes.get(CombatAttributes.WRATH_OF_AMASCUT_UNTIL_CLOCK)
         ) {
             damage = Math.max(0, Math.floor(damage * 1.25));
+        }
+
+        const spellId = pending.attack.traits.spellId;
+        if (
+            source instanceof PlayerState &&
+            target instanceof NpcState &&
+            pending.landed &&
+            damage > 0 &&
+            typeof spellId === "number" &&
+            spellId > 0
+        ) {
+            this.services.scriptRuntime?.runNpcMagicHit?.({
+                player: source,
+                npc: target,
+                spellId,
+                damage,
+                tick: pending.revealClock,
+            });
         }
 
         const effect = pending.enchantedBoltEffect;

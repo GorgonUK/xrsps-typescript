@@ -5,8 +5,9 @@ import {
     DORIC_ANVIL_AREA,
     DORIC_ANVIL_LOC_ID,
     DORIC_NPC_ID,
+    DORIC_WHETSTONE_LOC_ID,
 } from "./constants";
-import { createDoricTalkHandler } from "./dialogue";
+import { createDoricTalkHandler, startDoricAnvilConversation } from "./dialogue";
 
 function registerDoricAnvilGate(
     quest: QuestDefinition,
@@ -18,7 +19,6 @@ function registerDoricAnvilGate(
         services.system.logger.warn?.(
             "[quest:dorics-quest] No generic smith handler found; anvil gate not installed",
         );
-        return;
     }
     registry.registerLocScript({
         locId: DORIC_ANVIL_LOC_ID,
@@ -32,13 +32,31 @@ function registerDoricAnvilGate(
                 tile.y >= DORIC_ANVIL_AREA.minY &&
                 tile.y <= DORIC_ANVIL_AREA.maxY;
             if (inDoricHouse && !isQuestComplete(event.player, quest)) {
-                services.messaging.sendGameMessage(
-                    event.player,
-                    "You need to complete Doric's Quest before you can use Doric's anvils.",
-                );
+                startDoricAnvilConversation(quest, event.player, services);
                 return;
             }
-            return genericSmith(event);
+            if (genericSmith) return genericSmith(event);
+            services.messaging.sendGameMessage(event.player, "You use Doric's anvil.");
+        },
+    });
+}
+
+function registerDoricWhetstoneGate(
+    quest: QuestDefinition,
+    registry: IScriptRegistry,
+    services: ScriptServices,
+): void {
+    const genericUse = registry.findLocInteraction(DORIC_WHETSTONE_LOC_ID, "use");
+    registry.registerLocScript({
+        locId: DORIC_WHETSTONE_LOC_ID,
+        action: "use",
+        handler: (event) => {
+            if (!isQuestComplete(event.player, quest)) {
+                startDoricAnvilConversation(quest, event.player, services, true);
+                return;
+            }
+            if (genericUse) return genericUse(event);
+            services.messaging.sendGameMessage(event.player, "You use Doric's whetstone.");
         },
     });
 }
@@ -60,4 +78,5 @@ export function registerDoricInteractions(
         handler: handleDoricTalk,
     });
     registerDoricAnvilGate(quest, registry, services);
+    registerDoricWhetstoneGate(quest, registry, services);
 }

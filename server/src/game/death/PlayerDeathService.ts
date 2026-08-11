@@ -228,7 +228,10 @@ export class PlayerDeathService {
         // Phase 5: Teleport to Respawn
         // ========================================
         const respawn = this.validateRespawnLocation(this.defaultRespawn);
-        this.svc.movementService.teleportPlayer(player, respawn.x, respawn.y, respawn.level);
+        const disposedInstance = this.svc.instancedAreaManager?.dispose(player, respawn) ?? false;
+        if (!disposedInstance) {
+            this.svc.movementService.teleportPlayer(player, respawn.x, respawn.y, respawn.level);
+        }
 
         // Clear animation
         try {

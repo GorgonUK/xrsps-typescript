@@ -514,108 +514,134 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
         registry.registerItemOnItem(unstrungId, secondaryItemId, handler);
     };
 
-    const registerCombineHandler = (recipe: FletchingProductDefinition) => {
-        const secondaryId = recipe.secondaryItemId;
-        if (!secondaryId) return;
+    const combineDialogTitle = (recipe: FletchingProductDefinition): string =>
+        recipe.kind === "headless_arrow"
+            ? "Attach feathers"
+            : recipe.kind === "arrow"
+              ? "Attach arrowtips"
+              : recipe.kind === "arrowtips"
+                ? "Carve arrowtips"
+                : recipe.kind === "bolt_tips"
+                  ? "Carve bolt tips"
+                  : recipe.kind === "javelin_heads"
+                    ? "Carve javelin heads"
+                    : recipe.kind === "bolt"
+                      ? "Attach bolt tips"
+                      : recipe.kind === "javelin"
+                        ? "Attach javelin heads"
+                        : recipe.kind === "dart_tips"
+                          ? "Carve dart tips"
+                          : recipe.kind === "dart"
+                            ? "Attach feathers"
+                            : "How many would you like to make?";
+
+    const openCombineBatch = (
+        player: PlayerState,
+        recipe: FletchingProductDefinition,
+        maxBatch: number,
+        tick?: number,
+    ): void => {
+        const options = buildBatchOptions(maxBatch);
+        const dialogId = `fletch_combine_${recipe.id}`;
+        if (openDialogOptions && options.length > 0) {
+            openDialogOptions(player, {
+                id: dialogId,
+                modal: true,
+                title: combineDialogTitle(recipe),
+                options: options.map((option) => option.label),
+                onSelect: (index) => {
+                    const selected = options[index];
+                    if (!selected) {
+                        services.messaging.sendGameMessage(player, "You decide not to continue fletching.");
+                        return;
+                    }
+                    closeDialog?.(player, dialogId);
+                    const desired = Math.max(1, Math.min(selected.count, maxBatch));
+                    if (!enqueueFletchingAction(services, player, recipe, desired, tick)) {
+                        services.messaging.sendGameMessage(player, "You're too busy to fletch right now.");
+                    }
+                },
+            });
+            return;
+        }
+        const fallback = options[options.length - 1]?.count ?? Math.min(maxBatch, 1);
+        if (!enqueueFletchingAction(services, player, recipe, Math.max(1, fallback), tick)) {
+            services.messaging.sendGameMessage(player, "You're too busy to fletch right now.");
+        }
+    };
+
+    const registerCombineHandler = (recipes: readonly FletchingProductDefinition[]) => {
+        const first = recipes[0];
+        const secondaryId = first?.secondaryItemId;
+        if (!first || !secondaryId) return;
         const handler = ({ player, source, target, tick }: ItemOnItemEvent) => {
-            const sourceIsPrimary = source.itemId === recipe.inputItemId;
-            const targetIsPrimary = target.itemId === recipe.inputItemId;
+            const sourceIsPrimary = source.itemId === first.inputItemId;
+            const targetIsPrimary = target.itemId === first.inputItemId;
             if (!sourceIsPrimary && !targetIsPrimary) return;
             const other = sourceIsPrimary ? target : source;
             if (other.itemId !== secondaryId) return;
             const inventory = getInventoryItems(player);
-            const primaryCount = countItemQuantity(inventory, recipe.inputItemId);
+            const primaryCount = countItemQuantity(inventory, first.inputItemId);
             if (primaryCount <= 0) {
-                const label = recipe.primaryLabel ?? "the required items";
+                const label = first.primaryLabel ?? "the required items";
                 services.messaging.sendGameMessage(player, `You need ${label} in your inventory.`);
                 return;
             }
             const secondaryCount = countItemQuantity(inventory, secondaryId);
-            const secondaryIsTool = recipe.secondaryIsTool === true;
             if (secondaryCount <= 0) {
-                const label = recipe.secondaryLabel ?? "the other ingredient";
+                const label = first.secondaryLabel ?? "the other ingredient";
                 services.messaging.sendGameMessage(player, `You need ${label} to keep fletching.`);
                 return;
             }
             const level = services.skills.getSkill(player, SkillId.Fletching)?.baseLevel ?? 1;
-            if (level < recipe.level) {
-                services.messaging.sendGameMessage(
-                    player,
-                    `You need Fletching level ${recipe.level} to make ${recipe.productName}.`,
-                );
-                return;
-            }
-            const secondaryCap = secondaryIsTool ? Number.MAX_SAFE_INTEGER : secondaryCount;
-            const maxBatch = Math.max(0, Math.min(MAX_BATCH, Math.min(primaryCount, secondaryCap)));
-            if (!(maxBatch > 0)) {
-                services.messaging.sendGameMessage(player, "You can't fletch that right now.");
-                return;
-            }
-            const options = buildBatchOptions(maxBatch);
-            const dialogId = `fletch_combine_${recipe.id}`;
-            const dialogTitle =
-                recipe.kind === "headless_arrow"
-                    ? "Attach feathers"
-                    : recipe.kind === "arrow"
-                      ? "Attach arrowtips"
-                      : recipe.kind === "arrowtips"
-                        ? "Carve arrowtips"
-                        : recipe.kind === "bolt_tips"
-                          ? "Carve bolt tips"
-                          : recipe.kind === "javelin_heads"
-                            ? "Carve javelin heads"
-                            : recipe.kind === "bolt"
-                              ? "Attach bolt tips"
-                              : recipe.kind === "javelin"
-                                ? "Attach javelin heads"
-                                : recipe.kind === "dart_tips"
-                                  ? "Carve dart tips"
-                                  : recipe.kind === "dart"
-                                    ? "Attach feathers"
-                                    : "How many would you like to make?";
-            if (openDialogOptions && options.length > 0) {
+            const choices = recipes.map((recipe) => {
+                const secondaryCap = recipe.secondaryIsTool === true
+                    ? Number.MAX_SAFE_INTEGER
+                    : secondaryCount;
+                const maxBatch = Math.max(0, Math.min(MAX_BATCH, primaryCount, secondaryCap));
+                const levelMet = level >= recipe.level;
+                return {
+                    recipe,
+                    maxBatch,
+                    craftable: levelMet && maxBatch > 0,
+                    label: levelMet
+                        ? `${recipe.productName} (${maxBatch} ready)`
+                        : `${recipe.productName} (Lvl ${recipe.level})`,
+                };
+            });
+            if (choices.length > 1 && openDialogOptions) {
+                const dialogId = `fletch_combine_${first.inputItemId}_${secondaryId}`;
                 openDialogOptions(player, {
                     id: dialogId,
                     modal: true,
-                    title: dialogTitle,
-                    options: options.map((opt) => opt.label),
-                    onSelect: (idx) => {
-                        const selected = options[idx];
+                    title: "What would you like to make?",
+                    options: choices.map((choice) => choice.label),
+                    disabledOptions: choices.map((choice) => !choice.craftable),
+                    onSelect: (index) => {
+                        const selected = choices[index];
                         if (!selected) {
-                            services.messaging.sendGameMessage(
-                                player,
-                                "You decide not to continue fletching.",
-                            );
+                            services.messaging.sendGameMessage(player, "You decide not to continue fletching.");
+                            return;
+                        }
+                        if (!selected.craftable) {
+                            services.messaging.sendGameMessage(player, `You need Fletching level ${selected.recipe.level} for that.`);
                             return;
                         }
                         closeDialog?.(player, dialogId);
-                        const desired = Math.max(1, Math.min(selected.count, maxBatch));
-                        const ok = enqueueFletchingAction(services, player, recipe, desired, tick);
-                        if (!ok) {
-                            services.messaging.sendGameMessage(
-                                player,
-                                "You're too busy to fletch right now.",
-                            );
-                        }
+                        openCombineBatch(player, selected.recipe, selected.maxBatch, tick);
                     },
                 });
                 return;
             }
-            const fallback = options[options.length - 1]?.count ?? Math.min(maxBatch, 1);
-            const ok = enqueueFletchingAction(
-                services,
-                player,
-                recipe,
-                Math.max(1, fallback),
-                tick,
-            );
-            if (!ok) {
-                services.messaging.sendGameMessage(player, "You're too busy to fletch right now.");
+            const selected = choices.find((choice) => choice.craftable);
+            if (!selected) {
+                const requiredLevel = Math.min(...choices.map((choice) => choice.recipe.level));
+                services.messaging.sendGameMessage(player, `You need Fletching level ${requiredLevel} to make anything from that.`);
+                return;
             }
+            openCombineBatch(player, selected.recipe, selected.maxBatch, tick);
         };
-        if (typeof secondaryId === "number" && secondaryId > 0) {
-            registry.registerItemOnItem(recipe.inputItemId, secondaryId, handler);
-        }
+        registry.registerItemOnItem(first.inputItemId, secondaryId, handler);
     };
 
     for (const logId of FLETCHING_LOG_IDS) {
@@ -624,7 +650,14 @@ export function register(registry: IScriptRegistry, services: ScriptServices): v
     for (const unstrungId of FLETCHING_STRING_IDS) {
         registerStringingHandler(unstrungId);
     }
+    const combineGroups = new Map<string, FletchingProductDefinition[]>();
     for (const recipe of FLETCHING_COMBINE_RECIPES) {
-        registerCombineHandler(recipe);
+        const secondaryId = recipe.secondaryItemId;
+        if (!secondaryId) continue;
+        const pair = [recipe.inputItemId, secondaryId].sort((a, b) => a - b).join("#");
+        const group = combineGroups.get(pair) ?? [];
+        group.push(recipe);
+        combineGroups.set(pair, group);
     }
+    for (const recipes of combineGroups.values()) registerCombineHandler(recipes);
 }

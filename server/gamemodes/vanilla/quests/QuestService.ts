@@ -34,7 +34,11 @@ const QUEST_COMPLETE_JINGLE_ID = 152;
 // ============================================================================
 
 export function getQuestStage(player: PlayerState, quest: QuestDefinition): number {
-    return player.varps.getVarpValue(quest.varpId);
+    const value = player.varps.getVarpValue(quest.varpId);
+    if (!quest.stageBits) return value;
+    const width = quest.stageBits.end - quest.stageBits.start + 1;
+    const mask = 2 ** width - 1;
+    return (value >>> quest.stageBits.start) & mask;
 }
 
 export function setQuestStage(
@@ -43,8 +47,16 @@ export function setQuestStage(
     services: ScriptServices,
     value: number,
 ): void {
-    player.varps.setVarpValue(quest.varpId, value);
-    services.variables.sendVarp(player, quest.varpId, value);
+    let nextValue = value;
+    if (quest.stageBits) {
+        const width = quest.stageBits.end - quest.stageBits.start + 1;
+        const valueMask = 2 ** width - 1;
+        const rangeMask = valueMask << quest.stageBits.start;
+        const current = player.varps.getVarpValue(quest.varpId);
+        nextValue = (current & ~rangeMask) | ((value & valueMask) << quest.stageBits.start);
+    }
+    player.varps.setVarpValue(quest.varpId, nextValue);
+    services.variables.sendVarp(player, quest.varpId, nextValue);
     queuePlayerQuestListUi(player, services.dialog);
 }
 
@@ -54,6 +66,41 @@ export function isQuestStarted(player: PlayerState, quest: QuestDefinition): boo
 
 export function isQuestComplete(player: PlayerState, quest: QuestDefinition): boolean {
     return getQuestStage(player, quest) >= quest.completionValue;
+}
+
+export function getUnmetQuestRequirements(
+    player: PlayerState,
+    services: ScriptServices,
+    quest: QuestDefinition,
+): string[] {
+    const requirements = quest.requirements;
+    if (!requirements) return [];
+    const unmet: string[] = [];
+    if (
+        requirements.questPoints !== undefined &&
+        player.varps.getVarpValue(VARP_QUEST_POINTS) < requirements.questPoints
+    ) {
+        unmet.push(`${requirements.questPoints} Quest Points`);
+    }
+    for (const requirement of requirements.skills ?? []) {
+        if (services.skills.getSkill(player, requirement.skillId).baseLevel < requirement.level) {
+            unmet.push(`Level ${requirement.level} ${requirement.label}`);
+        }
+    }
+    for (const requirement of requirements.quests ?? []) {
+        if (player.varps.getVarpValue(requirement.varpId) < requirement.minValue) {
+            unmet.push(requirement.label);
+        }
+    }
+    return unmet;
+}
+
+export function meetsQuestRequirements(
+    player: PlayerState,
+    services: ScriptServices,
+    quest: QuestDefinition,
+): boolean {
+    return getUnmetQuestRequirements(player, services, quest).length === 0;
 }
 
 // ============================================================================
@@ -127,7 +174,29 @@ export function completeQuest(
     player: PlayerState,
     services: ScriptServices,
     quest: QuestDefinition,
-): void {
+): boolean {
+    if (isQuestComplete(player, quest)) return false;
+
+    const itemRewards = quest.rewards.items ?? [];
+    if (!canReceiveQuestItemRewards(player, services, itemRewards)) {
+        services.messaging.sendGameMessage(
+            player,
+            "You need more free inventory space to receive your quest reward.",
+        );
+        return false;
+    }
+
+    for (const item of itemRewards) {
+        const result = services.inventory.addItemToInventory(player, item.itemId, item.quantity);
+        if (result.added !== item.quantity) {
+            services.system.logger.error?.(
+                `[quests] Failed to grant full reward player=${player.id} quest="${quest.name}" item=${item.itemId} expected=${item.quantity} added=${result.added}`,
+            );
+            return false;
+        }
+    }
+    if (itemRewards.length > 0) services.inventory.snapshotInventory(player);
+
     setQuestStage(player, quest, services, quest.completionValue);
 
     const questPointTotal =
@@ -138,14 +207,6 @@ export function completeQuest(
     for (const xp of quest.rewards.xp ?? []) {
         services.skills.addSkillXp(player, xp.skillId, xp.amount);
     }
-    const itemRewards = quest.rewards.items ?? [];
-    if (itemRewards.length > 0) {
-        for (const item of itemRewards) {
-            services.inventory.addItemToInventory(player, item.itemId, item.quantity);
-        }
-        services.inventory.snapshotInventory(player);
-    }
-
     services.sound.sendJingle(player, QUEST_COMPLETE_JINGLE_ID);
     services.messaging.sendGameMessage(
         player,
@@ -156,6 +217,33 @@ export function completeQuest(
     services.system.logger.info?.(
         `[quests] Quest completed player=${player.id} quest="${quest.name}" qp=${questPointTotal}`,
     );
+    return true;
+}
+
+function canReceiveQuestItemRewards(
+    player: PlayerState,
+    services: ScriptServices,
+    rewards: readonly { itemId: number; quantity: number }[],
+): boolean {
+    if (rewards.length === 0) return true;
+    const inventory = services.inventory.getInventoryItems(player);
+    let freeSlots = inventory.filter((entry) => entry.itemId <= 0 || entry.quantity <= 0).length;
+    const presentStacks = new Set(
+        inventory
+            .filter((entry) => entry.itemId > 0 && entry.quantity > 0)
+            .map((entry) => entry.itemId),
+    );
+    for (const reward of rewards) {
+        const definition = services.data.getObjType(reward.itemId);
+        const stackable =
+            Number(definition?.stackability ?? 0) === 1 ||
+            Number(definition?.stackable ?? 0) === 1;
+        const requiredSlots = stackable && presentStacks.has(reward.itemId) ? 0 : stackable ? 1 : reward.quantity;
+        if (requiredSlots > freeSlots) return false;
+        freeSlots -= requiredSlots;
+        if (stackable) presentStacks.add(reward.itemId);
+    }
+    return true;
 }
 
 /**

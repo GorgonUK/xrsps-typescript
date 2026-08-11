@@ -12,6 +12,7 @@ export const CLAY_ITEM_ID = 434;
 export const COPPER_ORE_ITEM_ID = 436;
 export const IRON_ORE_ITEM_ID = 440;
 export const COINS_ITEM_ID = 995;
+export const BRONZE_PICKAXE_ITEM_ID = 1265;
 export const STEEL_PICKAXE_ITEM_ID = 1269;
 
 export const REQUIRED_ITEMS: QuestItemRequirement[] = [
@@ -21,4 +22,5 @@ export const REQUIRED_ITEMS: QuestItemRequirement[] = [
 ];
 
 export const DORIC_ANVIL_LOC_ID = 2031;
+export const DORIC_WHETSTONE_LOC_ID = 10641;
 export const DORIC_ANVIL_AREA = { minX: 2949, maxX: 2952, minY: 3450, maxY: 3453, level: 0 };

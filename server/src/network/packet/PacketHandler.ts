@@ -1272,6 +1272,20 @@ function convertDecodedPacketToMessage(packet: DecodedPacket): ClientToServer | 
                 },
             };
 
+        case "item_use_on_player":
+            return {
+                type: "inventory_use_on",
+                payload: {
+                    slot: packet.itemSlot,
+                    itemId: packet.itemId,
+                    modifierFlags: packet.ctrlHeld ? 1 : 0,
+                    target: {
+                        kind: "player",
+                        id: packet.playerIndex,
+                    },
+                },
+            };
+
         case "item_use_on_loc":
             return {
                 type: "inventory_use_on",

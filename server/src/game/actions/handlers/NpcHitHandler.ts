@@ -141,10 +141,18 @@ export class NpcHitHandler {
             data.hit?.magicImpactEffectsScheduled === true;
 
         // Apply hitsplat to NPC
+        const appliedDamage = this.services.interceptNpcLethalHit(
+            player,
+            npc,
+            damage,
+            style,
+            hitsplatTick,
+            maxHit,
+        );
         const npcHitsplat = this.services.applyNpcHitsplat(
             npc,
             style,
-            damage,
+            appliedDamage,
             hitsplatTick,
             maxHit,
         );

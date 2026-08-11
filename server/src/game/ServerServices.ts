@@ -65,6 +65,7 @@ import type { WidgetAction } from "../widgets/WidgetManager";
 import type { CacheEnv } from "../world/CacheEnv";
 import type { DoorStateManager } from "../world/DoorStateManager";
 import type { DynamicLocStateStore } from "../world/DynamicLocStateStore";
+import type { InstancedAreaManager } from "../world/InstancedAreaManager";
 import type { MapCollisionService } from "../world/MapCollisionService";
 // ── Game – actions ──────────────────────────────────────────────────────────
 import type { ActionScheduler } from "./actions/ActionScheduler";
@@ -221,6 +222,7 @@ export interface ServerServices {
     followerCombatManager?: FollowerCombatManager;
     interfaceService?: InterfaceService;
     sailingInstanceManager?: SailingInstanceManager;
+    instancedAreaManager?: InstancedAreaManager;
     doorManager?: DoorStateManager;
     tickOrchestrator?: TickPhaseOrchestrator;
 
