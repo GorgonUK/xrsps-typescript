@@ -2414,7 +2414,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
         return render.renderTransparentNpcPass(this, npcDataTextureIndex, npcDataTexture);
     }
 
-    updateGroundItemMeshes(stacks: ClientGroundItemStack[]): void {
+    updateGroundItemMeshes(stacks: ClientGroundItemStack[]): boolean {
         return render.updateGroundItemMeshes(this, stacks);
     }
 
@@ -2425,7 +2425,7 @@ export class WebGLOsrsRenderer extends GameRenderer<WebGLMapSquare> {
     public rebuildGroundItemsForMap(
         map: WebGLMapSquare,
         stacks: ClientGroundItemStack[] | undefined,
-    ): void {
+    ): boolean {
         return render.rebuildGroundItemsForMap(this, map, stacks);
     }
 
