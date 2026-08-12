@@ -56,6 +56,7 @@ import { NpcState, type NpcUpdateDelta } from "../npc";
 import { MovementProcessor } from "../movement/engine/MovementProcessor";
 import { PlayerState } from "../player";
 import { PrayerDrainProcessor } from "../prayer/engine/PrayerDrainProcessor";
+import { ZoneTriggerService } from "../scripts/ZoneTriggerService";
 import type { TickFrame } from "../tick/TickPhaseOrchestrator";
 import { EQUIPMENT_STATS_GROUP_ID } from "./EquipmentStatsUiService";
 
@@ -108,6 +109,7 @@ export class TickPhaseService {
     private combatRetaliationEngine?: CombatRetaliationEngine;
     private movementProcessor?: MovementProcessor;
     private prayerDrainProcessor?: PrayerDrainProcessor;
+    private zoneTriggerService?: ZoneTriggerService;
 
     constructor(private readonly svc: ServerServices) {}
 
@@ -123,6 +125,11 @@ export class TickPhaseService {
     private getPrayerDrainProcessor(): PrayerDrainProcessor {
         this.prayerDrainProcessor ??= new PrayerDrainProcessor(this.svc);
         return this.prayerDrainProcessor;
+    }
+
+    private getZoneTriggerService(): ZoneTriggerService {
+        this.zoneTriggerService ??= new ZoneTriggerService(this.svc.scriptRuntime);
+        return this.zoneTriggerService;
     }
 
     private playerHasHitpointsCapeRegen(player: PlayerState): boolean {
@@ -294,6 +301,10 @@ export class TickPhaseService {
         players.forEach((sock, player) => entries.push({ sock, player }));
 
         entries.sort((a, b) => a.player.getPidPriority() - b.player.getPidPriority());
+        const zoneTriggers = this.getZoneTriggerService();
+        for (const { player } of entries) {
+            zoneTriggers.observeBeforeMovement(player);
+        }
 
         for (const { sock, player } of entries) {
             players.applyInteractionFacing(sock, player, npcLookup, frame.tick);
@@ -427,6 +438,7 @@ export class TickPhaseService {
         );
 
         for (const { sock, player } of entries) {
+            zoneTriggers.processAfterMovement(player, frame.tick);
             const moved = movementResults.get(player.id) ?? false;
             const steps = player.drainStepPositions() as StepRecord[] | undefined;
 
@@ -701,7 +713,14 @@ export class TickPhaseService {
         this.processPendingManualCombatSpells(frame.tick);
         const hitProcessor = this.getCombatHitProcessor();
         if (tickResult && hitProcessor) {
-            hitProcessor.processPreparedAttacks(tickResult.preparedAttacks, frame.tick);
+            const attacks = tickResult.preparedAttacks.filter((attack) => {
+                if (attack.attacker.type !== "npc" || attack.target.type !== "player") return true;
+                const npc = this.svc.npcManager?.getById(attack.attacker.id);
+                const target = this.svc.players?.getById(attack.target.id);
+                if (!npc || !target) return true;
+                return !this.svc.scriptRuntime.runNpcAttack({ npc, target, attack, tick: frame.tick });
+            });
+            hitProcessor.processPreparedAttacks(attacks, frame.tick);
         }
         hitProcessor?.processDeferredHits(frame.tick, frame);
         this.refreshInteractionFacing(frame);
@@ -814,6 +833,9 @@ export class TickPhaseService {
             }
             this.svc.followerCombatManager?.resetPlayer(player.id);
             this.svc.followerManager?.despawnFollowerForPlayer(player.id, false);
+            this.svc.instancedAreaManager?.dispose(player);
+            this.svc.npcManager?.removeNpcsOwnedByPlayer(player.id);
+            this.svc.locationService.clearTemporaryLocsOwnedByPlayer(player.id);
             this.svc.actionScheduler.unregisterPlayer(player.id);
         });
     }
@@ -1121,6 +1143,7 @@ export class TickPhaseService {
     private flushPerPlayerDirtyState(frame: TickFrame): void {
         const { players } = this.svc;
         if (!players) return;
+        this.svc.locationService.processTemporaryLocs(frame.tick);
         players.forEach((_, player) => {
             player.clearTeleportFlag();
         });

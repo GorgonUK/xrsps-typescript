@@ -66,9 +66,13 @@ export class SailingInstanceManager {
 
         const { willBoat, anneBoat, boatHp } = SAILING_INTRO_NPC_SPAWNS;
         for (const spawn of [willBoat, anneBoat, boatHp]) {
-            const npc = this.svc.npcManager!.spawnTransientNpc({ ...spawn, wanderRadius: 0 });
+            const npc = this.svc.npcManager!.spawnTransientNpc({
+                ...spawn,
+                wanderRadius: 0,
+                worldViewId: SAILING_WORLD_ENTITY_INDEX,
+                ownerPlayerId: player.id,
+            });
             if (npc) {
-                npc.worldViewId = SAILING_WORLD_ENTITY_INDEX;
                 player.instanceNpcIds.add(npc.id);
             } else {
                 logger.warn(

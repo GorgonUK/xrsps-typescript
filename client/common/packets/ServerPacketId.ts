@@ -89,6 +89,7 @@ export const enum ServerPacketId {
     LOC_ADD_CHANGE = 134,
     LOC_DEL = 135,
     LOC_ANIM = 136,
+    CAMERA_CONTROL = 137,
     SOUND = 131,
     PLAY_JINGLE = 132,
     PLAY_SONG = 133,
@@ -208,6 +209,7 @@ export const SERVER_PACKET_LENGTHS: Record<ServerPacketId, number> = {
     [ServerPacketId.LOC_ADD_CHANGE]: -1,
     [ServerPacketId.LOC_DEL]: -1,
     [ServerPacketId.LOC_ANIM]: 10, // locId(2) + x(2) + y(2) + level(1) + shape/rot(1) + animId(2)
+    [ServerPacketId.CAMERA_CONTROL]: -1,
     [ServerPacketId.SOUND]: -1,
     [ServerPacketId.PLAY_JINGLE]: 5, // jingleId(2) + delay(3, IME)
     // Music fade params: trackId, outDelay, outDur, inDelay, inDur

@@ -2,22 +2,36 @@ import { logger } from "../../utils/logger";
 import {
     ANY_ITEM_ID,
     ANY_LOC_ID,
+    ANY_NPC_ID,
     type ClientMessageHandler,
     type CommandHandler,
     type EquipmentActionHandler,
+    type GroundItemInteractionHandler,
     type IScriptRegistry,
+    type ItemOnGroundHandler,
     type ItemOnItemHandler,
     type ItemOnLocHandler,
+    type ItemOnNpcHandler,
+    type ItemOnPlayerHandler,
     type LocInteractionHandler,
     type NpcInteractionHandler,
+    type NpcMagicHitHandler,
+    type NpcAttackHandler,
+    type NpcPreDeathHandler,
     type RegionEventHandler,
     type ScriptActionHandler,
     type ScriptRegistrationResult,
     type TickHandler,
     type WidgetActionHandler,
+    type ZoneDefinition,
+    type ZoneEventHandler,
+    type ZoneEventType,
+    type ZoneHandlers,
 } from "./types";
 
 type RegistryKey = string;
+type HandlerRegistration<T> = { readonly handler: T };
+type HandlerStackMap<K, T> = Map<K, HandlerRegistration<T>[]>;
 
 const normalizeOption = (value?: string): string => {
     if (!value) return "";
@@ -50,32 +64,115 @@ const makeWidgetKey = (
 const makeEquipmentKey = (itemId: number, option?: string): RegistryKey =>
     `${itemId}#${normalizeOption(option)}`;
 
-const makeRegistrationResult = (
-    map: Map<RegistryKey, NpcInteractionHandler | LocInteractionHandler>,
-    key: RegistryKey,
-): ScriptRegistrationResult => ({
-    unregister: () => {
-        map.delete(key);
-    },
-});
+const makeZoneKey = (zoneId: string, type: ZoneEventType): RegistryKey => `${zoneId}#${type}`;
 
-function warnOverwrite(map: { has(key: unknown): boolean }, key: unknown, label: string): void {
+function normalizeZoneDefinition(definition: ZoneDefinition): ZoneDefinition {
+    const id = definition.id.trim();
+    if (!id) throw new Error("Zone definitions require a non-empty id.");
+    const x1 = Math.trunc(definition.minX);
+    const x2 = Math.trunc(definition.maxX);
+    const y1 = Math.trunc(definition.minY);
+    const y2 = Math.trunc(definition.maxY);
+    const normalizeValues = (values?: readonly number[]): number[] | undefined => {
+        if (!values) return undefined;
+        return [...new Set(values.filter(Number.isFinite).map(Math.trunc))];
+    };
+    return {
+        id,
+        minX: Math.min(x1, x2),
+        maxX: Math.max(x1, x2),
+        minY: Math.min(y1, y2),
+        maxY: Math.max(y1, y2),
+        levels: normalizeValues(definition.levels),
+        worldViewIds: normalizeValues(definition.worldViewIds),
+    };
+}
+
+function logStackedRegistration(map: { has(key: unknown): boolean }, key: unknown, label: string): void {
     if (map.has(key)) {
-        logger.info(`[script] warning: overwriting ${label} handler for key "${key}"`);
+        logger.debug(`[script] stacked ${label} handler for key "${key}"`);
     }
 }
 
+function warnOverwrite(map: { has(key: unknown): boolean }, key: unknown, label: string): void {
+    if (map.has(key)) {
+        logger.warn(`[script] overwriting ${label} handler for key "${key}"`);
+    }
+}
+
+function registerStackedHandler<K, T>(
+    map: HandlerStackMap<K, T>,
+    key: K,
+    handler: T,
+    label: string,
+): ScriptRegistrationResult {
+    logStackedRegistration(map, key, label);
+    const entry: HandlerRegistration<T> = { handler };
+    const stack = map.get(key) ?? [];
+    stack.push(entry);
+    map.set(key, stack);
+
+    let registered = true;
+    return {
+        unregister: () => {
+            if (!registered) return;
+            registered = false;
+            const current = map.get(key);
+            if (!current) return;
+            const index = current.indexOf(entry);
+            if (index < 0) return;
+            current.splice(index, 1);
+            if (current.length === 0) {
+                map.delete(key);
+            }
+        },
+    };
+}
+
+function findStackedHandler<K, T>(map: HandlerStackMap<K, T>, key: K): T | undefined {
+    const stack = map.get(key);
+    return stack?.[stack.length - 1]?.handler;
+}
+
+function combineRegistrations(
+    registrations: readonly ScriptRegistrationResult[],
+): ScriptRegistrationResult {
+    return {
+        unregister: () => {
+            for (const registration of registrations) {
+                registration.unregister();
+            }
+        },
+    };
+}
+
 export class ScriptRegistry implements IScriptRegistry {
-    private readonly npcHandlers = new Map<RegistryKey, NpcInteractionHandler>();
-    private readonly locHandlers = new Map<RegistryKey, LocInteractionHandler>();
-    private readonly locActionHandlers = new Map<string, LocInteractionHandler>();
-    private readonly npcActionHandlers = new Map<string, NpcInteractionHandler>();
-    private readonly itemHandlers = new Map<RegistryKey, ItemOnItemHandler>();
-    private readonly itemOnLocHandlers = new Map<RegistryKey, ItemOnLocHandler>();
-    private readonly itemActionHandlers = new Map<string, ItemOnItemHandler>();
-    private readonly equipmentHandlers = new Map<RegistryKey, EquipmentActionHandler>();
-    private readonly equipmentOptionHandlers = new Map<string, EquipmentActionHandler>();
+    private readonly npcHandlers: HandlerStackMap<RegistryKey, NpcInteractionHandler> = new Map();
+    private readonly locHandlers: HandlerStackMap<RegistryKey, LocInteractionHandler> = new Map();
+    private readonly locActionHandlers: HandlerStackMap<string, LocInteractionHandler> = new Map();
+    private readonly npcActionHandlers: HandlerStackMap<string, NpcInteractionHandler> = new Map();
+    private readonly npcPreDeathHandlers: HandlerStackMap<number, NpcPreDeathHandler> = new Map();
+    private readonly npcMagicHitHandlers: HandlerStackMap<number, NpcMagicHitHandler> = new Map();
+    private readonly npcAttackHandlers: HandlerStackMap<number, NpcAttackHandler> = new Map();
+    private readonly itemHandlers: HandlerStackMap<RegistryKey, ItemOnItemHandler> = new Map();
+    private readonly itemOnLocHandlers: HandlerStackMap<RegistryKey, ItemOnLocHandler> = new Map();
+    private readonly itemOnNpcHandlers: HandlerStackMap<RegistryKey, ItemOnNpcHandler> = new Map();
+    private readonly itemOnPlayerHandlers: HandlerStackMap<RegistryKey, ItemOnPlayerHandler> =
+        new Map();
+    private readonly groundItemHandlers: HandlerStackMap<
+        RegistryKey,
+        GroundItemInteractionHandler
+    > = new Map();
+    private readonly itemOnGroundHandlers: HandlerStackMap<RegistryKey, ItemOnGroundHandler> =
+        new Map();
+    private readonly itemActionHandlers: HandlerStackMap<string, ItemOnItemHandler> = new Map();
+    private readonly equipmentHandlers: HandlerStackMap<RegistryKey, EquipmentActionHandler> =
+        new Map();
+    private readonly equipmentOptionHandlers: HandlerStackMap<string, EquipmentActionHandler> =
+        new Map();
     private readonly regionHandlers = new Map<number, Set<RegionEventHandler>>();
+    private readonly zoneDefinitions: HandlerStackMap<string, ZoneDefinition> = new Map();
+    private readonly zoneHandlers: HandlerStackMap<RegistryKey, ZoneEventHandler> = new Map();
     private readonly tickHandlers = new Set<TickHandler>();
     private readonly widgetHandlers = new Map<RegistryKey, WidgetActionHandler[]>();
     /** RSMod-style button handlers keyed by (interfaceId << 16) | componentId */
@@ -90,9 +187,7 @@ export class ScriptRegistry implements IScriptRegistry {
         option?: string,
     ): ScriptRegistrationResult {
         const key = makeNpcKey(npcId, option);
-        warnOverwrite(this.npcHandlers, key, "npc");
-        this.npcHandlers.set(key, handler);
-        return makeRegistrationResult(this.npcHandlers, key);
+        return registerStackedHandler(this.npcHandlers, key, handler, "npc");
     }
 
     registerNpcScript(params: {
@@ -103,15 +198,31 @@ export class ScriptRegistry implements IScriptRegistry {
         return this.registerNpcInteraction(params.npcId, params.handler, params.option);
     }
 
+    registerNpcPreDeath(
+        npcId: number,
+        handler: NpcPreDeathHandler,
+    ): ScriptRegistrationResult {
+        return registerStackedHandler(this.npcPreDeathHandlers, npcId, handler, "npc-pre-death");
+    }
+
+    registerNpcMagicHit(
+        npcId: number,
+        handler: NpcMagicHitHandler,
+    ): ScriptRegistrationResult {
+        return registerStackedHandler(this.npcMagicHitHandlers, npcId, handler, "npc-magic-hit");
+    }
+
+    registerNpcAttack(npcId: number, handler: NpcAttackHandler): ScriptRegistrationResult {
+        return registerStackedHandler(this.npcAttackHandlers, npcId, handler, "npc-attack");
+    }
+
     registerLocInteraction(
         locId: number,
         handler: LocInteractionHandler,
         action?: string,
     ): ScriptRegistrationResult {
         const key = makeLocKey(locId, action);
-        warnOverwrite(this.locHandlers, key, "loc");
-        this.locHandlers.set(key, handler);
-        return makeRegistrationResult(this.locHandlers, key);
+        return registerStackedHandler(this.locHandlers, key, handler, "loc");
     }
 
     registerLocScript(params: {
@@ -124,13 +235,7 @@ export class ScriptRegistry implements IScriptRegistry {
 
     registerLocAction(action: string, handler: LocInteractionHandler): ScriptRegistrationResult {
         const key = normalizeOption(action);
-        warnOverwrite(this.locActionHandlers, key, "loc-action");
-        this.locActionHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.locActionHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(this.locActionHandlers, key, handler, "loc-action");
     }
 
     registerItemOnItem(
@@ -141,15 +246,10 @@ export class ScriptRegistry implements IScriptRegistry {
     ): ScriptRegistrationResult {
         const forwardKey = makeItemKey(sourceItemId, targetItemId, option);
         const reverseKey = makeItemKey(targetItemId, sourceItemId, option);
-        warnOverwrite(this.itemHandlers, forwardKey, "item-on-item");
-        this.itemHandlers.set(forwardKey, handler);
-        this.itemHandlers.set(reverseKey, handler);
-        return {
-            unregister: () => {
-                this.itemHandlers.delete(forwardKey);
-                this.itemHandlers.delete(reverseKey);
-            },
-        };
+        const registrations = [...new Set([forwardKey, reverseKey])].map((key) =>
+            registerStackedHandler(this.itemHandlers, key, handler, "item-on-item"),
+        );
+        return combineRegistrations(registrations);
     }
 
     registerItemOnLoc(
@@ -159,13 +259,45 @@ export class ScriptRegistry implements IScriptRegistry {
         option?: string,
     ): ScriptRegistrationResult {
         const key = makeItemKey(sourceItemId, locId, option);
-        warnOverwrite(this.itemOnLocHandlers, key, "item-on-loc");
-        this.itemOnLocHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.itemOnLocHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(this.itemOnLocHandlers, key, handler, "item-on-loc");
+    }
+
+    registerItemOnNpc(
+        sourceItemId: number,
+        npcId: number,
+        handler: ItemOnNpcHandler,
+        option?: string,
+    ): ScriptRegistrationResult {
+        const key = makeItemKey(sourceItemId, npcId, option);
+        return registerStackedHandler(this.itemOnNpcHandlers, key, handler, "item-on-npc");
+    }
+
+    registerItemOnPlayer(
+        sourceItemId: number,
+        handler: ItemOnPlayerHandler,
+        option?: string,
+    ): ScriptRegistrationResult {
+        const key = makeItemKey(sourceItemId, undefined, option);
+        return registerStackedHandler(this.itemOnPlayerHandlers, key, handler, "item-on-player");
+    }
+
+    registerGroundItemInteraction(
+        itemId: number,
+        handler: GroundItemInteractionHandler,
+        option?: string,
+    ): ScriptRegistrationResult {
+        const key = makeItemKey(itemId, undefined, option);
+        return registerStackedHandler(this.groundItemHandlers, key, handler, "ground-item");
+    }
+
+    registerItemOnGround(
+        sourceItemId: number,
+        targetItemId: number,
+        handler: ItemOnGroundHandler,
+        option?: string,
+    ): ScriptRegistrationResult {
+        const key = makeItemKey(sourceItemId, targetItemId, option);
+        return registerStackedHandler(this.itemOnGroundHandlers, key, handler, "item-on-ground");
     }
 
     registerItemAction(
@@ -174,13 +306,7 @@ export class ScriptRegistry implements IScriptRegistry {
         option?: string,
     ): ScriptRegistrationResult {
         const key = makeItemKey(itemId, undefined, option);
-        warnOverwrite(this.itemActionHandlers, key, "item-action");
-        this.itemActionHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.itemActionHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(this.itemActionHandlers, key, handler, "item-action");
     }
 
     registerEquipmentAction(
@@ -189,13 +315,7 @@ export class ScriptRegistry implements IScriptRegistry {
         option?: string,
     ): ScriptRegistrationResult {
         const key = makeEquipmentKey(itemId, option);
-        warnOverwrite(this.equipmentHandlers, key, "equipment");
-        this.equipmentHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.equipmentHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(this.equipmentHandlers, key, handler, "equipment");
     }
 
     registerEquipmentOption(
@@ -203,13 +323,12 @@ export class ScriptRegistry implements IScriptRegistry {
         handler: EquipmentActionHandler,
     ): ScriptRegistrationResult {
         const key = normalizeOption(option);
-        warnOverwrite(this.equipmentOptionHandlers, key, "equipment-option");
-        this.equipmentOptionHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.equipmentOptionHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(
+            this.equipmentOptionHandlers,
+            key,
+            handler,
+            "equipment-option",
+        );
     }
 
     registerWidgetAction(params: {
@@ -263,13 +382,34 @@ export class ScriptRegistry implements IScriptRegistry {
 
     registerNpcAction(option: string, handler: NpcInteractionHandler): ScriptRegistrationResult {
         const key = normalizeOption(option);
-        warnOverwrite(this.npcActionHandlers, key, "npc-action");
-        this.npcActionHandlers.set(key, handler);
-        return {
-            unregister: () => {
-                this.npcActionHandlers.delete(key);
-            },
-        };
+        return registerStackedHandler(this.npcActionHandlers, key, handler, "npc-action");
+    }
+
+    registerZone(
+        definition: ZoneDefinition,
+        handlers: ZoneHandlers,
+    ): ScriptRegistrationResult {
+        const zone = normalizeZoneDefinition(definition);
+        const registrations: ScriptRegistrationResult[] = [
+            registerStackedHandler(this.zoneDefinitions, zone.id, zone, "zone-definition"),
+        ];
+        for (const type of ["enter", "exit", "step"] as const) {
+            const handler = handlers[type];
+            if (!handler) continue;
+            registrations.push(
+                registerStackedHandler(
+                    this.zoneHandlers,
+                    makeZoneKey(zone.id, type),
+                    handler,
+                    `zone-${type}`,
+                ),
+            );
+        }
+        return combineRegistrations(registrations);
+    }
+
+    findZoneHandler(zoneId: string, type: ZoneEventType): ZoneEventHandler | undefined {
+        return findStackedHandler(this.zoneHandlers, makeZoneKey(zoneId.trim(), type));
     }
 
     registerRegionHandler(regionId: number, handler: RegionEventHandler): ScriptRegistrationResult {
@@ -347,36 +487,51 @@ export class ScriptRegistry implements IScriptRegistry {
 
     findItemAction(itemId: number, option?: string): ItemOnItemHandler | undefined {
         const key = makeItemKey(itemId, undefined, option);
-        const direct = this.itemActionHandlers.get(key);
+        const direct = findStackedHandler(this.itemActionHandlers, key);
         if (direct) return direct;
         if (option) {
             const fallback = makeItemKey(itemId, undefined, undefined);
-            return this.itemActionHandlers.get(fallback);
+            return findStackedHandler(this.itemActionHandlers, fallback);
         }
         return undefined;
     }
 
     findNpcInteraction(npcId: number, option?: string): NpcInteractionHandler | undefined {
         const key = makeNpcKey(npcId, option);
-        const direct = this.npcHandlers.get(key);
+        const direct = findStackedHandler(this.npcHandlers, key);
         if (direct) return direct;
-        return this.npcActionHandlers.get(normalizeOption(option));
+        return findStackedHandler(this.npcActionHandlers, normalizeOption(option));
     }
 
     findNpcInteractionDirect(npcId: number, option?: string): NpcInteractionHandler | undefined {
         const key = makeNpcKey(npcId, option);
-        return this.npcHandlers.get(key);
+        return findStackedHandler(this.npcHandlers, key);
+    }
+
+    findNpcPreDeath(npcId: number): NpcPreDeathHandler | undefined {
+        return findStackedHandler(this.npcPreDeathHandlers, npcId);
+    }
+
+    findNpcMagicHit(npcId: number): NpcMagicHitHandler | undefined {
+        return findStackedHandler(this.npcMagicHitHandlers, npcId);
+    }
+
+    findNpcAttack(npcId: number): NpcAttackHandler | undefined {
+        return findStackedHandler(this.npcAttackHandlers, npcId);
     }
 
     findNpcAction(option?: string): NpcInteractionHandler | undefined {
-        return this.npcActionHandlers.get(normalizeOption(option));
+        return findStackedHandler(this.npcActionHandlers, normalizeOption(option));
     }
 
     findLocInteraction(locId: number, action?: string): LocInteractionHandler | undefined {
         const key = makeLocKey(locId, action);
-        const handler = this.locHandlers.get(key);
+        const handler = findStackedHandler(this.locHandlers, key);
         if (handler) return handler;
-        const actionHandler = this.locActionHandlers.get(normalizeOption(action));
+        const actionHandler = findStackedHandler(
+            this.locActionHandlers,
+            normalizeOption(action),
+        );
         return actionHandler;
     }
 
@@ -385,15 +540,22 @@ export class ScriptRegistry implements IScriptRegistry {
         targetItemId: number,
         option?: string,
     ): ItemOnItemHandler | undefined {
-        const key = makeItemKey(sourceItemId, targetItemId, option);
-        const direct = this.itemHandlers.get(key);
-        if (direct) return direct;
+        const keys = [
+            makeItemKey(sourceItemId, targetItemId, option),
+            makeItemKey(ANY_ITEM_ID, targetItemId, option),
+            makeItemKey(sourceItemId, ANY_ITEM_ID, option),
+            makeItemKey(ANY_ITEM_ID, ANY_ITEM_ID, option),
+        ];
+        for (const key of keys) {
+            const handler = findStackedHandler(this.itemHandlers, key);
+            if (handler) return handler;
+        }
         const actionKey = makeItemKey(sourceItemId, undefined, option);
-        const actionDirect = this.itemActionHandlers.get(actionKey);
+        const actionDirect = findStackedHandler(this.itemActionHandlers, actionKey);
         if (actionDirect) return actionDirect;
         if (option) {
             const fallback = makeItemKey(sourceItemId, undefined, undefined);
-            return this.itemActionHandlers.get(fallback);
+            return findStackedHandler(this.itemActionHandlers, fallback);
         }
         return undefined;
     }
@@ -404,20 +566,83 @@ export class ScriptRegistry implements IScriptRegistry {
         option?: string,
     ): ItemOnLocHandler | undefined {
         const key = makeItemKey(sourceItemId, locId, option);
-        const direct = this.itemOnLocHandlers.get(key);
+        const direct = findStackedHandler(this.itemOnLocHandlers, key);
         if (direct) return direct;
         const itemWildcard = makeItemKey(ANY_ITEM_ID, locId, option);
-        const byItemWild = this.itemOnLocHandlers.get(itemWildcard);
+        const byItemWild = findStackedHandler(this.itemOnLocHandlers, itemWildcard);
         if (byItemWild) return byItemWild;
         const locWildcard = makeItemKey(sourceItemId, ANY_LOC_ID, option);
-        return this.itemOnLocHandlers.get(locWildcard);
+        return findStackedHandler(this.itemOnLocHandlers, locWildcard);
+    }
+
+    findItemOnNpc(
+        sourceItemId: number,
+        npcId: number,
+        option?: string,
+    ): ItemOnNpcHandler | undefined {
+        const keys = [
+            makeItemKey(sourceItemId, npcId, option),
+            makeItemKey(ANY_ITEM_ID, npcId, option),
+            makeItemKey(sourceItemId, ANY_NPC_ID, option),
+            makeItemKey(ANY_ITEM_ID, ANY_NPC_ID, option),
+        ];
+        for (const key of keys) {
+            const handler = findStackedHandler(this.itemOnNpcHandlers, key);
+            if (handler) return handler;
+        }
+        return undefined;
+    }
+
+    findItemOnPlayer(sourceItemId: number, option?: string): ItemOnPlayerHandler | undefined {
+        const direct = findStackedHandler(
+            this.itemOnPlayerHandlers,
+            makeItemKey(sourceItemId, undefined, option),
+        );
+        if (direct) return direct;
+        return findStackedHandler(
+            this.itemOnPlayerHandlers,
+            makeItemKey(ANY_ITEM_ID, undefined, option),
+        );
+    }
+
+    findGroundItemInteraction(
+        itemId: number,
+        option?: string,
+    ): GroundItemInteractionHandler | undefined {
+        const direct = findStackedHandler(
+            this.groundItemHandlers,
+            makeItemKey(itemId, undefined, option),
+        );
+        if (direct) return direct;
+        return findStackedHandler(
+            this.groundItemHandlers,
+            makeItemKey(ANY_ITEM_ID, undefined, option),
+        );
+    }
+
+    findItemOnGround(
+        sourceItemId: number,
+        targetItemId: number,
+        option?: string,
+    ): ItemOnGroundHandler | undefined {
+        const keys = [
+            makeItemKey(sourceItemId, targetItemId, option),
+            makeItemKey(ANY_ITEM_ID, targetItemId, option),
+            makeItemKey(sourceItemId, ANY_ITEM_ID, option),
+            makeItemKey(ANY_ITEM_ID, ANY_ITEM_ID, option),
+        ];
+        for (const key of keys) {
+            const handler = findStackedHandler(this.itemOnGroundHandlers, key);
+            if (handler) return handler;
+        }
+        return undefined;
     }
 
     findEquipmentAction(itemId: number, option?: string): EquipmentActionHandler | undefined {
         const key = makeEquipmentKey(itemId, option);
-        const direct = this.equipmentHandlers.get(key);
+        const direct = findStackedHandler(this.equipmentHandlers, key);
         if (direct) return direct;
-        return this.equipmentOptionHandlers.get(normalizeOption(option));
+        return findStackedHandler(this.equipmentOptionHandlers, normalizeOption(option));
     }
 
     findWidgetAction(
@@ -474,6 +699,15 @@ export class ScriptRegistry implements IScriptRegistry {
         return this.regionHandlers.get(regionId);
     }
 
+    getZoneDefinitions(): readonly ZoneDefinition[] {
+        const definitions: ZoneDefinition[] = [];
+        for (const stack of this.zoneDefinitions.values()) {
+            const definition = stack[stack.length - 1]?.handler;
+            if (definition) definitions.push(definition);
+        }
+        return definitions;
+    }
+
     getTickHandlers(): ReadonlySet<TickHandler> {
         return this.tickHandlers;
     }
@@ -483,12 +717,19 @@ export class ScriptRegistry implements IScriptRegistry {
         this.locHandlers.clear();
         this.locActionHandlers.clear();
         this.npcActionHandlers.clear();
+        this.npcPreDeathHandlers.clear();
         this.itemHandlers.clear();
         this.itemOnLocHandlers.clear();
+        this.itemOnNpcHandlers.clear();
+        this.itemOnPlayerHandlers.clear();
+        this.groundItemHandlers.clear();
+        this.itemOnGroundHandlers.clear();
         this.itemActionHandlers.clear();
         this.equipmentHandlers.clear();
         this.equipmentOptionHandlers.clear();
         this.regionHandlers.clear();
+        this.zoneDefinitions.clear();
+        this.zoneHandlers.clear();
         this.tickHandlers.clear();
         this.widgetHandlers.clear();
         this.buttonHandlers.clear();

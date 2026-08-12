@@ -62,6 +62,7 @@ export class MovementProcessor {
         const validator = new MovementPathValidator(this.pathService, () => ({
             level: entity.level,
             size: entity.size,
+            worldViewId: (entity as Actor & { worldViewId?: number }).worldViewId,
         }));
         const planned: PlannedStep[] = [];
 

@@ -2,7 +2,14 @@ import { WebSocket } from "ws";
 
 import { faceAngleRs } from "../../../../client/rs/utils/rotation";
 import { encodeMessage } from "../../network/messages";
+import { CollisionFlag } from "../../pathfinding/legacy/pathfinder/flag/CollisionFlag";
 import { logger } from "../../utils/logger";
+import { CollisionOverlayStore } from "../../world/CollisionOverlayStore";
+import {
+    DoorCollisionService,
+    LocModelType,
+    type LocModelTypeValue,
+} from "../../world/DoorCollisionService";
 import {
     deriveConnectedLocCollisionRect,
     type LocCollisionRect,
@@ -12,6 +19,42 @@ import type { NpcState } from "../npc";
 import type { PlayerState } from "../player";
 
 const TILE_UNIT = 128;
+const DEFAULT_LOC_SHAPE = 10;
+const SCENE_SIZE = 104;
+
+export interface TemporaryLocScope {
+    worldViewId: number;
+    /**
+     * Omit to share the change with every player in the world view. Owner-only
+     * state is visual and interactive; collision is applied only to shared
+     * scopes because pathfinding has no safe per-player global collision layer.
+     */
+    ownerPlayerId?: number;
+}
+
+export interface TemporaryLocChangeOptions {
+    oldShape?: number;
+    oldRotation?: number;
+    newShape?: number;
+    newRotation?: number;
+    /** Non-positive and omitted values mean the change does not expire automatically. */
+    lifetimeTicks?: number;
+}
+
+export interface TemporaryLocChange {
+    scope: TemporaryLocScope;
+    oldId: number;
+    newId: number;
+    tile: { x: number; y: number };
+    level: number;
+    oldShape: number;
+    oldRotation: number;
+    newShape: number;
+    newRotation: number;
+    expiresAtTick?: number;
+}
+
+type StoredTemporaryLocChange = TemporaryLocChange & { revision: number };
 
 export interface LocChangePayload {
     oldId: number;
@@ -26,7 +69,131 @@ export interface LocChangePayload {
 }
 
 export class LocationService {
+    private readonly temporaryLocs = new Map<string, StoredTemporaryLocChange>();
+    private nextTemporaryLocRevision = 1;
+
     constructor(private readonly services: ServerServices) {}
+
+    replaceTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        newId: number,
+        tile: { x: number; y: number },
+        level: number,
+        options: TemporaryLocChangeOptions = {},
+    ): TemporaryLocChange {
+        const normalizedScope = this.normalizeTemporaryLocScope(scope);
+        const oldShape = this.normalizeShape(options.oldShape);
+        const oldRotation = this.normalizeRotation(options.oldRotation);
+        const newShape = this.normalizeShape(options.newShape ?? oldShape);
+        const newRotation = this.normalizeRotation(options.newRotation ?? oldRotation);
+        const lifetimeTicks = Math.trunc(options.lifetimeTicks ?? 0);
+        const state: StoredTemporaryLocChange = {
+            scope: normalizedScope,
+            oldId: Math.max(0, Math.trunc(oldId)),
+            newId: Math.max(0, Math.trunc(newId)),
+            tile: { x: Math.trunc(tile.x), y: Math.trunc(tile.y) },
+            level: Math.max(0, Math.min(3, Math.trunc(level))),
+            oldShape,
+            oldRotation,
+            newShape,
+            newRotation,
+            expiresAtTick:
+                lifetimeTicks > 0
+                    ? this.services.ticker.currentTick() + lifetimeTicks
+                    : undefined,
+            revision: this.nextTemporaryLocRevision++,
+        };
+        const key = this.makeTemporaryLocKey(state.scope, state.oldId, state.tile, state.level, oldShape);
+        this.temporaryLocs.set(key, state);
+        this.rebuildTemporaryCollision(state.scope.worldViewId);
+        this.sendTemporaryLocToVisiblePlayers(state);
+        return this.copyTemporaryLoc(state);
+    }
+
+    removeTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        tile: { x: number; y: number },
+        level: number,
+        options: TemporaryLocChangeOptions = {},
+    ): TemporaryLocChange {
+        return this.replaceTemporaryLoc(scope, oldId, 0, tile, level, options);
+    }
+
+    clearTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        tile: { x: number; y: number },
+        level: number,
+        oldShape: number = DEFAULT_LOC_SHAPE,
+    ): boolean {
+        const normalizedScope = this.normalizeTemporaryLocScope(scope);
+        const key = this.makeTemporaryLocKey(
+            normalizedScope,
+            Math.max(0, Math.trunc(oldId)),
+            { x: Math.trunc(tile.x), y: Math.trunc(tile.y) },
+            Math.max(0, Math.min(3, Math.trunc(level))),
+            this.normalizeShape(oldShape),
+        );
+        const state = this.temporaryLocs.get(key);
+        if (!state) return false;
+        this.temporaryLocs.delete(key);
+        this.rebuildTemporaryCollision(state.scope.worldViewId);
+        this.sendTemporaryLocRestoreToVisiblePlayers(state);
+        return true;
+    }
+
+    clearTemporaryLocsOwnedByPlayer(playerId: number): number {
+        const ownerPlayerId = Math.trunc(playerId);
+        let removed = 0;
+        const removedStates: StoredTemporaryLocChange[] = [];
+        const affectedViews = new Set<number>();
+        for (const [key, state] of [...this.temporaryLocs]) {
+            if (state.scope.ownerPlayerId !== ownerPlayerId) continue;
+            this.temporaryLocs.delete(key);
+            removedStates.push(state);
+            affectedViews.add(state.scope.worldViewId);
+            removed++;
+        }
+        for (const worldViewId of affectedViews) this.rebuildTemporaryCollision(worldViewId);
+        for (const state of removedStates) this.sendTemporaryLocRestoreToVisiblePlayers(state);
+        return removed;
+    }
+
+    processTemporaryLocs(currentTick: number): number {
+        const tick = Math.max(0, Math.trunc(currentTick));
+        const expired: StoredTemporaryLocChange[] = [];
+        const affectedViews = new Set<number>();
+        for (const [key, state] of [...this.temporaryLocs]) {
+            if (state.expiresAtTick === undefined || tick < state.expiresAtTick) continue;
+            this.temporaryLocs.delete(key);
+            expired.push(state);
+            affectedViews.add(state.scope.worldViewId);
+        }
+        for (const worldViewId of affectedViews) {
+            this.rebuildTemporaryCollision(worldViewId);
+        }
+        for (const state of expired) {
+            this.sendTemporaryLocRestoreToVisiblePlayers(state);
+        }
+        return expired.length;
+    }
+
+    getTemporaryLocsVisibleToPlayer(player: PlayerState): TemporaryLocChange[] {
+        return this.getStoredTemporaryLocsVisibleToPlayer(player).map((state) =>
+            this.copyTemporaryLoc(state),
+        );
+    }
+
+    replayTemporaryLocsForPlayer(player: PlayerState): void {
+        const ws = this.services.players?.getSocketByPlayerId(player.id);
+        if (!ws) return;
+        const scene = this.getDynamicLocSceneKey(ws, player);
+        this.services.networkLayer.withDirectSendBypass("temporary_loc_replay", () =>
+            this.sendTemporaryLocsForScene(ws, player, scene.baseX, scene.baseY),
+        );
+    }
 
     emitLocChange(
         oldId: number,
@@ -174,7 +341,7 @@ export class LocationService {
         if (!(locId > 0)) {
             return this.isAdjacentToTile(player, tile);
         }
-        const rect = this.getLocAdjacencyRect(locId, tile, level);
+        const rect = this.getLocAdjacencyRect(locId, tile, level, player.worldViewId);
         if (!rect) {
             return this.isAdjacentToTile(player, tile);
         }
@@ -193,10 +360,17 @@ export class LocationService {
         locId: number,
         tile: { x: number; y: number },
         level: number,
+        worldViewId?: number,
     ): { tile: { x: number; y: number }; sizeX: number; sizeY: number } | undefined {
         const size = this.getLocSize(locId);
         if (!size) return undefined;
-        const rect = this.deriveLocCollisionRectForTile(tile, size.sizeX, size.sizeY, level);
+        const rect = this.deriveLocCollisionRectForTile(
+            tile,
+            size.sizeX,
+            size.sizeY,
+            level,
+            worldViewId,
+        );
         if (rect) return rect;
         return {
             tile: { x: tile.x, y: tile.y },
@@ -224,13 +398,14 @@ export class LocationService {
         sizeX: number,
         sizeY: number,
         level: number,
+        worldViewId?: number,
     ): LocCollisionRect | undefined {
         const pathService = this.services.pathService;
         if (!pathService?.getCollisionFlagAt) {
             return undefined;
         }
         return deriveConnectedLocCollisionRect(
-            (x, y, p) => pathService.getCollisionFlagAt(x, y, p),
+            (x, y, p) => pathService.getCollisionFlagAt(x, y, p, worldViewId),
             tile,
             sizeX,
             sizeY,
@@ -258,7 +433,7 @@ export class LocationService {
         const baseX = this.resolveSceneBaseCoordinate(session?.baseTileX ?? -1, player.tileX);
         const baseY = this.resolveSceneBaseCoordinate(session?.baseTileY ?? -1, player.tileY);
         return {
-            key: `${player.level}:${baseX}:${baseY}`,
+            key: `${player.worldViewId}:${player.level}:${baseX}:${baseY}`,
             baseX,
             baseY,
         };
@@ -306,9 +481,305 @@ export class LocationService {
                     "loc_change_replay",
                 );
             }
+            this.sendTemporaryLocsForScene(ws, player, scene.baseX, scene.baseY);
         };
         this.services.networkLayer.withDirectSendBypass("loc_change_replay", doSend);
 
         sceneKeys?.set(playerId, scene.key);
+    }
+
+    private normalizeTemporaryLocScope(scope: TemporaryLocScope): TemporaryLocScope {
+        const worldViewId = Number.isFinite(scope.worldViewId)
+            ? Math.trunc(scope.worldViewId)
+            : -1;
+        const ownerPlayerId = Number.isFinite(scope.ownerPlayerId)
+            ? Math.trunc(scope.ownerPlayerId as number)
+            : undefined;
+        return { worldViewId, ownerPlayerId };
+    }
+
+    private normalizeShape(shape: number | undefined): number {
+        if (!Number.isFinite(shape)) return DEFAULT_LOC_SHAPE;
+        return Math.max(0, Math.min(22, Math.trunc(shape as number)));
+    }
+
+    private normalizeRotation(rotation: number | undefined): number {
+        if (!Number.isFinite(rotation)) return 0;
+        return Math.trunc(rotation as number) & 3;
+    }
+
+    private makeTemporaryLocKey(
+        scope: TemporaryLocScope,
+        oldId: number,
+        tile: { x: number; y: number },
+        level: number,
+        oldShape: number,
+    ): string {
+        return `${scope.worldViewId}:${scope.ownerPlayerId ?? "*"}:${level}:${tile.x}:${tile.y}:${oldId}:${oldShape}`;
+    }
+
+    private copyTemporaryLoc(state: StoredTemporaryLocChange): TemporaryLocChange {
+        return {
+            scope: { ...state.scope },
+            oldId: state.oldId,
+            newId: state.newId,
+            tile: { ...state.tile },
+            level: state.level,
+            oldShape: state.oldShape,
+            oldRotation: state.oldRotation,
+            newShape: state.newShape,
+            newRotation: state.newRotation,
+            expiresAtTick: state.expiresAtTick,
+        };
+    }
+
+    private isTemporaryLocVisibleToPlayer(
+        state: StoredTemporaryLocChange,
+        player: PlayerState,
+    ): boolean {
+        return (
+            state.scope.worldViewId === player.worldViewId &&
+            (state.scope.ownerPlayerId === undefined || state.scope.ownerPlayerId === player.id)
+        );
+    }
+
+    private getStoredTemporaryLocsVisibleToPlayer(
+        player: PlayerState,
+    ): StoredTemporaryLocChange[] {
+        const visible = [...this.temporaryLocs.values()].filter((state) =>
+            this.isTemporaryLocVisibleToPlayer(state, player),
+        );
+        visible.sort((a, b) => {
+            const aOwned = a.scope.ownerPlayerId === player.id ? 1 : 0;
+            const bOwned = b.scope.ownerPlayerId === player.id ? 1 : 0;
+            if (aOwned !== bOwned) return aOwned - bOwned;
+            return a.revision - b.revision;
+        });
+        return visible;
+    }
+
+    private isTemporaryLocInScene(
+        state: StoredTemporaryLocChange,
+        baseX: number,
+        baseY: number,
+        level: number,
+    ): boolean {
+        return (
+            state.level === level &&
+            state.tile.x >= baseX &&
+            state.tile.x < baseX + SCENE_SIZE &&
+            state.tile.y >= baseY &&
+            state.tile.y < baseY + SCENE_SIZE
+        );
+    }
+
+    private sendTemporaryLocsForScene(
+        ws: WebSocket,
+        player: PlayerState,
+        baseX: number,
+        baseY: number,
+    ): void {
+        for (const state of this.getStoredTemporaryLocsVisibleToPlayer(player)) {
+            if (!this.isTemporaryLocInScene(state, baseX, baseY, player.level)) continue;
+            this.sendTemporaryLocState(ws, state);
+        }
+    }
+
+    private sendTemporaryLocToVisiblePlayers(state: StoredTemporaryLocChange): void {
+        this.services.players?.forEach((ws, player) => {
+            if (!this.isTemporaryLocVisibleToPlayer(state, player)) return;
+            const scene = this.getDynamicLocSceneKey(ws, player);
+            if (!this.isTemporaryLocInScene(state, scene.baseX, scene.baseY, player.level)) return;
+            this.services.networkLayer.withDirectSendBypass("temporary_loc_change", () =>
+                this.sendTemporaryLocsForScene(ws, player, scene.baseX, scene.baseY),
+            );
+        });
+    }
+
+    private sendTemporaryLocRestoreToVisiblePlayers(state: StoredTemporaryLocChange): void {
+        this.services.players?.forEach((ws, player) => {
+            if (!this.isTemporaryLocVisibleToPlayer(state, player)) return;
+            const scene = this.getDynamicLocSceneKey(ws, player);
+            if (!this.isTemporaryLocInScene(state, scene.baseX, scene.baseY, player.level)) return;
+            this.services.networkLayer.withDirectSendBypass("temporary_loc_restore", () => {
+                this.sendTemporaryLocRestore(ws, state);
+                this.sendTemporaryLocsForScene(ws, player, scene.baseX, scene.baseY);
+            });
+        });
+    }
+
+    private sendTemporaryLocState(ws: WebSocket, state: StoredTemporaryLocChange): void {
+        if (state.oldId === 0) {
+            if (state.newId === 0) return;
+            this.services.networkLayer.sendWithGuard(
+                ws,
+                encodeMessage({
+                    type: "loc_add_change",
+                    payload: {
+                        locId: state.newId,
+                        tile: state.tile,
+                        level: state.level,
+                        shape: state.newShape,
+                        rotation: state.newRotation,
+                    },
+                } as unknown as Parameters<typeof encodeMessage>[0]),
+                "temporary_loc_add",
+            );
+            return;
+        }
+        this.services.networkLayer.sendWithGuard(
+            ws,
+            encodeMessage({
+                type: "loc_change",
+                payload: {
+                    oldId: state.oldId,
+                    newId: state.newId,
+                    tile: state.tile,
+                    oldTile: state.tile,
+                    level: state.level,
+                    oldRotation: state.oldRotation,
+                    newRotation: state.newRotation,
+                },
+            }),
+            "temporary_loc_change",
+        );
+    }
+
+    private sendTemporaryLocRestore(ws: WebSocket, state: StoredTemporaryLocChange): void {
+        if (state.oldId === 0) {
+            this.services.networkLayer.sendWithGuard(
+                ws,
+                encodeMessage({
+                    type: "loc_del",
+                    payload: {
+                        tile: state.tile,
+                        level: state.level,
+                        shape: state.newShape,
+                        rotation: state.newRotation,
+                    },
+                } as unknown as Parameters<typeof encodeMessage>[0]),
+                "temporary_loc_del",
+            );
+            return;
+        }
+        this.services.networkLayer.sendWithGuard(
+            ws,
+            encodeMessage({
+                type: "loc_change",
+                payload: {
+                    oldId: state.oldId,
+                    newId: state.oldId,
+                    tile: state.tile,
+                    oldTile: state.tile,
+                    level: state.level,
+                    oldRotation: state.oldRotation,
+                    newRotation: state.oldRotation,
+                },
+            }),
+            "temporary_loc_restore",
+        );
+    }
+
+    private rebuildTemporaryCollision(worldViewId: number): void {
+        const pathService = this.services.pathService;
+        if (!pathService?.setScopedCollisionOverlays) return;
+        const states = [...this.temporaryLocs.values()]
+            .filter(
+                (state) =>
+                    state.scope.worldViewId === worldViewId &&
+                    state.scope.ownerPlayerId === undefined,
+            )
+            .sort((a, b) => a.revision - b.revision);
+        if (states.length === 0) {
+            pathService.setScopedCollisionOverlays(worldViewId, undefined);
+            return;
+        }
+        const overlays = new CollisionOverlayStore();
+        const wallCollision = new DoorCollisionService(overlays);
+        for (const state of states) {
+            this.applyTemporaryLocCollision(
+                overlays,
+                wallCollision,
+                state.oldId,
+                state.oldShape,
+                state.oldRotation,
+                state.tile,
+                state.level,
+                false,
+            );
+            this.applyTemporaryLocCollision(
+                overlays,
+                wallCollision,
+                state.newId,
+                state.newShape,
+                state.newRotation,
+                state.tile,
+                state.level,
+                true,
+            );
+        }
+        pathService.setScopedCollisionOverlays(
+            worldViewId,
+            overlays.hasOverlays() ? overlays : undefined,
+        );
+    }
+
+    private applyTemporaryLocCollision(
+        overlays: CollisionOverlayStore,
+        wallCollision: DoorCollisionService,
+        locId: number,
+        shape: number,
+        rotation: number,
+        tile: { x: number; y: number },
+        level: number,
+        add: boolean,
+    ): void {
+        if (locId <= 0) return;
+        let loc:
+            | {
+                  clipType: number;
+                  blocksProjectile: boolean;
+                  sizeX: number;
+                  sizeY: number;
+              }
+            | undefined;
+        try {
+            loc = this.services.locTypeLoader?.load(locId);
+        } catch {
+            return;
+        }
+        if (!loc || loc.clipType === 0) return;
+        if (shape >= LocModelType.WALL && shape <= LocModelType.WALL_RECT_CORNER) {
+            const operation = add
+                ? wallCollision.addWallCollision.bind(wallCollision)
+                : wallCollision.removeWallCollision.bind(wallCollision);
+            operation(
+                tile.x,
+                tile.y,
+                level,
+                rotation,
+                shape as LocModelTypeValue,
+                loc.blocksProjectile,
+            );
+            return;
+        }
+        if (shape === 22) {
+            if (loc.clipType !== 1) return;
+            const operation = add ? overlays.addFlags.bind(overlays) : overlays.removeFlags.bind(overlays);
+            operation(tile.x, tile.y, level, CollisionFlag.FLOOR_DECORATION);
+            return;
+        }
+        if (shape !== 9 && shape !== 10 && shape !== 11) return;
+        const rotated = (rotation & 1) !== 0;
+        const sizeX = Math.max(1, rotated ? loc.sizeY : loc.sizeX);
+        const sizeY = Math.max(1, rotated ? loc.sizeX : loc.sizeY);
+        let flags = CollisionFlag.OBJECT;
+        if (loc.blocksProjectile) flags |= CollisionFlag.OBJECT_PROJECTILE_BLOCKER;
+        const operation = add ? overlays.addFlags.bind(overlays) : overlays.removeFlags.bind(overlays);
+        for (let x = tile.x; x < tile.x + sizeX; x++) {
+            for (let y = tile.y; y < tile.y + sizeY; y++) {
+                operation(x, y, level, flags);
+            }
+        }
     }
 }

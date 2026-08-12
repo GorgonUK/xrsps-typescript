@@ -17,6 +17,7 @@ import { CombatEntityType, playerCombatEntityRef } from "./combat/model/CombatEn
 import { CombatAttributes } from "./combat/state/CombatAttributes";
 import { CombatAttributeStore } from "./combat/state/CombatAttributeStore";
 import type { InteractionTargetType } from "./interactionIndex";
+import type { PlayerState } from "./player";
 
 /**
  * RSMod parity: NPC random walk timer range.
@@ -135,6 +136,12 @@ export interface NpcSpawnConfig {
     direction?: number;
     /** Server-authored HealthBarDefinition id (HIT_MASK). Defaults to 0. */
     healthBarDefId?: number;
+    /** World view this NPC belongs to. -1 is the top-level world. */
+    worldViewId?: number;
+    /** When set, only this player receives the NPC through synchronization. */
+    ownerPlayerId?: number;
+    /** Optional lifetime for transient NPCs. Non-positive values mean no expiry. */
+    lifetimeTicks?: number;
 }
 
 export interface NpcFollowerState {
@@ -241,7 +248,8 @@ export class NpcState extends Actor {
     /** Flag to force a sync update to clients (e.g., when path is cleared during combat) */
     private forceSyncUpdate: boolean = false;
     private followerState?: NpcFollowerState;
-    worldViewId: number = -1;
+    worldViewId: number;
+    readonly ownerPlayerId?: number;
 
     constructor(
         id: number,
@@ -270,6 +278,8 @@ export class NpcState extends Actor {
             aggressionSearchDelayTicks?: number;
             /** Combat profile with all stats. If not provided, uses DEFAULT_NPC_COMBAT_PROFILE */
             combatProfile?: NpcCombatProfile;
+            worldViewId?: number;
+            ownerPlayerId?: number;
         } = {},
     ) {
         super(id, spawn.x, spawn.y, spawn.level, size);
@@ -281,6 +291,12 @@ export class NpcState extends Actor {
         this.idleSeqId = idleSeqId;
         this.walkSeqId = walkSeqId;
         this.rotationSpeed = Math.max(1, rotationSpeed);
+        this.worldViewId = Number.isFinite(options.worldViewId)
+            ? Math.trunc(options.worldViewId as number)
+            : -1;
+        this.ownerPlayerId = Number.isFinite(options.ownerPlayerId)
+            ? Math.trunc(options.ownerPlayerId as number)
+            : undefined;
         // Allow wanderRadius=0 so spawns can explicitly opt out of roaming
         this.wanderRadius = Math.max(0, options.wanderRadius ?? DEFAULT_NPC_WANDER_RADIUS);
         const maxHp = Math.max(1, options.maxHitpoints ?? 10);
@@ -1117,6 +1133,13 @@ export class NpcState extends Actor {
             hpMax: result.max,
         };
     }
+}
+
+export function isNpcVisibleToPlayer(npc: NpcState, player: PlayerState): boolean {
+    return (
+        npc.worldViewId === player.worldViewId &&
+        (npc.ownerPlayerId === undefined || npc.ownerPlayerId === player.id)
+    );
 }
 
 export interface NpcUpdateSnapshot {

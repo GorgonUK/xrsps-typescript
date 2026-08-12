@@ -314,7 +314,32 @@ export class CombatEffectService {
         if (npc.isPlayerFollower?.() === true) return undefined;
         if (npc.getHitpoints() <= 0 || npc.isDead(tick)) return undefined;
 
-        const result = combatEffectApplicator.applyNpcHitsplat(npc, style, damage, tick, maxHit);
+        const proposedDamage = Math.max(0, Math.trunc(damage));
+        const hitpointsBefore = npc.getHitpoints();
+        const prevented =
+            proposedDamage >= hitpointsBefore &&
+            (this.svc.scriptRuntime?.runNpcPreDeath?.({
+                npc,
+                killer: player,
+                killerPlayerId: player.id,
+                tick,
+                hit: {
+                    proposedDamage,
+                    style,
+                    maxHit,
+                    hitpointsBefore,
+                    hitpointsAfter: Math.max(0, hitpointsBefore - proposedDamage),
+                    cause: "effect",
+                },
+            }) ?? false);
+        const appliedDamage = prevented ? Math.max(0, hitpointsBefore - 1) : proposedDamage;
+        const result = combatEffectApplicator.applyNpcHitsplat(
+            npc,
+            style,
+            appliedDamage,
+            tick,
+            maxHit,
+        );
         if (result.amount > 0) {
             damageTracker.recordDamage(player, npc, result.amount, damageType, tick);
             multiCombatSystem.recordEngagement(player, npc, tick);

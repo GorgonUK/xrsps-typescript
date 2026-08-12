@@ -2,6 +2,10 @@ import type { ProjectileLaunch } from "../../../client/common/projectiles/Projec
 import { logger } from "../utils/logger";
 import type { WidgetAction } from "../widgets/WidgetManager";
 import type { RoutedMessage } from "./MessageRouter";
+import type {
+    RebuildNormalPayload,
+    RebuildRegionPayload,
+} from "../world/InstanceManager";
 import { sendMessage, serverEncoder } from "./packet/BinaryProtocol";
 
 export type Appearance = {
@@ -390,10 +394,36 @@ export type CollectionLogServerPayload = {
     slots: CollectionLogSlotMessage[];
 };
 
+export type CameraControlPayload =
+    | {
+          mode: "move";
+          x: number;
+          y: number;
+          height: number;
+          instant?: boolean;
+      }
+    | {
+          mode: "look";
+          x: number;
+          y: number;
+          height: number;
+          instant?: boolean;
+      }
+    | {
+          mode: "shake";
+          slot: number;
+          randomAmplitude: number;
+          sineAmplitude: number;
+          sineFrequency: number;
+      }
+    | { mode: "reset" };
+
 export type ServerToClient =
     | { type: "welcome"; payload: { tickMs: number; serverTime: number } }
     | { type: "tick"; payload: { tick: number; time: number } }
     | { type: "destination"; payload: { worldX: number; worldY: number } }
+    | { type: "rebuild_normal"; payload: RebuildNormalPayload }
+    | { type: "rebuild_region"; payload: RebuildRegionPayload }
     | {
           type: "path";
           payload: {
@@ -539,6 +569,7 @@ export type ServerToClient =
     | { type: "notification"; payload: NotificationPayload }
     | { type: "smithing"; payload: SmithingServerPayload }
     | { type: "collection_log"; payload: CollectionLogServerPayload }
+    | { type: "camera"; payload: CameraControlPayload }
     | { type: "gamemode_data"; payload: { packet: Uint8Array } };
 
 export type ClientToServer =
@@ -954,6 +985,9 @@ function encodeMessageToBinaryDirect(msg: ServerToClient): Uint8Array {
                 payload.rotation,
                 payload.animId,
             );
+
+        case "camera":
+            return serverEncoder.encodeCameraControl(payload);
 
         case "combat":
             return serverEncoder.encodeCombatState(payload);

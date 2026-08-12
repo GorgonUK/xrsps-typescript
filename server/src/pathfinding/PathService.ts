@@ -30,6 +30,7 @@ export class PathService {
     private map: MapCollisionService;
     private pf: Pathfinder;
     private collisionOverlays?: CollisionOverlayStore;
+    private readonly scopedCollisionOverlays = new Map<number, CollisionOverlayStore>();
     private worldViewCollision: Map<number, SailingWorldView> = new Map();
 
     constructor(map: MapCollisionService, graphSize = 32) {
@@ -50,6 +51,27 @@ export class PathService {
      */
     getCollisionOverlays(): CollisionOverlayStore | undefined {
         return this.collisionOverlays;
+    }
+
+    /**
+     * Install a collision layer owned by temporary, world-view-scoped content.
+     * This stays separate from global door overlays so clearing quest scenery
+     * cannot erase an unrelated door change on the same tile.
+     */
+    setScopedCollisionOverlays(
+        worldViewId: number,
+        overlays: CollisionOverlayStore | undefined,
+    ): void {
+        const id = Math.trunc(worldViewId);
+        if (!overlays || !overlays.hasOverlays()) {
+            this.scopedCollisionOverlays.delete(id);
+            return;
+        }
+        this.scopedCollisionOverlays.set(id, overlays);
+    }
+
+    getScopedCollisionOverlays(worldViewId: number): CollisionOverlayStore | undefined {
+        return this.scopedCollisionOverlays.get(Math.trunc(worldViewId));
     }
 
     registerWorldViewCollision(worldViewId: number, view: SailingWorldView): void {
@@ -78,7 +100,7 @@ export class PathService {
      * worldViewId themselves.
      */
     private resolveWorldViewId(req: PathRequest): number | undefined {
-        if (req.worldViewId !== undefined && req.worldViewId >= 0) return req.worldViewId;
+        if (req.worldViewId !== undefined) return req.worldViewId;
         return this.worldViewIdForTile(req.from.x, req.from.y);
     }
 
@@ -178,6 +200,7 @@ export class PathService {
         dy: number,
         plane: number,
         size: number,
+        worldViewId?: number,
     ): boolean {
         const destX = x + dx;
         const destY = y + dy;
@@ -190,19 +213,19 @@ export class PathService {
                 // For diagonal movement, also check cardinal adjacents (corner-cutting prevention)
                 if (dx !== 0 && dy !== 0) {
                     // Check diagonal destination
-                    if (!this.canMoveDirection(checkX, checkY, dx, dy, plane)) {
+                    if (!this.canMoveDirection(checkX, checkY, dx, dy, plane, worldViewId)) {
                         return false;
                     }
                     // Corner-cutting check: also verify cardinal directions are clear
-                    if (!this.canMoveDirection(checkX, checkY, dx, 0, plane)) {
+                    if (!this.canMoveDirection(checkX, checkY, dx, 0, plane, worldViewId)) {
                         return false;
                     }
-                    if (!this.canMoveDirection(checkX, checkY, 0, dy, plane)) {
+                    if (!this.canMoveDirection(checkX, checkY, 0, dy, plane, worldViewId)) {
                         return false;
                     }
                 } else {
                     // Cardinal movement - just check the single direction
-                    if (!this.canMoveDirection(checkX, checkY, dx, dy, plane)) {
+                    if (!this.canMoveDirection(checkX, checkY, dx, dy, plane, worldViewId)) {
                         return false;
                     }
                 }
@@ -212,7 +235,12 @@ export class PathService {
         // Check the destination tiles aren't blocked
         for (let i = 0; i < size; i++) {
             for (let j = 0; j < size; j++) {
-                const flag = this.getCollisionFlagAt(destX + i, destY + j, plane);
+                const flag = this.getCollisionFlagAt(
+                    destX + i,
+                    destY + j,
+                    plane,
+                    worldViewId,
+                );
                 if (flag === undefined || (flag & CollisionFlag.FLOOR_BLOCKED) !== 0) {
                     return false;
                 }
@@ -230,6 +258,7 @@ export class PathService {
         from: { x: number; y: number; plane: number },
         to: { x: number; y: number },
         size: number = 1,
+        worldViewId?: number,
     ): boolean {
         const fromX = from.x | 0;
         const fromY = from.y | 0;
@@ -243,7 +272,21 @@ export class PathService {
         if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
             return false;
         }
-        if (this.worldViewIdForTile(fromX, fromY) !== this.worldViewIdForTile(toX, toY)) {
+        if (
+            worldViewId === undefined &&
+            this.worldViewIdForTile(fromX, fromY) !== this.worldViewIdForTile(toX, toY)
+        ) {
+            return false;
+        }
+        const explicitView =
+            worldViewId !== undefined && worldViewId >= 0
+                ? this.worldViewCollision.get(worldViewId)
+                : undefined;
+        if (
+            explicitView &&
+            (!explicitView.containsWorldTile(fromX, fromY) ||
+                !explicitView.containsWorldTile(toX, toY))
+        ) {
             return false;
         }
         return this.canActorMove(
@@ -253,6 +296,7 @@ export class PathService {
             dy,
             clampPlane(from.plane),
             normalizePathSize(size),
+            worldViewId,
         );
     }
 
@@ -267,9 +311,16 @@ export class PathService {
     /**
      * Check if movement from (x, y) in direction (dx, dy) is blocked by walls.
      */
-    private canMoveDirection(x: number, y: number, dx: number, dy: number, plane: number): boolean {
-        const srcFlag = this.getCollisionFlagAt(x, y, plane);
-        const destFlag = this.getCollisionFlagAt(x + dx, y + dy, plane);
+    private canMoveDirection(
+        x: number,
+        y: number,
+        dx: number,
+        dy: number,
+        plane: number,
+        worldViewId?: number,
+    ): boolean {
+        const srcFlag = this.getCollisionFlagAt(x, y, plane, worldViewId);
+        const destFlag = this.getCollisionFlagAt(x + dx, y + dy, plane, worldViewId);
 
         if (srcFlag === undefined || destFlag === undefined) {
             return false;
@@ -309,11 +360,15 @@ export class PathService {
         return this.pf.graphSize;
     }
 
-    private prepareRouteStrategy(routeStrategy: RouteStrategy | undefined, plane: number): void {
+    private prepareRouteStrategy(
+        routeStrategy: RouteStrategy | undefined,
+        plane: number,
+        worldViewId?: number,
+    ): void {
         if (routeStrategy instanceof RectAdjacentRouteStrategy) {
             if (!routeStrategy.hasCollisionGetter()) {
                 routeStrategy.setCollisionGetter(
-                    (x, y, p) => this.getCollisionFlagAt(x, y, p),
+                    (x, y, p) => this.getCollisionFlagAt(x, y, p, worldViewId),
                     plane,
                 );
             }
@@ -326,7 +381,7 @@ export class PathService {
             !routeStrategy.hasCollisionGetter()
         ) {
             routeStrategy.setCollisionGetter(
-                (x, y, p) => this.getCollisionFlagAt(x, y, p),
+                (x, y, p) => this.getCollisionFlagAt(x, y, p, worldViewId),
                 plane,
             );
             return;
@@ -371,7 +426,8 @@ export class PathService {
             const plane = clampPlane(from.plane);
             const maxSteps = normalizeMaxSteps(opts?.maxSteps);
             const routeStrategy = opts?.routeStrategy;
-            this.prepareRouteStrategy(routeStrategy, plane);
+            const effectiveWvId = this.resolveWorldViewId(req);
+            this.prepareRouteStrategy(routeStrategy, plane, effectiveWvId);
 
             if (!routeStrategy && fromX === toX && fromY === toY) {
                 return { ok: true, steps: [] };
@@ -379,8 +435,6 @@ export class PathService {
 
             // Auto-resolve WorldView from source position so callers don't need
             // to pass worldViewId explicitly.
-            const effectiveWvId = this.resolveWorldViewId(req);
-
             this.fillFlagsAcrossMaps(fromX, fromY, plane, effectiveWvId);
 
             const collisionStrategy = NORMAL_STRATEGY;
@@ -477,7 +531,14 @@ export class PathService {
             let validateX = srcX;
             let validateY = srcY;
             for (const step of out) {
-                if (!this.canActorStep({ x: validateX, y: validateY, plane }, step, size)) {
+                if (
+                    !this.canActorStep(
+                        { x: validateX, y: validateY, plane },
+                        step,
+                        size,
+                        effectiveWvId,
+                    )
+                ) {
                     return { ok: false, message: "path trace blocked" };
                 }
                 validateX = step.x;
@@ -517,7 +578,13 @@ export class PathService {
                 // Tiles outside stay as -1 (blocked) — no fallthrough to overworld.
                 if (wvCollision) {
                     if (wvCollision.containsWorldTile(wx, wy)) {
-                        pf.flags[gx][gy] = wvCollision.getCollisionFlag(plane, wx, wy);
+                        pf.flags[gx][gy] = this.applyScopedCollisionOverlay(
+                            worldViewId ?? -1,
+                            wx,
+                            wy,
+                            plane,
+                            wvCollision.getCollisionFlag(plane, wx, wy),
+                        );
                     }
                     continue;
                 }
@@ -537,6 +604,13 @@ export class PathService {
                     if (this.collisionOverlays) {
                         flags = this.collisionOverlays.applyOverlay(wx, wy, effectivePlane, flags);
                     }
+                    flags = this.applyScopedCollisionOverlay(
+                        worldViewId ?? -1,
+                        wx,
+                        wy,
+                        effectivePlane,
+                        flags,
+                    );
                     pf.flags[gx][gy] = flags;
                 }
             }
@@ -559,8 +633,8 @@ export class PathService {
             const toY = to.y;
             const size = normalizePathSize(req.size);
             const plane = clampPlane(from.plane);
-
-            this.prepareRouteStrategy(routeStrategy, plane);
+            const effectiveWvId = this.resolveWorldViewId(req);
+            this.prepareRouteStrategy(routeStrategy, plane, effectiveWvId);
 
             // If a route strategy is provided and we're already at the destination, bail early.
             if (routeStrategy && routeStrategy.hasArrived(fromX, fromY, plane, size)) {
@@ -572,7 +646,6 @@ export class PathService {
             }
 
             // Auto-resolve WorldView from source position.
-            const effectiveWvId = this.resolveWorldViewId(req);
             this.fillFlagsAcrossMaps(fromX, fromY, plane, effectiveWvId);
 
             // Choose collision strategy.
@@ -613,12 +686,24 @@ export class PathService {
     }
 
     /** Return raw collision flag for a world tile at a given plane, or undefined if out-of-bounds. */
-    getCollisionFlagAt(worldX: number, worldY: number, plane: number): number | undefined {
+    getCollisionFlagAt(
+        worldX: number,
+        worldY: number,
+        plane: number,
+        worldViewId?: number,
+    ): number | undefined {
         // Check WorldView collision first — if the tile is inside any registered
         // WorldView, that view is authoritative and overworld data is irrelevant.
-        for (const [, wv] of this.worldViewCollision) {
+        for (const [id, wv] of this.worldViewCollision) {
+            if (worldViewId !== undefined && id !== worldViewId) continue;
             if (wv.containsWorldTile(worldX, worldY)) {
-                return wv.getCollisionFlag(plane, worldX, worldY);
+                return this.applyScopedCollisionOverlay(
+                    worldViewId ?? id,
+                    worldX,
+                    worldY,
+                    plane,
+                    wv.getCollisionFlag(plane, worldX, worldY),
+                );
             }
         }
 
@@ -637,7 +722,18 @@ export class PathService {
         if (this.collisionOverlays) {
             flags = this.collisionOverlays.applyOverlay(worldX, worldY, l, flags);
         }
-        return flags;
+        return this.applyScopedCollisionOverlay(worldViewId ?? -1, worldX, worldY, l, flags);
+    }
+
+    private applyScopedCollisionOverlay(
+        worldViewId: number,
+        worldX: number,
+        worldY: number,
+        plane: number,
+        baseFlags: number,
+    ): number {
+        const overlays = this.scopedCollisionOverlays.get(Math.trunc(worldViewId));
+        return overlays ? overlays.applyOverlay(worldX, worldY, plane, baseFlags) : baseFlags;
     }
 
     /** Check if the shared edge between two adjacent cardinal tiles is blocked by a wall segment. */

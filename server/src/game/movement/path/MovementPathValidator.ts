@@ -9,6 +9,7 @@ export { MovementDirection as Direction } from "../../../../../client/common/Dir
 export interface MovementValidationContext {
     level: number;
     size: number;
+    worldViewId?: number;
 }
 
 /**
@@ -48,6 +49,7 @@ export class MovementPathValidator {
             { x: fromX, y: fromY, plane: Math.trunc(validation.level) },
             { x: toX, y: toY },
             Math.max(1, Math.trunc(validation.size)),
+            validation.worldViewId,
         );
     }
 }

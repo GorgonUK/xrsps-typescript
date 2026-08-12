@@ -41,6 +41,62 @@ import { applyGroundItemsDelta, cloneGroundItemsPayload } from "../utils/groundI
 import { sanitizeBankSlotMessage, sanitizeInventorySlotMessage, sanitizeSpellResult } from "../utils/sanitize";
 
 export function handleInboundWorld(msg: any): boolean {
+    if (msg.type === "camera") {
+        try {
+            const g: any = (typeof window !== "undefined" ? window : globalThis) as any;
+            const client = g?.__osrsClient;
+            const payload = msg.payload;
+            if (!client?.camera || !payload) return true;
+            if (payload.mode === "reset") {
+                client.followPlayerCamera = true;
+                client.renderer?.clearCameraShake?.();
+                return true;
+            }
+            if (payload.mode === "move") {
+                client.followPlayerCamera = false;
+                const height = -Math.abs(Number(payload.height) || 0) / 128;
+                if (payload.instant) {
+                    client.camera.snapToPosition(payload.x, height, payload.y);
+                } else {
+                    client.camera.setTargetPosition(payload.x, height, payload.y);
+                }
+                return true;
+            }
+            if (payload.mode === "look") {
+                client.followPlayerCamera = false;
+                const targetX = Number(payload.x) || 0;
+                const targetY = Number(payload.y) || 0;
+                const targetHeight = -Math.abs(Number(payload.height) || 0) / 128;
+                const dx = targetX - client.camera.getPosX();
+                const dz = targetY - client.camera.getPosZ();
+                const dy = targetHeight - client.camera.getPosY();
+                const horizontal = Math.max(0.0001, Math.hypot(dx, dz));
+                const yaw = (Math.round(Math.atan2(dx, dz) * (2048 / (Math.PI * 2))) + 1024) & 2047;
+                const pitch = Math.max(0, Math.min(512, Math.round(Math.atan2(-dy, horizontal) * (2048 / (Math.PI * 2)))));
+                if (payload.instant) {
+                    client.camera.snapToYaw(yaw);
+                    client.camera.snapToPitch(pitch);
+                } else {
+                    client.camera.setTargetYaw(yaw);
+                    client.camera.setTargetPitch(pitch);
+                }
+                return true;
+            }
+            if (payload.mode === "shake") {
+                client.renderer?.setCameraShakeSlot?.(
+                    payload.slot,
+                    payload.randomAmplitude,
+                    payload.sineAmplitude,
+                    payload.sineFrequency,
+                    0,
+                );
+                return true;
+            }
+        } catch (err) {
+            console.warn("camera handler error", err);
+        }
+        return true;
+    }
     if (msg.type === "loc_change") {
         const payload = msg.payload;
         try {

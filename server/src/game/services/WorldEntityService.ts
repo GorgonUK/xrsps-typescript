@@ -29,6 +29,7 @@ export class WorldEntityService {
         this.services.networkLayer.withDirectSendBypass("rebuild_normal", () =>
             this.services.networkLayer.sendWithGuard(ws, packet, "rebuild_normal"),
         );
+        this.services.locationService.replayTemporaryLocsForPlayer(player);
     }
 
     sendWorldEntity(
@@ -105,6 +106,7 @@ export class WorldEntityService {
                 );
             }
         }
+        this.services.locationService.replayTemporaryLocsForPlayer(player);
     }
 
     teleportToWorldEntity(
@@ -193,5 +195,6 @@ export class WorldEntityService {
                 );
             }
         }
+        this.services.locationService.replayTemporaryLocsForPlayer(player);
     }
 }

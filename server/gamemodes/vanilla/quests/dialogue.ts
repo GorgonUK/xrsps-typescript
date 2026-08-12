@@ -26,16 +26,36 @@ export interface DialogueOption {
     next?: DialogueStep[];
 }
 
-export type NpcDialogueStep = { npc: string[]; animationId?: number };
+export type NpcDialogueStep = {
+    npc: string[];
+    animationId?: number;
+    npcId?: number;
+    npcName?: string;
+};
 export type PlayerDialogueStep = { player: string[]; animationId?: number };
 export type OptionsDialogueStep = { options: DialogueOption[]; title?: string };
 export type ExecDialogueStep = { exec: DialogueExec };
+export type ItemDialogueStep = {
+    item: { itemId: number; quantity?: number; title?: string; lines: string[] };
+};
+export type DoubleItemDialogueStep = {
+    items: {
+        leftItemId: number;
+        rightItemId: number;
+        leftQuantity?: number;
+        rightQuantity?: number;
+        title?: string;
+        lines: string[];
+    };
+};
 
 export type DialogueStep =
     | NpcDialogueStep
     | PlayerDialogueStep
     | OptionsDialogueStep
-    | ExecDialogueStep;
+    | ExecDialogueStep
+    | ItemDialogueStep
+    | DoubleItemDialogueStep;
 
 function asLines(lines: string | readonly string[]): string[] {
     return typeof lines === "string" ? [lines] : [...lines];
@@ -83,6 +103,25 @@ export function choose(
     title?: string,
 ): OptionsDialogueStep {
     return title === undefined ? { options: [...options] } : { options: [...options], title };
+}
+
+export function showItem(
+    itemId: number,
+    lines: string | readonly string[],
+    options?: { quantity?: number; title?: string },
+): ItemDialogueStep {
+    return { item: { itemId, lines: asLines(lines), ...options } };
+}
+
+export function showTwoItems(
+    leftItemId: number,
+    rightItemId: number,
+    lines: string | readonly string[],
+    options?: { leftQuantity?: number; rightQuantity?: number; title?: string },
+): DoubleItemDialogueStep {
+    return {
+        items: { leftItemId, rightItemId, lines: asLines(lines), ...options },
+    };
 }
 
 const activeConversations = new Set<number>();
@@ -158,10 +197,44 @@ function playSteps(ctx: DialogueContext, steps: DialogueStep[]): void {
         ctx.services.dialog.openDialog(ctx.player, {
             kind: "npc",
             id: dialogId,
-            npcId: ctx.npcId,
-            npcName: ctx.npcName,
+            npcId: step.npcId ?? ctx.npcId,
+            npcName: step.npcName ?? ctx.npcName,
             lines: step.npc,
             animationId: step.animationId,
+            clickToContinue: true,
+            closeOnContinue: isLast,
+            onContinue,
+            onClose,
+        });
+        return;
+    }
+
+    if ("item" in step) {
+        ctx.services.dialog.openDialog(ctx.player, {
+            kind: "sprite",
+            id: dialogId,
+            itemId: step.item.itemId,
+            itemQuantity: step.item.quantity,
+            title: step.item.title,
+            lines: step.item.lines,
+            clickToContinue: true,
+            closeOnContinue: isLast,
+            onContinue,
+            onClose,
+        });
+        return;
+    }
+
+    if ("items" in step) {
+        ctx.services.dialog.openDialog(ctx.player, {
+            kind: "double_sprite",
+            id: dialogId,
+            leftItemId: step.items.leftItemId,
+            rightItemId: step.items.rightItemId,
+            leftItemQuantity: step.items.leftQuantity,
+            rightItemQuantity: step.items.rightQuantity,
+            title: step.items.title,
+            lines: step.items.lines,
             clickToContinue: true,
             closeOnContinue: isLast,
             onContinue,

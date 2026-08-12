@@ -181,6 +181,12 @@ export class QueueTask<TContext = unknown> {
         this.requestReturnValue = null;
         this.awaitingReturnValue = false;
         this._completed = true;
+        try {
+            this.generator?.return?.();
+        } catch (e) {
+            logger.info("[QueueTask] Error closing generator:", e);
+        }
+        this.generator = null;
         if (this.terminateAction) {
             try {
                 this.terminateAction(this);

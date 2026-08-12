@@ -63,7 +63,21 @@ export class CompanionHitHandler {
         const damage2 = Number.isFinite(data.damage2) ? data.damage2 : undefined;
         const attackTypeHint = this.services.normalizeAttackType(data.attackType) ?? "melee";
 
-        const npcHitsplat = this.services.applyNpcHitsplat(npc, style, damage, tick, maxHit);
+        const appliedDamage = this.services.interceptNpcLethalHit(
+            player,
+            npc,
+            damage,
+            style,
+            tick,
+            maxHit,
+        );
+        const npcHitsplat = this.services.applyNpcHitsplat(
+            npc,
+            style,
+            appliedDamage,
+            tick,
+            maxHit,
+        );
         if (npcHitsplat.hpCurrent > 0) {
             const npcCombatSeq = this.services.getNpcCombatSequences(npc.typeId);
             if (npcCombatSeq?.block !== undefined) {

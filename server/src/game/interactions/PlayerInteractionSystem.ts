@@ -487,6 +487,8 @@ export class PlayerInteractionSystem {
             tileY: number;
             tileLevel: number;
             option: string;
+            opNum?: number;
+            source?: { slot: number; itemId: number };
             modifierFlags?: number;
             pickupFromTable?: boolean;
         },
@@ -512,6 +514,8 @@ export class PlayerInteractionSystem {
             tileY: data.tileY,
             tileLevel: data.tileLevel,
             option: data.option,
+            opNum: data.opNum,
+            source: data.source,
             lastRouteTick: Number.MIN_SAFE_INTEGER,
             pickupFromTable: data.pickupFromTable === true,
         };

@@ -121,6 +121,7 @@ import { DynamicLocStateStore } from "../world/DynamicLocStateStore";
 import { LocTileLookupService } from "../world/LocTileLookupService";
 import { locCanResolveToId } from "../world/LocTransforms";
 import { MapCollisionService } from "../world/MapCollisionService";
+import { InstancedAreaManager } from "../world/InstancedAreaManager";
 import { AccountStore } from "./AccountStore";
 import { AuthenticationService } from "./AuthenticationService";
 import { BroadcastService } from "./BroadcastService";
@@ -209,6 +210,7 @@ export class WSServer {
     private tradeManager?: TradeManager;
     private interfaceService?: InterfaceService;
     private sailingInstanceManager?: SailingInstanceManager;
+    private instancedAreaManager?: InstancedAreaManager;
     private worldEntityInfoEncoder = new WorldEntityInfoEncoder();
     private gatheringSystem!: GatheringSystemManager;
     private equipmentHandler!: EquipmentHandler;
@@ -426,6 +428,7 @@ export class WSServer {
             ["followerCombatManager", () => self.followerCombatManager],
             ["interfaceService", () => self.interfaceService],
             ["sailingInstanceManager", () => self.sailingInstanceManager],
+            ["instancedAreaManager", () => self.instancedAreaManager],
             ["doorManager", () => self.doorManager],
             ["projectileSystem", () => self.projectileSystem],
             ["projectileTimingService", () => self.projectileTimingService],
@@ -767,6 +770,7 @@ export class WSServer {
         this.npcManager = opts.npcManager;
         if (this.npcManager) {
             this.sailingInstanceManager = new SailingInstanceManager(this.svc);
+            this.instancedAreaManager = new InstancedAreaManager(this.svc);
         }
         // Initialize InterfaceService for modular modal interface management
         this.interfaceService = new InterfaceService(this.svc);
@@ -794,6 +798,9 @@ export class WSServer {
             collectionLogService: this.collectionLogService,
             soundService: this.soundService,
             actionScheduler: this.actionScheduler,
+            groundItems: this.groundItems,
+            scriptScheduler: this.scriptScheduler,
+            instancedAreaManager: this.instancedAreaManager!,
             getCurrentTick: () => this.options.ticker.currentTick(),
             getPathService: () => this.options.pathService!,
             doorManager: this.doorManager!,
@@ -828,6 +835,13 @@ export class WSServer {
             queueClientScript: (playerId, scriptId, ...args) =>
                 this.broadcastService.queueClientScript(playerId, scriptId, ...args),
             queueWidgetEvent: (pid, evt) => this.queueWidgetEvent(pid, evt),
+            queueCameraEvent: (playerId, payload) => {
+                const socket = this.players?.getSocketByPlayerId(playerId);
+                if (!socket) return;
+                const packet = encodeMessage({ type: "camera", payload });
+                this.networkLayer.sendWithGuard(socket, packet, "camera");
+            },
+            queueProjectile: (projectile) => this.projectileSystem.queueProjectileForViewers(projectile),
             queueSmithingInterfaceMessage: (pid, p) =>
                 this.broadcastService.queueSmithingInterfaceMessage(pid, p as any),
             queueExternalNpcTeleportSync: (npc) => this.queueExternalNpcTeleportSync(npc),
@@ -862,6 +876,28 @@ export class WSServer {
                 this.scriptRuntime,
             );
             if (this.npcManager) {
+                this.npcManager.setLethalStatusHitInterceptor((event) => {
+                    const killer =
+                        event.killerPlayerId !== undefined
+                            ? this.players?.getById(event.killerPlayerId)
+                            : undefined;
+                    return this.scriptRuntime.runNpcPreDeath({
+                        npc: event.npc,
+                        killer,
+                        killerPlayerId: event.killerPlayerId,
+                        tick: event.tick,
+                        hit: {
+                            proposedDamage: event.proposedDamage,
+                            style: event.style,
+                            hitpointsBefore: event.hitpointsBefore,
+                            hitpointsAfter: Math.max(
+                                0,
+                                event.hitpointsBefore - event.proposedDamage,
+                            ),
+                            cause: "status",
+                        },
+                    });
+                });
                 this.followerManager = new FollowerManager(
                     this.npcManager,
                     this.players,
@@ -936,25 +972,9 @@ export class WSServer {
                 this.tradeManager?.requestTrade(me, target, tick);
             });
             this.players.setGroundItemInteractionCallback((player, interaction) => {
-                if (
-                    interaction.option === "take" ||
-                    interaction.option === "pick-up" ||
-                    interaction.option === "pickup"
-                ) {
-                    this.groundItemHandler.attemptTakeGroundItem(
-                        player,
-                        {
-                            x: interaction.tileX,
-                            y: interaction.tileY,
-                            level: interaction.tileLevel,
-                        },
-                        interaction.itemId,
-                        interaction.stackId,
-                    );
-                    // The attemptTakeGroundItem handles inventory updates.
-                    // Ground item visual updates will be handled by the broadcast phase.
-                    // Do NOT call maybeSendGroundItemSnapshot here as it is not safe during pre_movement.
-                }
+                this.groundItemHandler.handleArrivedGroundItemInteraction(player, interaction);
+                // Ground item visual updates are handled by the broadcast phase.
+                // Do not send snapshots directly during pre_movement.
             });
             this.players.setGameMessageCallback((player, text) => {
                 this.messagingService.sendGameMessageToPlayer(player, text);

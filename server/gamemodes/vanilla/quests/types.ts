@@ -26,6 +26,24 @@ export interface QuestItemReward {
     label: string;
 }
 
+export interface QuestSkillRequirement {
+    skillId: number;
+    level: number;
+    label: string;
+}
+
+export interface QuestProgressRequirement {
+    varpId: number;
+    minValue: number;
+    label: string;
+}
+
+export interface QuestRequirements {
+    questPoints?: number;
+    skills?: QuestSkillRequirement[];
+    quests?: QuestProgressRequirement[];
+}
+
 export interface QuestRewards {
     questPoints: number;
     xp?: QuestXpReward[];
@@ -43,10 +61,13 @@ export interface QuestDefinition {
     members?: boolean;
     /** Quest progress varp */
     varpId: number;
+    /** Inclusive bit range when quest progress occupies only part of the varp. */
+    stageBits?: { start: number; end: number };
     /** Varp value once the quest has been started */
     startedValue: number;
     /** Varp value once the quest is complete */
     completionValue: number;
+    requirements?: QuestRequirements;
     rewards: QuestRewards;
     /** Item model shown on the completion scroll (153:5) */
     rewardItemId?: number;

@@ -11,7 +11,7 @@ import {
     type HitsplatSourceType,
     resolveHitsplatTypeForObserver,
 } from "../../game/combat/OsrsHitsplatIds";
-import type { NpcState, NpcUpdateDelta } from "../../game/npc";
+import { isNpcVisibleToPlayer, type NpcState, type NpcUpdateDelta } from "../../game/npc";
 import type { PlayerState } from "../../game/player";
 import { logger } from "../../utils/logger";
 import { BitWriter } from "../BitWriter";
@@ -122,7 +122,7 @@ export class NpcPacketEncoder {
             localTileY,
             level,
             NPC_VIEW_DISTANCE_TILES,
-        );
+        ).filter((npc) => isNpcVisibleToPlayer(npc, player));
         desiredNpcs.sort((a, b) => a.id - b.id);
 
         const desiredIds: number[] = [];

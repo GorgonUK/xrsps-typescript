@@ -1,4 +1,6 @@
 import type { PrayerName } from "../../../../client/rs/prayer/prayers";
+import type { DbRepository } from "../../../../client/rs/config/db/DbRepository";
+import type { ProjectileLaunch } from "../../../../client/common/projectiles/ProjectileLaunch";
 import type { ItemDefinition } from "../../data/items";
 import type { PathService } from "../../pathfinding/PathService";
 import type { InterfaceService } from "../../widgets/InterfaceService";
@@ -33,6 +35,19 @@ import type { GameEventBus } from "../events/GameEventBus";
 import type { OwnedItemLocation } from "../items/playerItemOwnership";
 import type { NpcSpawnConfig, NpcState } from "../npc";
 import type { PlayerState } from "../player";
+import type { QueueTask, TaskGenerator } from "../model/queue";
+import type { LockState } from "../model/LockState";
+import type { ScriptTaskOwner } from "../systems/ScriptScheduler";
+import type {
+    InstanceAreaCopy,
+    QuestInstanceHandle,
+    QuestInstanceSpec,
+} from "../../world/InstancedAreaManager";
+import type {
+    TemporaryLocChange,
+    TemporaryLocChangeOptions,
+    TemporaryLocScope,
+} from "../services/LocationService";
 import type { SpellDataProvider } from "../spells/SpellDataProvider";
 import type { GatheringSystemManager } from "../systems/GatheringSystemManager";
 import type {
@@ -45,6 +60,11 @@ import type {
 } from "./types";
 
 export type { DoorToggleResult, GateDef, GatePair, GateOpenStyle, DoorPartnerResult };
+export type {
+    TemporaryLocChange,
+    TemporaryLocChangeOptions,
+    TemporaryLocScope,
+};
 
 // Messaging
 
@@ -464,7 +484,7 @@ export type { SkillBoltEnchantActionData } from "../actions/skillActionPayloads"
 // ============================================================================
 
 export interface DataLoaderFacade {
-    getDbRepository(): { getRows(tableId: number, ...args: unknown[]): unknown[] } | undefined;
+    getDbRepository(): DbRepository | undefined;
     getEnumTypeLoader(): { load(id: number): unknown } | undefined;
     getStructTypeLoader(): { load(id: number): unknown } | undefined;
     getIdkTypeLoader(): { load(id: number): unknown } | undefined;
@@ -675,6 +695,67 @@ export interface MovementFacade {
     getPathService(): PathService | undefined;
 }
 
+export interface CameraFacade {
+    move(
+        player: PlayerState,
+        tile: { x: number; y: number },
+        height: number,
+        instant?: boolean,
+    ): void;
+    lookAt(
+        player: PlayerState,
+        tile: { x: number; y: number },
+        height: number,
+        instant?: boolean,
+    ): void;
+    shake(
+        player: PlayerState,
+        slot: number,
+        randomAmplitude: number,
+        sineAmplitude: number,
+        sineFrequency: number,
+    ): void;
+    reset(player: PlayerState): void;
+}
+
+export interface ProjectileFacade {
+    launch(projectile: ProjectileLaunch): void;
+}
+
+export interface SchedulerFacade {
+    after(delayTicks: number, handler: (tick: number) => void, owner?: ScriptTaskOwner): number;
+    repeat(
+        delayTicks: number,
+        repeatTicks: number,
+        handler: (tick: number) => void,
+        owner?: ScriptTaskOwner,
+    ): number;
+    cancel(taskId: number): void;
+    cancelOwner(owner: ScriptTaskOwner): number;
+}
+
+export interface SequenceFacade {
+    run(
+        player: PlayerState,
+        generator: TaskGenerator<PlayerState>,
+        options?: {
+            lock?: LockState;
+            resetCamera?: boolean;
+            onCleanup?: () => void;
+        },
+    ): QueueTask<PlayerState>;
+}
+
+export interface InstanceFacade {
+    buildTemplate(copies: readonly InstanceAreaCopy[]): number[][][];
+    create(player: PlayerState, spec: QuestInstanceSpec): QuestInstanceHandle | undefined;
+    get(playerId: number): QuestInstanceHandle | undefined;
+    dispose(
+        player: PlayerState,
+        destination?: { x: number; y: number; level: number },
+    ): boolean;
+}
+
 export interface LocationFacade {
     doorManager?: DoorStateManager;
     resolveLocTransformId(
@@ -715,6 +796,28 @@ export interface LocationFacade {
         shape: number,
         rotation: number,
     ): void;
+    replaceTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        newId: number,
+        tile: { x: number; y: number },
+        level: number,
+        options?: TemporaryLocChangeOptions,
+    ): TemporaryLocChange;
+    removeTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        tile: { x: number; y: number },
+        level: number,
+        options?: TemporaryLocChangeOptions,
+    ): TemporaryLocChange;
+    clearTemporaryLoc(
+        scope: TemporaryLocScope,
+        oldId: number,
+        tile: { x: number; y: number },
+        level: number,
+        oldShape?: number,
+    ): boolean;
     triggerLocEffect(locId: number, tile: { x: number; y: number }, level: number): boolean;
     isAdjacentToLoc(
         player: PlayerState,
@@ -748,6 +851,13 @@ export interface CombatFacade {
         style: number,
         damage: number,
         tick: number,
+    ): { amount: number; style: number; hpCurrent: number; hpMax: number };
+    applyNpcDamageToPlayer(
+        npc: NpcState,
+        player: PlayerState,
+        style: number,
+        damage: number,
+        tick?: number,
     ): { amount: number; style: number; hpCurrent: number; hpMax: number };
     stunPlayer(player: PlayerState, ticks: number): void;
     scheduleAction(
@@ -791,10 +901,19 @@ export interface CombatFacade {
 export interface NpcFacade {
     spawnNpc(config: NpcSpawnConfig): NpcState | undefined;
     removeNpc(npcId: number): boolean;
+    findNearbyNpc(player: PlayerState, npcTypeId: number, radius: number): NpcState | undefined;
+    hasLineOfSightToPlayer(npc: NpcState, player: PlayerState): boolean;
     stopNpcMovement(npc: NpcState, holdTicks?: number): void;
     queueNpcForcedChat(npc: NpcState, text: string): void;
     queueNpcSeq(npc: NpcState, seqId: number): void;
     faceNpcToPlayer(npc: NpcState, player: PlayerState): void;
+    faceNpcToTile(npc: NpcState, tile: { x: number; y: number }): void;
+    moveNpcTo(npc: NpcState, tile: { x: number; y: number }, run?: boolean): boolean;
+    teleportNpc(npc: NpcState, tile: { x: number; y: number; level?: number }): void;
+    engageCombat(npc: NpcState, player: PlayerState): void;
+    disengageCombat(npc: NpcState): void;
+    queueNpcSpotAnim(npc: NpcState, spotId: number, height?: number, delay?: number): void;
+    replaceNpc(npc: NpcState, newTypeId: number, lifetimeTicks?: number): NpcState | undefined;
 }
 
 export interface CollectionLogFacade {

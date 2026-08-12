@@ -328,6 +328,26 @@ export class GroundItemManager {
         };
     }
 
+    removeOwnedByPlayer(playerId: number, worldViewId?: number): number {
+        const ownerId = Math.trunc(playerId);
+        const viewId = worldViewId === undefined ? undefined : Math.trunc(worldViewId);
+        let removed = 0;
+        for (const [stackId, entry] of [...this.stacksById]) {
+            if (entry.stack.ownerId !== ownerId) continue;
+            if (viewId !== undefined && entry.stack.worldViewId !== viewId) continue;
+            const list = this.stacksByTile.get(entry.key);
+            if (list) {
+                const index = list.indexOf(entry.stack);
+                if (index >= 0) list.splice(index, 1);
+                if (list.length === 0) this.stacksByTile.delete(entry.key);
+            }
+            this.stacksById.delete(stackId);
+            removed++;
+        }
+        if (removed > 0) this.bumpSerial();
+        return removed;
+    }
+
     tick(currentTick: number): void {
         let touched = false;
         for (const [key, stacks] of this.stacksByTile.entries()) {

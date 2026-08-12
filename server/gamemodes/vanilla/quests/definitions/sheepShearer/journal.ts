@@ -1,7 +1,6 @@
 import type { PlayerState } from "../../../../../src/game/player";
 import type { ScriptServices } from "../../../../../src/game/scripts/types";
-import { countCarriedItem } from "../../QuestService";
-import { REQUIRED_ITEMS, STAGE_COMPLETE, STAGE_STARTED, VARP_SHEEP_SHEARER } from "./constants";
+import { STAGE_COMPLETE, STAGE_STARTED, VARP_SHEEP_SHEARER, getRemainingWool } from "./constants";
 
 export function buildSheepShearerJournal(player: PlayerState, services: ScriptServices): string[] {
     const stage = player.varps.getVarpValue(VARP_SHEEP_SHEARER);
@@ -15,19 +14,13 @@ export function buildSheepShearerJournal(player: PlayerState, services: ScriptSe
         ];
     }
     if (stage >= STAGE_STARTED) {
-        const lines = [
+        const remaining = getRemainingWool(stage);
+        return [
             "I have spoken to <col=800000>Fred the Farmer</col>.",
             "",
-            "He wants me to bring him:",
+            `I need to collect ${remaining} more`,
+            `<col=800000>${remaining === 1 ? "ball" : "balls"} of wool</col>.`,
         ];
-        for (const req of REQUIRED_ITEMS) {
-            const carried = countCarriedItem(player, services, req.itemId);
-            lines.push(
-                carried >= req.quantity ? `<str>${req.journalLabel}</str>` : req.journalLabel,
-            );
-        }
-        lines.push("", "I can shear sheep and spin the wool on a", "spinning wheel.");
-        return lines;
     }
     return [
         "I can start this quest by speaking to",

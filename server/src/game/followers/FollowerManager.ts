@@ -181,6 +181,7 @@ export class FollowerManager {
             y: spawnTile.y,
             level: player.level,
             wanderRadius: 0,
+            worldViewId: player.worldViewId,
         });
         if (!morphedNpc) {
             player.followers.setState({ itemId, npcTypeId: npc.typeId });
@@ -392,6 +393,7 @@ export class FollowerManager {
             y: tile.y,
             level: player.level,
             wanderRadius: 0,
+            worldViewId: player.worldViewId,
         });
         if (!npc) {
             return undefined;
